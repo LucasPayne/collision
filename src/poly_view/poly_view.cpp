@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
     }
     else if (argc == 2) {
         char *polygon_filename = argv[1];
+
         read_polygon(polygon_filename, &poly);
 
         for (int i = 0; i < poly.num_vertices; i++) {

@@ -1,0 +1,4 @@
+Clone glad repo somewhere, $python3 setup.py build, $python3 setup.py install
+Generated with
+    $glad --generator c ...
+Headers are in /usr/include/glad.

@@ -1,0 +1,143 @@
+
+/*
+ * Entity (or gameobject) model.
+ *
+ *
+ * todo:
+ *  typedef function types
+ *
+ *
+ * realloc and pointers: if _anything_ can cause a realloc, all pointers into that array are afterwards untrusted.
+ * So, I may need a pointerless way to reference gameobjects (IDs).
+ *    >>> entity IDs would be a good solution I think. No need to avoid reallocating, just don't model entity usage on pointers.
+ *
+ * ID allocation scheme, lookup (seems bad to just iterate over the pool to find one with an ID, is this avoidable? hash tables or something?)
+ *
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include "shapes.h"
+#include "entity.h"
+
+#define STARTING_ENTITY_POOL_SIZE 64 
+
+#define DEBUG 0
+#define ENTITY_INIT_CHECK()\
+    if (!ENTITY_MODEL_INITIALIZED) {\
+        fprintf(stderr, "ERROR: trying to use entity functions while the entity model is not initialized.\n");\
+        exit(EXIT_FAILURE);\
+    }
+
+
+static Entity2D *ENTITY_POOL = NULL;
+static bool *ENTITY_ACTIVE = NULL;
+static int NUM_ENTITIES; // what to use this for?
+static int ENTITY_POOL_SIZE;
+static bool ENTITY_MODEL_INITIALIZED = false;
+
+void init_entity_model(void)
+{
+    ENTITY_POOL_SIZE = STARTING_ENTITY_POOL_SIZE;
+
+    ENTITY_POOL = (Entity2D *) malloc(sizeof(Entity2D) * ENTITY_POOL_SIZE);
+    mem_check(ENTITY_POOL);
+    ENTITY_ACTIVE = (bool *) malloc(sizeof(bool) * ENTITY_POOL_SIZE);
+    mem_check(ENTITY_ACTIVE);
+    NUM_ENTITIES = 0;
+
+    ENTITY_MODEL_INITIALIZED = true;
+}
+
+
+// If new stuff is added, define defaults ("zeroes") here to not mess with anything else.
+static void zero_init_entity(Entity2D *entity)
+{
+#if DEBUG
+    ENTITY_INIT_CHECK();
+#endif
+    entity->id = -1; // invalid entity ID.
+    entity->position.x = 0;
+    entity->position.y = 0;
+    entity->rotation = 0;
+    entity->name[0] = '\0';
+    entity->init = NULL;
+    entity->update = NULL;
+}
+
+/*
+ * current awful allocation scheme:
+ *  just make sure it is one more than the maximum
+ */
+static void new_entity_id(void)
+{
+#if DEBUG
+    ENTITY_INIT_CHECK();
+#endif
+
+    int entity_id = 0;
+    for (int i = 0; i < ENTITY_POOL_SIZE) {
+        if (ENTITY_ACTIVE[i] && ENTITY_POOL[i].id >= entity_id) {
+            entity_id = ENTITY_POOL[i].id + 1;
+        }
+    }
+    return entity_id;
+}
+
+static EntityID create_entity_from_funcs(char *name,
+                                     void (*init) (struct Entity2D_s *),
+                                     void (*update) (struct Entity2D_s *),
+                                     Point2f position,
+                                     double rotation)
+{
+#if DEBUG
+    ENTITY_INIT_CHECK();
+#endif
+    int entity_index = 0;
+    while (ENTITY_ACTIVE[entity_index]) {
+        entity_index ++;
+        if (entity_index == ENTITY_POOL_SIZE) {
+            break;
+        }
+    }
+    if (entity_index == ENTITY_POOL_SIZE) {
+        ENTITY_POOL_SIZE *= 2;
+        ENTITY_POOL = (Entity2D *) realloc(ENTITY_POOL, sizeof(Entity2D) * ENTITY_POOL_SIZE);
+        mem_check(ENTITY_POOL);
+        ENTITY_ACTIVE = (bool *) realloc(ENTITY_ACTIVE, sizeof(bool) * ENTITY_POOL_SIZE);
+        mem_check(ENTITY_ACTIVE);
+    }
+
+    Entity2D *new_entity = &ENTITY_POOL[entity_index];
+    zero_init_entity(new_entity);
+
+    new_entity->id = new_entity_id();
+
+    strncpy(new_entity->name, name, MAX_ENTITY_NAME_LENGTH);
+    new_entity->transform.position = position;
+    new_entity->transform.rotation = rotation;
+    new_entity->init = init;
+    new_entity->update = update;
+
+    ENTITY_ACTIVE[entity_index] = true;
+
+    NUM_ENTITIES ++;
+}
+
+
+void destroy_entity(EntityID entity_id)
+{
+#if DEBUG
+    ENTITY_INIT_CHECK();
+#endif
+    for (int i = 0; i < ENTITY_POOL_SIZE) {
+        if (ENTITY_ACTIVE[i] && ENTITY_POOL[i].id == entity_id) {
+            ENTITY_ACTIVE[i] = false;
+            return;
+        }
+    }
+}
+#undef DEBUG
+
+// Intended to be the inner function of an e.g. GLFW loop (as of writing, loop_time() in helper_gl module).

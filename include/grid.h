@@ -34,7 +34,7 @@ bool grid_val(int i, int j);
 bool in_grid_range(int i, int j);
 void grid_clear(void);
 void grid_init(int horiz, int vert);
-void normalized_grid_pos(int i, int j, double &x, double &y);
+void normalized_grid_pos(int i, int j, double *x, double *y);
 void set_grid(int i, int j, bool val);
 bool col_in_grid_range(int i);
 bool row_in_grid_range(int j);

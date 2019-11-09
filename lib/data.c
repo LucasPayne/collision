@@ -46,12 +46,12 @@ void read_polygon(char *relative_filename, Polygon *poly)
     strncpy(filename, DATA_DIR "polygons/", MAX_FILENAME_LENGTH);
     strncat(filename, relative_filename, MAX_FILENAME_LENGTH);
     fopen_handle(file, filename, "r");
-    char line[MAX_LINE_LENGTH];
 
     int num_vertices = 0;
-    int mem_length = 1;
+    int mem_length = 64;
     Point2f *vertices = (Point2f *) malloc(sizeof(Point2f) * mem_length);
 
+    char line[MAX_LINE_LENGTH];
     while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
         Point2f point;
         if (sscanf(line, "%lf %lf", &point.x, &point.y) == EOF) {
@@ -103,11 +103,13 @@ void ascii_polygon(char *name, Polygon *polygon)
     while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
         for (int i = 0; line[i] != '\0'; i++) {
             if (line[i] >= '0' && line[i] <= '9') {
-                points[line[i] - '0'] = { (double) i, (double) line_num };
+                points[line[i] - '0'].x = (double) i;
+                points[line[i] - '0'].y = (double) line_num;
                 num_points ++;
             }
             else if (line[i] >= 'A' && line[i] <= 'Z') {
-                points[10 + (line[i] - 'A')] = { (double) i, (double) line_num };
+                points[10 + (line[i] - 'A')].x = (double) i;
+                points[10 + (line[i] - 'A')].y = (double) line_num;
                 num_points ++;
             }
 	}

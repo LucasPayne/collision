@@ -3,7 +3,7 @@
 
 PROJECT_MAKE_RULE='
 
-PROJECT_NAME: $(SRC_DIR)/PROJECT_NAME/PROJECT_NAME.cpp $(FILES)
+PROJECT_NAME: $(SRC_DIR)/PROJECT_NAME/PROJECT_NAME.c $(FILES)
 	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
 do_PROJECT_NAME: PROJECT_NAME
 	$(BUILD_DIR)/$<
@@ -92,7 +92,7 @@ if [ "$good" = "Yes" ] ; then
     echo "Making $schematic $project_name ..."
     proj_dir="$SRC_DIR/$project_name"
     mkdir "$proj_dir"
-    cp "$schematic_path" "$proj_dir/$project_name.cpp"
+    cp "$schematic_path" "$proj_dir/$project_name.c"
 
     printf "$PROJECT_MAKE_RULE" | sed "s/PROJECT_NAME/$project_name/g" >> $MAKEFILE
 else   

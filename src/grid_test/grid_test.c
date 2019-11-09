@@ -49,7 +49,7 @@ void rasterize_line(double ax, double ay, double bx, double by)
 
     FOR_GRID(i, j) {
         double cell_x, cell_y;
-        normalized_grid_pos(i, j, cell_x, cell_y);
+        normalized_grid_pos(i, j, &cell_x, &cell_y);
         cell_x -= ax;
         cell_y -= ay;
 
@@ -165,7 +165,7 @@ void loop(GLFWwindow *window)
     }
 
     /* double line_end_x, line_end_y; */
-    /* normalized_grid_pos(DRAWX, DRAWY, line_end_x, line_end_y); */
+    /* normalized_grid_pos(DRAWX, DRAWY, &line_end_x, &line_end_y); */
     /* rasterize_line(0.5, 0.5, line_end_x, line_end_y); */
     rasterize_circle(normalized_grid_pos_x(DRAWX), normalized_grid_pos_y(DRAWY), SIZE);
     /* set_grid(DRAWX, DRAWY, true); */
@@ -228,9 +228,9 @@ void loop(GLFWwindow *window)
         if (grid_val(i, j)) {
 
             double xleft, ydown;
-            normalized_grid_pos(i, j+1, xleft, ydown);
+            normalized_grid_pos(i, j+1, &xleft, &ydown);
             double xright, yup;
-            normalized_grid_pos(i+1, j, xright, yup);
+            normalized_grid_pos(i+1, j, &xright, &yup);
 
             double screen_xleft, screen_ydown, screen_xright, screen_yup;
             screen_xleft = x_start + xleft * (x_end - x_start);

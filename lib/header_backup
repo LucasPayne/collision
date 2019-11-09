@@ -1,0 +1,28 @@
+
+/*
+ *
+ */
+
+#ifndef HEADER_DEFINED_ENTITY
+#define HEADER_DEFINED_ENTITY
+
+#include "shapes.h"
+
+#define MAX_ENTITY_NAME_LENGTH 32
+
+typedef int EntityID;
+
+typedef struct Transform2D_s {
+    Point2f position;
+    double rotation; //theta anti-clockwise from -> in radians
+} Transform;
+
+typedef struct Entity2D_s {
+    int id;
+    char name[MAX_ENTITY_NAME_LENGTH];
+    Transform2D transform;
+    void (*init) (struct Entity2D_s *);
+    void (*update) (struct Entity2D_s *);
+} Entity2D;
+
+#endif

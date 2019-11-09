@@ -14,6 +14,7 @@ void point2f_print(Point2f point)
     printf("(%.2lf %.2lf)", point.x, point.y);
 }
 
+
 // Readable description of the polygon
 void polygon_print(Polygon *polygon)
 {

@@ -31,10 +31,10 @@ double normalized_grid_pos_y(int j)
     return ((double) j) / GRID_VERT;
 }
 
-void normalized_grid_pos(int i, int j, double &x, double &y)
+void normalized_grid_pos(int i, int j, double *x, double *y)
 {
-    x = ((double) i) / GRID_HORIZ;
-    y = ((double) j) / GRID_VERT;
+    *x = ((double) i) / GRID_HORIZ;
+    *y = ((double) j) / GRID_VERT;
 }
 
 void grid_init(int horiz, int vert)

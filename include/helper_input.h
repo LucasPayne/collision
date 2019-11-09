@@ -6,6 +6,7 @@
 #define HEADER_DEFINED_HELPER_INPUT
 
 #include <GLFW/glfw3.h>
+#include <stdbool.h>
 
 /* typedef void (*)(GLFWwindow *, int, int, int, int) KeyCallbackFunction; */
 

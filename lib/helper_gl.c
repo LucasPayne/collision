@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 
 #include "helper_gl.h"
 
@@ -48,7 +47,7 @@ void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *))
 }
 
 
-GLFWwindow *init_glfw_create_context(std::string const &name, int horiz, int vert)
+GLFWwindow *init_glfw_create_context(char *name, int horiz, int vert)
 {
     /* Attempts to create a GLFW OpenGL context associated to a window.
      * Errors are handled in this function, can just assume returned
@@ -60,7 +59,7 @@ GLFWwindow *init_glfw_create_context(std::string const &name, int horiz, int ver
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    GLFWwindow *window = glfwCreateWindow(horiz, vert, name.c_str(), NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(horiz, vert, name, NULL, NULL);
     if (!window)
     {
         fprintf(stderr, "GLFW error: failed to create a window properly\n");

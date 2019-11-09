@@ -2,8 +2,11 @@
  *
  */
 
+#include <stdbool.h>
+
 #include <GLFW/glfw3.h>
 #include "helper_input.h"
+
 
 
 // Dual hjkl and arrow keys

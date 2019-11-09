@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "shapes.h"
 
 void point2f_print(Point2f point)
@@ -35,3 +36,4 @@ void polygon_draw(Polygon *polygon)
     }
     glEnd();
 }
+

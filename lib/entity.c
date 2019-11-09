@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 
 #include "helper_definitions.h"
 #include "shapes.h"
@@ -108,17 +109,15 @@ Entity2D *create_empty_entity(Entity2D *parent, char *name)
 #if DEBUG
     entity_model_check();
 #endif
-    Point2f pos;
-    pos.x = 0.0;
-    pos.y = 0.0;
-    return _create_entity(parent, name, NULL, NULL, pos, 0);
+    return _create_entity(parent, name, NULL, NULL, 0, 0, 0);
 }
 
 Entity2D *_create_entity(Entity2D *parent,
                            char *name,
                            void (*init) (struct Entity2D_s *),
                            void (*update) (struct Entity2D_s *),
-                           Point2f position,
+                           double position_x,
+                           double position_y,
                            double rotation)
 {
 #if DEBUG
@@ -141,7 +140,8 @@ Entity2D *_create_entity(Entity2D *parent,
 
     new_entity->init = init;
     new_entity->update = update;
-    new_entity->transform.position = position;
+    new_entity->transform.position.x = position_x;
+    new_entity->transform.position.y = position_y;
     new_entity->transform.rotation = rotation;
 
     new_entity->data = NULL; 
@@ -259,6 +259,20 @@ static void _update_entity_model(Entity2D *entity)
     if (entity->update != NULL) {
         entity->update(entity);
     }
+}
+
+
+
+Point2f point2f_transform_to_entity(Point2f point, Entity2D *entity)
+{
+    Point2f transformed_point;
+    transformed_point.x =   cos(entity->transform.rotation) * (entity->transform.position.x + point.x)
+			  + sin(entity->transform.rotation) * (entity->transform.position.y + point.y);
+
+    transformed_point.y = - sin(entity->transform.rotation) * (entity->transform.position.x + point.x)
+			  + cos(entity->transform.rotation) * (entity->transform.position.y + point.y);
+
+    return transformed_point;
 }
 
 

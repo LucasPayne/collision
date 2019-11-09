@@ -68,7 +68,7 @@ do_entity_test: entity_test
         
 
 
-gl_entity_test: $(SRC_DIR)/gl_entity_test/gl_entity_test.c $(LIB_DIR)/shapes/shapes.c $(LIB_DIR)/entity.c $(FILES)
+gl_entity_test: $(SRC_DIR)/gl_entity_test/gl_entity_test.c $(LIB_DIR)/shapes/shapes.c $(LIB_DIR)/entity.c $(LIB_DIR)/data.c $(FILES)
 	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
 do_gl_entity_test: gl_entity_test
 	$(BUILD_DIR)/$<

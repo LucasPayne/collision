@@ -22,24 +22,24 @@ int main(int argc, char *argv[])
 
     init_entity_model();
 
-    Entity2D *bean = create_empty_entity(NULL, "bean");
-    create_empty_entity(bean, "quambus");
-    create_empty_entity(bean, "quambus_again");
-    Entity2D *bean2 = create_empty_entity(NULL, "bean2");
+    EntityID bean = create_entity(ENTITY_UNIVERSE, "bean", bungus, 0, 0, 0);
+    create_entity(bean, "quambus", NULL, 0, 0, 0);
+    create_entity(bean, "quambus_again", NULL, 0, 0, 0);
+    EntityID bean2 = create_entity(ENTITY_UNIVERSE, "bean2", NULL, 0, 0, 0);
 
-    bean2->update = bungus;
+    entity_add_component(bean2, 3, "bomp");
+    entity_add_component(bean2, 63, "wwwww");
 
     print_line();
     print_entity_tree(NULL);
     update_entity_model();
 
-    create_empty_entity(bean2, "renderer");
-    Entity2D *solid = create_empty_entity(bean2, "solid");
+    EntityID renderer = create_entity(bean2, "renderer", NULL, 0, 0, 0);
+    entity_add_component(renderer, 2, "bee");
+    EntityID solid = create_entity(bean2, "solid", bungus, 0, 0, 0);
 
-    solid->update = bungus;
-
-    create_empty_entity(NULL, "bean3");
-    create_empty_entity(NULL, "bean4");
+    create_entity(ENTITY_UNIVERSE, "bean3", NULL, 0, 0, 0);
+    create_entity(ENTITY_UNIVERSE, "bean4", NULL, 0, 0, 0);
 
     print_line();
     print_entity_tree(NULL);

@@ -1,87 +1,55 @@
-/*
- *
- */
 
 #ifndef HEADER_DEFINED_ENTITY
 #define HEADER_DEFINED_ENTITY
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
-#include "helper_definitions.h"
-#include "shapes.h"
-#include "entity.h"
-
+#define MAX_COMPONENT_NAME_LENGTH 32
 #define MAX_ENTITY_NAME_LENGTH 32
+#define MAX_ENTITY_CHILDREN 32
+#define MAX_ENTITY_COMPONENTS 16
 
-#define UNIVERSE_START_NUM_CHILDREN 64 // initial malloc'd space for children entities
-#define START_NUM_CHILDREN 4 // in general
+#define NULL_ENTITY_ID 0
+#define UNIVERSE_ID 1 // 0 is reserved
+#define NULL_COMPONENT_ID 0
 
-#define entity_model_check()\
-    if (!entity_model_active) {\
-        fprintf(stderr, "ERROR: trying to use entity functions while the entity model is not initialized.\n");\
-        exit(EXIT_FAILURE);\
-    }
+typedef long unsigned int ComponentID;
+typedef long unsigned int EntityID;
 
-#define create_entity(PARENT,NAME,ENTITY_TYPE,POSITION_X,POSITION_Y,ROTATION)\
-    _create_entity(( PARENT ),\
-                   ( NAME ),\
-                   ( ENTITY_TYPE ## _entity_init ),\
-                   ( ENTITY_TYPE ## _entity_update ),\
-                   ( POSITION_X ),\
-                   ( POSITION_Y ),\
-                   ( ROTATION ))
+typedef signed int ComponentType;
 
-#define get_entity_data(TO_NAME,ENTITY,ENTITY_TYPE)\
-    struct ENTITY_TYPE ## _properties_s *TO_NAME = ( struct ENTITY_TYPE ## _properties_s *) ENTITY ->data;
-    
-#define init_entity_data(ENTITY,ENTITY_TYPE)\
-    ENTITY ->data = malloc(sizeof(struct ENTITY_TYPE ## _properties_s));\
-    mem_check(ENTITY ->data);
+typedef struct Component_structure {
+    ComponentID id;
+    EntityID entity_id;
+    ComponentType type;
+    char name[MAX_COMPONENT_NAME_LENGTH];
+} Component;
+typedef struct ComponentNode_structure {
+    Component component;
+    struct ComponentNode_struture *next;
+} ComponentNode;
 
-
-typedef struct Transform2D_s {
-    Point2f position;
-    double rotation; //theta anti-clockwise from -> in radians
-} Transform2D;
-
-typedef struct Entity2D_s {
+typedef struct Entity_structure {
+    EntityID id;
+    EntityID parent_id;
     char name[MAX_ENTITY_NAME_LENGTH];
-    Transform2D transform;
-    Transform2D relative_transform;
-    void (*init) (struct Entity2D_s *);
-    void (*update) (struct Entity2D_s *);
+    EntityID children[MAX_ENTITY_CHILDREN];
+    ComponentID components[MAX_ENTITY_COMPONENTS];
+} Entity;
+typedef struct EntityNode_structure {
+    Entity entity;
+    struct EntityNode_structure *next;
+} EntityNode;
 
-    struct Entity2D_s *parent;
-    int num_children;
-    int child_space;
-    struct Entity2D_s **children;
-    void *data;
-} Entity2D;
-
-
-void print_entity_tree(Entity2D *entity);
-static void _print_entity_tree(Entity2D *entity, int indent_level);
-void zero_init_entity(Entity2D *entity);
-void entity_add_child(Entity2D *parent, Entity2D *child);
-Entity2D *_create_entity(Entity2D *parent,
-                           char *name,
-                           void (*init) (struct Entity2D_s *),
-                           void (*update) (struct Entity2D_s *),
-                           double position_x,
-                           double position_y,
-                           double rotation);
-void free_entity(Entity2D *entity);
-void destroy_entity(Entity2D *entity);
+static ComponentID _entity_add_component(EntityID entity_id, char *name, ComponentType component_type);
+Entity *get_entity(EntityID entity_id);
+Component *get_component(ComponentID component_id);
+EntityID new_entity_id();
+ComponentID new_component_id();
+EntityID create_entity(EntityID parent_id, char *name);
+static Entity *ptr_create_entity(EntityID parent_id, char *name);
 void init_entity_model();
 void close_entity_model();
-Entity2D *create_empty_entity(Entity2D *parent, char *name);
-
-void update_entity_model(void);
-static void _update_entity_model(Entity2D *entity);
-
-
-Point2f point2f_transform_to_entity(Point2f point, Entity2D *entity);
+void print_entity_tree(void);
+static void _print_entity_tree(Entity *entity, int indent_level);
+static void entity_add_child(Entity *entity, Entity *child);
 
 #endif

@@ -1,6 +1,11 @@
 #ifndef HEADER_DEFINED_HELPER_DEFINITIONS
 #define HEADER_DEFINED_HELPER_DEFINITIONS
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#define frand() ((double) rand() / (RAND_MAX+1.0))
+
 #define opendir_handle(NAME, DIR_NAME)\
     DIR *NAME = opendir(( DIR_NAME ));\
     if (( NAME ) == NULL) {\

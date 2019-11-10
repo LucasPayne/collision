@@ -51,12 +51,12 @@ new:
 	# Macro for this Makefile path?
 	$(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 
-poly_view: $(SRC_DIR)/poly_view/poly_view.c $(LIB_DIR)/data.c $(LIB_DIR)/shapes/shapes.c $(FILES)
+poly_view: $(SRC_DIR)/poly_view/poly_view.c $(LIB_DIR)/data.c $(LIB_DIR)/geometry/shapes.c $(FILES)
 	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
 do_poly_view: poly_view
 	$(BUILD_DIR)/$<
 
-ascii_polygon_to_regular: $(SRC_DIR)/ascii_polygon_to_regular/ascii_polygon_to_regular.c $(LIB_DIR)/shapes/shapes.c $(LIB_DIR)/data.c $(FILES)
+ascii_polygon_to_regular: $(SRC_DIR)/ascii_polygon_to_regular/ascii_polygon_to_regular.c $(LIB_DIR)/geometry/shapes.c $(LIB_DIR)/data.c $(FILES)
 	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
 do_ascii_polygon_to_regular: ascii_polygon_to_regular
 	$(BUILD_DIR)/$<
@@ -68,8 +68,15 @@ do_entity_test: entity_test
         
 
 
-gl_entity_test: $(SRC_DIR)/gl_entity_test/gl_entity_test.c $(LIB_DIR)/shapes/shapes.c $(LIB_DIR)/entity.c $(LIB_DIR)/data.c $(FILES)
+gl_entity_test: $(SRC_DIR)/gl_entity_test/gl_entity_test.c $(LIB_DIR)/geometry/shapes.c $(LIB_DIR)/entity.c $(LIB_DIR)/data.c $(LIB_DIR)/collision/collision.c $(FILES)
 	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
 do_gl_entity_test: gl_entity_test
+	$(BUILD_DIR)/$<
+        
+
+
+new_entity_test: $(SRC_DIR)/new_entity_test/new_entity_test.c $(LIB_DIR)/entity.c $(FILES)
+	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
+do_new_entity_test: new_entity_test
 	$(BUILD_DIR)/$<
         

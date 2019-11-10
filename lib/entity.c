@@ -1,9 +1,17 @@
 /* 
  * Linked list implementation of an entity system. This is not very efficient, but for now,
- * it is fine to just have an entity system working.
+ * it is fine to just have an entity system working. (it is not working yet)
  *
  * --- fixed-width arrays of components/objects at the universe level is a major restriction. Make universe not an "entity" but have the entities form
  *  a forest instead?
+ *
+ * The most important thing is the design of the interface. The ID system,
+ * what calls are made to prepare an entity with components.
+ *
+ * Comment descriptions even should only be in header files.
+ * The linked list model can then be phased out, some memory management stuff included, with no change
+ * to the design of the interface. Separate interface functions from module-specific "helper" functions.
+ * --- how to do this with a single link?
  */
 
 #include <stdio.h>
@@ -27,6 +35,17 @@ static EntityNode *last_entity_node;
 static ComponentNode *component_nodes;
 static ComponentNode *last_component_node;
 
+
+void print_entity_list(void)
+{
+    EntityNode *cur = entity_nodes;
+    do {
+        printf("%s", cur->entity.name);
+        printf(", ");
+        cur = cur->next;
+    } while (cur != NULL);
+    printf("\n");
+}
 
 void print_entity_tree(void)
 {
@@ -60,7 +79,7 @@ static void _print_entity_tree(Entity *entity, int indent_level)
     }
 }
 
-static ComponentID _entity_add_component(EntityID entity_id, char *name, ComponentType component_type)
+ComponentID entity_add_component(EntityID entity_id, char *name, ComponentType component_type)
 {
     ComponentNode *new_component_node = (ComponentNode *) calloc(1, sizeof(ComponentNode));
     mem_check(new_component_node);
@@ -185,8 +204,11 @@ void init_entity_model()
     }
 
     universe = &universe_node.entity;
-    universe->id = 1;
+    universe->id = UNIVERSE_ID;
     strncpy(universe->name, "universe", MAX_ENTITY_NAME_LENGTH);
+
+    current_entity_id = UNIVERSE_ID + 1;
+    current_component_id = 1;
 
     universe_node.next = NULL;
     entity_nodes = &universe_node;

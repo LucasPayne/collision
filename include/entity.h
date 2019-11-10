@@ -39,7 +39,7 @@ typedef struct EntityNode_structure {
     struct EntityNode_structure *next;
 } EntityNode;
 
-static ComponentID _entity_add_component(EntityID entity_id, char *name, ComponentType component_type);
+ComponentID entity_add_component(EntityID entity_id, char *name, ComponentType component_type);
 Entity *get_entity(EntityID entity_id);
 Component *get_component(ComponentID component_id);
 EntityID new_entity_id();

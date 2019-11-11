@@ -63,10 +63,8 @@ void polygon_update(Entity *self)
 void game_make_polygon(char *ascii_name, double x, double y, double theta)
 {
     EntityID polygon = create_entity(UNIVERSE_ID, ascii_name);
-    Polygon poly;
-    ascii_polygon(ascii_name, &poly);
     RendererShape *renderer = entity_add_component_get(polygon, "renderer", RendererShape);
-    renderer->poly = poly;
+    ascii_polygon(ascii_name, &renderer->poly);
     Transform *transform = entity_add_component_get(polygon, "transform", Transform);
     transform->x = x;
     transform->y = y;
@@ -119,6 +117,7 @@ void renderer_update(System *self)
 }
 #undef DEBUG
 
+// ------------ completely messed up
 void object_logic_update(System *self)
 {
     Iterator iterator;

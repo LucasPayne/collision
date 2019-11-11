@@ -93,7 +93,9 @@ bool destroy_component(ComponentID component_id);
 Entity *get_entity(EntityID entity_id);
 Component *get_component(ComponentID component_id);
 // Retrieve components from entities and types 
-Component *get_entity_component(Entity *entity, ComponentType component_type);
+#define get_entity_component_of_type(ENTITY_ID,COMPONENT_TYPE)\
+    (COMPONENT_TYPE *) get_entity_component_of_type_from_type_id(( ENTITY_ID ), COMPONENT_TYPE ## _TYPE_ID)
+Component *get_entity_component_of_type_from_type_id(EntityID entity_id, ComponentType component_type);
 
 /* Debug and serialization functions. */
 //--------------------------------------------------------------------------------

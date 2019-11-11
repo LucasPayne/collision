@@ -119,6 +119,9 @@ void ascii_polygon(char *name, Polygon *polygon)
     // Points read from top to bottom, but point positions have y increasing upwards, so invert these.
     for (int i = 0; i < ASCII_NUM_POINTS; i++) {
         points[i].y = line_num - 1 - points[i].y;
+        // --- for now, make it smaller
+        points[i].x *= 0.05;
+        points[i].y *= 0.05;
     }
 
 #if TRACE

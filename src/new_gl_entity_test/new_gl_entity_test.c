@@ -41,33 +41,77 @@ typedef struct Transform_component_type_s {
     double theta;
 } Transform;
 
+//================================================================================
+// Game and game objects logic
+//================================================================================
+void polygon_update(Entity *self)
+{
+    /* Transform *transform = get_entity_component_of_type(self->id, Transform); */
+    printf("bungus");
+}
+void game_make_polygon(char *ascii_name, double x, double y, double theta)
+{
+    EntityID polygon = create_entity(UNIVERSE_ID, ascii_name);
+    Polygon poly;
+    ascii_polygon(ascii_name, &poly);
+    RendererShape *renderer = entity_add_component_get(polygon, "renderer", RendererShape);
+    renderer->poly = poly;
+    Transform *transform = entity_add_component_get(polygon, "transform", Transform);
+    transform->x = x;
+    transform->y = y;
+    transform->theta = theta;
+    ObjectLogic *logic = entity_add_component_get(polygon, "logic", ObjectLogic);
+    /* logic->update = polygon_update; */
+}
+
+
 // Systems
 void renderer_update(System *self)
 {
     Iterator iterator;
     iterator_components_of_type(RendererShape, &iterator);
-    while (1)
-    {
+    while (1) {
         step(&iterator);
         if (iterator.val == NULL) {
             break;
         }
         RendererShape *shape = (RendererShape *) iterator.val;
-        Transform *transform = get_entity_component(Entity *entity, ComponentType component_type);
+        /* printf("%s\n", shape->component.name); */
+        Transform *transform = get_entity_component_of_type(shape->component.entity_id, Transform);
+        /* printf("(%.2lf %.2lf : %.2lf)\n", transform->x, transform->y, transform->theta); */
 
         glBegin(GL_POLYGON);
             for (int i = 0; i < shape->poly.num_vertices; i++) {
-                glVertex2f(shape->poly.vertices[i].x * 0.05, shape->poly.vertices[i].y * 0.05);
+                double x, y;
+                x =  transform->x
+                     + cos(transform->theta) * shape->poly.vertices[i].x
+                     + sin(transform->theta) * shape->poly.vertices[i].y;
+                y = transform->y
+                    - cos(transform->theta) * shape->poly.vertices[i].y
+                    + sin(transform->theta) * shape->poly.vertices[i].x;
+
+                glVertex2f(x, y);
             }
         glEnd();
     } 
 }
 void object_logic_update(System *self)
 {
-    // for ObjectLogic entity entity ...
-        /* if (entity->update != NULL) { */
-        /*     entity->update(entity); */
+    Iterator iterator;
+    iterator_components_of_type(ObjectLogic, &iterator);
+#if 1
+    while (1) {
+        step(&iterator);
+        if (iterator.val == NULL) {
+            break;
+        }
+        /* ObjectLogic *logic = (ObjectLogic *) iterator.val; */
+        /* Entity *entity = get_entity(logic->component.entity_id); */
+        /* if (logic->update != NULL) { */
+        /*     logic->update(entity); */
         /* } */
+    }
+#endif
 }
 
 static void key_callback(GLFWwindow *window, int key,
@@ -81,6 +125,9 @@ static void key_callback(GLFWwindow *window, int key,
         if (key == GLFW_KEY_P) {
             print_entity_tree();
         }
+        else if (key == GLFW_KEY_SPACE) {
+            game_make_polygon("3.poly", frand() * 0.5 - 0.25, frand() * 0.5 - 0.25, frand() * 2 * M_PI);
+        }
     }
 }
 
@@ -89,20 +136,17 @@ void init_program(void)
     init_entity_model();
 
     add_system("renderer", NULL, renderer_update, NULL);
+    add_system("object logic", NULL, object_logic_update, NULL);
 
-    EntityID polygon = create_entity(UNIVERSE_ID, "polygon");
-    Polygon poly;
-    ascii_polygon("2.poly", &poly);
-    RendererShape *renderer = entity_add_component_get(polygon, "renderer", RendererShape);
-    renderer->poly = poly;
-    Transform *transform = entity_add_component_get(polygon, "transform", Transform);
-    ObjectLogic *logic = entity_add_component_get(polygon, "logic", ObjectLogic);
+    game_make_polygon("2.poly", -0.2, 0.2, 1.0);
+    game_make_polygon("3.poly", -0.4, -0.2, -0.3);
 
     /* logic->test_char = 's'; */
     /* printf("%s\n", logic->component.name); */
     /* printf("%c\n", logic->test_char); */
     /* printf("%s\n", renderer->component.name); */
 }
+
 void loop(GLFWwindow *window)
 {
     update_entity_model();

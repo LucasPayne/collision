@@ -13,6 +13,8 @@
  * The linked list model can then be phased out, some memory management stuff included, with no change
  * to the design of the interface. Separate interface functions from module-specific "helper" functions.
  * --- how to do this with a single link?
+ *
+ *  Does a component need its type? Why not keep it with the id handle on an entity?
  */
 
 #include <stdio.h>
@@ -447,10 +449,18 @@ coroutine_e:
 }
 
 
-Component *get_entity_component(Entity *entity, ComponentType component_type)
+Component *get_entity_component_of_type_from_type_id(EntityID entity_id, ComponentType component_type)
 {
-    for (int i = 0; i < MAX_ENTITY_CHILDREN; i++) {
-        
+    Entity *entity = get_entity(entity_id);
+
+    // Returns the first found component of this type.
+    for (int i = 0; i < MAX_ENTITY_COMPONENTS; i++) {
+        if (entity->components[i] != NULL_COMPONENT_ID) {
+            Component *component = get_component(entity->components[i]);
+            if (component->type == component_type) {
+                return component;
+            }
+        }
     }
     fprintf(stderr, "ERROR: Entity %s does not have a component of type ID %d.\n", entity->name, component_type);
     exit(EXIT_FAILURE);

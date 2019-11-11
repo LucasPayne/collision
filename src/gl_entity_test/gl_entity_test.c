@@ -1,5 +1,4 @@
 /*
- * Quick schematic (may be out of date later)
  */
 
 #include <glad/glad.h>

@@ -80,3 +80,10 @@ new_entity_test: $(SRC_DIR)/new_entity_test/new_entity_test.c $(LIB_DIR)/entity.
 do_new_entity_test: new_entity_test
 	$(BUILD_DIR)/$<
         
+
+
+new_gl_entity_test: $(SRC_DIR)/new_gl_entity_test/new_gl_entity_test.c $(LIB_DIR)/entity.c $(LIB_DIR)/geometry/shapes.c $(LIB_DIR)/data.c $(LIB_DIR)/iterator.c $(FILES)
+	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
+do_new_gl_entity_test: new_gl_entity_test
+	$(BUILD_DIR)/$<
+        

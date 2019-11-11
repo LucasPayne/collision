@@ -1,5 +1,6 @@
 /*
- * Quick schematic (may be out of date later)
+ * Started as testing for the entity system. It works relatively well enough now to start on a collision system.
+ * ------ important note: I think this all segfaults if the order of system additions is changed. Really fix this.
  */
 
 #include <glad/glad.h>
@@ -59,31 +60,48 @@ void polygon_update(Entity *self)
     if (alt_arrow_key_down(Left)) {
         transform->x -= 1.0 * dt();
     }
+    transform->theta += 5.0 * transform->x * dt();
 }
+
+/* hacky thing to test the entity tree system
+int count = UNIVERSE_ID;
+...
+    double r = frand();
+    EntityID parent_id;
+    for (parent_id = UNIVERSE_ID; parent_id <= count; parent_id++) {
+        r -= 1.0 / count;
+        if (r <= 0) {
+            break;
+        }
+    }
+    EntityID polygon = create_entity(parent_id, ascii_name);
+...
+    count++;
+*/
 void game_make_polygon(char *ascii_name, double x, double y, double theta)
 {
     EntityID polygon = create_entity(UNIVERSE_ID, ascii_name);
+    ObjectLogic *logic = entity_add_component_get(polygon, "logic", ObjectLogic);
+    logic->update = polygon_update;
     RendererShape *renderer = entity_add_component_get(polygon, "renderer", RendererShape);
     ascii_polygon(ascii_name, &renderer->poly);
     Transform *transform = entity_add_component_get(polygon, "transform", Transform);
     transform->x = x;
     transform->y = y;
     transform->theta = theta;
-    ObjectLogic *logic = entity_add_component_get(polygon, "logic", ObjectLogic);
-    logic->update = polygon_update;
 }
 
 
 // Systems
-#define DEBUG 1
+#define DEBUG 0
 void renderer_update(System *self)
 {
     Iterator iterator;
     iterator_components_of_type(RendererShape, &iterator);
 #if DEBUG
     int count = 0;
-#endif
     printf("ITERATING RENDERERS\n");
+#endif
     while (1) {
         step(&iterator);
         if (iterator.val == NULL) {
@@ -117,13 +135,14 @@ void renderer_update(System *self)
 }
 #undef DEBUG
 
-// ------------ completely messed up
+#define DEBUG 0
 void object_logic_update(System *self)
 {
     Iterator iterator;
     iterator_components_of_type(ObjectLogic, &iterator);
-#if 1
+#if DEBUG
     printf("ITERATING OBJECT LOGIC\n");
+#endif
     while (1) {
         step(&iterator);
         if (iterator.val == NULL) {
@@ -131,15 +150,18 @@ void object_logic_update(System *self)
         }
         ObjectLogic *logic = (ObjectLogic *) iterator.val;
         Entity *entity = get_entity(logic->component.entity_id);
+#if DEBUG
         printf("logic update: %s\n", entity->name);
+#endif
         if (logic->update != NULL) {
+#if DEBUG
             printf("\tupdating ...\n");
+#endif
             logic->update(entity);
         }
-        break;
     }
-#endif
 }
+#undef DEBUG
 
 static void key_callback(GLFWwindow *window, int key,
                 int scancode, int action,
@@ -153,7 +175,18 @@ static void key_callback(GLFWwindow *window, int key,
             print_entity_tree();
         }
         else if (key == GLFW_KEY_SPACE) {
-            game_make_polygon("3.poly", frand() * 0.5 - 0.25, frand() * 0.5 - 0.25, frand() * 2 * M_PI);
+            char poly_name[50];
+            double r = frand();
+            int i = 1;
+            for (; i <= 7; i++) {
+                r -= 1.0/7.0;
+                if (r <= 0) {
+                    break;
+                }
+            }
+            sprintf(poly_name, "%d", i);
+            strncat(poly_name, ".poly", 50);
+            game_make_polygon(poly_name, frand() * 0.5 - 0.25, frand() * 0.5 - 0.25, frand() * 2 * M_PI);
         }
     }
 }

@@ -36,23 +36,19 @@
         goto coroutine_e;\
     }
 
-            
+union iterator_data {
+    int int_val;
+    void *ptr_val;
+    char char_val;
+};
 typedef struct Iterator_s {
     int coroutine_flag;
     void (*coroutine) (struct Iterator_s *);
 
     void *val; // currently just a void pointer iterator
 
-    union data1_union {
-        int int_val;
-        void *ptr_val;
-        char char_val;
-    } data1;
-    union data2_union {
-        int int_val;
-        void *ptr_val;
-        char char_val;
-    } data2;
+    union iterator_data data1;
+    union iterator_data data2;
 } Iterator;
 
 void step(Iterator *iterator);

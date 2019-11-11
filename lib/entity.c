@@ -419,13 +419,16 @@ void _iterator_components_of_type(ComponentType component_type, Iterator *iterat
     init_iterator(iterator, _iterator_components_of_type2);
     iterator->data1.int_val = component_type;
 }
+#define TRACING 0
 void _iterator_components_of_type2(Iterator *iterator)
 {
     ComponentType component_type = (ComponentType) iterator->data1.int_val;
     ComponentNode *cur = (ComponentNode *) iterator->data2.ptr_val;
+#if TRACING
     if (cur != NULL) {
         printf("%d iterating at %ld ...\n", component_type, cur->component.entity_id);
     }
+#endif
 BEGIN_COROUTINE(iterator)
 coroutine_start:
     cur = component_nodes;
@@ -451,6 +454,7 @@ coroutine_d:
 coroutine_e:
     return;
 }
+#undef TRACING
 
 
 Component *get_entity_component_of_type_from_type_id(EntityID entity_id, ComponentType component_type)

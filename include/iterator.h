@@ -43,7 +43,6 @@ typedef struct Iterator_s {
 
     void *val; // currently just a void pointer iterator
 
-    bool finished;
     union data1_union {
         int int_val;
         void *ptr_val;

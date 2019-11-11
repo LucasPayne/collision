@@ -46,8 +46,19 @@ typedef struct Transform_component_type_s {
 //================================================================================
 void polygon_update(Entity *self)
 {
-    /* Transform *transform = get_entity_component_of_type(self->id, Transform); */
-    printf("bungus");
+    Transform *transform = get_entity_component_of_type(self->id, Transform);
+    if (alt_arrow_key_down(Up)) {
+        transform->y += 1.0 * dt();
+    }
+    if (alt_arrow_key_down(Down)) {
+        transform->y -= 1.0 * dt();
+    }
+    if (alt_arrow_key_down(Right)) {
+        transform->x += 1.0 * dt();
+    }
+    if (alt_arrow_key_down(Left)) {
+        transform->x -= 1.0 * dt();
+    }
 }
 void game_make_polygon(char *ascii_name, double x, double y, double theta)
 {
@@ -61,15 +72,20 @@ void game_make_polygon(char *ascii_name, double x, double y, double theta)
     transform->y = y;
     transform->theta = theta;
     ObjectLogic *logic = entity_add_component_get(polygon, "logic", ObjectLogic);
-    /* logic->update = polygon_update; */
+    logic->update = polygon_update;
 }
 
 
 // Systems
+#define DEBUG 1
 void renderer_update(System *self)
 {
     Iterator iterator;
     iterator_components_of_type(RendererShape, &iterator);
+#if DEBUG
+    int count = 0;
+#endif
+    printf("ITERATING RENDERERS\n");
     while (1) {
         step(&iterator);
         if (iterator.val == NULL) {
@@ -93,23 +109,35 @@ void renderer_update(System *self)
                 glVertex2f(x, y);
             }
         glEnd();
+#if DEBUG
+        count ++;
+#endif
     } 
+#if DEBUG
+    printf("rendered %d entities\n", count);
+#endif
 }
+#undef DEBUG
+
 void object_logic_update(System *self)
 {
     Iterator iterator;
     iterator_components_of_type(ObjectLogic, &iterator);
 #if 1
+    printf("ITERATING OBJECT LOGIC\n");
     while (1) {
         step(&iterator);
         if (iterator.val == NULL) {
             break;
         }
-        /* ObjectLogic *logic = (ObjectLogic *) iterator.val; */
-        /* Entity *entity = get_entity(logic->component.entity_id); */
-        /* if (logic->update != NULL) { */
-        /*     logic->update(entity); */
-        /* } */
+        ObjectLogic *logic = (ObjectLogic *) iterator.val;
+        Entity *entity = get_entity(logic->component.entity_id);
+        printf("logic update: %s\n", entity->name);
+        if (logic->update != NULL) {
+            printf("\tupdating ...\n");
+            logic->update(entity);
+        }
+        break;
     }
 #endif
 }
@@ -137,14 +165,6 @@ void init_program(void)
 
     add_system("renderer", NULL, renderer_update, NULL);
     add_system("object logic", NULL, object_logic_update, NULL);
-
-    game_make_polygon("2.poly", -0.2, 0.2, 1.0);
-    game_make_polygon("3.poly", -0.4, -0.2, -0.3);
-
-    /* logic->test_char = 's'; */
-    /* printf("%s\n", logic->component.name); */
-    /* printf("%c\n", logic->test_char); */
-    /* printf("%s\n", renderer->component.name); */
 }
 
 void loop(GLFWwindow *window)

@@ -415,6 +415,7 @@ static void free_component(Component *component)
 
 void _iterator_components_of_type(ComponentType component_type, Iterator *iterator)
 {
+    /* printf("Making an iterator of type %d ...\n", component_type); */
     init_iterator(iterator, _iterator_components_of_type2);
     iterator->data1.int_val = component_type;
 }
@@ -422,6 +423,9 @@ void _iterator_components_of_type2(Iterator *iterator)
 {
     ComponentType component_type = (ComponentType) iterator->data1.int_val;
     ComponentNode *cur = (ComponentNode *) iterator->data2.ptr_val;
+    if (cur != NULL) {
+        printf("%d iterating at %ld ...\n", component_type, cur->component.entity_id);
+    }
 BEGIN_COROUTINE(iterator)
 coroutine_start:
     cur = component_nodes;

@@ -18,6 +18,13 @@
 #include "data.h"
 #include "shapes.h"
 #include "entity.h"
+#include "grid.h"
+
+// Globals =======================================================================
+GLFWwindow *WINDOW;
+static int MAX_GRID_SIZE;
+static int GRID_SIZE;
+//================================================================================
 
 // Component types
 #define RendererShape_TYPE_ID 2
@@ -40,6 +47,8 @@ typedef struct Transform_component_type_s {
     double x;
     double y;
     double theta;
+    double scale_x;
+    double scale_y;
 } Transform;
 
 //================================================================================
@@ -88,6 +97,8 @@ void game_make_polygon(char *ascii_name, double x, double y, double theta)
     Transform *transform = entity_add_component_get(polygon, "transform", Transform);
     transform->x = x;
     transform->y = y;
+    transform->scale_x = 0.8;
+    transform->scale_y = 0.8;
     transform->theta = theta;
 }
 
@@ -112,19 +123,38 @@ void renderer_update(System *self)
         Transform *transform = get_entity_component_of_type(shape->component.entity_id, Transform);
         /* printf("(%.2lf %.2lf : %.2lf)\n", transform->x, transform->y, transform->theta); */
 
-        glBegin(GL_POLYGON);
-            for (int i = 0; i < shape->poly.num_vertices; i++) {
-                double x, y;
-                x =  transform->x
-                     + cos(transform->theta) * shape->poly.vertices[i].x
-                     + sin(transform->theta) * shape->poly.vertices[i].y;
-                y = transform->y
-                    - cos(transform->theta) * shape->poly.vertices[i].y
-                    + sin(transform->theta) * shape->poly.vertices[i].x;
+        for (int i = 0; i < shape->poly.num_vertices; i++) {
+            int ip = (i + 1) % shape->poly.num_vertices;
+            double x, y;
+            double xp, yp;
+            x =  transform->x
+                 + transform->scale_x * cos(transform->theta) * shape->poly.vertices[i].x
+                 + transform->scale_y * sin(transform->theta) * shape->poly.vertices[i].y;
+            y = transform->y
+                - transform->scale_x * cos(transform->theta) * shape->poly.vertices[i].y
+                + transform->scale_y * sin(transform->theta) * shape->poly.vertices[i].x;
+            xp =  transform->x
+                 + transform->scale_x * cos(transform->theta) * shape->poly.vertices[ip].x
+                 + transform->scale_y * sin(transform->theta) * shape->poly.vertices[ip].y;
+            yp = transform->y
+                 - transform->scale_x * cos(transform->theta) * shape->poly.vertices[ip].y
+                 + transform->scale_y * sin(transform->theta) * shape->poly.vertices[ip].x;
+            rasterize_line(x, y, xp, yp);
+        }
 
-                glVertex2f(x, y);
-            }
-        glEnd();
+        /* glBegin(GL_POLYGON); */
+        /*     for (int i = 0; i < shape->poly.num_vertices; i++) { */
+        /*         double x, y; */
+        /*         x =  transform->x */
+        /*              + cos(transform->theta) * shape->poly.vertices[i].x */
+        /*              + sin(transform->theta) * shape->poly.vertices[i].y; */
+        /*         y = transform->y */
+        /*             - cos(transform->theta) * shape->poly.vertices[i].y */
+        /*             + sin(transform->theta) * shape->poly.vertices[i].x; */
+
+        /*         glVertex2f(x, y); */
+        /*     } */
+        /* glEnd(); */
 #if DEBUG
         count ++;
 #endif
@@ -195,13 +225,33 @@ void init_program(void)
 {
     init_entity_model();
 
+    MAX_GRID_SIZE = 150;
+    GRID_SIZE = MAX_GRID_SIZE;
+    grid_init(GRID_SIZE, GRID_SIZE);
+
     add_system("renderer", NULL, renderer_update, NULL);
     add_system("object logic", NULL, object_logic_update, NULL);
 }
 
 void loop(GLFWwindow *window)
 {
+    if (arrow_key_down(Up)) {
+        if (GRID_SIZE < MAX_GRID_SIZE) {
+            GRID_SIZE += 1;
+        }
+        resize_grid(GRID_SIZE, GRID_SIZE);
+    }
+    if (arrow_key_down(Down)) {
+        if (GRID_SIZE > 1) {
+            GRID_SIZE -= 1;
+        }
+        resize_grid(GRID_SIZE, GRID_SIZE);
+    }
+
+    grid_clear();
+
     update_entity_model();
+    render_grid(WINDOW);
 }
 void close_program(void)
 {
@@ -215,14 +265,14 @@ void reshape(GLFWwindow* window, int width, int height)
 
 int main(int argc, char *argv[])
 {
-    GLFWwindow *window = init_glfw_create_context("Shapes", 512, 512);
-    glfwSetWindowAspectRatio(window, 1, 1);
+    WINDOW = init_glfw_create_context("Shapes", 512, 512);
+    glfwSetWindowAspectRatio(WINDOW, 1, 1);
 
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetFramebufferSizeCallback(window, reshape);
+    glfwSetKeyCallback(WINDOW, key_callback);
+    glfwSetFramebufferSizeCallback(WINDOW, reshape);
 
     init_program();
-    loop_time(window, loop);
+    loop_time(WINDOW, loop);
     close_program();
     
     exit(EXIT_SUCCESS);

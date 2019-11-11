@@ -80,7 +80,7 @@ new_entity_test: $(SRC_DIR)/new_entity_test/new_entity_test.c $(LIB_DIR)/entity.
 do_new_entity_test: new_entity_test
 	$(BUILD_DIR)/$<
         
-collision: $(SRC_DIR)/collision/collision.c $(LIB_DIR)/entity.c $(LIB_DIR)/geometry/shapes.c $(LIB_DIR)/data.c $(LIB_DIR)/iterator.c $(FILES)
+collision: $(SRC_DIR)/collision/collision.c $(LIB_DIR)/entity.c $(LIB_DIR)/geometry/shapes.c $(LIB_DIR)/data.c $(LIB_DIR)/iterator.c $(LIB_DIR)/grid.c $(FILES)
 	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
 do_collision: collision
 	$(BUILD_DIR)/$<

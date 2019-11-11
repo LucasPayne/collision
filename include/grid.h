@@ -5,6 +5,8 @@
 #ifndef HEADER_DEFINED_GRID
 #define HEADER_DEFINED_GRID
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -38,5 +40,14 @@ void normalized_grid_pos(int i, int j, double *x, double *y);
 void set_grid(int i, int j, bool val);
 bool col_in_grid_range(int i);
 bool row_in_grid_range(int j);
+void render_grid(GLFWwindow *window);
+
+double det(double ax, double ay, double bx, double by);
+void rasterize_wireframe_polygon(double *xs, double *ys, int n);
+void rasterize_circle(double center_x, double center_y, double radius);
+void rasterize_line(double ax, double ay, double bx, double by);
+void rasterize_convex_polygon(double *xs, double *ys, int n);
+
+void resize_grid(int horiz, int vert);
 
 #endif

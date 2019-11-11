@@ -115,17 +115,6 @@ void rasterize_convex_polygon(double *xs, double *ys, int n)
     }
 }
 
-void rasterize_wireframe_convex_polygon(double *xs, double *ys, int n)
-{
-    for (int i = 0; i < n; i++) {
-        double x = xs[i];
-        double y = ys[i];
-        double xp = xs[(i + 1) % n];
-        double yp = ys[(i + 1) % n];
-        rasterize_line(x, y, xp, yp);
-    }
-}
-
 
 void loop(GLFWwindow *window)
 {
@@ -202,7 +191,7 @@ void loop(GLFWwindow *window)
                     };
 
     rasterize_convex_polygon(xs, ys, 7);
-    rasterize_wireframe_convex_polygon(xs, ys, 7);
+    rasterize_wireframe_polygon(xs, ys, 7);
 
 #endif
 
@@ -222,7 +211,6 @@ void loop(GLFWwindow *window)
         x_start = -(((double) height)/width);
         x_end = ((double) height)/width;
     }
-
     FOR_GRID(i, j) {
         // if (frand() > ((double) j)/grid_vert()) set_grid(i, j, true);
         if (grid_val(i, j)) {

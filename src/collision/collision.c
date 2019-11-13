@@ -1,4 +1,12 @@
-/*
+/* PROJECT_LIBS:
+ *      - glad
+ *      - helper_gl
+ *      - helper_input
+ *      - data
+ *      - geometry/shapes
+ *      - entity
+ *      - grid
+ *      - iterator
  * Started as testing for the entity system. It works relatively well enough now to start on a collision system.
  * ------ important note: I think this all segfaults if the order of system additions is changed. Really fix this.
  */
@@ -19,6 +27,7 @@
 #include "shapes.h"
 #include "entity.h"
 #include "grid.h"
+/* #include "components/Transform2D.h" */
 
 // Globals =======================================================================
 static double ASPECT_RATIO;
@@ -43,17 +52,17 @@ typedef struct ObjectLogic_s {
     void (*close) (Entity *);
 } ObjectLogic;
 
-#define Transform_TYPE_ID 4
-typedef struct Transform_s {
+#define Transform2D_TYPE_ID 4
+typedef struct Transform2D_s {
     Component component;
     double x;
     double y;
     double theta;
     double scale_x;
     double scale_y;
-} Transform;
-static void _get_global_transform(Transform *transform, Transform *to);
-void get_global_transform(Transform *transform, Transform *to)
+} Transform2D;
+static void _get_global_transform(Transform2D *transform, Transform2D *to);
+void get_global_transform(Transform2D *transform, Transform2D *to)
 {
     to->x = 0;
     to->y = 0;
@@ -62,7 +71,7 @@ void get_global_transform(Transform *transform, Transform *to)
     to->scale_y = 1;
     _get_global_transform(transform, to);
 }
-static void _get_global_transform(Transform *transform, Transform *to)
+static void _get_global_transform(Transform2D *transform, Transform2D *to)
 {
     to->x += transform->x;
     to->y += transform->x;
@@ -72,7 +81,7 @@ static void _get_global_transform(Transform *transform, Transform *to)
 
     Entity *entity = get_entity(transform->component.entity_id);
     Entity *parent = get_entity(entity->parent_id);
-    Transform *parent_transform = get_entity_component_of_type(parent->id, Transform);
+    Transform2D *parent_transform = get_entity_component_of_type(parent->id, Transform2D);
     if (parent_transform != NULL) {
         _get_global_transform(parent_transform, to);
     }
@@ -83,7 +92,7 @@ typedef struct Camera_s {
     Component component;
     double width;
     double height;
-    // Enforce Transform?
+    // Enforce Transform2D?
 } Camera;
 
 
@@ -93,7 +102,7 @@ typedef struct Camera_s {
 //================================================================================
 void polygon_update(Entity *self)
 {
-    Transform *transform = get_entity_component_of_type(self->id, Transform);
+    Transform2D *transform = get_entity_component_of_type(self->id, Transform2D);
     /* if (alt_arrow_key_down(Up)) { */
     /*     transform->y += 1.0 * dt(); */
     /* } */
@@ -125,7 +134,7 @@ void game_make_polygon(char *ascii_name, double x, double y, double theta)
     logic->update = polygon_update;
     RendererShape *renderer = entity_add_component_get(polygon, "renderer", RendererShape);
     ascii_polygon(ascii_name, &renderer->poly);
-    Transform *transform = entity_add_component_get(polygon, "transform", Transform);
+    Transform2D *transform = entity_add_component_get(polygon, "transform", Transform2D);
     transform->x = x;
     transform->y = y;
     transform->scale_x = 0.8;
@@ -137,7 +146,7 @@ void game_make_polygon(char *ascii_name, double x, double y, double theta)
 
 void camera_controls(Entity *self)
 {
-    Transform *transform = get_entity_component_of_type(self->id, Transform);
+    Transform2D *transform = get_entity_component_of_type(self->id, Transform2D);
 
     if (alt_arrow_key_down(Up)) {
         transform->y += 1.2 * dt();
@@ -187,14 +196,14 @@ void renderer_update(Component *component)
         fprintf(stderr, "ERROR: Renderer has too many cameras to choose from. Must disable all except one.\n");
         exit(EXIT_FAILURE);
     }
-    Transform *camera_transform = get_entity_component_of_type(camera->component.entity_id, Transform);
+    Transform2D *camera_transform = get_entity_component_of_type(camera->component.entity_id, Transform2D);
     if (camera_transform == NULL) {
-        fprintf(stderr, "ERROR: The camera for the renderer does not have a Transform component.\n");
+        fprintf(stderr, "ERROR: The camera for the renderer does not have a Transform2D component.\n");
         exit(EXIT_FAILURE);
     }
     RendererShape *shape = (RendererShape *) component;
-    Transform *transform = get_entity_component_of_type(shape->component.entity_id, Transform);
-    Transform global_transform;
+    Transform2D *transform = get_entity_component_of_type(shape->component.entity_id, Transform2D);
+    Transform2D global_transform;
     get_global_transform(transform, &global_transform);
 
     if (GRID_RENDERING) {
@@ -219,7 +228,7 @@ void renderer_update(Component *component)
                  - global_transform.scale_x * cos(global_transform.theta - camera_transform->theta) * shape->poly.vertices[ip].y
                  + global_transform.scale_y * sin(global_transform.theta - camera_transform->theta) * shape->poly.vertices[ip].x
                  - camera_transform->y;
-            // --- Transform to "grid-screen coordinates"
+            // --- Transform2D to "grid-screen coordinates"
             rasterize_line(x, y, xp, yp);
         }
     }
@@ -319,7 +328,7 @@ void init_program(void)
     EntityID camera_man = create_entity(UNIVERSE_ID, "camera man");
     ObjectLogic *camera_object_logic = entity_add_component_get(camera_man, "controls", ObjectLogic);
     camera_object_logic->update = camera_controls;
-    Transform *camera_transform = entity_add_component_get(camera_man, "transform", Transform);
+    Transform2D *camera_transform = entity_add_component_get(camera_man, "transform", Transform2D);
     camera_transform->x = 0;
     camera_transform->y = 0;
     camera_transform->theta = 0;
@@ -328,7 +337,7 @@ void init_program(void)
     camera->height = 1;
 
     /* EntityID camera2 = create_entity(UNIVERSE_ID, "camera2"); */
-    /* entity_add_component(camera2, "transform", Transform); */
+    /* entity_add_component(camera2, "transform", Transform2D); */
     /* entity_add_component(camera2, "camera", Camera); */
 }
 

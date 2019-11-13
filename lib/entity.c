@@ -27,6 +27,19 @@
 #include "iterator.h"
 
 //--------------------------------------------------------------------------------
+// Static declarations
+//--------------------------------------------------------------------------------
+static Entity *ptr_create_entity(EntityID parent_id, char *name);
+static void _print_entity_tree(Entity *entity, int indent_level);
+static void entity_add_child(Entity *entity, Entity *child);
+static EntityID new_entity_id(void);
+static ComponentID new_component_id(void);
+static SystemID new_system_id(void);
+static void update_system(System *system);
+static void annihilate_entity(Entity *entity);
+static void annihilate_component(Component *component);
+
+//--------------------------------------------------------------------------------
 // Linked-list implementation of entity and component pool
 //--------------------------------------------------------------------------------
 typedef struct EntityNode_structure {

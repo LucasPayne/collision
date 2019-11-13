@@ -1,6 +1,8 @@
 /*================================================================================
    Definitions for paths to the directory structure of this project.
    I am not sure if this is a good way to do stuff like this.
+
+   Also, definitions that are specific to the project structure.
 ================================================================================*/
 #ifndef HEADER_DEFINED_PROJECT_DEFINITIONS
 #define HEADER_DEFINED_PROJECT_DEFINITIONS

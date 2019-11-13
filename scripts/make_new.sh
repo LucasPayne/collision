@@ -94,7 +94,8 @@ if [ "$good" = "Yes" ] ; then
     mkdir "$proj_dir"
     cp "$schematic_path" "$proj_dir/$project_name.c"
 
-    printf "$PROJECT_MAKE_RULE" | sed "s/PROJECT_NAME/$project_name/g" >> $MAKEFILE
+    # -- Removed writing to Makefile
+    # printf "$PROJECT_MAKE_RULE" | sed "s/PROJECT_NAME/$project_name/g" >> $MAKEFILE
 else   
     echo "Invalid schematic name: $chosen"
 fi

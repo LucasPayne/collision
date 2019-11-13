@@ -38,7 +38,6 @@
 #define UNIVERSE_ID 1 // 0 is reserved
 #define NULL_COMPONENT_ID 0
 
-
 //################################################################################
 // Structure and type definitions
 //################################################################################
@@ -163,18 +162,5 @@ Component *get_entity_component_of_type_from_type_id(EntityID entity_id,
 //================================================================================
 void print_entity_list(void);
 void print_entity_tree(void);
-
-//################################################################################
-// Static in-module helper functions
-//################################################################################
-static Entity *ptr_create_entity(EntityID parent_id, char *name);
-static void _print_entity_tree(Entity *entity, int indent_level);
-static void entity_add_child(Entity *entity, Entity *child);
-static EntityID new_entity_id(void);
-static ComponentID new_component_id(void);
-static SystemID new_system_id(void);
-static void update_system(System *system);
-static void annihilate_entity(Entity *entity);
-static void annihilate_component(Component *component);
 
 #endif // HEADER_DEFINED_ENTITY

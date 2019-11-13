@@ -57,6 +57,7 @@ bool key_is_dir(int dir, int key)
     if (dir == Down) return is_down(key);
     if (dir == Left) return is_left(key);
     if (dir == Right) return is_right(key);
+    return false;
 }
 bool alt_key_is_dir(int dir, int key)
 {
@@ -64,6 +65,7 @@ bool alt_key_is_dir(int dir, int key)
     if (dir == Down) return alt_is_down(key);
     if (dir == Left) return alt_is_left(key);
     if (dir == Right) return alt_is_right(key);
+    return false;
 }
 static bool _ARROW_KEY_DOWN[4] = {false};
 static bool _ALT_ARROW_KEY_DOWN[4] = {false};
@@ -142,4 +144,5 @@ int number_key(int number)
         case 8: return GLFW_KEY_8; break;
         case 9: return GLFW_KEY_9; break;
     }
+    return GLFW_KEY_0; // ...
 }

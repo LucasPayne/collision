@@ -1,5 +1,41 @@
+# Stuff about Makefiles
+#--------------------------------------------------------------------------------
+# Escaping
+# --------
+# https://stackoverflow.com/questions/7654386/how-do-i-properly-escape-data-for-a-makefile
+# \#
+# $$
+# Automatic variables:
+# --------------------
+# Suppose you are writing a pattern rule to compile a ‘.c’ file
+# into a ‘.o’ file: how do you write the ‘cc’ command so
+# that it operates on the right source file name? You cannot write
+# the name in the recipe, because the name is different each time
+# the implicit rule is applied.
+#
+# What you do is use a special feature of make, the automatic
+# variables. These variables have values computed afresh for each rule that is
+# executed, based on the target and prerequisites of the rule. In this
+# example, you would use ‘$@’ for the object file name and ‘$<’
+# for the source file name.
+#
+#
+# https://stackoverflow.com/questions/10024279/how-to-use-shell-commands-in-makefile
+# each line is run by a separate shell, so this variable
+# will not survive to the next line, so you must then use
+# it immediately
+#
+# Shell function:
+# https://www.gnu.org/software/make/manual/html_node/Shell-Function.html
+# The shell function is unlike any other function other than the wildcard
+# function (see The Function wildcard) in that it communicates with the world
+# outside of make.
+#--------------------------------------------------------------------------------
+
+
 # Project structure
 BUILD_DIR=build
+CLUTTER_DIR=build/clutter
 LIB_DIR=lib
 INCLUDE_DIR=include
 SRC_DIR=src
@@ -7,8 +43,18 @@ SCRIPTS_DIR=scripts
 SCHEMATICS_DIR=utils/schematics
 MAKEFILE=Makefile
 
+# GNU make feature:
+# Secondary expansions always take place within the scope of the automatic variables
+# for that target. This means that you can use variables such
+# as $@, $*, etc. during the second expansion and they will
+# have their expected values, just as in the recipe. All
+# you have to do is defer the expansion by escaping the $.
+# ---
+# They are expanded at the time make checks the prerequisites of a target.
+.SECONDEXPANSION:
+
 # Commands and flags
-CC=gcc -rdynamic -Iinclude
+CC=gcc -rdynamic -Iinclude -Wall -Werror
 CFLAGS=-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL
 
 # Lists
@@ -18,70 +64,20 @@ FILES=lib/glad.c lib/helper_gl.c lib/helper_input.c
 default_target: list
 
 # Scripts
-.PHONY: list
-.SILENT: list
+.PHONY .SILENT: list
 list:
 	echo "make <name> to build, make do_<name> to build and run."
 	sh $(SCRIPTS_DIR)/list.sh $(SRC_DIR)
 
-.PHONY: new
-.SILENT: new
-new:
-	$(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
+.PHONY .SILENT: new
+new: ; $(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 
-# Application make rules
-grid_test: $(SRC_DIR)/grid_test/grid_test.c lib/grid.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_grid_test: grid_test
-	$(BUILD_DIR)/$<
+%.o: $(LIB_DIR)/%.c $(INCLUDE_DIR)/%.h ; $(CC) -c $< -o $(CLUTTER_DIR)/$@
 
-triangles: $(SRC_DIR)/triangles/triangles.cpp $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_triangles: triangles
-	$(BUILD_DIR)/$<
+%: $(SRC_DIR)/$$@/$$@.c $$(shell $$(SCRIPTS_DIR)/application_dependencies.sh $$@)
+	$(CC) -o "$(BUILD_DIR)/$@" $^ $(CFLAGS)
+	$(BUILD_DIR)/$@
 
-regular: $(SRC_DIR)/regular/regular.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_regular: regular
-	$(BUILD_DIR)/$<
-
-convex_collision: $(SRC_DIR)/convex_collision/convex_collision.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_convex_collision: convex_collision
-	$(BUILD_DIR)/$<
-
-poly_view: $(SRC_DIR)/poly_view/poly_view.c $(LIB_DIR)/data.c $(LIB_DIR)/geometry/shapes.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_poly_view: poly_view
-	$(BUILD_DIR)/$<
-
-ascii_polygon_to_regular: $(SRC_DIR)/ascii_polygon_to_regular/ascii_polygon_to_regular.c $(LIB_DIR)/geometry/shapes.c $(LIB_DIR)/data.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_ascii_polygon_to_regular: ascii_polygon_to_regular
-	$(BUILD_DIR)/$<
-        
-entity_test: $(SRC_DIR)/entity_test/entity_test.c $(LIB_DIR)/entity.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_entity_test: entity_test
-	$(BUILD_DIR)/$<
-
-gl_entity_test: $(SRC_DIR)/gl_entity_test/gl_entity_test.c $(LIB_DIR)/geometry/shapes.c $(LIB_DIR)/entity.c $(LIB_DIR)/data.c $(LIB_DIR)/collision/collision.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_gl_entity_test: gl_entity_test
-	$(BUILD_DIR)/$<
-
-new_entity_test: $(SRC_DIR)/new_entity_test/new_entity_test.c $(LIB_DIR)/entity.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_new_entity_test: new_entity_test
-	$(BUILD_DIR)/$<
-        
-collision: $(SRC_DIR)/collision/collision.c $(LIB_DIR)/entity.c $(LIB_DIR)/geometry/shapes.c $(LIB_DIR)/data.c $(LIB_DIR)/iterator.c $(LIB_DIR)/grid.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_collision: collision
-	$(BUILD_DIR)/$<
-
-
-poly_editor: $(SRC_DIR)/poly_editor/poly_editor.c $(LIB_DIR)/entity.c $(LIB_DIR)/geometry/shapes.c $(LIB_DIR)/data.c $(LIB_DIR)/iterator.c $(LIB_DIR)/grid.c $(FILES)
-	$(CC) -o $(BUILD_DIR)/$@ $^ $(CFLAGS)
-do_poly_editor: poly_editor
-	$(BUILD_DIR)/$<
+# do_%: $(SRC_DIR)/$$(shell echo $$@ | cut -c 4-)/$$(shell echo $$@ | cut -c 4-).c $$(shell $$(SCRIPTS_DIR)/application_dependencies.sh $$(shell echo $$@ | cut -c 4-))
+# 	$(CC) -o "$(BUILD_DIR)/$(shell echo $@ | cut -c 4-)" $^ $(CFLAGS)
+# 	$(BUILD_DIR)/$(shell echo $@ | cut -c 4-)

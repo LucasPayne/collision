@@ -1,7 +1,7 @@
-/*
- *
- */
-
+/*--------------------------------------------------------------------------------
+    Definitions for the iterator module.
+    See the header for details.
+---------------------------------------------------------------------------------*/
 #include <stdbool.h>
 #include <string.h>
 #include "iterator.h"
@@ -17,8 +17,4 @@ void init_iterator(Iterator *iterator, void (*coroutine)(Iterator *))
     iterator->val = NULL;
     memset(&iterator->data1, 0, sizeof(union iterator_data));
     memset(&iterator->data2, 0, sizeof(union iterator_data));
-}
-void *current(Iterator *iterator)
-{
-    return iterator->val;
 }

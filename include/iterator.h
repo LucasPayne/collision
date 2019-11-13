@@ -1,13 +1,28 @@
-/*
- * An iterator implementation
- */
+/*================================================================================
+   An iterator implementation.
 
+   Details:
+   There is still a too much work in defining a certain iterator and using an
+   iterator. The iterator has a state structure which is passed to it,
+   where it uses a flag to jump to a specific label in the coroutine.
+
+   As of writing, its usage is:
+       Iterator iterator;
+       init_some_defined_iterator(&iterator);
+       do {
+           step(&iterator);
+           ...
+       } while (iterator.val != NULL);
+================================================================================*/
 #ifndef HEADER_DEFINED_ITERATOR
 #define HEADER_DEFINED_ITERATOR
-
 #include <stdbool.h>
 #include <stdlib.h>
 
+//================================================================================
+// Iterator macro definitions. These allow a certain format for iterator
+// definitions.
+//================================================================================
 #define COROUTINE_NULL -1
 #define COROUTINE_START 0
 #define COROUTINE_A 1
@@ -36,6 +51,9 @@
         goto coroutine_e;\
     }
 
+//================================================================================
+// Iterator type definitions
+//================================================================================
 union iterator_data {
     int int_val;
     void *ptr_val;
@@ -51,8 +69,10 @@ typedef struct Iterator_s {
     union iterator_data data2;
 } Iterator;
 
+//================================================================================
+// Iterator interface
+//================================================================================
 void step(Iterator *iterator);
-void *current(Iterator *iterator);
 void init_iterator(Iterator *iterator, void (*coroutine)(Iterator *));
 
 #endif // HEADER_DEFINED_ITERATOR

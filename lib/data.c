@@ -1,17 +1,14 @@
-/*
- *
- */
-
+/*--------------------------------------------------------------------------------
+   Definitions for the data module.
+   See the header for details.
+--------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <sys/stat.h>
 #include <fcntl.h>
-
 #include <sys/types.h>
 #include <dirent.h>
-
 #include "project_definitions.h"
 #include "helper_definitions.h"
 #include "data.h"
@@ -21,6 +18,9 @@
 #define MAX_LINE_LENGTH 500
 #define MAX_FILENAME_LENGTH 100
 
+//--------------------------------------------------------------------------------
+//   Debug and utilities
+//--------------------------------------------------------------------------------
 void print_data_directory(void)
 {
     opendir_handle(data_dir, DATA_DIR);
@@ -31,7 +31,9 @@ void print_data_directory(void)
     closedir(data_dir);
 }
 
-
+//--------------------------------------------------------------------------------
+//   Reading and writing data formats/types
+//--------------------------------------------------------------------------------
 void write_polygon(Polygon *poly, char *filename)
 {
     fopen_handle(file, filename, "w+");
@@ -40,6 +42,9 @@ void write_polygon(Polygon *poly, char *filename)
     }
 }
 
+//--------------------------------------------------------------------------------
+//   Test data
+//--------------------------------------------------------------------------------
 void read_polygon(char *relative_filename, Polygon *poly)
 {
     char filename[MAX_FILENAME_LENGTH];

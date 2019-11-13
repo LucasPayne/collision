@@ -1,3 +1,7 @@
+/*================================================================================
+   Definitions for paths to the directory structure of this project.
+   I am not sure if this is a good way to do stuff like this.
+================================================================================*/
 #ifndef HEADER_DEFINED_PROJECT_DEFINITIONS
 #define HEADER_DEFINED_PROJECT_DEFINITIONS
 
@@ -13,4 +17,4 @@
 #define UTILS_DIR PROJECT_DIR "utils/"
 #define SCHEMATICS_DIR PROJECT_DIR "schematics/"
 
-#endif
+#endif // HEADER_DEFINED_PROJECT_DEFINITIONS

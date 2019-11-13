@@ -127,3 +127,19 @@ void key_callback_quit(GLFWwindow *window, int key,
 	}
     }
 }
+
+int number_key(int number)
+{
+    switch (number) {
+        case 0: return GLFW_KEY_0; break;
+        case 1: return GLFW_KEY_1; break;
+        case 2: return GLFW_KEY_2; break;
+        case 3: return GLFW_KEY_3; break;
+        case 4: return GLFW_KEY_4; break;
+        case 5: return GLFW_KEY_5; break;
+        case 6: return GLFW_KEY_6; break;
+        case 7: return GLFW_KEY_7; break;
+        case 8: return GLFW_KEY_8; break;
+        case 9: return GLFW_KEY_9; break;
+    }
+}

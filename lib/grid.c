@@ -1,6 +1,7 @@
-/*
- *
- */
+/*--------------------------------------------------------------------------------
+   Definitions for the grid system.
+   See header for details.
+---------------------------------------------------------------------------------*/
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -11,12 +12,27 @@
 
 #define GRID_DEBUG 0
 
+//--------------------------------------------------------------------------------
+// Global grid properties
+//--------------------------------------------------------------------------------
 static unsigned int MAX_HORIZ;
 static unsigned int MAX_VERT;
 static unsigned int GRID_HORIZ;
 static unsigned int GRID_VERT;
-static bool grid_defined = false;
+static bool GRID_ACTIVE = false;
 static bool *GRID;
+
+//--------------------------------------------------------------------------------
+// Initialization, basic usage, and closing
+//--------------------------------------------------------------------------------
+void grid_close(void)
+{
+    if (!GRID_ACTIVE) {
+        fprintf(stderr, "ERROR: grid is not active, cannot close.\n");
+        exit(EXIT_FAILURE);
+    }
+    GRID_ACTIVE = false;
+}
 
 int grid_horiz(void)
 {
@@ -52,14 +68,13 @@ double normalized_grid_pos_y(int j)
     return ((double) j) / GRID_VERT;
 }
 
-void normalized_grid_pos(int i, int j, double *x, double *y)
-{
-    *x = ((double) i) / GRID_HORIZ;
-    *y = ((double) j) / GRID_VERT;
-}
 
 void grid_init(int max_horiz, int max_vert)
 {
+    if (GRID_ACTIVE) {
+        fprintf(stderr, "ERROR: grid is already active, cannot initialize.\n");
+        exit(EXIT_FAILURE);
+    }
     bool *mem_ptr = (bool *) malloc(sizeof(bool) * max_horiz * max_vert);
     if (!mem_ptr) {
         fprintf(stderr, "ERROR: failed to allocate memory for the grid.\n");
@@ -70,7 +85,7 @@ void grid_init(int max_horiz, int max_vert)
     GRID_HORIZ = MAX_HORIZ;
     GRID_VERT = MAX_VERT;
     GRID = mem_ptr;
-    grid_defined = true;
+    GRID_ACTIVE = true;
 }
 
 
@@ -90,7 +105,7 @@ bool in_grid_range(int i, int j)
 
 void set_grid(int i, int j, bool val)
 {
-    GRID_DEFINED_CHECK();
+    GRID_ACTIVE_CHECK();
 #if GRID_DEBUG
     GRID_CHECK(i, j);
 #endif
@@ -99,7 +114,7 @@ void set_grid(int i, int j, bool val)
 
 bool grid_val(int i, int j)
 {
-    GRID_DEFINED_CHECK();
+    GRID_ACTIVE_CHECK();
 #if GRID_DEBUG
     GRID_CHECK(i, j);
 #endif
@@ -135,10 +150,10 @@ void render_grid(GLFWwindow *window)
         // if (frand() > ((double) j)/grid_vert()) set_grid(i, j, true);
         if (grid_val(i, j)) {
 
-            double xleft, ydown;
-            normalized_grid_pos(i, j+1, &xleft, &ydown);
-            double xright, yup;
-            normalized_grid_pos(i+1, j, &xright, &yup);
+            double xleft = normalized_grid_pos_x(i);
+            double ydown = normalized_grid_pos_y(j + 1);
+            double xright = normalized_grid_pos_x(i + 1);
+            double yup = normalized_grid_pos_y(j);
 
             double screen_xleft, screen_ydown, screen_xright, screen_yup;
             screen_xleft = x_start + xleft * (x_end - x_start);

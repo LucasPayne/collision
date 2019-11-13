@@ -3,4 +3,4 @@
 
 bool intersection_convex_polygons(Polygon *_polyA, Polygon *_polyB);
 
-#endif
+#endif // HEADER_DEFINED_COLLISION

@@ -21,20 +21,22 @@
 #include "grid.h"
 
 // Globals =======================================================================
-GLFWwindow *WINDOW;
+static double ASPECT_RATIO;
+static bool GRID_RENDERING = true;
+static GLFWwindow *WINDOW;
 static int MAX_GRID_SIZE;
 static int GRID_SIZE;
 //================================================================================
 
 // Component types
 #define RendererShape_TYPE_ID 2
-typedef struct RendererShape_component_type_s {
+typedef struct RendererShape_s {
     Component component;
     Polygon poly;
 } RendererShape;
 
 #define ObjectLogic_TYPE_ID 3
-typedef struct ObjectLogic_component_type_s {
+typedef struct ObjectLogic_s {
     Component component;
     void (*init) (Entity *);
     void (*update) (Entity *);
@@ -42,7 +44,7 @@ typedef struct ObjectLogic_component_type_s {
 } ObjectLogic;
 
 #define Transform_TYPE_ID 4
-typedef struct Transform_component_type_s {
+typedef struct Transform_s {
     Component component;
     double x;
     double y;
@@ -50,6 +52,41 @@ typedef struct Transform_component_type_s {
     double scale_x;
     double scale_y;
 } Transform;
+static void _get_global_transform(Transform *transform, Transform *to);
+void get_global_transform(Transform *transform, Transform *to)
+{
+    to->x = 0;
+    to->y = 0;
+    to->theta = 0;
+    to->scale_x = 1;
+    to->scale_y = 1;
+    _get_global_transform(transform, to);
+}
+static void _get_global_transform(Transform *transform, Transform *to)
+{
+    to->x += transform->x;
+    to->y += transform->x;
+    to->theta += transform->theta;
+    to->scale_x *= transform->scale_x;
+    to->scale_y *= transform->scale_y;
+
+    Entity *entity = get_entity(transform->component.entity_id);
+    Entity *parent = get_entity(entity->parent_id);
+    Transform *parent_transform = get_entity_component_of_type(parent->id, Transform);
+    if (parent_transform != NULL) {
+        _get_global_transform(parent_transform, to);
+    }
+}
+
+#define Camera_TYPE_ID 5
+typedef struct Camera_s {
+    Component component;
+    double width;
+    double height;
+    // Enforce Transform?
+} Camera;
+
+
 
 //================================================================================
 // Game and game objects logic
@@ -57,39 +94,33 @@ typedef struct Transform_component_type_s {
 void polygon_update(Entity *self)
 {
     Transform *transform = get_entity_component_of_type(self->id, Transform);
-    if (alt_arrow_key_down(Up)) {
-        transform->y += 1.0 * dt();
-    }
-    if (alt_arrow_key_down(Down)) {
-        transform->y -= 1.0 * dt();
-    }
-    if (alt_arrow_key_down(Right)) {
-        transform->x += 1.0 * dt();
-    }
-    if (alt_arrow_key_down(Left)) {
-        transform->x -= 1.0 * dt();
-    }
-    transform->theta += 5.0 * transform->x * dt();
+    /* if (alt_arrow_key_down(Up)) { */
+    /*     transform->y += 1.0 * dt(); */
+    /* } */
+    /* if (alt_arrow_key_down(Down)) { */
+    /*     transform->y -= 1.0 * dt(); */
+    /* } */
+    /* if (alt_arrow_key_down(Right)) { */
+    /*     transform->x += 1.0 * dt(); */
+    /* } */
+    /* if (alt_arrow_key_down(Left)) { */
+    /*     transform->x -= 1.0 * dt(); */
+    /* } */
+    /* transform->theta += 5.0 * transform->x * dt(); */
+
+    transform->theta += 1.0 * dt();
 }
 
-/* hacky thing to test the entity tree system
-int count = UNIVERSE_ID;
-...
-    double r = frand();
-    EntityID parent_id;
-    for (parent_id = UNIVERSE_ID; parent_id <= count; parent_id++) {
-        r -= 1.0 / count;
-        if (r <= 0) {
-            break;
-        }
-    }
-    EntityID polygon = create_entity(parent_id, ascii_name);
-...
-    count++;
-*/
+int LAST_ID = 0;
 void game_make_polygon(char *ascii_name, double x, double y, double theta)
 {
-    EntityID polygon = create_entity(UNIVERSE_ID, ascii_name);
+    EntityID parent_id;
+    if (LAST_ID == 0)
+        parent_id = UNIVERSE_ID;
+    else
+        parent_id = LAST_ID;
+
+    EntityID polygon = create_entity(parent_id, ascii_name);
     ObjectLogic *logic = entity_add_component_get(polygon, "logic", ObjectLogic);
     logic->update = polygon_update;
     RendererShape *renderer = entity_add_component_get(polygon, "renderer", RendererShape);
@@ -100,98 +131,129 @@ void game_make_polygon(char *ascii_name, double x, double y, double theta)
     transform->scale_x = 0.8;
     transform->scale_y = 0.8;
     transform->theta = theta;
+
+    LAST_ID = polygon;
+}
+
+void camera_controls(Entity *self)
+{
+    Transform *transform = get_entity_component_of_type(self->id, Transform);
+
+    if (alt_arrow_key_down(Up)) {
+        transform->y += 1.2 * dt();
+    }
+    if (alt_arrow_key_down(Down)) {
+        transform->y -= 1.2 * dt();
+    }
+    if (alt_arrow_key_down(Right)) {
+        transform->x += 1.2 * dt();
+    }
+    if (alt_arrow_key_down(Left)) {
+        transform->x -= 1.2 * dt();
+    }
+    if (arrow_key_down(Left)) {
+        transform->theta += 3 * dt();
+    }
+    if (arrow_key_down(Right)) {
+        transform->theta -= 3 * dt();
+    }
 }
 
 
+//================================================================================
 // Systems
-#define DEBUG 0
-void renderer_update(System *self)
+//================================================================================
+void renderer_update(Component *component)
 {
-    Iterator iterator;
-    iterator_components_of_type(RendererShape, &iterator);
-#if DEBUG
-    int count = 0;
-    printf("ITERATING RENDERERS\n");
-#endif
-    while (1) {
-        step(&iterator);
-        if (iterator.val == NULL) {
-            break;
-        }
-        RendererShape *shape = (RendererShape *) iterator.val;
-        /* printf("%s\n", shape->component.name); */
-        Transform *transform = get_entity_component_of_type(shape->component.entity_id, Transform);
-        /* printf("(%.2lf %.2lf : %.2lf)\n", transform->x, transform->y, transform->theta); */
+    // Enforce a single camera. (this does this every renderer component ...)
+    // What about a "uniform" system behaviour, which prepares global state to each separate run of the updater for components,
+    // and a way to allow streaming in also of "component groupings" and enforcements, like renderer and transforms ...
+    // So, stream components of a certain (super-)type and then do the cases stuff inside the system. It gets components of a 
+    // certain type heirarchy, possibly can just access sibling components itself.
+    //
+    // So components are just data modules. Entities are just empty hulls for connections to systems, which operate with that data
+    // and some type flags to work with that in a case by case basis due to the logic of the system.
+    Camera *camera;
+    Iterator camera_iterator;
+    iterator_components_of_type(Camera, &camera_iterator);
+    step(&camera_iterator);
+    if (camera_iterator.val == NULL) {
+        fprintf(stderr, "ERROR: renderer could not find a camera.\n");
+        exit(EXIT_FAILURE);
+    }
+    camera = camera_iterator.val;
+    step(&camera_iterator);
+    if (camera_iterator.val != NULL) {
+        fprintf(stderr, "ERROR: Renderer has too many cameras to choose from. Must disable all except one.\n");
+        exit(EXIT_FAILURE);
+    }
+    Transform *camera_transform = get_entity_component_of_type(camera->component.entity_id, Transform);
+    if (camera_transform == NULL) {
+        fprintf(stderr, "ERROR: The camera for the renderer does not have a Transform component.\n");
+        exit(EXIT_FAILURE);
+    }
+    RendererShape *shape = (RendererShape *) component;
+    Transform *transform = get_entity_component_of_type(shape->component.entity_id, Transform);
+    Transform global_transform;
+    get_global_transform(transform, &global_transform);
 
+    if (GRID_RENDERING) {
+        // Pixel grid rendering
         for (int i = 0; i < shape->poly.num_vertices; i++) {
             int ip = (i + 1) % shape->poly.num_vertices;
             double x, y;
             double xp, yp;
-            x =  transform->x
-                 + transform->scale_x * cos(transform->theta) * shape->poly.vertices[i].x
-                 + transform->scale_y * sin(transform->theta) * shape->poly.vertices[i].y;
-            y = transform->y
-                - transform->scale_x * cos(transform->theta) * shape->poly.vertices[i].y
-                + transform->scale_y * sin(transform->theta) * shape->poly.vertices[i].x;
-            xp =  transform->x
-                 + transform->scale_x * cos(transform->theta) * shape->poly.vertices[ip].x
-                 + transform->scale_y * sin(transform->theta) * shape->poly.vertices[ip].y;
-            yp = transform->y
-                 - transform->scale_x * cos(transform->theta) * shape->poly.vertices[ip].y
-                 + transform->scale_y * sin(transform->theta) * shape->poly.vertices[ip].x;
+            x =  global_transform.x
+                 + global_transform.scale_x * cos(global_transform.theta - camera_transform->theta) * shape->poly.vertices[i].x
+                 + global_transform.scale_y * sin(global_transform.theta - camera_transform->theta) * shape->poly.vertices[i].y
+                 - camera_transform->x;
+            y = global_transform.y
+                - global_transform.scale_x * cos(global_transform.theta - camera_transform->theta) * shape->poly.vertices[i].y
+                + global_transform.scale_y * sin(global_transform.theta - camera_transform->theta) * shape->poly.vertices[i].x
+                - camera_transform->y;
+            xp =  global_transform.x
+                 + global_transform.scale_x * cos(global_transform.theta - camera_transform->theta) * shape->poly.vertices[ip].x
+                 + global_transform.scale_y * sin(global_transform.theta - camera_transform->theta) * shape->poly.vertices[ip].y
+                 - camera_transform->x;
+            yp = global_transform.y
+                 - global_transform.scale_x * cos(global_transform.theta - camera_transform->theta) * shape->poly.vertices[ip].y
+                 + global_transform.scale_y * sin(global_transform.theta - camera_transform->theta) * shape->poly.vertices[ip].x
+                 - camera_transform->y;
+            // --- Transform to "grid-screen coordinates"
             rasterize_line(x, y, xp, yp);
         }
+    }
+    else {
+        // OpenGL primitive polygon rendering
+        glBegin(GL_POLYGON);
+            for (int i = 0; i < shape->poly.num_vertices; i++) {
+                double x, y;
+                // Point location relative to the camera
+                x =  global_transform.x
+                     + global_transform.scale_x * cos(global_transform.theta - camera_transform->theta) * shape->poly.vertices[i].x
+                     + global_transform.scale_y * sin(global_transform.theta - camera_transform->theta) * shape->poly.vertices[i].y
+                     - camera_transform->x;
+                y = global_transform.y
+                    - global_transform.scale_x * cos(global_transform.theta - camera_transform->theta) * shape->poly.vertices[i].y
+                    + global_transform.scale_y * sin(global_transform.theta - camera_transform->theta) * shape->poly.vertices[i].x
+                    - camera_transform->y;
 
-        /* glBegin(GL_POLYGON); */
-        /*     for (int i = 0; i < shape->poly.num_vertices; i++) { */
-        /*         double x, y; */
-        /*         x =  transform->x */
-        /*              + cos(transform->theta) * shape->poly.vertices[i].x */
-        /*              + sin(transform->theta) * shape->poly.vertices[i].y; */
-        /*         y = transform->y */
-        /*             - cos(transform->theta) * shape->poly.vertices[i].y */
-        /*             + sin(transform->theta) * shape->poly.vertices[i].x; */
-
-        /*         glVertex2f(x, y); */
-        /*     } */
-        /* glEnd(); */
-#if DEBUG
-        count ++;
-#endif
-    } 
-#if DEBUG
-    printf("rendered %d entities\n", count);
-#endif
-}
-#undef DEBUG
-
-#define DEBUG 0
-void object_logic_update(System *self)
-{
-    Iterator iterator;
-    iterator_components_of_type(ObjectLogic, &iterator);
-#if DEBUG
-    printf("ITERATING OBJECT LOGIC\n");
-#endif
-    while (1) {
-        step(&iterator);
-        if (iterator.val == NULL) {
-            break;
-        }
-        ObjectLogic *logic = (ObjectLogic *) iterator.val;
-        Entity *entity = get_entity(logic->component.entity_id);
-#if DEBUG
-        printf("logic update: %s\n", entity->name);
-#endif
-        if (logic->update != NULL) {
-#if DEBUG
-            printf("\tupdating ...\n");
-#endif
-            logic->update(entity);
-        }
+                // Convert to normalized device coordinates, taking into account aspect ratio.
+                glVertex2f(x * SCREEN_ASPECT_RATIO, y);
+                /* glVertex2f(x, y); */
+            }
+        glEnd();
     }
 }
-#undef DEBUG
+
+void object_logic_update(Component *component)
+{
+    ObjectLogic *logic = (ObjectLogic *) component;
+    Entity *entity = get_entity(logic->component.entity_id);
+    if (logic->update != NULL) {
+        logic->update(entity);
+    }
+}
 
 static void key_callback(GLFWwindow *window, int key,
                 int scancode, int action,
@@ -203,6 +265,9 @@ static void key_callback(GLFWwindow *window, int key,
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_P) {
             print_entity_tree();
+        }
+        else if (key == GLFW_KEY_L) {
+            print_entity_list();
         }
         else if (key == GLFW_KEY_SPACE) {
             char poly_name[50];
@@ -218,6 +283,25 @@ static void key_callback(GLFWwindow *window, int key,
             strncat(poly_name, ".poly", 50);
             game_make_polygon(poly_name, frand() * 0.5 - 0.25, frand() * 0.5 - 0.25, frand() * 2 * M_PI);
         }
+        else if (key == GLFW_KEY_E) {
+            GRID_RENDERING = !GRID_RENDERING;
+        }
+        else {
+            for (int i = 1; i < NUM_NUMBER_KEYS; i++) {
+                if (key == number_key(i)) {
+                    Entity *entity = get_entity(i);
+                    if (entity == NULL) {
+                        continue;
+                    }
+                    destroy_entity(entity->id);
+                    /* if (entity->on) { */
+                    /*     disable_entity(i); */
+                    /* } else { */
+                    /*     enable_entity(i); */
+                    /* } */
+                }
+            }
+        }
     }
 }
 
@@ -229,8 +313,23 @@ void init_program(void)
     GRID_SIZE = MAX_GRID_SIZE;
     grid_init(GRID_SIZE, GRID_SIZE);
 
-    add_system("renderer", NULL, renderer_update, NULL);
-    add_system("object logic", NULL, object_logic_update, NULL);
+    add_system("renderer", RendererShape, renderer_update);
+    add_system("object logic", ObjectLogic, object_logic_update);
+
+    EntityID camera_man = create_entity(UNIVERSE_ID, "camera man");
+    ObjectLogic *camera_object_logic = entity_add_component_get(camera_man, "controls", ObjectLogic);
+    camera_object_logic->update = camera_controls;
+    Transform *camera_transform = entity_add_component_get(camera_man, "transform", Transform);
+    camera_transform->x = 0;
+    camera_transform->y = 0;
+    camera_transform->theta = 0;
+    Camera *camera = entity_add_component_get(camera_man, "camera", Camera);
+    camera->width = 1;
+    camera->height = 1;
+
+    /* EntityID camera2 = create_entity(UNIVERSE_ID, "camera2"); */
+    /* entity_add_component(camera2, "transform", Transform); */
+    /* entity_add_component(camera2, "camera", Camera); */
 }
 
 void loop(GLFWwindow *window)
@@ -257,16 +356,17 @@ void close_program(void)
 {
     close_entity_model();
 }
-
 void reshape(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, (GLsizei) width, (GLsizei) height);
+    force_aspect_ratio(window, width, height, ASPECT_RATIO);
 }
 
 int main(int argc, char *argv[])
 {
     WINDOW = init_glfw_create_context("Shapes", 512, 512);
-    glfwSetWindowAspectRatio(WINDOW, 1, 1);
+    /* glViewport(100, 100, 512, 512); */
+    /* glfwSetWindowAspectRatio(WINDOW, 1, 1); */
+    ASPECT_RATIO = SCREEN_ASPECT_RATIO;
 
     glfwSetKeyCallback(WINDOW, key_callback);
     glfwSetFramebufferSizeCallback(WINDOW, reshape);

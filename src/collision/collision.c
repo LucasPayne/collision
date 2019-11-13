@@ -316,6 +316,8 @@ static void key_callback(GLFWwindow *window, int key,
 
 void init_program(void)
 {
+    printf("Starting collision ...\n");
+
     init_entity_model();
 
     MAX_GRID_SIZE = 150;

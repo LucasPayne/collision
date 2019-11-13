@@ -37,7 +37,7 @@ for line in C_source:
     elif finding:
         match = re.match(".*- (.*$)", line)
         if match:
-            print(f"lib/{match.group(1)}.o ", sep=" ")
+            print(f"build/clutter/lib/{match.group(1)}.o ", sep=" ")
         else:
             break
 

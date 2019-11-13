@@ -57,9 +57,6 @@ MAKEFILE=Makefile
 CC=gcc -rdynamic -Iinclude -Wall -Werror
 CFLAGS=-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL
 
-# Lists
-FILES=lib/glad.c lib/helper_gl.c lib/helper_input.c
-
 # General Makefile options
 default_target: list
 
@@ -72,9 +69,20 @@ list:
 .PHONY .SILENT: new
 new: ; $(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 
-%.o: $(LIB_DIR)/%.c $(INCLUDE_DIR)/%.h ; $(CC) -c $< -o $(CLUTTER_DIR)/$@
+# This wasn't actually matching, implicit rule sitll uses $(CC) and $(CFLAGS) so it can compile the object. Why is it remaking? Because object files
+# are deleted.
+# %.o: $(LIB_DIR)/%.c
+# 	$(CC) -c $< -o $(CLUTTER_DIR)/$@
 
-%: $(SRC_DIR)/$$@/$$@.c $$(shell $$(SCRIPTS_DIR)/application_dependencies.sh $$@)
+# %:
+# 	 echo $(SRC_DIR)/$@/$@.c $(shell $(SCRIPTS_DIR)/application_dependencies.sh $@)
+
+
+build/clutter/lib/%.o: lib/%.c
+	mkdir -p $(patsubst %.o,%,$@)
+	$(CC) -c $< -o $@
+
+%: $(SRC_DIR)/$$@/$$@.c $$(shell $(SCRIPTS_DIR)/application_dependencies.sh $$@)
 	$(CC) -o "$(BUILD_DIR)/$@" $^ $(CFLAGS)
 	$(BUILD_DIR)/$@
 

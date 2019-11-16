@@ -1,6 +1,11 @@
-/*
- * Quick schematic (may be out of date later)
- */
+/*================================================================================
+PROJECT_LIBS:
+    + glad
+    + helper_gl
+    + helper_input
+
+CREATED WITH SCHEMATIC GL
+================================================================================*/
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>

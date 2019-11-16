@@ -1,11 +1,11 @@
 /*================================================================================
    Schematic for graphical projects using the entity model
 PROJECT_LIBS:
-    - glad
-    - helper_gl
-    - helper_input
-    - entity
-    - iterator
+    + glad
+    + helper_gl
+    + helper_input
+    + entity
+    + iterator
 ================================================================================*/
 
 #include <glad/glad.h>

@@ -27,6 +27,10 @@
 #undef Transform2D_TYPE_ID
 #define Transform2D_TYPE_ID 1
 
+// Globals for testing -----------------------------------------------------------
+GLuint triangle_vao;
+//--------------------------------------------------------------------------------
+
 static double ASPECT_RATIO;
 
 static void key_callback(GLFWwindow *window, int key,
@@ -54,6 +58,8 @@ void init_program(void)
 }
 void loop(GLFWwindow *window)
 {
+    glBindVertexArray(triangle_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
     update_entity_model();
 }
 void close_program(void)
@@ -244,6 +250,9 @@ int main(int argc, char *argv[])
 
     gladLoadGL();
     glfwSwapInterval(1);
+
+    // Vertex attributes -------------------------------------------------------------
+    const int vPosition = 0;
     //--------------------------------------------------------------------------------
     // Shaders
     //--------------------------------------------------------------------------------
@@ -258,6 +267,8 @@ int main(int argc, char *argv[])
     GLuint shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex_shader);
     glAttachShader(shader_program, fragment_shader);
+        // Attachments
+        glBindAttribLocation(shader_program, vPosition, "vPosition");
     link_shader_program(shader_program);
 
     glDeleteShader(vertex_shader);
@@ -265,8 +276,28 @@ int main(int argc, char *argv[])
 
     glUseProgram(shader_program);
     //--------------------------------------------------------------------------------
-    
+    // Vertex data and specification -------------------------------------------------
+
+    float triangle_data[3 * 2] = {
+        -0.5, 0.5,
+        -0.5, -0.5,
+        0.5, -0.5
+    };
+    // global GLuint triangle_vao;
+    glGenVertexArrays(1, &triangle_vao);
+    glBindVertexArray(triangle_vao);
+
+    GLuint triangle_vbo;
+    glGenBuffers(1, &triangle_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, triangle_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangle_data), triangle_data, GL_DYNAMIC_DRAW);
+
+    glVertexAttribPointer(vPosition, 2, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+    glEnableVertexAttribArray(vPosition);
+    //--------------------------------------------------------------------------------
     ASPECT_RATIO = SCREEN_ASPECT_RATIO;
+
+    glClearColor(0.0, 0.0, 0.0, 1.0);
 
     glfwSetKeyCallback(window, key_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);

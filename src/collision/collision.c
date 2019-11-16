@@ -1,12 +1,12 @@
 /* PROJECT_LIBS:
- *      - glad
- *      - helper_gl
- *      - helper_input
- *      - data
- *      - geometry/shapes
- *      - entity
- *      - grid
- *      - iterator
+ *      + glad
+ *      + helper_gl
+ *      + helper_input
+ *      + data
+ *      + geometry/shapes
+ *      + entity
+ *      + grid
+ *      + iterator
  * Started as testing for the entity system. It works relatively well enough now to start on a collision system.
  * ------ important note: I think this all segfaults if the order of system additions is changed. Really fix this.
  */
@@ -362,6 +362,8 @@ void loop(GLFWwindow *window)
 
     update_entity_model();
     render_grid(WINDOW);
+
+    /* glScissor(50, 50, 500 + 250 * cos(time()), 500 + 250 * sin(time() * 2)); */
 }
 void close_program(void)
 {
@@ -381,6 +383,12 @@ int main(int argc, char *argv[])
 
     glfwSetKeyCallback(WINDOW, key_callback);
     glfwSetFramebufferSizeCallback(WINDOW, reshape);
+
+    glClearColor(125, 125, 0, 255);
+    /* glColorMask(GL_FALSE, GL_TRUE, GL_TRUE, GL_TRUE); */
+    /* glColorMask(GL_TRUE, GL_FALSE, GL_TRUE, GL_TRUE); */
+
+    /* glEnable(GL_SCISSOR_TEST); */
 
     init_program();
     loop_time(WINDOW, loop);

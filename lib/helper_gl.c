@@ -48,7 +48,9 @@ void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *))
 
 GLFWwindow *init_glfw_create_context(char *name, int horiz, int vert)
 {
-    /* Attempts to create a GLFW OpenGL context associated to a window.
+    /* --- remove this, just do it "manually", have schematics anyway.
+     * --- Recreate helper functions when know more opengl.
+     * Attempts to create a GLFW OpenGL context associated to a window.
      * Errors are handled in this function, can just assume returned
      * GLFWwindow pointer is good.
      */

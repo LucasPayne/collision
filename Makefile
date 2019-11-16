@@ -69,7 +69,7 @@ list:
 .PHONY .SILENT: new
 new: ; $(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 
-# This wasn't actually matching, implicit rule sitll uses $(CC) and $(CFLAGS) so it can compile the object. Why is it remaking? Because object files
+# This wasn't actually matching, implicit rule still uses $(CC) and $(CFLAGS) so it can compile the object. Why is it remaking? Because object files
 # are deleted.
 # %.o: $(LIB_DIR)/%.c
 # 	$(CC) -c $< -o $(CLUTTER_DIR)/$@
@@ -77,11 +77,10 @@ new: ; $(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 # %:
 # 	 echo $(SRC_DIR)/$@/$@.c $(shell $(SCRIPTS_DIR)/application_dependencies.sh $@)
 
-
+# This is not using the right clutter directory structure
 build/clutter/lib/%.o: lib/%.c
 	mkdir -p $(patsubst %.o,%,$@)
 	$(CC) -c $< -o $@
-
 %: $(SRC_DIR)/$$@/$$@.c $$(shell $(SCRIPTS_DIR)/application_dependencies.sh $$@)
 	$(CC) -o "$(BUILD_DIR)/$@" $^ $(CFLAGS)
 	$(BUILD_DIR)/$@

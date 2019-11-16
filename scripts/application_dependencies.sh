@@ -24,7 +24,6 @@ C_source="$dir/$name.c"
 # echo "$C_source"
 
 # Read the C source file and compile the neccessary object linkings
-
 python3 - $C_source << END
 import sys
 import re
@@ -35,10 +34,9 @@ for line in C_source:
     if line.endswith("PROJECT_LIBS:"):
         finding = True
     elif finding:
-        match = re.match(".*- (.*$)", line)
+        match = re.match(".*\+ (.*$)", line)
         if match:
             print(f"build/clutter/lib/{match.group(1)}.o ", sep=" ")
         else:
             break
-
 END

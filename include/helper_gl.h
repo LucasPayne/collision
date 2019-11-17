@@ -19,7 +19,7 @@ void force_aspect_ratio(GLFWwindow *window, GLsizei width, GLsizei height, doubl
 //================================================================================
 double time(void);
 double dt(void);
-void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *));
+void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *), GLbitfield color_mask);
 
 //================================================================================
 // Shaders

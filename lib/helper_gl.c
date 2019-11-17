@@ -27,7 +27,7 @@ double dt(void)
 }
 
 // Its loop time
-void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *))
+void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *), GLbitfield clear_mask)
 {
     double last_time = TIME;
     while (!glfwWindowShouldClose(window))
@@ -45,14 +45,14 @@ void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *))
         glGetFloatv(GL_COLOR_CLEAR_VALUE, clear_color);
         glClearColor(0.0, 0.0, 0.0, 1.0);
         glDisable(GL_SCISSOR_TEST);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(clear_mask);
 
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
         glEnable(GL_SCISSOR_TEST);
         glScissor(viewport[0], viewport[1], viewport[2], viewport[3]);
         glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(clear_mask);
 
         inner_func(window);
 
@@ -199,15 +199,27 @@ void load_and_compile_shader(GLuint shader, char *shader_path)
     char **lines;
     size_t num_lines;
     read_shader_source(shader_path, &lines, &num_lines);
+#if TRACING
+    printf("Successfully read the source.\n");
+    for (int i = 0; i < num_lines; i++) {
+        printf(lines[i]);
+    }
+#endif
     glShaderSource(shader, num_lines, (const GLchar * const*) lines, NULL);
     free(lines);
     // ... memory leak
-    /* free(lines[0]); */
+    free(lines[0]);
+#if TRACING
+    printf("Successfully associated source to shader.\n");
+#endif
     //---------------------------------------------------------------------------------
     // Compile the shader and print error logs if needed ------------------------------
     glCompileShader(shader);
     GLint compiled;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+#if TRACING
+    printf("Successfully attempted compilation, checking errors ...\n");
+#endif
     if (compiled == GL_FALSE) {
         fprintf(stderr, "ERROR: shader %s failed to compile.\n", shader_path);
         GLint log_length;
@@ -223,6 +235,9 @@ void load_and_compile_shader(GLuint shader, char *shader_path)
         free(log);
         exit(EXIT_FAILURE);
     }
+#if TRACING
+    printf("Successfully compiled shader.\n");
+#endif
     //---------------------------------------------------------------------------------
 }
 

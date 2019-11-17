@@ -28,6 +28,8 @@
 #undef Transform2D_TYPE_ID
 #define Transform2D_TYPE_ID 1
 
+
+
 // Globals for testing -----------------------------------------------------------
 GLuint triangle_vao;
 DynamicShaderProgram dynamic_shader_program;
@@ -208,7 +210,7 @@ int main(int argc, char *argv[])
     glfwSetFramebufferSizeCallback(window, reshape);
 
     init_program();
-    loop_time(window, loop);
+    loop_time(window, loop, GL_COLOR_BUFFER_BIT);
     close_program();
 
     glfwTerminate();

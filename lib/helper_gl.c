@@ -54,7 +54,9 @@ void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *), GLbitfield 
         glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
         glClear(clear_mask);
 
-        inner_func(window);
+        if (inner_func != NULL) {
+            inner_func(window);
+        }
 
         glFlush();
         glfwSwapBuffers(window);
@@ -108,7 +110,13 @@ void force_aspect_ratio(GLFWwindow *window, GLsizei width, GLsizei height, doubl
 /* This really is just a generic file-to-lines-array reader.*/
 void read_shader_source(char *name, char **lines_out[], size_t *num_lines)
 {
-#define TRACING 0
+    /* BUGS:
+     *  Lines array must be just indices until the source string is fixed. Otherwise, reallocs of the source
+     *  string may break away from the location the lines array points to.
+     * strncpy was corrupting memory, since the malloc'd array was only guaranteed to be enough for the new line, not
+     * all the random stuff at the end of the uninitialized line-buffer. Needed to set n in strnpy to length of added line.
+     */
+#define TRACING 1
 #define SHADER_SOURCE_LINE_MAX_LENGTH 500
 #define MEM_SIZE_START 1024
 #define LINES_MEM_SIZE_START 128
@@ -129,23 +137,30 @@ void read_shader_source(char *name, char **lines_out[], size_t *num_lines)
         fprintf(stderr, "ERROR: Could not allocate memory to start reading shader source %s.\n", name);
         exit(EXIT_FAILURE);
     }
-
     while (fgets(line, SHADER_SOURCE_LINE_MAX_LENGTH, fd) != NULL) {
         size_t len = strlen(line);
-#if TRACING
-        printf("reading LINE %ld: %s\n", lines_mem_used, line);
-#endif
         if (len + mem_used + 1 >= mem_size) {
+#if TRACING
+            printf("Reallocating memory for the source text ...\n");
+#endif
             while (len + mem_used + 1 >= mem_size) {
                 mem_size *= 2;
             }
+            char *prev_location = shader_source;
             shader_source = (char *) realloc(shader_source, mem_size * sizeof(char));
+            // Update position that the lines array points to
+            for (int i = 0; i < lines_mem_used; i++) {
+                lines[i] = shader_source + (lines[i] - prev_location);
+            }
             if (shader_source == NULL) {
                 fprintf(stderr, "ERROR: Could not allocate memory when reading shader source %s.\n", name);
                 exit(EXIT_FAILURE);
             }
         }
         if (lines_mem_used + 1 >= lines_mem_size) {
+#if TRACING
+            printf("Reallocating memory for the source lines ...\n");
+#endif
             lines_mem_size *= 2;
             lines = (char **) realloc(lines, lines_mem_size * sizeof(char *));
             if (lines == NULL) {
@@ -153,22 +168,14 @@ void read_shader_source(char *name, char **lines_out[], size_t *num_lines)
                 exit(EXIT_FAILURE);
             }
         }
-        strncpy(&shader_source[mem_used], line, SHADER_SOURCE_LINE_MAX_LENGTH);
-#if TRACING
-        printf("SOURCE: %s", shader_source);
-#endif
-        lines[lines_mem_used] = &shader_source[mem_used];
+
+        strncpy(shader_source + mem_used, line, len);
+        lines[lines_mem_used] = shader_source + mem_used;
 
         mem_used += len;
         shader_source[mem_used] = '\0';
         mem_used += 1;
         lines_mem_used += 1;
-
-#if TRACING
-        for (int i = 0; i < lines_mem_used; i++) {
-            printf("lines LINE %d: %s\n", i, lines[i]);
-        }
-#endif
     }
 
     if (num_lines == 0) {
@@ -180,6 +187,7 @@ void read_shader_source(char *name, char **lines_out[], size_t *num_lines)
     // Write return values
     *lines_out = lines;
     *num_lines = lines_mem_used;
+    fclose(fd);
 #undef TRACING
 #undef SHADER_SOURCE_LINE_MAX_LENGTH
 #undef MEM_SIZE_START
@@ -190,25 +198,24 @@ void load_and_compile_shader(GLuint shader, char *shader_path)
 {
 #define TRACING 1
 #if TRACING
-    printf("Loading and compiling shader %d from path %s ...\n", shader, shader_path);
+    /* printf("Loading and compiling shader %d from path %s ...\n", shader, shader_path); */
 #endif
     //=========================================================================================
     // glShaderSource(GLuint shader, GLsizei count, const GLchar **string, const GLint *length)
     //=========================================================================================
     // Get the source and associate it to the shader ----------------------------------
-    char **lines;
-    size_t num_lines;
+    char **lines = NULL;
+    size_t num_lines = 0;
     read_shader_source(shader_path, &lines, &num_lines);
 #if TRACING
     printf("Successfully read the source.\n");
     for (int i = 0; i < num_lines; i++) {
-        printf(lines[i]);
+        printf("%s", lines[i]);
     }
 #endif
     glShaderSource(shader, num_lines, (const GLchar * const*) lines, NULL);
-    free(lines);
-    // ... memory leak
     free(lines[0]);
+    free(lines);
 #if TRACING
     printf("Successfully associated source to shader.\n");
 #endif
@@ -238,7 +245,7 @@ void load_and_compile_shader(GLuint shader, char *shader_path)
 #if TRACING
     printf("Successfully compiled shader.\n");
 #endif
-    //---------------------------------------------------------------------------------
+    /* //--------------------------------------------------------------------------------- */
 }
 
 void link_shader_program(GLuint shader_program)

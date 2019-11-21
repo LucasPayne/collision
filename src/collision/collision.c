@@ -391,7 +391,7 @@ int main(int argc, char *argv[])
     /* glEnable(GL_SCISSOR_TEST); */
 
     init_program();
-    loop_time(WINDOW, loop);
+    loop_time(WINDOW, loop, GL_COLOR_BUFFER_BIT);
     close_program();
     
     exit(EXIT_SUCCESS);

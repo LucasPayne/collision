@@ -108,7 +108,7 @@ void force_aspect_ratio(GLFWwindow *window, GLsizei width, GLsizei height, doubl
 }
 
 /* This really is just a generic file-to-lines-array reader.*/
-void read_shader_source(char *name, char **lines_out[], size_t *num_lines)
+void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
 {
     /* BUGS:
      *  Lines array must be just indices until the source string is fixed. Otherwise, reallocs of the source
@@ -194,7 +194,7 @@ void read_shader_source(char *name, char **lines_out[], size_t *num_lines)
 #undef LINES_MEM_SIZE_START
 }
 
-void load_and_compile_shader(GLuint shader, char *shader_path)
+void load_and_compile_shader(GLuint shader, const char *shader_path)
 {
 #define TRACING 1
 #if TRACING
@@ -273,9 +273,15 @@ void link_shader_program(GLuint shader_program)
 
 void recompile_shader_program(DynamicShaderProgram *dynamic_shader_program)
 {
-    recompile_shader(dynamic_shader_program->id, dynamic_shader_program->vertex_shader_id, dynamic_shader_program->vertex_shader_path);
-    recompile_shader(dynamic_shader_program->id, dynamic_shader_program->fragment_shader_id, dynamic_shader_program->fragment_shader_path);
-
+    if (dynamic_shader_program->vertex_shader_id != 0) {
+        recompile_shader(dynamic_shader_program->id, dynamic_shader_program->vertex_shader_id, dynamic_shader_program->vertex_shader_path);
+    }
+    if (dynamic_shader_program->fragment_shader_id != 0) {
+        recompile_shader(dynamic_shader_program->id, dynamic_shader_program->fragment_shader_id, dynamic_shader_program->fragment_shader_path);
+    }
+    if (dynamic_shader_program->geometry_shader_id != 0) {
+        recompile_shader(dynamic_shader_program->id, dynamic_shader_program->geometry_shader_id, dynamic_shader_program->geometry_shader_path);
+    }
     link_shader_program(dynamic_shader_program->id);
 }
 
@@ -295,10 +301,13 @@ void print_dynamic_shader_program(DynamicShaderProgram *dynamic_shader_program)
 {
     printf("Dynamic shader program:\n");
     printf("\tShader program id: %d\n", dynamic_shader_program->id);
-    printf("\tFragment shader id: %d\n", dynamic_shader_program->fragment_shader_id);
     printf("\tVertex shader id: %d\n", dynamic_shader_program->vertex_shader_id);
+    printf("\tFragment shader id: %d\n", dynamic_shader_program->fragment_shader_id);
+    printf("\tGeometry shader id: %d\n", dynamic_shader_program->geometry_shader_id);
     printf("\tVertex shader path: %s", dynamic_shader_program->vertex_shader_path);
     putchar('\n');
     printf("\tFragment shader path: %s", dynamic_shader_program->fragment_shader_path);
+    putchar('\n');
+    printf("\tGeometry shader path: %s", dynamic_shader_program->geometry_shader_path);
     putchar('\n');
 }

@@ -24,18 +24,21 @@ void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *), GLbitfield 
 //================================================================================
 // Shaders
 //================================================================================
+#define NO_SHADER 0
 #define MAX_DYNAMIC_SHADER_PROGRAM_PATH_LENGTH 500
 typedef struct DynamicShaderProgram_s {
     GLuint id;
     GLuint vertex_shader_id;
     GLuint fragment_shader_id;
+    GLuint geometry_shader_id;
     char vertex_shader_path[MAX_DYNAMIC_SHADER_PROGRAM_PATH_LENGTH];
     char fragment_shader_path[MAX_DYNAMIC_SHADER_PROGRAM_PATH_LENGTH];
+    char geometry_shader_path[MAX_DYNAMIC_SHADER_PROGRAM_PATH_LENGTH];
 } DynamicShaderProgram;
 
 void link_shader_program(GLuint shader_program);
-void load_and_compile_shader(GLuint shader, char *shader_path);
-void read_shader_source(char *name, char **lines_out[], size_t *num_lines);
+void load_and_compile_shader(GLuint shader, const char *shader_path);
+void read_shader_source(const char *name, char **lines_out[], size_t *num_lines);
 
 void recompile_shader_program(DynamicShaderProgram *dynamic_shader_program);
 void print_dynamic_shader_program(DynamicShaderProgram *dynamic_shader_program);

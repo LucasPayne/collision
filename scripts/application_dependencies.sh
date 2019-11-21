@@ -24,19 +24,28 @@ C_source="$dir/$name.c"
 # echo "$C_source"
 
 # Read the C source file and compile the neccessary object linkings
-python3 - $C_source << END
+python3 - $C_source $name << END
 import sys
 import re
-C_source = [line.strip() for line in open(sys.argv[1]).readlines()]
+C_source_filename = sys.argv[1]
+name = sys.argv[2]
+C_source = [line.strip() for line in open(C_source_filename).readlines()]
 finding = False
-
+mode = ""
 for line in C_source:
     if line.endswith("PROJECT_LIBS:"):
         finding = True
+        mode = "project"
+    elif line.endswith("APPLICATION_LIBS:"):
+        finding = True
+        mode = "application"
     elif finding:
         match = re.match(".*\+ (.*$)", line)
         if match:
-            print(f"build/clutter/lib/{match.group(1)}.o ", sep=" ")
+            if mode == "project":
+                print(f"build/clutter/lib/{match.group(1)}.o ", sep=" ")
+            elif mode == "application":
+                print(f"src/{name}/{match.group(1)}.o ", sep=" ")
         else:
             break
 END

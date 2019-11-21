@@ -119,6 +119,27 @@ void key_callback_arrows_down(GLFWwindow *window, int key,
     }
 }
 
+/* #define NUM_KEYS 2 */
+/* static bool */
+/* void key_callback_extra_down(GLFWwindow *window, int key, */
+/*                 int scancode, int action, */
+/*                 int mods) */
+/* { */
+/*     // More key-down state */
+/*     int keys[NUM_KEYS] = { GLFW_KEY_Q, */
+/*                      GLFW_KEY_E }; */
+/*     if (action == GLFW_PRESS) { */
+/*         for (int i = 0; i < NUM_KEYS; i++) { */
+/*             if (key == */ 
+/*         } */
+/*     } else if (action == GLFW_RELEASE) { */
+/*         for (int i = 0; i < NUM_KEYS; i++) { */
+
+/*         } */
+/*     } */
+/* #undef NUM_KEYS */
+/* } */
+
 void key_callback_quit(GLFWwindow *window, int key,
                 int scancode, int action,
                 int mods)

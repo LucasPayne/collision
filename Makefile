@@ -54,7 +54,7 @@ MAKEFILE=Makefile
 .SECONDEXPANSION:
 
 # Commands and flags
-CC=gcc -rdynamic -Iinclude -Wall
+CC=gcc -rdynamic -Iinclude -Wall -Wno-unused-variable
 CFLAGS=-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL
 
 # General Makefile options
@@ -81,6 +81,11 @@ new: ; $(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 build/clutter/lib/%.o: lib/%.c
 	mkdir -p $(patsubst %.o,%,$@)
 	$(CC) -c $< -o $@
+
+# %.o: $$(echo src/$$@/$$@.c)
+# 	mkdir -p $(patsubst %.o,%,$@)
+# 	$(CC) -c $< -o $@
+
 %: $(SRC_DIR)/$$@/$$@.c $$(shell $(SCRIPTS_DIR)/application_dependencies.sh $$@)
 	$(CC) -o "$(BUILD_DIR)/$@" $^ $(CFLAGS)
 	$(BUILD_DIR)/$@

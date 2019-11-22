@@ -110,6 +110,7 @@ void _iterator_components_of_type2(Iterator *iterator)
 #define TRACING 0
     ComponentType component_type = (ComponentType) iterator->data1.int_val;
     ComponentNode *cur = (ComponentNode *) iterator->data2.ptr_val;
+    /* ComponentNode *cur = NULL; */
 #if TRACING
     if (cur != NULL) {
         printf("%d iterating at %ld ...\n", component_type, cur->component.entity_id);
@@ -227,6 +228,10 @@ static void update_system(System *system)
             }
             Component *component = (Component *) iterator.val;
             system->update(component);
+            if (iterator.data2.ptr_val == NULL) { // it appears i may need to do this. this iterator thing is too complicated and unneccessary
+                // whole point goes out the window
+                break;
+            }
         }
     }
 }

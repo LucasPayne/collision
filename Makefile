@@ -54,7 +54,7 @@ MAKEFILE=Makefile
 .SECONDEXPANSION:
 
 # Commands and flags
-CC=gcc -rdynamic -Iinclude -Wall -Wno-unused-variable
+CC=gcc -rdynamic -Iinclude -Wall
 CFLAGS=-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL
 
 # General Makefile options

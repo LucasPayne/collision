@@ -24,6 +24,20 @@ void right_multiply_matrix4x4f(Matrix4x4f *matrix, Matrix4x4f *B)
     }
     memcpy(matrix->vals, scratch, sizeof(matrix->vals));
 }
+void right_multiply_by_transpose_matrix4x4f(Matrix4x4f *matrix, Matrix4x4f *B)
+{
+    float scratch[4 * 4];
+    for (int i = 0; i < 4; i++) { // col of B
+        for(int j = 0; j < 4; j++) { // row of matrix
+            float dot  = 0;
+            for (int k = 0; k < 4; k++) { // through the col of B and row of matrix
+                dot += matrix->vals[j + 4*k] * B->vals[i + 4*k];
+            }
+            scratch[j + 4*i] = dot;
+        }
+    }
+    memcpy(matrix->vals, scratch, sizeof(matrix->vals));
+}
 
 void identity_matrix3x3f(Matrix3x3f *matrix)
 {
@@ -211,3 +225,10 @@ void translate_rotate_3d_matrix4x4f(Matrix4x4f *matrix, float x, float y, float 
     matrix->vals[1 + 3*4] = y;
     matrix->vals[2 + 3*4] = z;
 }
+
+/* void lookat_matrix4x4f(Matrix4x4f *matrix, float x, float y, float z, float at_x, float at_y, float at_z) */
+/* { */
+/*     /1* Create a matrix intended to be used for position a camera, which orients it in the x-z plane with Euler y rotations, then */
+/*      * tilts toward the given position. *1/ */
+/* } */
+

@@ -34,6 +34,7 @@ void y_angle_rotate_matrix3x3f(Matrix3x3f *matrix, float theta);
 void z_angle_rotate_matrix3x3f(Matrix3x3f *matrix, float theta);
 
 void translate_rotate_3d_matrix4x4f(Matrix4x4f *matrix, float x, float y, float z, float x_theta, float y_theta, float z_theta);
+void right_multiply_by_transpose_matrix4x4f(Matrix4x4f *matrix, Matrix4x4f *B);
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

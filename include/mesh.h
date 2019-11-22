@@ -19,10 +19,9 @@ enum ShaderType {
 };
 
 typedef struct Renderer_s {
-    Matrix4x4f view_matrix;
-
+    GLuint primitive_mode;
     // Standard uniforms
-    GLuint uniform_modelview_matrix;
+    GLuint uniform_mvp_matrix;
 
     // Todo: how to organize this?
     // Variable list of uniforms that should update on mesh render, versus in the loop,
@@ -66,13 +65,13 @@ typedef struct MeshHandle_s {
 void free_mesh(Mesh *mesh);
 void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh);
 void bind_renderer(Renderer *renderer);
-void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, Matrix4x4f *model_matrix);
+void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, Matrix4x4f *model_matrix, Matrix4x4f *view_matrix, Matrix4x4f *projection_matrix);
 
 void create_cube_mesh(Mesh *mesh, float size);
 
 void make_sphere(Mesh *mesh, float radius, int tess);
 void zero_init_renderer(Renderer *renderer);
-void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path);
+void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path, GLuint primitive_mode);
 
 GLuint renderer_shader_of_type(Renderer *renderer, int shader_type);
 char *renderer_shader_path_of_type(Renderer *renderer, int shader_type);

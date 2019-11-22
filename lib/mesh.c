@@ -194,29 +194,33 @@ void bind_renderer(Renderer *renderer)
     glUseProgram(renderer->program);
 }
 
-void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, Matrix4x4f *model_matrix)
+void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, Matrix4x4f *model_matrix, Matrix4x4f *view_matrix, Matrix4x4f *projection_matrix)
 {
     bind_renderer(renderer);
 
-    // Concatenate the given model matrix with the renderer's view matrix
-    Matrix4x4f modelview_matrix;
-    copy_matrix4x4f(&modelview_matrix, model_matrix);
-    right_multiply_matrix4x4f(&modelview_matrix, &renderer->view_matrix);
+    // Concatenate the given model matrix with the given view matrix and projection matrix
+    Matrix4x4f mvp_matrix;
+    identity_matrix4x4f(&mvp_matrix);
 
-    glUniformMatrix4fv(renderer->uniform_modelview_matrix, 1, GL_TRUE, (const GLfloat *) &modelview_matrix.vals);
+    right_multiply_matrix4x4f(&mvp_matrix, projection_matrix);
+    // into view coordinates
+    right_multiply_by_transpose_matrix4x4f(&mvp_matrix, view_matrix);
+    // into model relative coordinates
+    right_multiply_by_transpose_matrix4x4f(&mvp_matrix, model_matrix);
+
+    glUniformMatrix4fv(renderer->uniform_mvp_matrix, 1, GL_TRUE, (const GLfloat *) &mvp_matrix.vals);
     glBindVertexArray(mesh_handle->vao);
-    glDrawElements(GL_TRIANGLES, 3 * mesh_handle->num_triangles, GL_UNSIGNED_INT, (void *) 0);
+    glDrawElements(renderer->primitive_mode, 3 * mesh_handle->num_triangles, GL_UNSIGNED_INT, (void *) 0);
 }
 
 void zero_init_renderer(Renderer *renderer)
 {
     memset(renderer, 0, sizeof(Renderer));
     // if something is "zero initialized" to something other than 0, change this here.
-    identity_matrix4x4f(&renderer->view_matrix);
 }
 
 #define TRACING 1
-void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path)
+void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path, GLuint primitive_mode)
 {
     /* Creates a new renderer only using vertex and fragment shaders. */
     zero_init_renderer(renderer);
@@ -250,6 +254,8 @@ void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, 
     glAttachShader(renderer->program, renderer->vertex_shader);
     glAttachShader(renderer->program, renderer->fragment_shader);
     link_shader_program(renderer->program);
+
+    renderer->primitive_mode = primitive_mode;
 }
 
 
@@ -287,8 +293,6 @@ void print_renderer(Renderer *renderer)
             printf("\tid: %d\n", renderer_shader_of_type(renderer, i));
         }
     }
-    printf("View matrix:\n");
-    print_matrix4x4f(&renderer->view_matrix);
 }
 
 void print_mesh_handle(MeshHandle *mesh_handle)

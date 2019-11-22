@@ -171,12 +171,14 @@ static void movement_controls_2(Entity *entity)
 }
 static void random_move(Entity *entity)
 {
-
+    /* "random" */
+    Transform *transform = get_entity_component_of_type(entity->id, Transform);
+    translate_matrix4x4f(&transform->matrix, (0.2 + 16*frand()) * 0.1 * cos(frand() * time()) * dt(), (0.2 + 16*frand()) * 0.2 * sin(frand() * 1.3*time()) * dt(), (0.2 + 16*frand()) * 0.13 * (sin(frand() * time()) + cos(time()))*dt());
 }
 //--------------------------------------------------------------------------------
 
 // "things", testing viewing these
-static void create_thing(EntityID parent_id, char *name, float x, float y, float z, Mesh *mesh, void (*update) (Entity *))
+static EntityID create_thing(EntityID parent_id, char *name, float x, float y, float z, Mesh *mesh, void (*update) (Entity *))
 {
     EntityID new_thing = create_entity(parent_id, name);
     Transform *transform = entity_add_component_get(new_thing, "Transform", Transform);
@@ -189,6 +191,8 @@ static void create_thing(EntityID parent_id, char *name, float x, float y, float
 
     ObjectLogic *object_logic = entity_add_component_get(new_thing, "Object logic", ObjectLogic);
     object_logic->update = update;
+
+    return new_thing;
 }
 
 void init_program(void)
@@ -238,7 +242,9 @@ void init_program(void)
     for (int i = 0; i < 20; i++) {
         Mesh mesh;
         make_sphere(&mesh, 0.2 + 0.2*frand(), 12);
-        create_thing(UNIVERSE_ID, "sphere", 2.0*frand() - 1.0, 2.0*frand() - 1.0, -6.0*frand(), &mesh, movement_controls_1);
+        EntityID sphere = create_thing(UNIVERSE_ID, "sphere", 2.0*frand() - 1.0, 2.0*frand() - 1.0, -6.0*frand(), &mesh, random_move);
+        ObjectLogic *object_logic = entity_add_component_get(sphere, "controls", ObjectLogic);
+        object_logic->update = movement_controls_1;
     }
 }
 void loop(GLFWwindow *window)

@@ -18,10 +18,29 @@ enum ShaderType {
     NUM_SHADER_TYPES
 };
 
+
+typedef union UniformData_union {
+    GLuint int_value;
+    GLfloat float_value;
+} UniformData;
+#define MAX_UNIFORM_NAME_LENGTH 32
+typedef struct Uniform_s {
+    char name[MAX_UNIFORM_NAME_LENGTH];
+    GLuint location;
+    GLuint type;
+    UniformData (*get_uniform_value)(void);
+} Uniform;
+
+#define MAX_RENDERER_UNIFORMS 8
 typedef struct Renderer_s {
+
     GLuint primitive_mode;
     // Standard uniforms
     GLuint uniform_mvp_matrix;
+
+    // Renderer specific uniforms
+    int num_uniforms;
+    Uniform uniforms[MAX_RENDERER_UNIFORMS];
 
     // Todo: how to organize this?
     // Variable list of uniforms that should update on mesh render, versus in the loop,
@@ -78,5 +97,7 @@ char *renderer_shader_path_of_type(Renderer *renderer, int shader_type);
 void print_renderer(Renderer *renderer);
 
 void print_mesh_handle(MeshHandle *mesh_handle);
+Uniform *renderer_add_uniform(Renderer *renderer, char *name, UniformData (*get_uniform_value)(void), GLuint uniform_type);
+void renderer_upload_uniforms(Renderer *renderer);
 
 #endif // HEADER_DEFINED_MESH

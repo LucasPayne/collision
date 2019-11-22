@@ -54,9 +54,54 @@ typedef struct ObjectLogic_s {
     void (*update) (Entity *);
 } ObjectLogic;
 
+void reshape(GLFWwindow* window, int width, int height);
+void close_program(void);
+void loop(GLFWwindow *window);
+void init_program(void);
+static EntityID create_thing(EntityID parent_id, char *name, float x, float y, float z, Mesh *mesh, void (*update) (Entity *));
+static void alt_arrow_keys_move(float speed, float *x, float *y);
+static void arrow_keys_move(float speed, float *x, float *y);
+static void object_logic_update(Component *component);
+static void mesh_rendering_update(Component *component);
+static Camera *get_singleton_camera();
+static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
+static void key_callback(GLFWwindow *window, int key,
+                int scancode, int action,
+                int mods);
+static void movement_controls_1(Entity *entity);
+static void movement_controls_2(Entity *entity);
+static void random_move(Entity *entity);
+
+// Game logic, update functions for objects
+//--------------------------------------------------------------------------------
+static void movement_controls_1(Entity *entity)
+{
+    Transform *transform = get_entity_component_of_type(entity->id, Transform);
+    float move_x, move_y;
+    arrow_keys_move(3.0, &move_x, &move_y);
+
+    /* euler_rotate_matrix4x4f( &transform->matrix, move_x, move_y, move_z); */
+    translate_matrix4x4f(&transform->matrix, move_x, 0, move_y);
+}
+static void movement_controls_2(Entity *entity)
+{
+    Transform *transform = get_entity_component_of_type(entity->id, Transform);
+    float move_x, move_y, move_z;
+    alt_arrow_keys_move(3.0, &move_x, &move_y);
+    euler_rotate_matrix4x4f(&transform->matrix, 0, move_x, 0);
+}
+static void random_move(Entity *entity)
+{
+    /* "random" */
+    Transform *transform = get_entity_component_of_type(entity->id, Transform);
+    translate_matrix4x4f(&transform->matrix, (0.2 + 16*frand()) * 0.1 * cos(frand() * time()) * dt(), (0.2 + 16*frand()) * 0.2 * sin(frand() * 1.3*time()) * dt(), (0.2 + 16*frand()) * 0.13 * (sin(frand() * time()) + cos(time()))*dt());
+}
+//--------------------------------------------------------------------------------
+
 // Globals for testing -----------------------------------------------------------
 static double ASPECT_RATIO;
 //--------------------------------------------------------------------------------
+
 
 static void key_callback(GLFWwindow *window, int key,
                 int scancode, int action,
@@ -68,7 +113,22 @@ static void key_callback(GLFWwindow *window, int key,
         if (key == GLFW_KEY_T) {
             print_entity_tree();
         }
+        if (key == GLFW_KEY_SPACE) {
+            for (int i = 0; i < 5; i++) {
+                Mesh mesh;
+                create_cube_mesh(&mesh, 0.2 + 0.2*frand());
+                create_thing(UNIVERSE_ID, "cube", 2.0*frand() - 1.0, 2.0*frand() - 1.0, -6.0*frand(), &mesh, NULL);
+            }
+            for (int i = 0; i < 3; i++) {
+                Mesh mesh;
+                make_sphere(&mesh, 0.2 + 0.2*frand(), 12);
+                EntityID sphere = create_thing(UNIVERSE_ID, "sphere", 2.0*frand() - 1.0, 2.0*frand() - 1.0, -6.0*frand(), &mesh, random_move);
+                /* ObjectLogic *object_logic = entity_add_component_get(sphere, "controls", ObjectLogic); */
+                /* object_logic->update = movement_controls_1; */
+            }
+        }
     }
+
 }
 
 static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
@@ -151,31 +211,6 @@ static void alt_arrow_keys_move(float speed, float *x, float *y)
         *x += speed * dt();
     }
 }
-//--------------------------------------------------------------------------------
-
-static void movement_controls_1(Entity *entity)
-{
-    Transform *transform = get_entity_component_of_type(entity->id, Transform);
-    float move_x, move_y;
-    arrow_keys_move(3.0, &move_x, &move_y);
-
-    /* euler_rotate_matrix4x4f( &transform->matrix, move_x, move_y, move_z); */
-    translate_matrix4x4f(&transform->matrix, move_x, 0, move_y);
-}
-static void movement_controls_2(Entity *entity)
-{
-    Transform *transform = get_entity_component_of_type(entity->id, Transform);
-    float move_x, move_y, move_z;
-    alt_arrow_keys_move(3.0, &move_x, &move_y);
-    euler_rotate_matrix4x4f(&transform->matrix, move_x, move_y, 0);
-}
-static void random_move(Entity *entity)
-{
-    /* "random" */
-    Transform *transform = get_entity_component_of_type(entity->id, Transform);
-    translate_matrix4x4f(&transform->matrix, (0.2 + 16*frand()) * 0.1 * cos(frand() * time()) * dt(), (0.2 + 16*frand()) * 0.2 * sin(frand() * 1.3*time()) * dt(), (0.2 + 16*frand()) * 0.13 * (sin(frand() * time()) + cos(time()))*dt());
-}
-//--------------------------------------------------------------------------------
 
 // "things", testing viewing these
 static EntityID create_thing(EntityID parent_id, char *name, float x, float y, float z, Mesh *mesh, void (*update) (Entity *))
@@ -189,12 +224,20 @@ static EntityID create_thing(EntityID parent_id, char *name, float x, float y, f
     mesh_renderer->transform = transform->component.id; // hook up reference to transform
     upload_and_free_mesh(&mesh_renderer->mesh_handle, mesh);
 
-    ObjectLogic *object_logic = entity_add_component_get(new_thing, "Object logic", ObjectLogic);
+    ObjectLogic *object_logic = entity_add_component_get(new_thing, "thing logic", ObjectLogic);
     object_logic->update = update;
 
     return new_thing;
 }
 
+// Functions to retrieve uniform values for renderers
+static UniformData uniform_get_aspect_ratio(void)
+{
+    UniformData data;
+    data.float_value = ASPECT_RATIO;
+    return data;
+}
+//--------------------------------------------------------------------------------
 void init_program(void)
 {
     init_entity_model();
@@ -204,19 +247,11 @@ void init_program(void)
         EntityID camera_entity = create_entity(UNIVERSE_ID, "camera");
         Transform *transform = entity_add_component_get(camera_entity, "Transform", Transform);
         identity_matrix4x4f(&transform->matrix);
-        translate_matrix4x4f(&transform->matrix, 0, 0, -1);
+        translate_matrix4x4f(&transform->matrix, 0, 0, -2);
 
         Camera *camera = entity_add_component_get(camera_entity, "Camera", Camera);
         identity_matrix4x4f(&camera->projection_matrix); // for now
 
-        /* float near = 0.1; */
-        /* float far = 12.0; */
-        /* float vals[] = { */
-        /*     -near, 0, 0, 0, */
-        /*     0, -near, 0, 0, */
-        /*     0, 0, (far + near)/(far - near), 2*near*far/(far - near), */
-        /*     0, 0, -1, 0, */
-        /* }; */
         float vals[] = {
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -225,27 +260,21 @@ void init_program(void)
         };
         memcpy(camera->projection_matrix.vals, vals, sizeof(vals));
         
-
         new_renderer_vertex_fragment(&camera->renderer, SHADERS_LOCATION "isometric.vert", SHADERS_LOCATION "isometric.frag", GL_TRIANGLES);
+        renderer_add_uniform(&camera->renderer, "aspect_ratio", uniform_get_aspect_ratio, GL_FLOAT);
+
         // hook up reference to transform in the camera component (it depends on a Transform sibling)
         camera->transform = transform->component.id;
 
-        ObjectLogic *object_logic = entity_add_component_get(camera_entity, "Object logic", ObjectLogic);
-        object_logic->update = movement_controls_2;
+        {
+            ObjectLogic *object_logic = entity_add_component_get(camera_entity, "controls 1", ObjectLogic);
+            object_logic->update = movement_controls_1;
+        } {
+            ObjectLogic *object_logic = entity_add_component_get(camera_entity, "controls 2", ObjectLogic);
+            object_logic->update = movement_controls_2;
+        }
     }
 
-    for (int i = 0; i < 30; i++) {
-        Mesh mesh;
-        create_cube_mesh(&mesh, 0.2 + 0.2*frand());
-        create_thing(UNIVERSE_ID, "cube", 2.0*frand() - 1.0, 2.0*frand() - 1.0, -6.0*frand(), &mesh, movement_controls_1);
-    }
-    for (int i = 0; i < 20; i++) {
-        Mesh mesh;
-        make_sphere(&mesh, 0.2 + 0.2*frand(), 12);
-        EntityID sphere = create_thing(UNIVERSE_ID, "sphere", 2.0*frand() - 1.0, 2.0*frand() - 1.0, -6.0*frand(), &mesh, random_move);
-        ObjectLogic *object_logic = entity_add_component_get(sphere, "controls", ObjectLogic);
-        object_logic->update = movement_controls_1;
-    }
 }
 void loop(GLFWwindow *window)
 {
@@ -306,4 +335,5 @@ int main(int argc, char *argv[])
     glfwTerminate();
 
     exit(EXIT_SUCCESS);
+
 }

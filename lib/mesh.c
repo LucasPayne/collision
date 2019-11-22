@@ -194,8 +194,31 @@ void bind_renderer(Renderer *renderer)
     glUseProgram(renderer->program);
 }
 
+
+void renderer_upload_uniforms(Renderer *renderer)
+{
+    /* Upload the uniform data */
+    for (int i = 0; i < renderer->num_uniforms; i++) {
+        if (renderer->uniforms[i].get_uniform_value == NULL) {
+            // better check this when calling a pointed-to function
+            fprintf(stderr, "ERROR: not initialized a uniform value-getting function for renderer.\n");
+            exit(EXIT_FAILURE);
+        }
+        if (renderer->uniforms[i].type == GL_FLOAT) {
+            float val = renderer->uniforms[i].get_uniform_value().float_value;
+            glUniform1f(renderer->uniforms[i].location, val);
+        }
+        else if (renderer->uniforms[i].type == GL_INT) {
+            int val = renderer->uniforms[i].get_uniform_value().int_value;
+            glUniform1i(renderer->uniforms[i].location, val);
+        }
+    }
+}
+
 void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, Matrix4x4f *model_matrix, Matrix4x4f *view_matrix, Matrix4x4f *projection_matrix)
 {
+    renderer_upload_uniforms(renderer); // do this on mesh pass I guess
+
     bind_renderer(renderer);
 
     // Concatenate the given model matrix with the given view matrix and projection matrix
@@ -203,10 +226,17 @@ void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, Matrix4x4f *model_
     identity_matrix4x4f(&mvp_matrix);
 
     right_multiply_matrix4x4f(&mvp_matrix, projection_matrix);
-    // into view coordinates
-    right_multiply_by_transpose_matrix4x4f(&mvp_matrix, view_matrix);
+
+    // Because these are actually the coordinate frames, they are inverted
+    // (transposed, since they are orthonormal matrices (hopefully)).
+    // @@previous_problem@@:
+    //      since they are coordinate frames, they must be explicitly inverted. This reverses
+    //      the order they appear in the mvp matrix calculation. Also, should just think of
+    //      what the transformations actually do. This gets the matrix P M^-1 V^-1, ...
     // into model relative coordinates
     right_multiply_by_transpose_matrix4x4f(&mvp_matrix, model_matrix);
+    // into view coordinates
+    right_multiply_by_transpose_matrix4x4f(&mvp_matrix, view_matrix);
 
     glUniformMatrix4fv(renderer->uniform_mvp_matrix, 1, GL_TRUE, (const GLfloat *) &mvp_matrix.vals);
     glBindVertexArray(mesh_handle->vao);
@@ -256,6 +286,8 @@ void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, 
     link_shader_program(renderer->program);
 
     renderer->primitive_mode = primitive_mode;
+
+    renderer->num_uniforms = 0;
 }
 
 
@@ -307,3 +339,27 @@ void print_mesh_handle(MeshHandle *mesh_handle)
         printf("\t%d\n", mesh_handle->vbos[i]);
     }
 }
+
+Uniform *renderer_add_uniform(Renderer *renderer, char *name, UniformData (*get_uniform_value)(void), GLuint uniform_type)
+{
+    // uniform type: a GL_ type
+    if (renderer->num_uniforms >= MAX_RENDERER_UNIFORMS) {
+        fprintf(stderr, "ERROR: too many uniforms added to renderer.\n");
+        exit(EXIT_FAILURE);
+    }
+    Uniform *new_uniform = &renderer->uniforms[renderer->num_uniforms];
+    
+    if (strlen(name) > MAX_UNIFORM_NAME_LENGTH) {
+        fprintf(stderr, "ERROR: uniform name \"%s\" too long (MAX_UNIFORM_NAME_LENGTH: %d).\n", name, MAX_UNIFORM_NAME_LENGTH);
+        exit(EXIT_FAILURE);
+    }
+    strncpy(new_uniform->name, name, MAX_UNIFORM_NAME_LENGTH);
+
+    new_uniform->location = glGetUniformLocation(renderer->program, new_uniform->name);
+    new_uniform->get_uniform_value = get_uniform_value;
+    new_uniform->type = uniform_type;
+
+    renderer->num_uniforms ++;
+    return new_uniform;
+}
+

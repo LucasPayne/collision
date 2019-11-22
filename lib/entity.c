@@ -22,7 +22,6 @@
 #include <string.h>
 #include <math.h>
 #include "helper_definitions.h"
-#include "shapes.h"
 #include "entity.h"
 #include "iterator.h"
 

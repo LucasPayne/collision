@@ -4,7 +4,6 @@
       more mathematical operations and shape/geometric types.
    Shapes module.
 ================================================================================*/
-
 #ifndef HEADER_DEFINED_SHAPES
 #define HEADER_DEFINED_SHAPES
 

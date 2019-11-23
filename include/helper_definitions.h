@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Quick double-precision random number [0, 1]. From K&R.
+// Quick double-precision random number [0, 1). From K&R.
 #define frand() ((double) rand() / (RAND_MAX+1.0))
 
 //================================================================================

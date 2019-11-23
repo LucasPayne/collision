@@ -1,15 +1,13 @@
-/*
- * OpenGL, GLFW, glad, etc. helper functions to be included in every build.
- */
-
+/*-------------------------------------------------------------------------------
+    OpenGL, GLFW, glad, etc. helper functions.
+-------------------------------------------------------------------------------*/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "helper_gl.h"
+
 
 // Static function declarations --------------------------------------------------
 static void recompile_shader(GLuint shader_program, GLuint shader, char *path);

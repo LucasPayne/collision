@@ -1,14 +1,17 @@
 /*--------------------------------------------------------------------------------
    Definitions for the matrix mathematics module.
+   See header for details.
 --------------------------------------------------------------------------------*/
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "matrix_mathematics.h"
 
+// Static helper functions
+//--------------------------------------------------------------------------------
 static void print_matrixNxNf(Matrix4x4f *matrix, int N);
+//--------------------------------------------------------------------------------
 
 void right_multiply_matrix4x4f(Matrix4x4f *matrix, Matrix4x4f *B)
 {

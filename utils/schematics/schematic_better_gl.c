@@ -1,10 +1,9 @@
-/* PROJECT_LIBS:
- *      + glad
- *      + helper_gl
- *      + helper_input
- * 
- * CREATED FROM SHADERS SCHEMATIC
- */
+/*================================================================================
+PROJECT_LIBS:
+     + glad
+     + helper_gl
+     + helper_input
+================================================================================*/
 #define SHADERS_LOCATION "/home/lucas/code/collision/src/shader_test/"
 
 #include <glad/glad.h>

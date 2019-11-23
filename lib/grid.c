@@ -2,7 +2,6 @@
    Definitions for the grid system.
    See header for details.
 ---------------------------------------------------------------------------------*/
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdbool.h>

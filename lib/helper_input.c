@@ -1,12 +1,9 @@
-/*
- *
- */
-
-#include <stdbool.h>
-
+/*--------------------------------------------------------------------------------
+    Definitions for the input helper module.
+--------------------------------------------------------------------------------*/
 #include <GLFW/glfw3.h>
+#include <stdbool.h>
 #include "helper_input.h"
-
 
 
 // Dual hjkl and arrow keys

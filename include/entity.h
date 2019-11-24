@@ -51,14 +51,12 @@ typedef struct Component_structure {
     EntityID entity_id;
     ComponentType type;
     bool on;
-    bool marked_for_destruction;
     char name[MAX_COMPONENT_NAME_LENGTH];
 } Component;
 typedef struct Entity_structure {
     EntityID id;
     EntityID parent_id;
     bool on;
-    bool marked_for_destruction;
     char name[MAX_ENTITY_NAME_LENGTH];
     EntityID children[MAX_ENTITY_CHILDREN];
     ComponentID components[MAX_ENTITY_COMPONENTS];

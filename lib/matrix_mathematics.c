@@ -10,7 +10,7 @@
 
 // Static helper functions
 //--------------------------------------------------------------------------------
-static void print_matrixNxNf(Matrix4x4f *matrix, int N);
+static void fprint_matrixNxNf(FILE *file, Matrix4x4f *matrix, int N);
 //--------------------------------------------------------------------------------
 
 void right_multiply_matrix4x4f(Matrix4x4f *matrix, Matrix4x4f *B)
@@ -63,23 +63,31 @@ void right_multiply_matrix3x3f(Matrix3x3f *matrix, Matrix3x3f *B)
     memcpy(&scratch.vals, &matrix->vals, sizeof(matrix->vals));
 }
 
-void print_matrix3x3f(Matrix4x4f *matrix)
+void print_matrix3x3f(Matrix3x3f *matrix)
 {
-    print_matrixNxNf(matrix, 3);
+    fprint_matrixNxNf(stdout, matrix, 3);
 }
 void print_matrix4x4f(Matrix4x4f *matrix)
 {
-    print_matrixNxNf(matrix, 4);
+    fprint_matrixNxNf(stdout, matrix, 4);
 }
-static void print_matrixNxNf(Matrix4x4f *matrix, int N)
+void fprint_matrix3x3f(FILE *file, Matrix3x3f *matrix)
+{
+    fprint_matrixNxNf(file, matrix, 3);
+}
+void fprint_matrix4x4f(FILE *file, Matrix4x4f *matrix)
+{
+    fprint_matrixNxNf(file, matrix, 4);
+}
+static void fprint_matrixNxNf(FILE *file, Matrix4x4f *matrix, int N)
 {
     for (int i = 0; i < N; i++) {
         putchar('[');
         for (int j = 0; j < N; j++) {
-            printf("%.2lf", matrix->vals[i + N*j]);
-            if (j != N - 1) printf(", ");
+            fprintf(file, "%.2lf", matrix->vals[i + N*j]);
+            if (j != N - 1) fprintf(file, ", ");
         }
-        printf("]\n");
+        fprintf(file, "]\n");
     }
 }
 
@@ -227,6 +235,16 @@ void translate_rotate_3d_matrix4x4f(Matrix4x4f *matrix, float x, float y, float 
     matrix->vals[0 + 3*4] = x;
     matrix->vals[1 + 3*4] = y;
     matrix->vals[2 + 3*4] = z;
+}
+
+// --------- INCORRECT!
+void scale_matrix4x4f(Matrix4x4f *matrix, float scale_factor)
+{
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            matrix->vals[i + 3*j] *= scale_factor;
+        }
+    }
 }
 
 /* void lookat_matrix4x4f(Matrix4x4f *matrix, float x, float y, float z, float at_x, float at_y, float at_z) */

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "helper_definitions.h"
 #include "helper_gl.h"
 
 
@@ -120,7 +121,7 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
 #define LINES_MEM_SIZE_START 128
     FILE *fd = fopen(name, "r");
     if (fd == NULL) {
-        fprintf(stderr, "ERROR: Shader %s does not exist.\n", name);
+        fprintf(stderr, ERROR_ALERT "Shader %s does not exist.\n", name);
         exit(EXIT_FAILURE);
     }
     char line[SHADER_SOURCE_LINE_MAX_LENGTH];
@@ -269,6 +270,7 @@ void link_shader_program(GLuint shader_program)
     }
 }
 
+//--- deprecate this
 void recompile_shader_program(DynamicShaderProgram *dynamic_shader_program)
 {
     if (dynamic_shader_program->vertex_shader_id != 0) {

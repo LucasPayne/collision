@@ -47,6 +47,10 @@ void z_angle_rotate_matrix3x3f(Matrix3x3f *matrix, float theta);
 //--------------------------------------------------------------------------------
 void translate_matrix4x4f(Matrix4x4f *matrix, float x, float y, float z);
 
+// Scaling
+//--------------------------------------------------------------------------------
+void scale_matrix4x4f(Matrix4x4f *matrix, float scale_factor);
+
 // Homogeneous transformations and coordinate frames
 //--------------------------------------------------------------------------------
 void translate_rotate_3d_matrix4x4f(Matrix4x4f *matrix, float x, float y, float z, float x_theta, float y_theta, float z_theta);
@@ -59,8 +63,10 @@ void copy_matrix4x4f(Matrix4x4f *new, Matrix4x4f *copy_from);
 
 // Printing and serialization
 //================================================================================
+void fprint_matrix4x4f(FILE *file, Matrix4x4f *matrix);
+void fprint_matrix3x3f(FILE *file, Matrix3x3f *matrix);
 void print_matrix4x4f(Matrix4x4f *matrix);
-
+void print_matrix3x3f(Matrix3x3f *matrix);
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

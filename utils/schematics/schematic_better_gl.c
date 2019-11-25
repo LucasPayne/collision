@@ -1,8 +1,10 @@
 /*================================================================================
 PROJECT_LIBS:
-     + glad
-     + helper_gl
-     + helper_input
+    + glad
+    + helper_gl
+    + helper_input
+    + entity
+    + iterator
 ================================================================================*/
 #define SHADERS_LOCATION "/home/lucas/code/collision/src/shader_test/"
 
@@ -17,6 +19,7 @@ PROJECT_LIBS:
 
 #include "helper_gl.h"
 #include "helper_input.h"
+#include "entity.h"
 
 // Globals for testing -----------------------------------------------------------
 static double ASPECT_RATIO;
@@ -28,15 +31,20 @@ static void key_callback(GLFWwindow *window, int key,
 {
     key_callback_quit(window, key, scancode, action, mods);
     key_callback_arrows_down(window, key, scancode, action, mods);
+
+    if (action == GLFW_PRESS && key == GLFW_KEY_SPACE) {
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        printf("%d %d\n", width, height);
+    }
 }
 
-static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
-{
-
-}
 
 void init_program(void)
 {
+    init_entity_model();
+    EntityID cube = new_entity(3);
+    entity_add_aspect(
 }
 void loop(GLFWwindow *window)
 {
@@ -48,14 +56,10 @@ void close_program(void)
 void reshape(GLFWwindow* window, int width, int height)
 {
     force_aspect_ratio(window, width, height, ASPECT_RATIO);
-    GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
-    printf("x:%d, y: %d, width: %d, height: %d\n", viewport[0], viewport[1], viewport[2], viewport[3]);
 }
+
 int main(int argc, char *argv[])
 {
-    /* Main function should be purely GLFW, window and context functions, and calls to the program init, loop, and close */
-
     GLFWwindow *window;
     int horiz = 512;
     int vert = 512;
@@ -78,10 +82,25 @@ int main(int argc, char *argv[])
     gladLoadGL();
     glfwSwapInterval(1);
 
+    // Shaders
+    //--------------------------------------------------------------------------------
+    char *vertex_shader_path = SHADERS_LOCATION "shader.vert";
+    char *fragment_shader_path = SHADERS_LOCATION "shader.frag";
+    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    
+    load_and_compile_shader(vertex_shader, vertex_shader_path);
+    load_and_compile_shader(fragment_shader, fragment_shader_path);
+
+    GLuint shader_program = glCreateProgram();
+    glAttachShader(shader_program, vertex_shader);
+    glAttachShader(shader_program, fragment_shader);
+    link_shader_program(shader_program);
+    glUseProgram(shader_program);
+
     ASPECT_RATIO = SCREEN_ASPECT_RATIO;
-    glClearColor(1.0, 1.0, 1.0, 1.0);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
     glfwSetKeyCallback(window, key_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetFramebufferSizeCallback(window, reshape);
 
     init_program();

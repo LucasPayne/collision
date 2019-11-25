@@ -1,15 +1,15 @@
-/* PROJECT_LIBS:
- *      + glad
- *      + helper_gl
- *      + helper_input
- *      + matrix_mathematics
- *      + mesh
- *      + mesh_gen
- *      + deprecated/entity
- *      + iterator
- * 
- * Isometric viewing
- */
+/*================================================================================
+PROJECT_LIBS:
+    + glad
+    + helper_gl
+    + helper_input
+    + matrix_mathematics
+    + mesh
+    + mesh_gen
+    + deprecated/entity
+    + iterator
+Isometric viewing
+================================================================================*/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>

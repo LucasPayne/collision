@@ -134,6 +134,7 @@ typedef struct MeshHandle_s {
 //================================================================================
     void print_renderer(Renderer *renderer);
     void print_mesh_handle(MeshHandle *mesh_handle);
+    void serialize_mesh_handle(FILE *file, MeshHandle *mesh_handle);
 
 //================================================================================
 // Helper functions

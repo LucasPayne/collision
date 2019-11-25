@@ -238,6 +238,21 @@ void print_mesh_handle(MeshHandle *mesh_handle)
     }
 }
 
+//--- this shouldn't have to be done for every struct ...
+void serialize_mesh_handle(FILE *file, MeshHandle *mesh_handle)
+{
+    fprintf(file, "name: %s\n", mesh_handle->name);
+    fprintf(file, "vao: %d\n", mesh_handle->vao);
+    fprintf(file, "vbos: ["); //--- need standards for serialization
+    for (int i = 0; i < MAX_MESH_VBOS; i++) {
+        if (mesh_handle->vbos[i] == 0) break;
+        if (i != 0) fprintf(file, ", ");
+        fprintf(file, "%d", mesh_handle->vbos[i]);
+    }
+    fprintf(file, "]\n");
+    fprintf(file, "num_vertices: %u\n", mesh_handle->num_vertices);
+    fprintf(file, "num_triangles: %u\n", mesh_handle->num_triangles);
+}
 
 Uniform *renderer_add_uniform(Renderer *renderer, char *name, UniformData (*get_uniform_value)(void), GLuint uniform_type)
 {

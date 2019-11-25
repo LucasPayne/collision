@@ -75,8 +75,10 @@ managers control serialization of their aspects?
 #include "helper_definitions.h"
 #include "entity.h"
 
+// Small values for testing
+
 static bool entity_model_active = false;
-#define ENTITY_MAP_START_SIZE 10 // for some reason, if this is too small, it seg faults. except on another test, where it is fine ...
+#define ENTITY_MAP_START_SIZE 12
 static EntityMapEntry *entity_map = NULL;
 static unsigned int entity_map_size = 0;
 
@@ -178,15 +180,18 @@ void init_entity_model(void)
 
 static void extend_entity_map(void)
 {
+    //- I did this for the other array extenders, but apparently not having it here was a source
+    // of a bug. Must initialize new space on realloc!
+    
     // Linearly increase the amount of space
+    int previous_size = entity_map_size;
     entity_map_size += ENTITY_MAP_START_SIZE;
     entity_map = (EntityMapEntry *) realloc(entity_map, sizeof(EntityMapEntry) * entity_map_size);
     mem_check(entity_map);
+    memset(entity_map + previous_size, 0, sizeof(EntityMapEntry) * (entity_map_size - previous_size));
 }
 
 
-// doesn't seem to improve anything. shouldn't it?
-/* static int entity_map_index_start = 0; */
 static EntityID create_entity_id(void)
 {
     /* Creating a new entity id does not actually do anything with the map (except extend it possibly).
@@ -197,11 +202,9 @@ static EntityID create_entity_id(void)
     EntityID id;
     id.uuid = ++last_uuid;
     while (1) {
-        /* for (int i = entity_map_index_start; entity_map_index_start == 0 ? i != entity_map_size - 1 : i != entity_map_index_start - 1; i = (i + 1) % entity_map_size) { */
         for (int i = 0; i < entity_map_size; i++) {
             if (entity_map[i].aspects == NULL) {
                 id.map_index = i;
-                /* entity_map_index_start = i; */
                 return id;
             }
         }
@@ -394,23 +397,39 @@ void default_manager_aspect_iterator(Iterator *iterator)
 //--------------------------------------------------------------------------------
 
 
+//------ BUGGY
 void print_entities(void)
 {
     printf("Entity printout:\n"); 
     for (int i = 0; i < entity_map_size; i++) {
-        if (entity_map[i].aspects != NULL) { // currently, this is the way an entity map entry is "null"
-            printf("Entity:\n");
-            printf("\tuuid: %ld\n", entity_map[i].uuid);
-            printf("\tnum_aspects: %d\n", entity_map[i].num_aspects);
-            for (int j = 0; j < entity_map[i].num_aspects; j++) {
-                if (entity_map[i].aspects[j].type != 0) { // this means it is not a null aspect id (probably do something better)
-                    printf("\tAspect type %d:\n", entity_map[i].aspects[j].type);
-                    Manager *manager = manager_of_type(entity_map[i].aspects[j].type);
-                    if (manager->serialize != NULL) {
-                        printf("Serialization:\n");
-                        manager->serialize(stdout, get_aspect_data(entity_map[i].aspects[j]));
-                    }
-                }
+        printf("checking map index: %d, entity_map_size : %d, uuid: %ld\n", i, entity_map_size, entity_map[i].uuid);
+        if (entity_map[i].aspects != NULL && entity_map[i].uuid != 0) { // how is an entity entry null?
+            EntityID entity;
+            entity.uuid = entity_map[i].uuid;
+            entity.map_index = i;
+            print_entity(entity);
+        }
+    }
+}
+
+void print_entity(EntityID entity)
+{
+    AspectID *aspects = get_entity_aspects(entity);
+    printf("Entity %ld:\n", entity.uuid);
+    if (aspects == NULL) {
+        printf("ENTITY DOES NOT EXIST.\n");
+        return;
+    }
+    int num_aspects = entity_map[entity.map_index].num_aspects;
+    printf("\tnum_aspects: %d\n", num_aspects);
+
+    for (int i = 0; i < num_aspects; i++) {
+        if (aspects[i].type != 0) {
+            printf("Aspect type: %d\n", aspects[i].type);
+            Manager *manager = manager_of_type(aspects[i].type);
+            if (manager->serialize != NULL) {
+                printf("Serialization:\n");
+                manager->serialize(stdout, get_aspect_data(aspects[i]));
             }
         }
     }
@@ -445,7 +464,7 @@ void *_get_aspect_type(EntityID entity, AspectType type)
 {
     AspectID *aspects = get_entity_aspects(entity);
     if (aspects == NULL) {
-        fprintf(stderr, ERROR_ALERT "Attempted to get a non-existent aspect of type %d on existent entity with UUID %ld.\n", type, entity.uuid);
+        fprintf(stderr, ERROR_ALERT "Attempted to get an aspect of type %d on non-existent entity with UUID %ld.\n", type, entity.uuid);
         exit(EXIT_FAILURE);
     }
     int num_aspects = entity_map[entity.map_index].num_aspects;

@@ -91,6 +91,7 @@ void *_get_aspect_type(EntityID entity, AspectType type);
 // purely printing functions
 //================================================================================
 void print_entities(void);
+void print_entity(EntityID entity);
 
 #define print_aspects_of_type(ASPECT_TYPE_NAME)\
     _print_aspects_of_type(ASPECT_TYPE_NAME ## _TYPE_ID)

@@ -49,9 +49,9 @@ void translate_matrix4x4f(Matrix4x4f *matrix, float x, float y, float z);
 
 // Homogeneous transformations and coordinate frames
 //--------------------------------------------------------------------------------
-void translate_rotate_2d_matrix3x3f(Matrix3x3f *matrix, float x, float y, float theta);
-
 void translate_rotate_3d_matrix4x4f(Matrix4x4f *matrix, float x, float y, float z, float x_theta, float y_theta, float z_theta);
+
+void translate_rotate_2d_matrix3x3f(Matrix3x3f *matrix, float x, float y, float theta);
 
 // Memory
 //================================================================================

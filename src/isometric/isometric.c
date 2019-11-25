@@ -5,7 +5,7 @@
  *      + matrix_mathematics
  *      + mesh
  *      + mesh_gen
- *      + entity
+ *      + deprecated/entity
  *      + iterator
  * 
  * Isometric viewing
@@ -22,7 +22,7 @@
 #include "matrix_mathematics.h"
 #include "mesh_gen.h"
 #include "mesh.h"
-#include "entity.h"
+#include "deprecated/entity.h"
 #include "iterator.h"
 
 #define SHADERS_LOCATION "/home/lucas/code/collision/src/isometric/"
@@ -235,6 +235,7 @@ static UniformData uniform_get_aspect_ratio(void)
     UniformData data;
     data.float_value = ASPECT_RATIO;
     return data;
+    // return (UniformData) ASPECT_RATIO; // can do this?
 }
 //--------------------------------------------------------------------------------
 void init_program(void)

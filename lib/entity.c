@@ -54,6 +54,11 @@ Macro for having standard metadata for aspect data, aspect ID and entity ID.
 This is inline (no substruct to access) but the pointer to the aspect data can
 be cast to an AspectProperties so it is "inherited" from this.
 
+----
+num_aspects right now is actually the size of the space for aspects
+
+managers: data guardians
+
 --------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
@@ -124,22 +129,20 @@ copy_mesh(&mesh, &solid->collision_mesh);
 solid->weight = 12.5;
 
 --------------------------------------------------------------------------------*/
-static void default_manager_aspect_iterator(Iterator *iterator);
-static void default_manager_destroy_aspect(Manager *manager, AspectID aspect);
-static void default_manager_new_aspect(Manager *manager, AspectID aspect);
-static size_t aspect_type_data_size(AspectType type);
 static void entity_extend_aspects(EntityID entity);
-static void new_aspect(AspectID aspect);
+static void new_aspect(EntityID entity, AspectID aspect);
 static AspectID create_aspect_id(AspectType type);
 static void extend_aspect_map(Manager *manager);
 static void *get_aspect_data(AspectID aspect);
 static void extend_manager_array(void);
-static Manager *new_manager(AspectType type, AspectID (*create_aspect_id)(void), void (*new_aspect)(AspectID));
 static AspectID *get_entity_aspects(EntityID entity);
-static EntityID new_entity(int start_num_aspects);
 static EntityID create_entity_id(void);
 static void extend_entity_map(void);
 static Manager *manager_of_type(AspectType type);
+
+
+static size_t *aspect_type_sizes = NULL;
+
 
 void init_entity_model(void)
 {
@@ -155,6 +158,14 @@ void init_entity_model(void)
     managers_array_size = START_NUM_MANAGERS;
     managers = (Manager *) calloc(managers_array_size, sizeof(Manager));
     mem_check(managers);
+
+    // for now, testing with some different aspect types
+    const int testing_num_aspect_types = 5;
+    aspect_type_sizes = (size_t *) calloc(testing_num_aspect_types, sizeof(size_t));
+    for (int i = 0; i < testing_num_aspect_types; i++) {
+        aspect_type_sizes[i] = 128;
+    }
+    mem_check(aspect_type_sizes);
 
     entity_model_active = true;
 }
@@ -187,7 +198,7 @@ static EntityID create_entity_id(void)
     }
 }
 
-static EntityID new_entity(int start_num_aspects)
+EntityID new_entity(int start_num_aspects)
 {
     EntityID id = create_entity_id();
     entity_map[id.map_index].uuid = id.uuid;
@@ -219,13 +230,15 @@ static AspectID *get_entity_aspects(EntityID entity)
 
 
 
-static Manager *new_manager(AspectType type, AspectID (*create_aspect_id)(void), void (*new_aspect)(AspectID))
+Manager *new_manager(AspectType type, void (*new_aspect)(Manager *, AspectID), void (*destroy_aspect)(Manager *, AspectID), void (*aspect_iterator) (Iterator *))
 {
     while (1) {
         for (int i = 0; i < managers_array_size; i++) {
             if (managers[i].type == 0) {
                 managers[i].type = type;
                 managers[i].new_aspect = new_aspect;
+                managers[i].destroy_aspect = destroy_aspect;
+                managers[i].aspect_iterator = aspect_iterator;
                 managers[i].aspect_map_size = START_NUM_MANAGER_ASPECTS;
                 managers[i].aspect_map = (void **) calloc(managers[i].aspect_map_size, sizeof(void *));
                 mem_check(managers[i].aspect_map);
@@ -260,6 +273,7 @@ static Manager *manager_of_type(AspectType type)
         }
     }
     fprintf(stderr, "ERROR: attempted to access manager of type %d, but there is no manager for this type.\n", type);
+    exit(EXIT_FAILURE);
 }
 
 static void *get_aspect_data(AspectID aspect)
@@ -289,22 +303,26 @@ static AspectID create_aspect_id(AspectType type)
     AspectID id;
     Manager *manager = manager_of_type(type);
     id.uuid = ++ manager->last_uuid; // syntax ?
+    id.type = type;
     while (1) {
-        for (int j = 0; j < managers[i].aspect_map_size; j++) {
-            if (managers[i].aspect_map[j] == NULL) {
-                id.map_index = j;
+        for (int i = 0; i < manager->aspect_map_size; i++) {
+            if (manager->aspect_map[i] == NULL) {
+                id.map_index = i;
                 return id;
             }
         }
-        extend_aspect_map(&managers[i]);
+        extend_aspect_map(manager);
     }
     //--- have a default aspect manager
 }
-static void new_aspect(AspectID aspect)
+static void new_aspect(EntityID entity, AspectID aspect)
 {
     //--- handling on manager_of_type or this?
     Manager *manager = manager_of_type(aspect.type);
-    manager->new_aspect(aspect);
+    manager->new_aspect(manager, aspect);
+    AspectProperties *properties = (AspectProperties *) manager->aspect_map[aspect.map_index];
+    properties->entity_id = entity;
+    properties->aspect_id = aspect;
     //--- have a default aspect manager
 }
 
@@ -315,11 +333,11 @@ AspectID entity_add_aspect(EntityID entity, AspectType type)
         for (int i = 0; i < entity_map[entity.map_index].num_aspects; i++) {
             if (entity_map[entity.map_index].aspects[i].type == NULL_ASPECT_TYPE) {
                 entity_map[entity.map_index].aspects[i] = id;
-                new_aspect(id, type);
+                new_aspect(entity, id);
                 return id;
             }
         }
-        extend_aspects(entity);
+        entity_extend_aspects(entity);
     }
 }
 
@@ -340,23 +358,59 @@ static void entity_extend_aspects(EntityID entity)
     }
 }
 
-static size_t aspect_type_data_size(AspectType type)
-{
-    // seems like generated code ...
-}
 
-static void default_manager_new_aspect(Manager *manager, AspectID aspect)
+void default_manager_new_aspect(Manager *manager, AspectID aspect)
 {
     // Default manager just mallocs for the aspect data
     manager->aspect_map[aspect.map_index] = (void *) calloc(1, aspect_type_sizes[aspect.type]);
     mem_check(manager->aspect_map[aspect.map_index]);
 }
-static void default_manager_destroy_aspect(Manager *manager, AspectID aspect)
+void default_manager_destroy_aspect(Manager *manager, AspectID aspect)
 {
     //--- checking
     //- no dynamic memory, default manager right now manages static aspects
-    free(manager->aspect_map[aspect.aspect_id]);
+    free(manager->aspect_map[aspect.map_index]);
 }
-static void default_manager_aspect_iterator(Iterator *iterator)
+void default_manager_aspect_iterator(Iterator *iterator)
 {
 }
+
+//--------------------------------------------------------------------------------
+// purely printing functions
+//--------------------------------------------------------------------------------
+
+
+void print_entities(void)
+{
+    printf("Entity printout:\n"); 
+    for (int i = 0; i < entity_map_size; i++) {
+        if (entity_map[i].aspects != NULL) { // currently, this is the way an entity map entry is "null"
+            printf("Entity:\n");
+            printf("\tuuid: %ld\n", entity_map[i].uuid);
+            printf("\tnum_aspects: %d\n", entity_map[i].num_aspects);
+        }
+    }
+}
+
+void print_aspects_of_type(AspectType type)
+{
+    //- not using the manager aspect iterators
+    printf("Aspects of type %d printout:\n", type);
+    
+    Manager *manager = manager_of_type(type);
+    for (int i = 0; i < manager->aspect_map_size; i++) {
+        if (manager->aspect_map[i] != NULL) {
+            printf("Aspect:\n");
+            AspectProperties *properties = (AspectProperties *) manager->aspect_map[i];
+            printf("\tAspect ID:\n");
+            printf("\t\tuuid: %ld\n", properties->aspect_id.uuid);
+            printf("\t\tmap_index: %d\n", properties->aspect_id.map_index);
+            printf("\t\ttype: %d\n", properties->aspect_id.type);
+            printf("\tEntity ID:\n");
+            printf("\t\tuuid: %ld\n", properties->entity_id.uuid);
+            printf("\t\tmap_index: %d\n", properties->entity_id.map_index);
+        }
+    }
+}
+
+

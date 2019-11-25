@@ -59,6 +59,8 @@ num_aspects right now is actually the size of the space for aspects
 
 managers: data guardians
 
+probably better to keep initial sizes small and force the data bookkeeping to be done, for testing
+
 --------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,14 +71,14 @@ managers: data guardians
 #include "entity.h"
 
 static bool entity_model_active = false;
-#define ENTITY_MAP_START_SIZE 1024
+#define ENTITY_MAP_START_SIZE 4
 static EntityMapEntry *entity_map = NULL;
 static unsigned int entity_map_size = 0;
 
 static UUID last_uuid = 0;
 
 #define START_NUM_MANAGERS 10
-#define START_NUM_MANAGER_ASPECTS 128 // for now? same methods for creating maps
+#define START_NUM_MANAGER_ASPECTS 2 // for now? same methods for creating maps
 static Manager *managers = NULL;
 static int managers_array_size = 0;
 

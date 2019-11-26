@@ -146,7 +146,6 @@ static void extend_manager_array(void);
 static EntityID create_entity_id(void);
 static AspectID *get_entity_aspects(EntityID entity);
 static void extend_entity_map(void);
-static Manager *manager_of_type(AspectType type);
 
 
 static size_t *aspect_type_sizes = NULL;
@@ -280,7 +279,7 @@ static void extend_manager_array(void)
 }
 
 
-static Manager *manager_of_type(AspectType type)
+Manager *manager_of_type(AspectType type)
 {
     //--- use this? if so, put in other functions too
     for (int i = 0; i < managers_array_size; i++) {
@@ -300,6 +299,7 @@ void *get_aspect_data(AspectID aspect)
         return NULL;
     }
     if (((AspectProperties *) manager->aspect_map[aspect.map_index])->aspect_id.uuid != aspect.uuid) {
+        // stale map entry, non-matching UUIDs
         return NULL;
     }
     return manager->aspect_map[aspect.map_index];
@@ -340,7 +340,7 @@ static void new_aspect(EntityID entity, AspectID aspect)
     AspectProperties *properties = (AspectProperties *) manager->aspect_map[aspect.map_index];
     properties->entity_id = entity;
     properties->aspect_id = aspect;
-    //--- have a default aspect manager
+    //--- have a default aspect manager? Or just explicitly make a default manager for each aspect which can just malloc everywhere?
 }
 
 AspectID _entity_add_aspect(EntityID entity, AspectType type)
@@ -390,6 +390,52 @@ void default_manager_destroy_aspect(Manager *manager, AspectID aspect)
 }
 void default_manager_aspect_iterator(Iterator *iterator)
 {
+    Manager *manager = iterator->data1.ptr_val;
+    int last_map_index = iterator->data2.int_val;
+BEGIN_COROUTINE(iterator)
+coroutine_start:
+coroutine_a:
+coroutine_b:
+coroutine_c:
+coroutine_d:
+coroutine_e:
+}
+void _iterator_components_of_type2(Iterator *iterator)
+{
+#define TRACING 0
+    ComponentType component_type = (ComponentType) iterator->data1.int_val;
+    ComponentNode *cur = (ComponentNode *) iterator->data2.ptr_val;
+    /* ComponentNode *cur = NULL; */
+#if TRACING
+    if (cur != NULL) {
+        printf("%d iterating at %ld ...\n", component_type, cur->component.entity_id);
+    }
+#endif
+BEGIN_COROUTINE(iterator)
+coroutine_start:
+    cur = component_nodes;
+coroutine_a:
+    do {
+        if (component_is_enabled(cur->component.id) && cur->component.type == component_type) {
+            iterator->val = (void *) &cur->component;
+            iterator->coroutine_flag = COROUTINE_A;
+            iterator->data2.ptr_val = (void *) cur->next;
+            return;
+        }
+        cur = cur->next;
+    } while (cur != NULL);
+    iterator->coroutine_flag = COROUTINE_B;
+coroutine_b:
+    iterator->val = NULL;
+    return;
+// ...
+coroutine_c:
+    return;
+coroutine_d:
+    return;
+coroutine_e:
+    return;
+#undef TRACING
 }
 
 //--------------------------------------------------------------------------------
@@ -397,7 +443,6 @@ void default_manager_aspect_iterator(Iterator *iterator)
 //--------------------------------------------------------------------------------
 
 
-//------ BUGGY
 void print_entities(void)
 {
     printf("Entity printout:\n"); 

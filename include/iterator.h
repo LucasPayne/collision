@@ -51,6 +51,15 @@
         goto coroutine_e;\
     }
 
+// more convenient, select how many flags you need so the labels don't need to be included in the function
+#define BEGIN_COROUTINE_SA(ITERATOR)\
+    if (( ITERATOR )->coroutine_flag == COROUTINE_START) {\
+        goto coroutine_start;\
+    }\
+    else if (( ITERATOR )->coroutine_flag == COROUTINE_A) {\
+        goto coroutine_a;\
+    }\
+
 //================================================================================
 // Iterator type definitions
 //================================================================================

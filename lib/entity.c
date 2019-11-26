@@ -408,7 +408,7 @@ void default_manager_aspect_iterator(Iterator *iterator)
 {
     Manager *manager = iterator->data1.ptr_val;
     int map_index = iterator->data2.int_val;
-BEGIN_COROUTINE(iterator)
+BEGIN_COROUTINE_SA(iterator)
 coroutine_start:
     map_index = 0;
     iterator->data2.int_val = 0;
@@ -426,14 +426,6 @@ coroutine_a:
         }
         iterator->data2.int_val ++;
     }
-coroutine_b:
-    return;
-coroutine_c:
-    return;
-coroutine_d:
-    return;
-coroutine_e:
-    return;
 }
 
 //--------------------------------------------------------------------------------

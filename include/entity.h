@@ -92,7 +92,6 @@ void *_get_aspect_type(EntityID entity, AspectType type);
 
 /* Macro'd syntax for using manager's iterators (managers are really containers)
  * for_aspect(SeeingMesh, seeing_mesh)
-        SeeingMesh *seeing_mesh = get_aspect_type(entity, SeeingMesh);
  *      Transform *transform = get_aspect_type(seeing_mesh->entity_id, Transform);
  *      if (transform->matrix.vals[0 + 3*4] > 2.0) seeing_mesh->visible = false;
  *      else seeing_mesh->visible = true;
@@ -108,7 +107,6 @@ void *_get_aspect_type(EntityID entity, AspectType type);
     Manager *manager = manager_of_type(ASPECT_TYPE_NAME ## _TYPE_ID);\
     init_iterator(&iterator, manager->aspect_iterator);\
     iterator.data1.ptr_val = manager;\
-    iterator.data2.int_val = 0;\
     while (1) {\
         step(&iterator);\
         if (iterator.val == NULL) {\

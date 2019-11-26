@@ -95,6 +95,7 @@ typedef struct Mesh_s {
 typedef struct MeshHandle_s {
     char name[MAX_MESH_NAME_LENGTH + 1];
     GLuint vao;
+    GLuint element_vbo;
     GLuint vbos[MAX_MESH_VBOS + 1]; // 0 terminated
     unsigned int num_vertices;
     unsigned int num_triangles;

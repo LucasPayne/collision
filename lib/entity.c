@@ -278,6 +278,22 @@ static void extend_manager_array(void)
     /* } */
 }
 
+void destroy_aspect(AspectID aspect)
+{
+    //--- done in a hurry, look at this if buggy
+    Manager *manager = manager_of_type(aspect.type);
+    EntityID entity = ((AspectProperties *) get_aspect_data(aspect))->entity_id;
+    AspectID *aspects = get_entity_aspects(entity);
+    /* for (int i = 0; i < entity_map[entity.map_index].num_aspects; i++) { */
+    /*     if (aspects[i].type != 0 && aspects[i].uuid == aspect.uuid) { */
+    /*         aspects[i].type = 0; */
+    /*     } */
+    /* } */
+    manager->destroy_aspect(manager, aspect);
+    manager->aspect_map[aspect.map_index] = NULL;
+    // remove from the entity's aspect list
+}
+
 
 Manager *manager_of_type(AspectType type)
 {
@@ -394,6 +410,10 @@ void default_manager_aspect_iterator(Iterator *iterator)
     int map_index = iterator->data2.int_val;
 BEGIN_COROUTINE(iterator)
 coroutine_start:
+    map_index = 0;
+    iterator->data2.int_val = 0;
+    iterator->coroutine_flag = COROUTINE_A;
+coroutine_a:
     iterator->data2.int_val ++;
     while (1) {
         if (iterator->data2.int_val >= manager->aspect_map_size) {
@@ -406,8 +426,6 @@ coroutine_start:
         }
         iterator->data2.int_val ++;
     }
-coroutine_a:
-    return;
 coroutine_b:
     return;
 coroutine_c:

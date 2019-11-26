@@ -148,3 +148,55 @@ void ascii_polygon(char *name, Polygon *polygon)
     closedir(dir);
 }
 #undef TRACE
+
+
+/* #define MAX_ASCII_PLY_LINE_SIZE 512 */
+/* #define MAX_PLY_ELEMENTS 32 */
+/* #define MAX_PLY_ELEMENT_PROPERTIES 32 */
+/* int deserialize_ascii_ply(FILE *stream, void *data) */
+/* { */
+/*     char line_buffer[MAX_ASCII_PLY_LINE_SIZE]; */
+/*     fgets(line_buffer, MAX_ASCII_PLY_LINE_SIZE, stream); */
+/*     if (strcmp(line_buffer, "ply\n") != 0) { */
+/*         fprintf(stderr, "ERROR: wrong magic number for ply file. ply files should have magic number \"ply\\n\".\n"); */
+/*         exit(EXIT_FAILURE); */
+/*     } */
+/*     fgets(line_buffer, MAX_ASCII_PLY_LINE_SIZE, stream); */
+/*     if (strcmp(line_buffer, "format ascii 1.0\n") != 0) { */
+/*         fprintf(stderr, "ERROR: wrong version for ply file. ply files should have version \"format ascii 1.0\\n\".\n"); */
+/*         exit(EXIT_FAILURE); */
+/*     } */
+
+/*     char element_names[32][MAX_PLY_ELEMENTS] = { 0 }; */
+/*     int cur_element = -1; */ 
+/*     char element_property_names[32][MAX_PLY_ELEMENTS][MAX_PLY_ELEMENT_PROPERTIES] = { 0 }; */
+
+/*     const int mode_header = 0; */
+/*     const int mode_element = 1; */
+/*     const int mode_data = 2; */
+/*     int mode = mode_header; */
+/*     while (1) { */
+/*         if (mode == mode_header) { */
+/*             fgets(line_buffer, MAX_ASCII_PLY_LINE_SIZE, stream); */
+/*             if (strncmp(line_buffer, "comment", 7)) { */
+/*                 continue; */
+/*             } */
+/*             else if (strcmp(line_buffer, "end_header") == 0) { */
+/*                 mode = mode_data; */
+/*                 continue; */
+/*             } */
+/*             else if (strncmp(line_buffer, "element", 7) == 0) { */
+/*                 mode = mode_element; */
+/*                 cur_element ++; */
+/*                 continue; */
+/*             } */
+/*         } else if (mode == mode_element) { */
+            
+/*         } else if (mode == mode_data) { */
+
+/*         } */
+/*     } */
+/* } */
+
+
+

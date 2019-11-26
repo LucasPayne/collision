@@ -21,6 +21,7 @@ static void add_mesh_handle_vbo(MeshHandle *mesh_handle, GLuint vbo);
 static void zero_mesh_handle(MeshHandle *mesh_handle)
 {
     mesh_handle->vao = 0;
+    mesh_handle->element_vbo = 0;
     memset(mesh_handle->vbos, 0, sizeof(mesh_handle->vbos));
     mesh_handle->num_vertices = 0;
     mesh_handle->num_triangles = 0;
@@ -80,7 +81,7 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
 
     mesh_handle->vao = vao;
     add_mesh_handle_vbo(mesh_handle, vertex_buffer);
-    add_mesh_handle_vbo(mesh_handle, triangle_buffer);
+    mesh_handle->element_vbo = triangle_buffer;
 
     free_mesh(mesh);
 }
@@ -138,6 +139,7 @@ void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, Matrix4x4f *model_
 
     glUniformMatrix4fv(renderer->uniform_mvp_matrix, 1, GL_TRUE, (const GLfloat *) &mvp_matrix.vals);
     glBindVertexArray(mesh_handle->vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_handle->element_vbo);
     glDrawElements(renderer->primitive_mode, 3 * mesh_handle->num_triangles, GL_UNSIGNED_INT, (void *) 0);
 }
 

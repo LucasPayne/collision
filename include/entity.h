@@ -102,6 +102,7 @@ void *_get_aspect_type(EntityID entity, AspectType type);
  * you want to feed pointers to, but can't be done in in-line code (?).
  */
 #define for_aspect(ASPECT_TYPE_NAME,LVALUE)\
+    {\
     ASPECT_TYPE_NAME *LVALUE;\
     Iterator iterator;\
     Manager *manager = manager_of_type(ASPECT_TYPE_NAME ## _TYPE_ID);\
@@ -115,6 +116,7 @@ void *_get_aspect_type(EntityID entity, AspectType type);
         }\
         LVALUE = (ASPECT_TYPE_NAME *) iterator.val;
 #define end_for_aspect()\
+    }\
     }
 
 //================================================================================

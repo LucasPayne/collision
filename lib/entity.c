@@ -391,51 +391,31 @@ void default_manager_destroy_aspect(Manager *manager, AspectID aspect)
 void default_manager_aspect_iterator(Iterator *iterator)
 {
     Manager *manager = iterator->data1.ptr_val;
-    int last_map_index = iterator->data2.int_val;
+    int map_index = iterator->data2.int_val;
 BEGIN_COROUTINE(iterator)
 coroutine_start:
-coroutine_a:
-coroutine_b:
-coroutine_c:
-coroutine_d:
-coroutine_e:
-}
-void _iterator_components_of_type2(Iterator *iterator)
-{
-#define TRACING 0
-    ComponentType component_type = (ComponentType) iterator->data1.int_val;
-    ComponentNode *cur = (ComponentNode *) iterator->data2.ptr_val;
-    /* ComponentNode *cur = NULL; */
-#if TRACING
-    if (cur != NULL) {
-        printf("%d iterating at %ld ...\n", component_type, cur->component.entity_id);
-    }
-#endif
-BEGIN_COROUTINE(iterator)
-coroutine_start:
-    cur = component_nodes;
-coroutine_a:
-    do {
-        if (component_is_enabled(cur->component.id) && cur->component.type == component_type) {
-            iterator->val = (void *) &cur->component;
-            iterator->coroutine_flag = COROUTINE_A;
-            iterator->data2.ptr_val = (void *) cur->next;
+    iterator->data2.int_val ++;
+    while (1) {
+        if (iterator->data2.int_val >= manager->aspect_map_size) {
+            iterator->val = NULL;
             return;
         }
-        cur = cur->next;
-    } while (cur != NULL);
-    iterator->coroutine_flag = COROUTINE_B;
-coroutine_b:
-    iterator->val = NULL;
+        if (manager->aspect_map[map_index] != NULL) {
+            iterator->val = manager->aspect_map[map_index];
+            return;
+        }
+        iterator->data2.int_val ++;
+    }
+coroutine_a:
     return;
-// ...
+coroutine_b:
+    return;
 coroutine_c:
     return;
 coroutine_d:
     return;
 coroutine_e:
     return;
-#undef TRACING
 }
 
 //--------------------------------------------------------------------------------

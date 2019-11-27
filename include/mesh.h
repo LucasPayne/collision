@@ -17,22 +17,32 @@ Vertex format information is kept in static application memory and is initialize
 by a call to an initialization function in this module.
 ================================================================================*/
 
-typedef uint8_t VertexFormat;
-enum VertexFormats {
-    VERTEX_FORMAT_3, // 3D positional data
-    VERTEX_FORMAT_3C, // + colors
-    VERTEX_FORMAT_3CN, // + colors, normals
-    VERTEX_FORMAT_3N, // + normals
-    NUM_VERTEX_FORMATS
-};
 
 typedef uint8_t AttributeType;
+// Corresponds to layout qualified positions in shaders
 enum AttributeTypes {
     ATTRIBUTE_TYPE_POSITION,
     ATTRIBUTE_TYPE_COLOR,
     ATTRIBUTE_TYPE_NORMAL,
     NUM_ATTRIBUTE_TYPES
 };
+
+typedef struct AttributeInfo_s {
+    AttributeType attribute_type;
+    char name[MAX_ATTRIBUTE
+    GLenum gl_type;
+    GLuint gl_size;
+} AttributeInfo;
+
+typedef uint32_t VertexFormat;
+static int NUM_VERTEX_FORMATS = 3;
+static VertexFormat VERTEX_FORMAT_3 = 1 << ATTRIBUTE_TYPE_POSITION;
+static VertexFormat VERTEX_FORMAT_C = 1 << ATTRIBUTE_TYPE_COLOR;
+static VertexFormat VERTEX_FORMAT_N = 1 << ATTRIBUTE_TYPE_NORMAL;
+static VertexFormat VERTEX_FORMAT_3C = VERTEX_FORMAT_3 | VERTEX_FORMAT_C;
+static VertexFormat VERTEX_FORMAT_3N = VERTEX_FORMAT_3 | VERTEX_FORMAT_N;
+static VertexFormat VERTEX_FORMAT_3CN = VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_N;
+
 
 #define MAX_VERTEX_FORMAT_NAME_LENGTH 63
 #define ATTRIBUTE_NAME_DATA_LENGTH 512
@@ -43,7 +53,7 @@ typedef struct VertexFormatInfo_s {
     char attribute_name_data[ATTRIBUTE_NAME_DATA_LENGTH];
     int num_attributes;
     int attribute_name_indices[NUM_ATTRIBUTE_TYPES];
-    AttributeType attribute_types[NUM_ATTRIBUTE_TYPES];
+    bool attribute_types[NUM_ATTRIBUTE_TYPES]; // this is where attribute types slot in
     GLenum gl_types[NUM_ATTRIBUTE_TYPES];
     GLint gl_sizes[NUM_ATTRIBUTE_TYPES];
 } VertexFormatInfo;

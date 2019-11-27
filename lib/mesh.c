@@ -20,29 +20,25 @@ static void add_mesh_handle_vbo(MeshHandle *mesh_handle, GLuint vbo);
 
 static void zero_mesh_handle(MeshHandle *mesh_handle)
 {
-    mesh_handle->vao = 0;
-    mesh_handle->element_vbo = 0;
-    memset(mesh_handle->vbos, 0, sizeof(mesh_handle->vbos));
-    mesh_handle->num_vertices = 0;
-    mesh_handle->num_triangles = 0;
-}
-
-static void add_mesh_handle_vbo(MeshHandle *mesh_handle, GLuint vbo)
-{
-    for (int i = 0; i < MAX_MESH_VBOS; i++) {
-        if (mesh_handle->vbos[i] == 0) {
-            mesh_handle->vbos[i] = vbo;
-            return;
-        }
-    }
-    fprintf(stderr, "ERROR: too many vbos for mesh %s. The maximum number of vbos for a mesh handle is %d.\n",
-                    mesh_handle->name, MAX_MESH_VBOS);
-    exit(EXIT_FAILURE);
+    memset(mesh_handle, 0, sizeof(MeshHandle)); // only because currently to "zero", everything actually is zeroed.
+    /* mesh_handle->vertex_format = 0; */
+    /* mesh_handle->vao = 0; */
+    /* mesh_handle->triangles_vbo = 0; */
+    /* memset(mesh_handle->attribute_vbos, 0, sizeof(mesh_handle->vbos)); */
+    /* memset(mesh_handle->attribute_types, 0, sizeof(mesh_handle->attribute_types)); */
+    /* memset(mesh_handle->attribute_types, 0, sizeof(mesh_handle->attribute_types)); */
+    /* mesh_handle->num_vertices = 0; */
+    /* mesh_handle->num_triangles = 0; */
 }
 
 void free_mesh(Mesh *mesh)
 {
-    free(mesh->vertices);
+    // free vertex attribute data
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        if (mesh->attribute_data[i] != NULL) {
+            free(mesh->attribute_data[i]);
+        }
+    }
     free(mesh->triangles);
 }
 
@@ -55,11 +51,17 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
      *      Could have options for buffer hints (dynamic/static/stream draw).
      */
     zero_mesh_handle(mesh_handle); // make sure it is zero initialized before filling
+    
     // copy over basic attributes
-    strncpy(mesh_handle->name, mesh->name, MAX_MESH_NAME_LENGTH);
     mesh_handle->num_triangles = mesh->num_triangles;
     mesh_handle->num_vertices = mesh->num_vertices;
-    const GLuint attribute_location_vPosition = 0;
+    mesh_handle->vertex_format = mesh->vertex_format;
+
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        if (g_vertex_format_infos[mesh->vertex_format].attribute_types[i]) { // this attribute type is activated for this format.
+            
+        }
+    }
 
     GLuint vertex_buffer;
     glGenBuffers(1, &vertex_buffer);
@@ -327,7 +329,8 @@ static void VertexFormatInfo_add_attribute(VertexFormatInfo *vf, char *attribute
     }
     strncpy(vf->attribute_name_data + name_pos, attribute_name, MAX_ATTRIBUTE_NAME_LENGTH);
     vf->attribute_name_indices[attribute_type] = name_pos;
-    vf->gl_types[attribute_type] = gl_type;
+    vf->gl_types[attribute_type] = true; //activate this attribute type. attribute types correspond directly to the index in these arrays and the layout qualified position
+                                         //in shaders.
     vf->gl_sizes[attribute_type] = gl_size;
     vf->attribute_types[attribute_type] = attribute_type;
     vf->num_attributes ++;
@@ -339,6 +342,9 @@ static VertexFormatInfo *init_vertex_format(VertexFormat vertex_format, char *na
     vf->vertex_format = vertex_format;
     strncpy(vf->name, name, MAX_VERTEX_FORMAT_NAME_LENGTH);
     memset(vf->attribute_name_data, '\0', sizeof(char) * ATTRIBUTE_NAME_DATA_LENGTH);
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        vf->attribute_types[i] = false;
+    }
     vf->num_attributes = 0;
 }
 // Vertex format information is kept as static data in application memory. So, this initialization function must be called to use this mesh module.

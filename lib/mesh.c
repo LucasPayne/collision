@@ -58,26 +58,44 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
     mesh_handle->vertex_format = mesh->vertex_format;
 
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        if (g_vertex_format_infos[mesh->vertex_format].attribute_types[i]) { // this attribute type is activated for this format.
-            
+        if ((mesh->vertex_format << i) & 1 == 1) { // vertex format has attribute i set
+            if (mesh->attribute_vbos[i] == NULL) {
+                fprintf(stderr, ERROR_ALERT "Attempted to upload mesh which does not have data for one of its attributes.\n");
+                exit(EXIT_FAILURE);
+            }
+            GLuint attribute_buffer;
+            glGenBuffers(1, &attribute_buffer);
+            glBindBuffer(GL_ARRAY_BUFFER, attribute_buffer);
+            glBufferData(GL_ARRAY_BUFFER,
+                         g_attribute_info[i].gl_size * gl_type_size(g_attribute_info[i].gl_type) * mesh->num_vertices,
+                         mesh->attribute_vbos[i],
+                         GL_DYNAMIC_DRAW);
         }
     }
-
-    GLuint vertex_buffer;
-    glGenBuffers(1, &vertex_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, 3*sizeof(float) * mesh->num_vertices, mesh->vertices, GL_DYNAMIC_DRAW);
-
     GLuint triangle_buffer;
     glGenBuffers(1, &triangle_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*sizeof(unsigned int) * mesh->num_triangles, mesh->triangles, GL_DYNAMIC_DRAW);
 
+
+
+    /* GLuint vertex_buffer; */
+    /* glGenBuffers(1, &vertex_buffer); */
+    /* glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); */
+    /* glBufferData(GL_ARRAY_BUFFER, 3*sizeof(float) * mesh->num_vertices, mesh->vertices, GL_DYNAMIC_DRAW); */
+
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+    // bind the attribute buffers to the vao
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        if ((mesh->vertex_format << i) & 1 == 1) { // vertex format has attribute i set
+            glBindBuffer(GL_ARRAY_BUFFER, mesh->attribute_vbos[i]);
+        }
+    }
+    // bind the triangle indices to the vao
+    //--- is this in the right order?
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glVertexAttribPointer(attribute_location_vPosition, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
     glEnableVertexAttribArray(attribute_location_vPosition);
 
@@ -294,96 +312,52 @@ void renderer_recompile_shaders(Renderer *renderer)
     link_shader_program(renderer->program);
 }
 
+
 // Vertex formats
 //--------------------------------------------------------------------------------
-static VertexFormatInfo g_vertex_format_infos[NUM_VERTEX_FORMATS];
-/* static unsigned int g_num_attribute_types = 0; */
+static AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES];
 
-
-
-static void VertexFormatInfo_add_attribute(VertexFormatInfo *vf, char *attribute_name, GLenum gl_type, GLint gl_size, AttributeType attribute_type)
+static void set_attribute_info(AttributeType attribute_type, GLenum gl_type, GLuint gl_size, char *name)
 {
     if (attribute_type >= NUM_ATTRIBUTE_TYPES) {
-        fprintf(stderr, ERROR_ALERT "Invalid attribute type %d given when adding an attribute to vertex format info. There are %d attribute types.\n", attribute_type, NUM_ATTRIBUTE_TYPES);
+        fprintf(stderr, ERROR_ALERT "Attempted to set attribute info for non-existent attribute type %d.\n", attribute_type);
         exit(EXIT_FAILURE);
     }
-    // Messy string processing. Builds up list of attribute names packed into one array and separated by null terminators.
-    // Special case for first addition, the rest find two null terminators and add the new string after the first.
-    // So, the name data array must be null-initialized.
-    int name_pos = 0;
-    if (vf->num_attributes != 0) {
-        for (int i = 1; i < ATTRIBUTE_NAME_DATA_LENGTH - 1; i++) {
-            if (vf->attribute_name_data[i] == '\0' && vf->attribute_name_data[i - 1] == '\0') {
-                name_pos = i;
-                break;
-            }
-        }
-    }
-    if (strlen(attribute_name) > MAX_ATTRIBUTE_NAME_LENGTH) {
-        fprintf(stderr, ERROR_ALERT "Attribute name \"%s\" is too long. The maximum attribute name length is set to %d.\n", attribute_name, MAX_ATTRIBUTE_NAME_LENGTH);
+    g_attribute_info[attribute_type].attribute_type = attribute_type;
+    g_attribute_info[attribute_type].gl_type = gl_type;
+    g_attribute_info[attribute_type].gl_size = gl_size;
+    if (strlen(name) > MAX_ATTRIBUTE_NAME_LENGTH) {
+        fprintf(stderr, ERROR_ALERT "Attribute name given \"%s\" when setting attribute info is too long. The maximum attribute name length is %d.\n", name, MAX_ATTRIBUTE_NAME_LENGTH);
         exit(EXIT_FAILURE);
     }
-    if (strlen(attribute_name) + name_pos >= ATTRIBUTE_NAME_DATA_LENGTH) {
-        fprintf(stderr, ERROR_ALERT "Attribute name space full for static vertex info data. Maximum space for attribute names is set to %d.\n", ATTRIBUTE_NAME_DATA_LENGTH);
-        exit(EXIT_FAILURE);
-    }
-    strncpy(vf->attribute_name_data + name_pos, attribute_name, MAX_ATTRIBUTE_NAME_LENGTH);
-    vf->attribute_name_indices[attribute_type] = name_pos;
-    vf->gl_types[attribute_type] = true; //activate this attribute type. attribute types correspond directly to the index in these arrays and the layout qualified position
-                                         //in shaders.
-    vf->gl_sizes[attribute_type] = gl_size;
-    vf->attribute_types[attribute_type] = attribute_type;
-    vf->num_attributes ++;
+    strncpy(g_attribute_info[attribute_type].name, name, MAX_ATTRIBUTE_NAME_LENGTH);
+}
 
-}
-static VertexFormatInfo *init_vertex_format(VertexFormat vertex_format, char *name)
-{
-    VertexFormatInfo *vf = &g_vertex_format_infos[vertex_format];
-    vf->vertex_format = vertex_format;
-    strncpy(vf->name, name, MAX_VERTEX_FORMAT_NAME_LENGTH);
-    memset(vf->attribute_name_data, '\0', sizeof(char) * ATTRIBUTE_NAME_DATA_LENGTH);
-    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        vf->attribute_types[i] = false;
-    }
-    vf->num_attributes = 0;
-}
-// Vertex format information is kept as static data in application memory. So, this initialization function must be called to use this mesh module.
-// Possibly this could be parameterized with the vertex formats the application will actually be using.
 void init_vertex_formats(void)
 {
-    {
-        VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3, "3D pos");
-        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3, ATTRIBUTE_TYPE_POSITION);
-    }
-    {
-        VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3C, "3D pos, color");
-        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3, ATTRIBUTE_TYPE_POSITION);
-        VertexFormatInfo_add_attribute(vf, "vColor", GL_FLOAT, 3, ATTRIBUTE_TYPE_COLOR);
-    }
-    {
-        VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3N, "3D pos, normal");
-        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3, ATTRIBUTE_TYPE_POSITION);
-        VertexFormatInfo_add_attribute(vf, "vNormal", GL_FLOAT, 3, ATTRIBUTE_TYPE_NORMAL);
-    }
-    {
-        VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3CN, "3D pos, color, normal");
-        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3, ATTRIBUTE_TYPE_POSITION);
-        VertexFormatInfo_add_attribute(vf, "vColor", GL_FLOAT, 3, ATTRIBUTE_TYPE_COLOR);
-        VertexFormatInfo_add_attribute(vf, "vNormal", GL_FLOAT, 3, ATTRIBUTE_TYPE_NORMAL);
-    }
+    memset(g_attribute_info, 0, sizeof(g_attribute_info));
+    set_attribute_info(ATTRIBUTE_TYPE_POSITION, GL_FLOAT, 3, "vPosition");
+    set_attribute_info(ATTRIBUTE_TYPE_COLOR, GL_FLOAT, 3, "vColor");
+    set_attribute_info(ATTRIBUTE_TYPE_NORMAL, GL_FLOAT, 3, "vNormal");
 }
 
-void print_vertex_formats(void)
+void print_vertex_attribute_types(void)
 {
-    for (int i = 0; i < NUM_VERTEX_FORMATS; i++) {
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        // currently, i is the attribute type, but not using that for printing.
         printf("------------------------------------------------------------\n");
-        printf("Vertex format name: \"%s\"\n", g_vertex_format_infos[i].name);
-        printf("vertex_format (id): %d\n", g_vertex_format_infos[i].vertex_format);
-        printf("num_attributes: %d\n", g_vertex_format_infos[i].num_attributes);
-        for (int ii = 0; ii < g_vertex_format_infos[i].num_attributes; ii++) {
-            printf("Attribute name: \"%s\"\n", g_vertex_format_infos[i].attribute_name_data + g_vertex_format_infos[i].attribute_name_indices[ii]);
-            printf("gl_type: %d\n", g_vertex_format_infos[i].gl_types[ii]);
-            printf("gl_size: %d\n", g_vertex_format_infos[i].gl_sizes[ii]);
+        printf("Vertex attribute type name: \"%s\"\n", g_attribute_info[i].name);
+        printf("attribute_type: %d\n", g_attribute_info[i].attribute_type);
+        printf("bitmask: ");
+        for (int i = 0; i < 32; i++) { // if the vertex format is still 32 bits ...
+            if (i == 32 - 1 - g_attribute_info[i].attribute_type) {
+                putchar('1');
+            } else {
+                putchar('0');
+            }
         }
+        putchar('\n');
+        printf("gl_type: %d\n", g_attribute_info[i].gl_type);
+        printf("gl_size: %d\n", g_attribute_info[i].gl_size);
     }
 }

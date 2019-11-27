@@ -311,3 +311,13 @@ void print_dynamic_shader_program(DynamicShaderProgram *dynamic_shader_program)
     printf("\tGeometry shader path: %s", dynamic_shader_program->geometry_shader_path);
     putchar('\n');
 }
+
+//--- Flesh this out and make sure it is correct.
+void gl_type_size(GLenum gl_type)
+{
+    switch(gl_type) {
+        case GL_FLOAT: return sizeof(float);
+    }
+    fprintf(stderr, ERROR_ALERT "Either invalid GL type %d was size checked, or gl_type_size does not yet map this type to its size.\n", gl_type);
+    exit(EXIT_FAILURE);
+}

@@ -10,13 +10,6 @@
 #include "helper_definitions.h"
 #include "helper_gl.h"
 
-/*================================================================================
-Vertex formats
---------------
-Vertex format information is kept in static application memory and is initialized
-by a call to an initialization function in this module.
-================================================================================*/
-
 
 typedef uint8_t AttributeType;
 // Corresponds to layout qualified positions in shaders
@@ -27,13 +20,24 @@ enum AttributeTypes {
     NUM_ATTRIBUTE_TYPES
 };
 
+// Attribute types are associated to an AttributeInfo structure by their value as an index.
+#define MAX_ATTRIBUTE_NAME_LENGTH 32
 typedef struct AttributeInfo_s {
     AttributeType attribute_type;
-    char name[MAX_ATTRIBUTE
+    char name[MAX_ATTRIBUTE_NAME_LENGTH + 1];
     GLenum gl_type;
     GLuint gl_size;
 } AttributeInfo;
 
+// Vertex formats are bitmasks.
+// Attribute types have a flag position left from the least significant bit by the value of the
+// attribute type. So, the value of an attribute type:
+//  Associates it to an AttributeInfo structure in a global array.
+//  Associates it to a bitmask which can be bitwise OR'd to create vertex formats.
+//  Indexes into any array which holds information to do with attributes.
+//      For example, a mesh handle's vbo id for the attribute. The other entries should be nulled/not checked
+//      if their corresponding bit in the held vertex format of whatever structure is using vertex attributes is not 1.
+#define ATTRIBUTE_BITMASK_SIZE 32
 typedef uint32_t VertexFormat;
 static int NUM_VERTEX_FORMATS = 3;
 static VertexFormat VERTEX_FORMAT_3 = 1 << ATTRIBUTE_TYPE_POSITION;
@@ -42,21 +46,6 @@ static VertexFormat VERTEX_FORMAT_N = 1 << ATTRIBUTE_TYPE_NORMAL;
 static VertexFormat VERTEX_FORMAT_3C = VERTEX_FORMAT_3 | VERTEX_FORMAT_C;
 static VertexFormat VERTEX_FORMAT_3N = VERTEX_FORMAT_3 | VERTEX_FORMAT_N;
 static VertexFormat VERTEX_FORMAT_3CN = VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_N;
-
-
-#define MAX_VERTEX_FORMAT_NAME_LENGTH 63
-#define ATTRIBUTE_NAME_DATA_LENGTH 512
-#define MAX_ATTRIBUTE_NAME_LENGTH 24
-typedef struct VertexFormatInfo_s {
-    VertexFormat vertex_format;
-    char name[MAX_VERTEX_FORMAT_NAME_LENGTH];
-    char attribute_name_data[ATTRIBUTE_NAME_DATA_LENGTH];
-    int num_attributes;
-    int attribute_name_indices[NUM_ATTRIBUTE_TYPES];
-    bool attribute_types[NUM_ATTRIBUTE_TYPES]; // this is where attribute types slot in
-    GLenum gl_types[NUM_ATTRIBUTE_TYPES];
-    GLint gl_sizes[NUM_ATTRIBUTE_TYPES];
-} VertexFormatInfo;
 
 enum ShaderType {
     Vertex,
@@ -125,7 +114,6 @@ typedef struct Mesh_s {
     VertexFormat vertex_format;
     unsigned int num_vertices;
     void **attribute_data[NUM_ATTRIBUTE_TYPES];
-    AttributeType attribute_types[NUM_ATTRIBUTE_TYPES];
     unsigned int num_triangles;
     unsigned int *triangles;
 } Mesh;
@@ -141,7 +129,6 @@ typedef struct MeshHandle_s {
     GLuint vao;
     unsigned int num_vertices;
     GLuint attribute_vbos[NUM_ATTRIBUTE_TYPES];
-    AttributeType attribute_types[NUM_ATTRIBUTE_TYPES];
     unsigned int num_triangles;
     GLuint triangles_vbo;
 } MeshHandle;
@@ -168,7 +155,8 @@ typedef struct MeshHandle_s {
 //================================================================================
 // Vertex formats
 //================================================================================
-void init_vertex_formats(void);
+    void init_vertex_formats(void);
+    void print_vertex_attribute_types(void);
 
 //================================================================================
 // Mesh and drawing functions
@@ -186,7 +174,6 @@ void init_vertex_formats(void);
     void print_renderer(Renderer *renderer);
     void print_mesh_handle(MeshHandle *mesh_handle);
     void serialize_mesh_handle(FILE *file, MeshHandle *mesh_handle);
-    void print_vertex_formats(void);
 
 //================================================================================
 // Helper functions

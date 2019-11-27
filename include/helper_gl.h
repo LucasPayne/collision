@@ -43,4 +43,9 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
 void recompile_shader_program(DynamicShaderProgram *dynamic_shader_program);
 void print_dynamic_shader_program(DynamicShaderProgram *dynamic_shader_program);
 
+//================================================================================
+// GL types, definitions, values, ...
+//================================================================================
+void gl_type_size(GLenum gl_type);
+
 #endif // HEADER_DEFINED_HELPER_GL

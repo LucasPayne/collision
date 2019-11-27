@@ -10,7 +10,6 @@
 #include "helper_definitions.h"
 #include "helper_gl.h"
 
-
 typedef uint8_t AttributeType;
 // Corresponds to layout qualified positions in shaders
 enum AttributeTypes {
@@ -39,13 +38,13 @@ typedef struct AttributeInfo_s {
 //      if their corresponding bit in the held vertex format of whatever structure is using vertex attributes is not 1.
 #define ATTRIBUTE_BITMASK_SIZE 32
 typedef uint32_t VertexFormat;
-static int NUM_VERTEX_FORMATS = 3;
-static VertexFormat VERTEX_FORMAT_3 = 1 << ATTRIBUTE_TYPE_POSITION;
-static VertexFormat VERTEX_FORMAT_C = 1 << ATTRIBUTE_TYPE_COLOR;
-static VertexFormat VERTEX_FORMAT_N = 1 << ATTRIBUTE_TYPE_NORMAL;
-static VertexFormat VERTEX_FORMAT_3C = VERTEX_FORMAT_3 | VERTEX_FORMAT_C;
-static VertexFormat VERTEX_FORMAT_3N = VERTEX_FORMAT_3 | VERTEX_FORMAT_N;
-static VertexFormat VERTEX_FORMAT_3CN = VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_N;
+#define NUM_VERTEX_FORMATS 3
+#define VERTEX_FORMAT_3 1 << ATTRIBUTE_TYPE_POSITION
+#define VERTEX_FORMAT_C 1 << ATTRIBUTE_TYPE_COLOR
+#define VERTEX_FORMAT_N 1 << ATTRIBUTE_TYPE_NORMAL
+#define VERTEX_FORMAT_3C VERTEX_FORMAT_3 | VERTEX_FORMAT_C
+#define VERTEX_FORMAT_3N VERTEX_FORMAT_3 | VERTEX_FORMAT_N
+#define VERTEX_FORMAT_3CN VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_N
 
 enum ShaderType {
     Vertex,
@@ -63,15 +62,23 @@ enum ShaderType {
  * Typing is handled with a case-by-case matching to GL types, to use the correct GL functions
  * for uploading this type of uniform value.
  */
+// I don't think GL has matrix types, so using these types for uniforms.
+typedef uint8_t UniformType;
+enum UniformTypes {
+    UNIFORM_FLOAT,
+    UNIFORM_INT,
+    UNIFORM_MAT4X4
+};
 typedef union UniformData_union {
     GLuint int_value; //--- unsigned int. differentiate between these.
     GLfloat float_value;
+    GLfloat mat4x4_value[4 * 4];
 } UniformData;
 #define MAX_UNIFORM_NAME_LENGTH 32
 typedef struct Uniform_s {
     char name[MAX_UNIFORM_NAME_LENGTH + 1];
     GLuint location;
-    GLuint type;
+    UniformType type;
     UniformData (*get_uniform_value)(void);
 } Uniform;
 
@@ -166,7 +173,7 @@ typedef struct MeshHandle_s {
 // Upload mesh to graphics memory and initialize a mesh handle structure, and free mesh data from application memory.
     void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh);
 // Render a mesh associated to a mesh handle using the given renderer.
-    void render_mesh(Renderer *renderer, MeshHandle *mesh_handle);
+    void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, GLenum primitive_mode);
 
 //================================================================================
 // Printing and serialization

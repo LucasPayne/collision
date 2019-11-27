@@ -46,6 +46,6 @@ void print_dynamic_shader_program(DynamicShaderProgram *dynamic_shader_program);
 //================================================================================
 // GL types, definitions, values, ...
 //================================================================================
-void gl_type_size(GLenum gl_type);
+size_t gl_type_size(GLenum gl_type);
 
 #endif // HEADER_DEFINED_HELPER_GL

@@ -313,7 +313,7 @@ void print_dynamic_shader_program(DynamicShaderProgram *dynamic_shader_program)
 }
 
 //--- Flesh this out and make sure it is correct.
-void gl_type_size(GLenum gl_type)
+size_t gl_type_size(GLenum gl_type)
 {
     switch(gl_type) {
         case GL_FLOAT: return sizeof(float);

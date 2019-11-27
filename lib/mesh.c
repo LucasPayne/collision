@@ -15,7 +15,11 @@
 // Static helper functions
 //--------------------------------------------------------------------------------
 static void zero_mesh_handle(MeshHandle *mesh_handle);
-static void add_mesh_handle_vbo(MeshHandle *mesh_handle, GLuint vbo);
+//--------------------------------------------------------------------------------
+
+// Static data
+//--------------------------------------------------------------------------------
+static AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES];
 //--------------------------------------------------------------------------------
 
 static void zero_mesh_handle(MeshHandle *mesh_handle)
@@ -60,8 +64,8 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
 
     // upload vertex attribute data and associate to the mesh handle.
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        if ((mesh->vertex_format << i) & 1 == 1) { // vertex format has attribute i set
-            if (mesh->attribute_vbos[i] == NULL) {
+        if (((mesh->vertex_format << i) & 1) == 1) { // vertex format has attribute i set
+            if (mesh->attribute_data[i] == NULL) {
                 fprintf(stderr, ERROR_ALERT "Attempted to upload mesh which does not have data for one of its attributes.\n");
                 exit(EXIT_FAILURE);
             }
@@ -70,7 +74,7 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
             glBindBuffer(GL_ARRAY_BUFFER, attribute_buffer);
             glBufferData(GL_ARRAY_BUFFER,
                          g_attribute_info[i].gl_size * gl_type_size(g_attribute_info[i].gl_type) * mesh->num_vertices,
-                         mesh->attribute_vbos[i],
+                         mesh->attribute_data[i],
                          GL_DYNAMIC_DRAW);
             // associate this buffer id to the mesh handle.
             mesh_handle->attribute_vbos[i] = attribute_buffer;
@@ -91,15 +95,15 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
     glBindVertexArray(vao);
     // bind the attribute buffers to the vao
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        if ((mesh->vertex_format << i) & 1 == 1) { // vertex format has attribute i set
-            glBindBuffer(GL_ARRAY_BUFFER, mesh->attribute_vbos[i]);
+        if (((mesh->vertex_format << i) & 1) == 1) { // vertex format has attribute i set
+            glBindBuffer(GL_ARRAY_BUFFER, mesh_handle->attribute_vbos[i]);
             glVertexAttribPointer(g_attribute_info[i].attribute_type, // location is currently set to the type index, so layout qualifiers need to match up the position in shaders.
                                   g_attribute_info[i].gl_size, // "gl_size" is the number of values per vertex, e.g. 3, 4.
                                   g_attribute_info[i].gl_type,
                                   GL_FALSE, // not normalized
                                   0,        // no stride (contiguous data in buffer)
                                   (void *) 0); // Buffer offset. Separate buffer objects for each attribute are being used.
-            glEnableVertexAttribArray(attribute_location_vPosition);
+            glEnableVertexAttribArray(g_attribute_info[i].attribute_type);
         }
     }
     // bind the triangle indices to the vao
@@ -131,18 +135,31 @@ void renderer_upload_uniforms(Renderer *renderer)
             fprintf(stderr, "ERROR: not initialized a uniform value-getting function for renderer.\n");
             exit(EXIT_FAILURE);
         }
-        if (renderer->uniforms[i].type == GL_FLOAT) {
-            float val = renderer->uniforms[i].get_uniform_value().float_value;
-            glUniform1f(renderer->uniforms[i].location, val);
-        }
-        else if (renderer->uniforms[i].type == GL_INT) {
-            int val = renderer->uniforms[i].get_uniform_value().int_value;
-            glUniform1i(renderer->uniforms[i].location, val);
+        // fun fact: old C put declarations before statements, so we still can't follow a label with a declaration.
+        switch (renderer->uniforms[i].type) {
+            case UNIFORM_FLOAT:
+                glUniform1f(renderer->uniforms[i].location,
+                            renderer->uniforms[i].get_uniform_value().float_value);
+            break;
+            case UNIFORM_INT:
+                glUniform1i(renderer->uniforms[i].location,
+                            renderer->uniforms[i].get_uniform_value().int_value);
+            break;
+            case UNIFORM_MAT4X4:
+                glUniformMatrix4fv(renderer->uniforms[i].location,
+                                   1, // one matrix
+                                   GL_FALSE, // no transpose ---may need to transpose
+                                   renderer->uniforms[i].get_uniform_value().mat4x4_value); // pointer to matrix values
+                //------ unsure, if buggy, check here
+            break;
+            default:
+                fprintf(stderr, ERROR_ALERT "Renderer has a uniform which has an invalid uniform type, %d. (or this type is not accounted for by the uniform uploading function.)\n", renderer->uniforms[i].type);
+                exit(EXIT_FAILURE);
         }
     }
 }
 
-void render_mesh(Renderer *renderer, MeshHandle *mesh_handle)
+void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, GLenum primitive_mode)
 {
     //- no vertex format compatibility stuff currently (could somehow do default vertex attributes, e.g. color black)
     if (renderer->vertex_format != mesh_handle->vertex_format) {
@@ -151,10 +168,12 @@ void render_mesh(Renderer *renderer, MeshHandle *mesh_handle)
     }
     bind_renderer(renderer);
 
-    glUniformMatrix4fv(renderer->uniform_mvp_matrix, 1, GL_TRUE, (const GLfloat *) &mvp_matrix.vals);
     glBindVertexArray(mesh_handle->vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_handle->element_vbo);
-    glDrawElements(renderer->primitive_mode, 3 * mesh_handle->num_triangles, GL_UNSIGNED_INT, (void *) 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_handle->triangles_vbo);
+    glDrawElements(primitive_mode,
+                   3 * mesh_handle->num_triangles,
+                   GL_UNSIGNED_INT,
+                   (void *) 0);
 }
 
 void zero_init_renderer(Renderer *renderer)
@@ -164,7 +183,7 @@ void zero_init_renderer(Renderer *renderer)
 }
 
 #define TRACING 1
-void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path, GLuint primitive_mode)
+void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path)
 {
     /* Creates a new renderer only using vertex and fragment shaders. */
     zero_init_renderer(renderer);
@@ -198,8 +217,6 @@ void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, 
     glAttachShader(renderer->program, renderer->vertex_shader);
     glAttachShader(renderer->program, renderer->fragment_shader);
     link_shader_program(renderer->program);
-
-    renderer->primitive_mode = primitive_mode;
 
     renderer->num_uniforms = 0;
 }
@@ -243,28 +260,28 @@ void print_renderer(Renderer *renderer)
 
 void print_mesh_handle(MeshHandle *mesh_handle)
 {
+    //---- update this
     printf("Mesh handle:\n");
-    printf("Name: %s\n", mesh_handle->name);
     printf("Vertex array object: %d\n", mesh_handle->vao);
     printf("Number of vertices: %d\n", mesh_handle->num_vertices);
     printf("Number of triangles: %d\n", mesh_handle->num_triangles);
-    printf("Attached VBOs:\n");
-    for (int i = 0; mesh_handle->vbos[i] != 0; i++) {
-        printf("\t%d\n", mesh_handle->vbos[i]);
-    }
+    /* printf("Attached VBOs:\n"); */
+    /* for (int i = 0; mesh_handle->vbos[i] != 0; i++) { */
+    /*     printf("\t%d\n", mesh_handle->vbos[i]); */
+    /* } */
 }
 
 //--- this shouldn't have to be done for every struct ...
 void serialize_mesh_handle(FILE *file, MeshHandle *mesh_handle)
 {
-    fprintf(file, "name: %s\n", mesh_handle->name);
+    //---- update this
     fprintf(file, "vao: %d\n", mesh_handle->vao);
-    fprintf(file, "vbos: ["); //--- need standards for serialization
-    for (int i = 0; i < MAX_MESH_VBOS; i++) {
-        if (mesh_handle->vbos[i] == 0) break;
-        if (i != 0) fprintf(file, ", ");
-        fprintf(file, "%d", mesh_handle->vbos[i]);
-    }
+    /* fprintf(file, "vbos: ["); //--- need standards for serialization */
+    /* for (int i = 0; i < MAX_MESH_VBOS; i++) { */
+    /*     if (mesh_handle->vbos[i] == 0) break; */
+    /*     if (i != 0) fprintf(file, ", "); */
+    /*     fprintf(file, "%d", mesh_handle->vbos[i]); */
+    /* } */
     fprintf(file, "]\n");
     fprintf(file, "num_vertices: %u\n", mesh_handle->num_vertices);
     fprintf(file, "num_triangles: %u\n", mesh_handle->num_triangles);
@@ -309,7 +326,6 @@ void renderer_recompile_shaders(Renderer *renderer)
 
 // Vertex formats
 //--------------------------------------------------------------------------------
-static AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES];
 
 static void set_attribute_info(AttributeType attribute_type, GLenum gl_type, GLuint gl_size, char *name)
 {

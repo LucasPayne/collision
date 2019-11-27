@@ -50,13 +50,15 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
      * NOTES:
      *      Could have options for buffer hints (dynamic/static/stream draw).
      */
-    zero_mesh_handle(mesh_handle); // make sure it is zero initialized before filling
+    // make sure the mesh handle is zero initialized before filling.
+    zero_mesh_handle(mesh_handle); 
     
-    // copy over basic attributes
+    // copy over basic properties.
     mesh_handle->num_triangles = mesh->num_triangles;
     mesh_handle->num_vertices = mesh->num_vertices;
     mesh_handle->vertex_format = mesh->vertex_format;
 
+    // upload vertex attribute data and associate to the mesh handle.
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
         if ((mesh->vertex_format << i) & 1 == 1) { // vertex format has attribute i set
             if (mesh->attribute_vbos[i] == NULL) {
@@ -70,20 +72,20 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
                          g_attribute_info[i].gl_size * gl_type_size(g_attribute_info[i].gl_type) * mesh->num_vertices,
                          mesh->attribute_vbos[i],
                          GL_DYNAMIC_DRAW);
+            // associate this buffer id to the mesh handle.
+            mesh_handle->attribute_vbos[i] = attribute_buffer;
         }
     }
+    // upload triangle index data and associate to the mesh handle.
     GLuint triangle_buffer;
     glGenBuffers(1, &triangle_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*sizeof(unsigned int) * mesh->num_triangles, mesh->triangles, GL_DYNAMIC_DRAW);
+    // associate this triangle buffer id to the mesh handle.
+    mesh_handle->triangles_vbo = triangle_buffer;
 
-
-
-    /* GLuint vertex_buffer; */
-    /* glGenBuffers(1, &vertex_buffer); */
-    /* glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); */
-    /* glBufferData(GL_ARRAY_BUFFER, 3*sizeof(float) * mesh->num_vertices, mesh->vertices, GL_DYNAMIC_DRAW); */
-
+    // wrap these up in a vertex array object.
+    //--- is this encapsulation working for triangle indices?
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -91,18 +93,22 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
         if ((mesh->vertex_format << i) & 1 == 1) { // vertex format has attribute i set
             glBindBuffer(GL_ARRAY_BUFFER, mesh->attribute_vbos[i]);
+            glVertexAttribPointer(g_attribute_info[i].attribute_type, // location is currently set to the type index, so layout qualifiers need to match up the position in shaders.
+                                  g_attribute_info[i].gl_size, // "gl_size" is the number of values per vertex, e.g. 3, 4.
+                                  g_attribute_info[i].gl_type,
+                                  GL_FALSE, // not normalized
+                                  0,        // no stride (contiguous data in buffer)
+                                  (void *) 0); // Buffer offset. Separate buffer objects for each attribute are being used.
+            glEnableVertexAttribArray(attribute_location_vPosition);
         }
     }
     // bind the triangle indices to the vao
     //--- is this in the right order?
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
-    glVertexAttribPointer(attribute_location_vPosition, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
-    glEnableVertexAttribArray(attribute_location_vPosition);
-
+    // associate this vertex array object to the mesh handle.
     mesh_handle->vao = vao;
-    add_mesh_handle_vbo(mesh_handle, vertex_buffer);
-    mesh_handle->element_vbo = triangle_buffer;
 
+    // Free the application mesh data.
     free_mesh(mesh);
 }
 
@@ -136,26 +142,14 @@ void renderer_upload_uniforms(Renderer *renderer)
     }
 }
 
-void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, Matrix4x4f *model_matrix, Matrix4x4f *view_matrix, Matrix4x4f *projection_matrix)
+void render_mesh(Renderer *renderer, MeshHandle *mesh_handle)
 {
+    //- no vertex format compatibility stuff currently (could somehow do default vertex attributes, e.g. color black)
+    if (renderer->vertex_format != mesh_handle->vertex_format) {
+        fprintf(stderr, ERROR_ALERT "Attempted to render a mesh with renderer with non-matching vertex format.\n");
+        exit(EXIT_FAILURE);
+    }
     bind_renderer(renderer);
-
-    // Concatenate the given model matrix with the given view matrix and projection matrix
-    Matrix4x4f mvp_matrix;
-    identity_matrix4x4f(&mvp_matrix);
-
-    right_multiply_matrix4x4f(&mvp_matrix, projection_matrix);
-
-    // Because these are actually the coordinate frames, they are inverted
-    // (transposed, since they are orthonormal matrices (hopefully)).
-    // @@previous_problem@@:
-    //      since they are coordinate frames, they must be explicitly inverted. This reverses
-    //      the order they appear in the mvp matrix calculation. Also, should just think of
-    //      what the transformations actually do. This gets the matrix P M^-1 V^-1, ...
-    // into model relative coordinates
-    right_multiply_by_transpose_matrix4x4f(&mvp_matrix, model_matrix);
-    // into view coordinates
-    right_multiply_by_transpose_matrix4x4f(&mvp_matrix, view_matrix);
 
     glUniformMatrix4fv(renderer->uniform_mvp_matrix, 1, GL_TRUE, (const GLfloat *) &mvp_matrix.vals);
     glBindVertexArray(mesh_handle->vao);

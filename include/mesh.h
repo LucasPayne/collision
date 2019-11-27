@@ -69,7 +69,7 @@ typedef union UniformData_union {
 } UniformData;
 #define MAX_UNIFORM_NAME_LENGTH 32
 typedef struct Uniform_s {
-    char name[MAX_UNIFORM_NAME_LENGTH];
+    char name[MAX_UNIFORM_NAME_LENGTH + 1];
     GLuint location;
     GLuint type;
     UniformData (*get_uniform_value)(void);

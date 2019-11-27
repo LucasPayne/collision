@@ -291,3 +291,82 @@ void renderer_recompile_shaders(Renderer *renderer)
     // ... and other types ...
     link_shader_program(renderer->program);
 }
+
+// Vertex formats
+//--------------------------------------------------------------------------------
+static VertexFormatInfo vertex_format_infos[NUM_VERTEX_FORMATS];
+static void VertexFormatInfo_add_attribute(VertexFormatInfo *vf, char *attribute_name, GLenum gl_type, GLint gl_size)
+{
+    // Messy string processing. Builds up list of attribute names packed into one array and separated by null terminators.
+    // Special case for first addition, the rest find two null terminators and add the new string after the first.
+    // So, the name data array must be null-initialized.
+    int name_pos = 0;
+    if (vf->num_attributes != 0) {
+        for (int i = 1; i < ATTRIBUTE_NAME_DATA_LENGTH - 1; i++) {
+            if (vf->attribute_name_data[i] == '\0' && vf->attribute_name_data[i - 1] == '\0') {
+                name_pos = i;
+                break;
+            }
+        }
+    }
+    if (strlen(attribute_name) > MAX_ATTRIBUTE_NAME_LENGTH) {
+        fprintf(stderr, ERROR_ALERT "Attribute name \"%s\" is too long. The maximum attribute name length is set to %d.\n", attribute_name, MAX_ATTRIBUTE_NAME_LENGTH);
+        exit(EXIT_FAILURE);
+    }
+    if (strlen(attribute_name) + name_pos >= ATTRIBUTE_NAME_DATA_LENGTH) {
+        fprintf(stderr, ERROR_ALERT "Attribute name space full for static vertex info data. Maximum space for attribute names is set to %d.\n", ATTRIBUTE_NAME_DATA_LENGTH);
+        exit(EXIT_FAILURE);
+    }
+    strncpy(vf->attribute_name_data + name_pos, attribute_name, MAX_ATTRIBUTE_NAME_LENGTH);
+    vf->attribute_name_indices[vf->num_attributes] = name_pos;
+    vf->gl_types[vf->num_attributes] = gl_type;
+    vf->gl_sizes[vf->num_attributes] = gl_size;
+    vf->num_attributes ++;
+    if (vf->num_attributes >= MAX_VERTEX_ATTRIBUTES) {
+        fprintf(stderr, ERROR_ALERT "Attempted to initialize a vertex format with too many attributes. The maximum set is %d.\n", MAX_VERTEX_ATTRIBUTES);
+        exit(EXIT_FAILURE);
+    }
+}
+static VertexFormatInfo *init_vertex_format(VertexFormat vertex_format, char *name)
+{
+    VertexFormatInfo *vf = &vertex_format_infos[vertex_format];
+    vf->vertex_format = vertex_format;
+    strncpy(vf->name, name, MAX_VERTEX_FORMAT_NAME_LENGTH);
+    memset(vf->attribute_name_data, '\0', sizeof(char) * ATTRIBUTE_NAME_DATA_LENGTH);
+    vf->num_attributes = 0;
+}
+// Vertex format information is kept as static data in application memory. So, this initialization function must be called to use this mesh module.
+// Possibly this could be parameterized with the vertex formats the application will actually be using.
+void init_vertex_formats(void)
+{
+    {
+        VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3, "3D pos");
+        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3);
+    }
+    {
+        VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3C, "3D pos, color");
+        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3);
+        VertexFormatInfo_add_attribute(vf, "vColor", GL_FLOAT, 3);
+    }
+    {
+        VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3CN, "3D pos, color, normal");
+        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3);
+        VertexFormatInfo_add_attribute(vf, "vColor", GL_FLOAT, 3);
+        VertexFormatInfo_add_attribute(vf, "vNormal", GL_FLOAT, 3);
+    }
+}
+
+void print_vertex_formats(void)
+{
+    for (int i = 0; i < NUM_VERTEX_FORMATS; i++) {
+        printf("------------------------------------------------------------\n");
+        printf("Vertex format name: \"%s\"\n", vertex_format_infos[i].name);
+        printf("vertex_format (id): %d\n", vertex_format_infos[i].vertex_format);
+        printf("num_attributes: %d\n", vertex_format_infos[i].num_attributes);
+        for (int ii = 0; ii < vertex_format_infos[i].num_attributes; ii++) {
+            printf("Attribute name: \"%s\"\n", vertex_format_infos[i].attribute_name_data + vertex_format_infos[i].attribute_name_indices[ii]);
+            printf("gl_type: %d\n", vertex_format_infos[i].gl_types[ii]);
+            printf("gl_size: %d\n", vertex_format_infos[i].gl_sizes[ii]);
+        }
+    }
+}

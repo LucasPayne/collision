@@ -5,9 +5,37 @@
 #define HEADER_DEFINED_MESH
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <stdint.h>
 #include "matrix_mathematics.h"
 #include "helper_definitions.h"
 #include "helper_gl.h"
+
+/*================================================================================
+Vertex formats
+--------------
+Vertex format information is kept in static application memory and is initialized
+by a call to an initialization function in this module.
+================================================================================*/
+typedef uint8_t VertexFormat;
+enum VertexFormats {
+    VERTEX_FORMAT_3, // 3D positional data
+    VERTEX_FORMAT_3C, // + colors
+    VERTEX_FORMAT_3CN, // + colors, normals
+    NUM_VERTEX_FORMATS
+};
+#define MAX_VERTEX_ATTRIBUTES 16
+#define MAX_VERTEX_FORMAT_NAME_LENGTH 63
+#define ATTRIBUTE_NAME_DATA_LENGTH 512
+#define MAX_ATTRIBUTE_NAME_LENGTH 24
+typedef struct VertexFormatInfo_s {
+    VertexFormat vertex_format;
+    char name[MAX_VERTEX_FORMAT_NAME_LENGTH];
+    char attribute_name_data[ATTRIBUTE_NAME_DATA_LENGTH];
+    int num_attributes;
+    int attribute_name_indices[MAX_VERTEX_ATTRIBUTES];
+    GLenum gl_types[MAX_VERTEX_ATTRIBUTES];
+    GLint gl_sizes[MAX_VERTEX_ATTRIBUTES];
+} VertexFormatInfo;
 
 enum ShaderType {
     Vertex,
@@ -121,6 +149,11 @@ typedef struct MeshHandle_s {
     void renderer_upload_uniforms(Renderer *renderer);
 
 //================================================================================
+// Vertex formats
+//================================================================================
+void init_vertex_formats(void);
+
+//================================================================================
 // Mesh and drawing functions
 //================================================================================
 // Free mesh from application memory.
@@ -136,6 +169,7 @@ typedef struct MeshHandle_s {
     void print_renderer(Renderer *renderer);
     void print_mesh_handle(MeshHandle *mesh_handle);
     void serialize_mesh_handle(FILE *file, MeshHandle *mesh_handle);
+    void print_vertex_formats(void);
 
 //================================================================================
 // Helper functions

@@ -294,9 +294,17 @@ void renderer_recompile_shaders(Renderer *renderer)
 
 // Vertex formats
 //--------------------------------------------------------------------------------
-static VertexFormatInfo vertex_format_infos[NUM_VERTEX_FORMATS];
-static void VertexFormatInfo_add_attribute(VertexFormatInfo *vf, char *attribute_name, GLenum gl_type, GLint gl_size)
+static VertexFormatInfo g_vertex_format_infos[NUM_VERTEX_FORMATS];
+/* static unsigned int g_num_attribute_types = 0; */
+
+
+
+static void VertexFormatInfo_add_attribute(VertexFormatInfo *vf, char *attribute_name, GLenum gl_type, GLint gl_size, AttributeType attribute_type)
 {
+    if (attribute_type >= NUM_ATTRIBUTE_TYPES) {
+        fprintf(stderr, ERROR_ALERT "Invalid attribute type %d given when adding an attribute to vertex format info. There are %d attribute types.\n", attribute_type, NUM_ATTRIBUTE_TYPES);
+        exit(EXIT_FAILURE);
+    }
     // Messy string processing. Builds up list of attribute names packed into one array and separated by null terminators.
     // Special case for first addition, the rest find two null terminators and add the new string after the first.
     // So, the name data array must be null-initialized.
@@ -318,18 +326,16 @@ static void VertexFormatInfo_add_attribute(VertexFormatInfo *vf, char *attribute
         exit(EXIT_FAILURE);
     }
     strncpy(vf->attribute_name_data + name_pos, attribute_name, MAX_ATTRIBUTE_NAME_LENGTH);
-    vf->attribute_name_indices[vf->num_attributes] = name_pos;
-    vf->gl_types[vf->num_attributes] = gl_type;
-    vf->gl_sizes[vf->num_attributes] = gl_size;
+    vf->attribute_name_indices[attribute_type] = name_pos;
+    vf->gl_types[attribute_type] = gl_type;
+    vf->gl_sizes[attribute_type] = gl_size;
+    vf->attribute_types[attribute_type] = attribute_type;
     vf->num_attributes ++;
-    if (vf->num_attributes >= MAX_VERTEX_ATTRIBUTES) {
-        fprintf(stderr, ERROR_ALERT "Attempted to initialize a vertex format with too many attributes. The maximum set is %d.\n", MAX_VERTEX_ATTRIBUTES);
-        exit(EXIT_FAILURE);
-    }
+
 }
 static VertexFormatInfo *init_vertex_format(VertexFormat vertex_format, char *name)
 {
-    VertexFormatInfo *vf = &vertex_format_infos[vertex_format];
+    VertexFormatInfo *vf = &g_vertex_format_infos[vertex_format];
     vf->vertex_format = vertex_format;
     strncpy(vf->name, name, MAX_VERTEX_FORMAT_NAME_LENGTH);
     memset(vf->attribute_name_data, '\0', sizeof(char) * ATTRIBUTE_NAME_DATA_LENGTH);
@@ -341,18 +347,23 @@ void init_vertex_formats(void)
 {
     {
         VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3, "3D pos");
-        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3);
+        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3, ATTRIBUTE_TYPE_POSITION);
     }
     {
         VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3C, "3D pos, color");
-        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3);
-        VertexFormatInfo_add_attribute(vf, "vColor", GL_FLOAT, 3);
+        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3, ATTRIBUTE_TYPE_POSITION);
+        VertexFormatInfo_add_attribute(vf, "vColor", GL_FLOAT, 3, ATTRIBUTE_TYPE_COLOR);
+    }
+    {
+        VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3N, "3D pos, normal");
+        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3, ATTRIBUTE_TYPE_POSITION);
+        VertexFormatInfo_add_attribute(vf, "vNormal", GL_FLOAT, 3, ATTRIBUTE_TYPE_NORMAL);
     }
     {
         VertexFormatInfo *vf = init_vertex_format(VERTEX_FORMAT_3CN, "3D pos, color, normal");
-        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3);
-        VertexFormatInfo_add_attribute(vf, "vColor", GL_FLOAT, 3);
-        VertexFormatInfo_add_attribute(vf, "vNormal", GL_FLOAT, 3);
+        VertexFormatInfo_add_attribute(vf, "vPosition", GL_FLOAT, 3, ATTRIBUTE_TYPE_POSITION);
+        VertexFormatInfo_add_attribute(vf, "vColor", GL_FLOAT, 3, ATTRIBUTE_TYPE_COLOR);
+        VertexFormatInfo_add_attribute(vf, "vNormal", GL_FLOAT, 3, ATTRIBUTE_TYPE_NORMAL);
     }
 }
 
@@ -360,13 +371,13 @@ void print_vertex_formats(void)
 {
     for (int i = 0; i < NUM_VERTEX_FORMATS; i++) {
         printf("------------------------------------------------------------\n");
-        printf("Vertex format name: \"%s\"\n", vertex_format_infos[i].name);
-        printf("vertex_format (id): %d\n", vertex_format_infos[i].vertex_format);
-        printf("num_attributes: %d\n", vertex_format_infos[i].num_attributes);
-        for (int ii = 0; ii < vertex_format_infos[i].num_attributes; ii++) {
-            printf("Attribute name: \"%s\"\n", vertex_format_infos[i].attribute_name_data + vertex_format_infos[i].attribute_name_indices[ii]);
-            printf("gl_type: %d\n", vertex_format_infos[i].gl_types[ii]);
-            printf("gl_size: %d\n", vertex_format_infos[i].gl_sizes[ii]);
+        printf("Vertex format name: \"%s\"\n", g_vertex_format_infos[i].name);
+        printf("vertex_format (id): %d\n", g_vertex_format_infos[i].vertex_format);
+        printf("num_attributes: %d\n", g_vertex_format_infos[i].num_attributes);
+        for (int ii = 0; ii < g_vertex_format_infos[i].num_attributes; ii++) {
+            printf("Attribute name: \"%s\"\n", g_vertex_format_infos[i].attribute_name_data + g_vertex_format_infos[i].attribute_name_indices[ii]);
+            printf("gl_type: %d\n", g_vertex_format_infos[i].gl_types[ii]);
+            printf("gl_size: %d\n", g_vertex_format_infos[i].gl_sizes[ii]);
         }
     }
 }

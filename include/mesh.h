@@ -16,14 +16,24 @@ Vertex formats
 Vertex format information is kept in static application memory and is initialized
 by a call to an initialization function in this module.
 ================================================================================*/
+
 typedef uint8_t VertexFormat;
 enum VertexFormats {
     VERTEX_FORMAT_3, // 3D positional data
     VERTEX_FORMAT_3C, // + colors
     VERTEX_FORMAT_3CN, // + colors, normals
+    VERTEX_FORMAT_3N, // + normals
     NUM_VERTEX_FORMATS
 };
-#define MAX_VERTEX_ATTRIBUTES 16
+
+typedef uint8_t AttributeType;
+enum AttributeTypes {
+    ATTRIBUTE_TYPE_POSITION,
+    ATTRIBUTE_TYPE_COLOR,
+    ATTRIBUTE_TYPE_NORMAL,
+    NUM_ATTRIBUTE_TYPES
+};
+
 #define MAX_VERTEX_FORMAT_NAME_LENGTH 63
 #define ATTRIBUTE_NAME_DATA_LENGTH 512
 #define MAX_ATTRIBUTE_NAME_LENGTH 24
@@ -32,9 +42,10 @@ typedef struct VertexFormatInfo_s {
     char name[MAX_VERTEX_FORMAT_NAME_LENGTH];
     char attribute_name_data[ATTRIBUTE_NAME_DATA_LENGTH];
     int num_attributes;
-    int attribute_name_indices[MAX_VERTEX_ATTRIBUTES];
-    GLenum gl_types[MAX_VERTEX_ATTRIBUTES];
-    GLint gl_sizes[MAX_VERTEX_ATTRIBUTES];
+    int attribute_name_indices[NUM_ATTRIBUTE_TYPES];
+    AttributeType attribute_types[NUM_ATTRIBUTE_TYPES];
+    GLenum gl_types[NUM_ATTRIBUTE_TYPES];
+    GLint gl_sizes[NUM_ATTRIBUTE_TYPES];
 } VertexFormatInfo;
 
 enum ShaderType {
@@ -47,14 +58,14 @@ enum ShaderType {
 };
 
 /* "Uniforms" as a structure encapsulate the association of a uniform name, location,
- * and method of setting/uploading, which is attached to a renderer structure, so the renderer can
+ * and method of geting it for upload, which is attached to a renderer structure, so the renderer can
  * update the values of uniform variables relevant to the shader program it is using.
  *
  * Typing is handled with a case-by-case matching to GL types, to use the correct GL functions
  * for uploading this type of uniform value.
  */
 typedef union UniformData_union {
-    GLuint int_value;
+    GLuint int_value; //--- unsigned int. differentiate between these.
     GLfloat float_value;
 } UniformData;
 #define MAX_UNIFORM_NAME_LENGTH 32
@@ -78,17 +89,12 @@ typedef struct Uniform_s {
  */
 #define MAX_RENDERER_UNIFORMS 8
 typedef struct Renderer_s {
-    GLuint primitive_mode;
-    // Standard uniforms
-    GLuint uniform_mvp_matrix;
-    // Renderer-specific uniforms
+    VertexFormat vertex_format;
+
     int num_uniforms;
     Uniform uniforms[MAX_RENDERER_UNIFORMS];
-    // Todo: how to organize this?
-    // Variable list of uniforms that should update on mesh render, versus in the loop,
-    // and variable types of vertex attributes? (vertex formats)
-    GLuint program;
 
+    GLuint program;
     GLuint vertex_shader;
     GLuint fragment_shader;
     GLuint geometry_shader;
@@ -105,11 +111,11 @@ typedef struct Renderer_s {
  * with reading/generation routines, then freed from application memory after uploading to the
  * graphics server.
  */
-#define MAX_MESH_NAME_LENGTH 32
 typedef struct Mesh_s {
-    char name[MAX_MESH_NAME_LENGTH + 1];
+    VertexFormat vertex_format;
     unsigned int num_vertices;
-    float *vertices;
+    void **attribute_data[NUM_ATTRIBUTE_TYPES];
+    AttributeType attribute_types[NUM_ATTRIBUTE_TYPES];
     unsigned int num_triangles;
     unsigned int *triangles;
 } Mesh;
@@ -119,14 +125,15 @@ typedef struct Mesh_s {
  * to free this mesh from graphics memory and call GL functions involving
  * this mesh data.
  */
-#define MAX_MESH_VBOS 5
 typedef struct MeshHandle_s {
-    char name[MAX_MESH_NAME_LENGTH + 1];
+    //- if want to subdata a buffer that contains all of this, maybe have generic attached vbos which will be owned by this.
+    VertexFormat vertex_format;
     GLuint vao;
-    GLuint element_vbo;
-    GLuint vbos[MAX_MESH_VBOS + 1]; // 0 terminated
     unsigned int num_vertices;
+    GLuint attribute_vbos[NUM_ATTRIBUTE_TYPES];
+    AttributeType attribute_types[NUM_ATTRIBUTE_TYPES];
     unsigned int num_triangles;
+    GLuint triangles_vbo;
 } MeshHandle;
 
 
@@ -134,7 +141,7 @@ typedef struct MeshHandle_s {
 // Basic usage
 //================================================================================
 // Initialize a new renderer structure which only uses vertex and fragment shaders.
-    void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path, GLuint primitive_mode);
+    void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path);
 // Binding a renderer sets up the associated shader program and uniforms, ... so that GL draw calls will use them.
     void bind_renderer(Renderer *renderer);
 // Dynamic recompilation (e.g. for testing, maybe elsewhere)
@@ -160,8 +167,8 @@ void init_vertex_formats(void);
     void free_mesh(Mesh *mesh);
 // Upload mesh to graphics memory and initialize a mesh handle structure, and free mesh data from application memory.
     void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh);
-// Render a mesh associated to a mesh handle using the given renderer, and model, view, and projection matrices.
-    void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, Matrix4x4f *model_matrix, Matrix4x4f *view_matrix, Matrix4x4f *projection_matrix);
+// Render a mesh associated to a mesh handle using the given renderer.
+    void render_mesh(Renderer *renderer, MeshHandle *mesh_handle);
 
 //================================================================================
 // Printing and serialization

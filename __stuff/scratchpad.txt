@@ -1,0 +1,12 @@
+
+    // Because these are actually the coordinate frames, they are inverted
+    // (transposed, since they are orthonormal matrices (hopefully)).
+    // @@previous_problem@@:
+    //      since they are coordinate frames, they must be explicitly inverted. This reverses
+    //      the order they appear in the mvp matrix calculation. Also, should just think of
+    //      what the transformations actually do. This gets the matrix P M^-1 V^-1, ...
+    // into model relative coordinates
+    right_multiply_by_transpose_matrix4x4f(&mvp_matrix, model_matrix);
+    // into view coordinates
+    right_multiply_by_transpose_matrix4x4f(&mvp_matrix, view_matrix);
+

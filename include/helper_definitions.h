@@ -48,4 +48,18 @@
 //================================================================================
 #define ERROR_ALERT "\033[31m\033[1mERROR\033[0m: "
 
+
+// can this be implemented as a macro?
+/* void error_exit_failure(char *format, ...) */
+/* { */
+/*     va_list args; */
+/*     va_start(args, format); */
+/*     fprintf(stderr, ERROR_ALERT); */
+/*     vfprintf(stderr, format, args); */
+/*     fprintf(stderr, "\n"); */
+/*     va_end(args); */
+/*     exit(EXIT_FAILURE); */
+/* } */
+
+
 #endif // HEADER_DEFINED_HELPER_DEFINITIONS

@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "matrix_mathematics.h"
 #include "helper_definitions.h"
 #include "mesh.h"
 
@@ -25,14 +24,6 @@ static AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES];
 static void zero_mesh_handle(MeshHandle *mesh_handle)
 {
     memset(mesh_handle, 0, sizeof(MeshHandle)); // only because currently to "zero", everything actually is zeroed.
-    /* mesh_handle->vertex_format = 0; */
-    /* mesh_handle->vao = 0; */
-    /* mesh_handle->triangles_vbo = 0; */
-    /* memset(mesh_handle->attribute_vbos, 0, sizeof(mesh_handle->vbos)); */
-    /* memset(mesh_handle->attribute_types, 0, sizeof(mesh_handle->attribute_types)); */
-    /* memset(mesh_handle->attribute_types, 0, sizeof(mesh_handle->attribute_types)); */
-    /* mesh_handle->num_vertices = 0; */
-    /* mesh_handle->num_triangles = 0; */
 }
 
 void free_mesh(Mesh *mesh)
@@ -46,8 +37,10 @@ void free_mesh(Mesh *mesh)
     free(mesh->triangles);
 }
 
-void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
+void upload_mesh(MeshHandle *mesh_handle, Mesh *mesh)
 {
+#define TRACING 1
+#define TRACING_VERBOSE 0
     /* Upload the mesh data and fill the mesh handle structure with information (so it can be freed, drawn, etc.)
      * Frees the mesh afterward (should?)
      *
@@ -55,6 +48,10 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
      *      Could have options for buffer hints (dynamic/static/stream draw).
      */
     // make sure the mesh handle is zero initialized before filling.
+#if TRACING
+    printf("Uploading mesh and associating it to a mesh handle\n");
+    print_mesh(mesh);
+#endif
     zero_mesh_handle(mesh_handle); 
     
     // copy over basic properties.
@@ -62,9 +59,15 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
     mesh_handle->num_vertices = mesh->num_vertices;
     mesh_handle->vertex_format = mesh->vertex_format;
 
+#if TRACING_VERBOSE
+    printf("Uploading vertex attribute data ...\n");
+#endif
     // upload vertex attribute data and associate to the mesh handle.
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        if (((mesh->vertex_format << i) & 1) == 1) { // vertex format has attribute i set
+        if (((mesh->vertex_format >> i) & 1) == 1) { // vertex format has attribute i set
+#if TRACING_VERBOSE
+            printf("uploading and associating vertex attribute %s\n", g_attribute_info[i].name);
+#endif
             if (mesh->attribute_data[i] == NULL) {
                 fprintf(stderr, ERROR_ALERT "Attempted to upload mesh which does not have data for one of its attributes.\n");
                 exit(EXIT_FAILURE);
@@ -78,24 +81,36 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
                          GL_DYNAMIC_DRAW);
             // associate this buffer id to the mesh handle.
             mesh_handle->attribute_vbos[i] = attribute_buffer;
+#if TRACING_VERBOSE
+            printf("finished uploading this attribute, given vbo id %d\n", attribute_buffer);
+#endif
         }
     }
     // upload triangle index data and associate to the mesh handle.
+#if TRACING_VERBOSE
+    printf("uploading triangle indices\n");
+#endif
     GLuint triangle_buffer;
     glGenBuffers(1, &triangle_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*sizeof(unsigned int) * mesh->num_triangles, mesh->triangles, GL_DYNAMIC_DRAW);
     // associate this triangle buffer id to the mesh handle.
     mesh_handle->triangles_vbo = triangle_buffer;
+#if TRACING_VERBOSE
+    printf("finished uploading triangle indices\n");
+#endif
 
     // wrap these up in a vertex array object.
     //--- is this encapsulation working for triangle indices?
+#if TRACING_VERBOSE
+    printf("preparing vertex attribute arrays\n");
+#endif
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
     // bind the attribute buffers to the vao
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        if (((mesh->vertex_format << i) & 1) == 1) { // vertex format has attribute i set
+        if (((mesh->vertex_format >> i) & 1) == 1) { // vertex format has attribute i set
             glBindBuffer(GL_ARRAY_BUFFER, mesh_handle->attribute_vbos[i]);
             glVertexAttribPointer(g_attribute_info[i].attribute_type, // location is currently set to the type index, so layout qualifiers need to match up the position in shaders.
                                   g_attribute_info[i].gl_size, // "gl_size" is the number of values per vertex, e.g. 3, 4.
@@ -106,13 +121,24 @@ void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
             glEnableVertexAttribArray(g_attribute_info[i].attribute_type);
         }
     }
+#if TRACING_VERBOSE
+    printf("finished preparing vertex attribute arrays\n");
+#endif
     // bind the triangle indices to the vao
     //--- is this in the right order?
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
     // associate this vertex array object to the mesh handle.
     mesh_handle->vao = vao;
+#if TRACING_VERBOSE
+    printf("finished uploading mesh and associating it to mesh handle\n");
+#endif
+#undef TRACING
+#undef TRACING_VERBOSE
+}
 
-    // Free the application mesh data.
+void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh)
+{
+    upload_mesh(mesh_handle, mesh);
     free_mesh(mesh);
 }
 
@@ -148,7 +174,7 @@ void renderer_upload_uniforms(Renderer *renderer)
             case UNIFORM_MAT4X4:
                 glUniformMatrix4fv(renderer->uniforms[i].location,
                                    1, // one matrix
-                                   GL_FALSE, // no transpose ---may need to transpose
+                                   GL_FALSE, // no transpose ---may need to transpose. transposing this gets a freeze (???)
                                    renderer->uniforms[i].get_uniform_value().mat4x4_value); // pointer to matrix values
                 //------ unsure, if buggy, check here
             break;
@@ -161,9 +187,16 @@ void renderer_upload_uniforms(Renderer *renderer)
 
 void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, GLenum primitive_mode)
 {
-    //- no vertex format compatibility stuff currently (could somehow do default vertex attributes, e.g. color black)
-    if (renderer->vertex_format != mesh_handle->vertex_format) {
-        fprintf(stderr, ERROR_ALERT "Attempted to render a mesh with renderer with non-matching vertex format.\n");
+    // vertex format compatibility: renderer must not require attribute types the
+    // mesh does not have. However, if it does have extra, the renderer can just ignore them.
+    if ((renderer->vertex_format & (~mesh_handle->vertex_format)) != 0) { // mesh handle's vertex format bitmask is not a superset of the renderer's
+        fprintf(stderr, ERROR_ALERT "Attempted to render a mesh with renderer with incompatible vertex format.\n");
+        fprintf(stderr, "\trenderer vertex format:\n");
+        fprint_vertex_format(stderr, renderer->vertex_format);
+        putc('\n', stderr);
+        fprintf(stderr, "\tmesh handle vertex format:\n");
+        fprint_vertex_format(stderr, mesh_handle->vertex_format);
+        putc('\n', stderr);
         exit(EXIT_FAILURE);
     }
     bind_renderer(renderer);
@@ -182,8 +215,8 @@ void zero_init_renderer(Renderer *renderer)
     // if something is "zero initialized" to something other than 0, change this here.
 }
 
-#define TRACING 1
-void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path)
+#define TRACING 0
+void new_renderer_vertex_fragment(Renderer *renderer, VertexFormat vertex_format, char *vertex_shader_path, char *fragment_shader_path)
 {
     /* Creates a new renderer only using vertex and fragment shaders. */
     zero_init_renderer(renderer);
@@ -192,6 +225,7 @@ void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, 
     printf("\tVertex shader path: %s\n", vertex_shader_path);
     printf("\tFragment shader path: %s\n", fragment_shader_path);
 #endif
+    renderer->vertex_format = vertex_format;
     renderer->vertex_shader_path = (char *) malloc((strlen(vertex_shader_path) + 1) * sizeof(char));
     mem_check(renderer->vertex_shader_path);
     renderer->fragment_shader_path = (char *) malloc((strlen(fragment_shader_path) + 1) * sizeof(char));
@@ -269,6 +303,34 @@ void print_mesh_handle(MeshHandle *mesh_handle)
     /* for (int i = 0; mesh_handle->vbos[i] != 0; i++) { */
     /*     printf("\t%d\n", mesh_handle->vbos[i]); */
     /* } */
+}
+
+void fprint_vertex_format(FILE *file, VertexFormat vertex_format)
+{
+    /* fprintf(file, "RAW: %d\n", vertex_format); */
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        fprintf(file, "%s: ", g_attribute_info[i].name);
+        if (((vertex_format >> i) & 1) == 1) {
+            putc('1', file);
+        } else {
+            putc('0', file);
+        }
+        putc('\n', file);
+    }
+}
+
+void print_vertex_format(VertexFormat vertex_format)
+{
+    fprint_vertex_format(stdout, vertex_format);
+}
+
+void print_mesh(Mesh *mesh)
+{
+    printf("Mesh:\n");
+    printf("vertex_format:\n");
+    print_vertex_format(mesh->vertex_format);
+    printf("num_vertices: %u\n", mesh->num_vertices);
+    printf("num_triangles: %u\n", mesh->num_triangles);
 }
 
 //--- this shouldn't have to be done for every struct ...
@@ -359,13 +421,21 @@ void print_vertex_attribute_types(void)
         printf("Vertex attribute type name: \"%s\"\n", g_attribute_info[i].name);
         printf("attribute_type: %d\n", g_attribute_info[i].attribute_type);
         printf("bitmask: ");
-        for (int i = 0; i < 32; i++) { // if the vertex format is still 32 bits ...
-            if (i == 32 - 1 - g_attribute_info[i].attribute_type) {
+        for (int ii = 0; ii < 32; ii++) {
+            if (ii == 32 - 1 - g_attribute_info[i].attribute_type) {
                 putchar('1');
             } else {
                 putchar('0');
             }
         }
+        // A terrible crash may have been caused by doing this below, for some reason.
+        /* for (int ii = 0; ii < NUM_ATTRIBUTE_TYPES; ii++) { */
+        /*     if (ii == NUM_ATTRIBUTE_TYPES - 1 - g_attribute_info[i].attribute_type) { */
+        /*         putchar('1'); */
+        /*     } else { */
+        /*         putchar('0'); */
+        /*     } */
+        /* } */
         putchar('\n');
         printf("gl_type: %d\n", g_attribute_info[i].gl_type);
         printf("gl_size: %d\n", g_attribute_info[i].gl_size);

@@ -1,12 +1,39 @@
 /*================================================================================
    Mesh and mesh rendering module.
+
+   OpenGL state and capabilities are encapsulated here by structures.
+
+   "renderers":
+       Higher level shader programs. This structure gives information enough to recompile a shader program
+       consisting of different shader stages. Creating a new renderer loads and compiles
+       the shaders and associates them to the structure so they can later be bound for drawing,
+       recompiled, and freed. "Binding" a renderer prepares draw calls at the level of this module
+       to use that renderer and its associated shaders.
+       Shader input:
+       Uniforms:
+            Uniform input to the shaders associated to a renderer are encapsulated in this structure
+            by a Uniform structure array. "Uniforms" here give the renderer enough information to find the value of
+            the uniform and upload it correctly. This is done when a renderer is bound, so GL draw calls will
+            use the uniform values calculated with these associated functions.
+       Vertex formats:
+            A renderer has a single bitmask denoting its vertex format. Each entry corresponds
+            to a vertex attribute, and draw calls will compare bitmasks to see if the vertex
+            formats are compatible (that is, there is enough data associated to a mesh to be
+            rendered with this renderer. Extra data is ignored.)
+
+    "meshes and mesh handles":
+        Here, a "mesh" is a Mesh structure, encapsulating mesh data in application memory.
+        A "mesh handle" is a MeshHandle structure, encapsulating mesh data in video memory after it
+        has been uploaded. Functions are provided to upload mesh data to VRAM, and do not neccessarily
+        free the application data. This data can be freed once a mesh handle is created/filled, and
+        can be used with this module's draw functions to render the mesh from VRAM with a given renderer.
+
 ================================================================================*/
 #ifndef HEADER_DEFINED_MESH
 #define HEADER_DEFINED_MESH
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdint.h>
-#include "matrix_mathematics.h"
 #include "helper_definitions.h"
 #include "helper_gl.h"
 
@@ -16,6 +43,7 @@ enum AttributeTypes {
     ATTRIBUTE_TYPE_POSITION,
     ATTRIBUTE_TYPE_COLOR,
     ATTRIBUTE_TYPE_NORMAL,
+    ATTRIBUTE_TYPE_UV,
     NUM_ATTRIBUTE_TYPES
 };
 
@@ -42,9 +70,11 @@ typedef uint32_t VertexFormat;
 #define VERTEX_FORMAT_3 1 << ATTRIBUTE_TYPE_POSITION
 #define VERTEX_FORMAT_C 1 << ATTRIBUTE_TYPE_COLOR
 #define VERTEX_FORMAT_N 1 << ATTRIBUTE_TYPE_NORMAL
+#define VERTEX_FORMAT_U 1 << ATTRIBUTE_TYPE_UV
 #define VERTEX_FORMAT_3C VERTEX_FORMAT_3 | VERTEX_FORMAT_C
 #define VERTEX_FORMAT_3N VERTEX_FORMAT_3 | VERTEX_FORMAT_N
 #define VERTEX_FORMAT_3CN VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_N
+#define VERTEX_FORMAT_3CU VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_U
 
 enum ShaderType {
     Vertex,
@@ -144,8 +174,10 @@ typedef struct MeshHandle_s {
 //================================================================================
 // Basic usage
 //================================================================================
+//---Currently, this needs to be called. This could just be statically declared data.
+    void init_vertex_formats(void);
 // Initialize a new renderer structure which only uses vertex and fragment shaders.
-    void new_renderer_vertex_fragment(Renderer *renderer, char *vertex_shader_path, char *fragment_shader_path);
+    void new_renderer_vertex_fragment(Renderer *renderer, VertexFormat vertex_format, char *vertex_shader_path, char *fragment_shader_path);
 // Binding a renderer sets up the associated shader program and uniforms, ... so that GL draw calls will use them.
     void bind_renderer(Renderer *renderer);
 // Dynamic recompilation (e.g. for testing, maybe elsewhere)
@@ -162,7 +194,6 @@ typedef struct MeshHandle_s {
 //================================================================================
 // Vertex formats
 //================================================================================
-    void init_vertex_formats(void);
     void print_vertex_attribute_types(void);
 
 //================================================================================
@@ -170,7 +201,9 @@ typedef struct MeshHandle_s {
 //================================================================================
 // Free mesh from application memory.
     void free_mesh(Mesh *mesh);
-// Upload mesh to graphics memory and initialize a mesh handle structure, and free mesh data from application memory.
+// Upload mesh to graphics memory and initialize a mesh handle structure
+    void upload_mesh(MeshHandle *mesh_handle, Mesh *mesh);
+// + free mesh from application memory (if it was malloc'd)
     void upload_and_free_mesh(MeshHandle *mesh_handle, Mesh *mesh);
 // Render a mesh associated to a mesh handle using the given renderer.
     void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, GLenum primitive_mode);
@@ -181,6 +214,9 @@ typedef struct MeshHandle_s {
     void print_renderer(Renderer *renderer);
     void print_mesh_handle(MeshHandle *mesh_handle);
     void serialize_mesh_handle(FILE *file, MeshHandle *mesh_handle);
+    void print_mesh(Mesh *mesh);
+    void print_vertex_format(VertexFormat vertex_format);
+    void fprint_vertex_format(FILE *file, VertexFormat vertex_format); //--- do fprints for everything
 
 //================================================================================
 // Helper functions

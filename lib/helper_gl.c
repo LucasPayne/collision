@@ -115,7 +115,7 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
      * strncpy was corrupting memory, since the malloc'd array was only guaranteed to be enough for the new line, not
      * all the random stuff at the end of the uninitialized line-buffer. Needed to set n in strnpy to length of added line.
      */
-#define TRACING 1
+#define TRACING 0
 #define SHADER_SOURCE_LINE_MAX_LENGTH 500
 #define MEM_SIZE_START 1024
 #define LINES_MEM_SIZE_START 128
@@ -195,7 +195,7 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
 
 void load_and_compile_shader(GLuint shader, const char *shader_path)
 {
-#define TRACING 1
+#define TRACING 0
 #if TRACING
     /* printf("Loading and compiling shader %d from path %s ...\n", shader, shader_path); */
 #endif

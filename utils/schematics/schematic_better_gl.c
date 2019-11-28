@@ -43,8 +43,6 @@ static void key_callback(GLFWwindow *window, int key,
 void init_program(void)
 {
     init_entity_model();
-    EntityID cube = new_entity(3);
-    entity_add_aspect(
 }
 void loop(GLFWwindow *window)
 {
@@ -99,7 +97,7 @@ int main(int argc, char *argv[])
     glUseProgram(shader_program);
 
     ASPECT_RATIO = SCREEN_ASPECT_RATIO;
-    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClearColor(1.0, 1.0, 1.0, 1.0);
     glfwSetKeyCallback(window, key_callback);
     glfwSetFramebufferSizeCallback(window, reshape);
 

@@ -465,16 +465,14 @@ void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
     }
     // pull vertices and their attribute data from ply file.
     
-    printf("PULLING VERTICES!\n");
     PLYElement *vertex_element = ply_get_element(&ply_stats, "vertex");
     if (vertex_element == NULL) {
-        fprintf(stderr, ERROR_ALERT "Failed to find \"vertex\" data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
+        fprintf(stderr, ERROR_ALERT "Failed to find vertex data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
         exit(EXIT_FAILURE);
     }
-    
     void *vertex_data;
     if (!ply_read_element(file, vertex_element, &vertex_data)) {
-        fprintf(stderr, ERROR_ALERT "Failed to read \"vertex\" data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
+        fprintf(stderr, ERROR_ALERT "Failed to read vertex data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
         exit(EXIT_FAILURE);
     }
     
@@ -503,22 +501,70 @@ void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
         /* printf("y: %f\n", dat[y_prop->offset / sizeof(float)]); */
         /* printf("z: %f\n", dat[z_prop->offset / sizeof(float)]); */
     }
-    // attach this data to the mesh
+    // attach this position data to the mesh
     mesh->attribute_data[ATTRIBUTE_TYPE_POSITION] = (void *) position_data;
 
     if ((vertex_format & VERTEX_FORMAT_C) != 0) {
         // caller wants color data from this file
-        PLYProperty r_prop = ply_get_property(vertex_element, "r");
+        PLYProperty *r_prop = ply_get_property(vertex_element, "r");
         if (r_prop == NULL) r_prop = ply_get_property(vertex_element, "red");
-        PLYProperty g_prop = ply_get_property(vertex_element, "g");
+        PLYProperty *g_prop = ply_get_property(vertex_element, "g");
         if (g_prop == NULL) g_prop = ply_get_property(vertex_element, "green");
-        PLYProperty b_prop = ply_get_property(vertex_element, "b");
+        PLYProperty *b_prop = ply_get_property(vertex_element, "b");
         if (b_prop == NULL) b_prop = ply_get_property(vertex_element, "blue");
 
         if (r_prop == NULL) PROP_ERROR("no red property");
         if (g_prop == NULL) PROP_ERROR("no green property");
         if (b_prop == NULL) PROP_ERROR("no blue property");
+
+        float *color_data = (float *) malloc(vertex_element->count * sizeof(float));
+        mem_check(color_data);
+        for (int i = 0; i < vertex_element->count; i++) {
+            float *dat = vertex_data + vertex_element->size * i;
+            float r = dat[r_prop->offset / sizeof(float)]; //...
+            float g = dat[g_prop->offset / sizeof(float)];
+            float b = dat[b_prop->offset / sizeof(float)];
+            color_data[3*i + 0] = r;
+            color_data[3*i + 1] = g;
+            color_data[3*i + 2] = b;
+        }
+        // attach this color data to the mesh
+        mesh->attribute_data[ATTRIBUTE_TYPE_COLOR] = (void *) color_data;
     }
+
+    // now, read the triangle indices
+    PLYElement *triangles_element = ply_get_element(&ply_stats, "triangle");
+    if (vertex_element == NULL) triangles_element = ply_get_element(&ply_stats, "triangles");
+    if (vertex_element == NULL) triangles_element = ply_get_element(&ply_stats, "faces");
+    if (vertex_element == NULL) triangles_element = ply_get_element(&ply_stats, "face");
+    if (vertex_element == NULL) {
+        fprintf(stderr, ERROR_ALERT "Failed to find triangle data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
+        exit(EXIT_FAILURE);
+    }
+    void *void_triangles_data;
+    if (!ply_read_element(file, triangles_element, &void_triangles_data)) {
+        fprintf(stderr, ERROR_ALERT "Failed to read triangle data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
+        exit(EXIT_FAILURE);
+    }
+    
+    /* PLYProperty *index_prop = ply_get_property(triangles_element, "vertex_index"); */
+    /* if (index_prop == NULL) index_prop = ply_get_property(triangles_element, "index"); */
+    /* if (index_prop == NULL) PROP_ERROR("no vertex index property"); */
+
+    /* unsigned int *index_data = (unsigned int *) malloc(3 * triangles_element->count * sizeof(unsigned int)); */
+    /* mem_check(index_data); */
+    /* for (int i = 0; i < triangles_element->count; i++) { */
+    /*     if (triangles_data[4*i + 0] != 3) { */
+    /*         PROP_ERROR("triangle property list should have 3 entries"); */ 
+    /*     } */
+    /*     int index_a = triangles_data[4*i + 1]; */
+    /*     int index_b = triangles_data[4*i + 2]; */
+    /*     int index_c = triangles_data[4*i + 3]; */
+    /*     index_data[3*i + 0] = index_a; */
+    /*     index_data[3*i + 1] = index_b; */
+    /*     index_data[3*i + 2] = index_c; */
+    /* } */
+
 
 #undef PROP_ERROR
 }

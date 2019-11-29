@@ -275,12 +275,13 @@ bool ply_read_element(FILE *file, PLYElement *element, void **out_element_data)
             PLYProperty *property = &element->properties[k];
             if (property->is_list) {
                 // list properties
-                uint64_t num_to_read;
-                if (fscanf(file, "%lu", &num_to_read) != 1) { // can assume is int
+                uint32_t num_to_read; // only accept 32-bit unsigned int compatible list lengths
+                if (fscanf(file, "%u", &num_to_read) != 1) { // can assume is int
                     fprintf(stderr, ERROR_ALERT "PLY file has invalid count for list property at line %d.\n", element->line_start + i);
                     exit(EXIT_FAILURE);
                 }
-                memcpy(element_data + total_element_size*i, &num_to_read, _ply_type_sizes[property->list_count_type]);
+                memcpy(element_data + total_element_size*i, &num_to_read, sizeof(uint32_t));
+                pos += sizeof(uint32_t);
                 // reading a literal and making sure its type is correct for this list property.
                 if (property->type == PLY_DOUBLE) {
                     for (int num = 0; num < num_to_read; num++) {

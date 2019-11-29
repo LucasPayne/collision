@@ -73,6 +73,8 @@ enum PLY_TYPES { // do not shuffle these!
 typedef struct PLYProperty_s {
     char name[MAX_PLY_PROPERTY_NAME_LENGTH];
     PLYType type;
+    bool is_list;
+    PLYType list_count_type;
 } PLYProperty;
 
 typedef struct PLYElement_s {
@@ -92,5 +94,7 @@ bool ply_stat(FILE *file, PLYStats *ply_stats);
 void print_ply_stats(PLYStats *ply_stats);
 void print_ply_element(PLYElement *element);
 /* void ply_read_element(FILE *file, PLYStats *ply_stats, char *element_name); */
+bool ply_read_element(FILE *file, PLYElement *element, void **element_data);
+PLYElement *ply_get_element(PLYStats *ply_stats, char *element_name);
 
 #endif // HEADER_DEFINED_PLY

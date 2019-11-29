@@ -40,7 +40,6 @@ static size_t _ply_type_sizes[NUM_PLY_TYPES] = { // do not shuffle these!
     8
 };
 
-static void fprint_ply_type_name(FILE *file, PLYType type);
 static PLYType match_ply_type(char *string);
 
 
@@ -119,11 +118,30 @@ bool ply_stat(FILE *file, PLYStats *ply_stats)
 
             char property_type[64];
             char property_name[MAX_PLY_PROPERTY_NAME_LENGTH];
-            if (sscanf(_line_buf, "property %s %s", property_type, property_name) == EOF) STAT_ERROR("Bad property arguments");
-            cur_property->type = match_ply_type(property_type);
-            if (cur_property->type == NULL_PLY_TYPE) STAT_ERROR("Bad property type");
-            strncpy(cur_property->name, property_name, MAX_PLY_PROPERTY_NAME_LENGTH);
 
+            if (sscanf(_line_buf, "property %s ", property_type) == EOF) STAT_ERROR("Bad property type");
+            if (strcmp(property_type, "list") == 0) {
+                cur_property->is_list = true;
+                char property_list_count_type[64];
+                char property_list_type[64];
+                if (sscanf(_line_buf, "property %s %s %s %s",
+                                               property_type,
+                                    property_list_count_type,
+                                          property_list_type,
+                                               property_name) == EOF) STAT_ERROR("Bad list property arguments");
+                cur_property->type = match_ply_type(property_list_type); // when the property is a list, this entry stores the type of the list entries
+                if (cur_property->type == NULL_PLY_TYPE) STAT_ERROR("Bad list entry type");
+                cur_property->list_count_type = match_ply_type(property_list_count_type); // avoid matching float types?
+                if (cur_property->list_count_type == NULL_PLY_TYPE) STAT_ERROR("Bad list count type");
+            } else {
+                cur_property->is_list = false;
+                if (sscanf(_line_buf, "property %s %s",
+                                         property_type,
+                                         property_name) == EOF) STAT_ERROR("Bad property arguments");
+                cur_property->type = match_ply_type(property_type);
+                if (cur_property->type == NULL_PLY_TYPE) STAT_ERROR("Bad property type");
+            }
+            strncpy(cur_property->name, property_name, MAX_PLY_PROPERTY_NAME_LENGTH);
             cur_element->num_properties ++;
         }
         /* print_ply_stats(ply_stats); */
@@ -134,22 +152,46 @@ bool ply_stat(FILE *file, PLYStats *ply_stats)
 #undef STAT_ERROR
 
 
-/* void ply_read_element(FILE *file, PLYStats *ply_stats, char *element_name, void *element_data, property_array_indices) */
-/* { */
-/*     int i; */
-/*     for (i = 0; i < ply_stats->num_elements; i++) { */
-/*         if (strncpy(ply_stats->elements[i].name, element_name, MAX_PLY_ELEMENT_NAME_LENGTH) == 0) { */
-/*             break; */
-/*         } */
-/*     } */
-/*     if (i > ply_stats->num_elements) { */
-/*         fprintf(stderr, ERROR_ALERT "Attempted to extract element \"%s\" from a PLY file, name not found in file PLY stats.\n", element_name); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
-/*     PLYElement *element = &ply_stats->elements[i - 1]; */
-    /* printf("Extracting element:\n"); */
-    /* print_ply_element(element); */
-/* } */
+PLYElement *ply_get_element(PLYStats *ply_stats, char *element_name)
+{
+    int i;
+    for (i = 0; i < ply_stats->num_elements; i++) {
+        if (strncpy(ply_stats->elements[i].name, element_name, MAX_PLY_ELEMENT_NAME_LENGTH) == 0) {
+            break;
+        }
+    }
+    if (i > ply_stats->num_elements) {
+        return NULL;
+        /* fprintf(stderr, ERROR_ALERT "Attempted to extract element \"%s\" found in file PLY stats.\n", element_name); */
+        /* exit(EXIT_FAILURE); */
+    }
+    return &ply_stats->elements[i - 1];
+}
+
+bool ply_read_element(FILE *file, PLYElement *element, void **element_data)
+{
+    const int max_list_size = 8; // a waste! Do variable list lengths in elements really complicate things?
+    // Dynamically allocates memory for the element data. Remember to free!
+    
+    printf("Extracting element:\n");
+    print_ply_element(element);
+
+    // Make space to store element data.
+    int total_element_size = 0;
+    for (int i = 0; i < element->num_properties; i++) {
+        if (element->properties[i].is_list) {
+            total_element_size += _ply_type_sizes[element->properties[i].list_count_type];
+            total_element_size += max_list_size * _ply_type_sizes[element->properties[i].type];
+        } else {
+            total_element_size += _ply_type_sizes[element->properties[i].type];
+        }
+    }
+    *element_data = (void *) malloc(element->count * total_element_size);
+
+    for (int 
+
+    return true;
+}
 
 void print_ply_element(PLYElement *element)
 {
@@ -160,9 +202,15 @@ void print_ply_element(PLYElement *element)
         PLYProperty *property = &element->properties[i];
         printf("\tProperty %d:\n", i);
         printf("\t\tproperty name: %s\n", property->name);
-        printf("\t\tproperty type: %d (", property->type);
-            fprint_ply_type_name(stdout, property->type);
-            printf(")\n");
+        if (property->is_list) {
+            printf("\t\tis_list: true\n");
+            printf("\t\tentry type: %d (%s)\n", property->type, _ply_type_names[property->type]);
+            printf("\t\tlist_count_type: %d (%s)\n", property->list_count_type, _ply_type_names[property->list_count_type]);
+            printf("\t\tproperty type: %d (%s)\n", property->type, _ply_type_names[property->type]);
+        } else {
+            printf("\t\tis_list: false\n");
+            printf("\t\tproperty type: %d (%s)\n", property->type, _ply_type_names[property->type]);
+        }
     }
 }
 
@@ -177,23 +225,6 @@ void print_ply_stats(PLYStats *ply_stats)
         printf("Element %d:\n", i);
         print_ply_element(element);
     }
-}
-
-static void fprint_ply_type_name(FILE *file, PLYType type)
-{
-    switch (type) {
-        case PLY_FLOAT:
-            fprintf(file, "float");
-            return;
-        case PLY_DOUBLE:
-            fprintf(file, "double");
-            return;
-        case PLY_INT:
-            fprintf(file, "int");
-            return;
-    }
-    fprintf(stderr, ERROR_ALERT "Attempted to print an invalid/unmapped PLY type name from PLY type id %d.\n", type);
-    exit(EXIT_FAILURE);
 }
 
 

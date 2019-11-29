@@ -445,6 +445,9 @@ void print_vertex_attribute_types(void)
 
 void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
 {
+    printf("Loading mesh from PLY file %s ...\n", ply_filename);
+
+
     FILE *file = fopen(ply_filename, "r");
     if (file == NULL) {
         fprintf(stderr, ERROR_ALERT "Failed to open file \"%s\" when attempting to load a mesh from a PLY file.\n", ply_filename);
@@ -454,6 +457,21 @@ void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
     if (!ply_stat(file, &ply_stats)) {
         fprintf(stderr, ERROR_ALERT "Failed to interpret file \"%s\" when loading a mesh from a PLY file.\n", ply_filename);
         exit(EXIT_FAILURE);
+    }
+
+    if ((vertex_format & VERTEX_FORMAT_3) != 0) {
+        // pull vertices and their attribute data from ply file
+        printf("PULLING VERTICES!\n");
+        PLYElement *vertex_element = ply_get_element(&ply_stats, "vertex");
+        if (vertex_element == NULL) {
+            fprintf(stderr, ERROR_ALERT "Failed to find \"vertex\" data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
+            exit(EXIT_FAILURE);
+        }
+        void *vertex_data;
+        if (!ply_read_element(file, vertex_element, &vertex_data)) {
+            fprintf(stderr, ERROR_ALERT "Failed to read \"vertex\" data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
+            exit(EXIT_FAILURE);
+        }
     }
 }
 

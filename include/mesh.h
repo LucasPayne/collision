@@ -214,6 +214,11 @@ typedef struct MeshHandle_s {
     void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, GLenum primitive_mode);
 
 //================================================================================
+// Mesh loading
+//================================================================================
+    void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename);
+
+//================================================================================
 // Printing and serialization
 //================================================================================
     void print_renderer(Renderer *renderer);

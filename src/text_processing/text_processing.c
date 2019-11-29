@@ -22,8 +22,7 @@ PROJECT_LIBS:
 void read_error(char *msg)
 {
     fprintf(stderr, "READ ERROR: %s\n", msg);
-    exit(EXIT_FAILURE);
-}
+    exit(EXIT_FAILURE); }
 
 int main(int argc, char *argv[])
 {
@@ -48,6 +47,8 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    print_ply_stats(&stats);
-    /* ply_read_element(file, &stats, "vertex"); */
+    /* print_ply_stats(&stats); */
+
+    Mesh mesh;
+    load_mesh_ply(&mesh, VERTEX_FORMAT_3C, filename);
 }

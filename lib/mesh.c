@@ -445,8 +445,9 @@ void print_vertex_attribute_types(void)
 
 void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
 {
+    // make sure to zero initialize the mesh
+    memset(mesh, 0, sizeof(Mesh));
     printf("Loading mesh from PLY file %s ...\n", ply_filename);
-
 
     FILE *file = fopen(ply_filename, "r");
     if (file == NULL) {
@@ -458,20 +459,67 @@ void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
         fprintf(stderr, ERROR_ALERT "Failed to interpret file \"%s\" when loading a mesh from a PLY file.\n", ply_filename);
         exit(EXIT_FAILURE);
     }
-
-    if ((vertex_format & VERTEX_FORMAT_3) != 0) {
-        // pull vertices and their attribute data from ply file
-        printf("PULLING VERTICES!\n");
-        PLYElement *vertex_element = ply_get_element(&ply_stats, "vertex");
-        if (vertex_element == NULL) {
-            fprintf(stderr, ERROR_ALERT "Failed to find \"vertex\" data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
-            exit(EXIT_FAILURE);
-        }
-        void *vertex_data;
-        if (!ply_read_element(file, vertex_element, &vertex_data)) {
-            fprintf(stderr, ERROR_ALERT "Failed to read \"vertex\" data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
-            exit(EXIT_FAILURE);
-        }
+    if ((vertex_format & VERTEX_FORMAT_3) == 0) {
+        fprintf(stderr, ERROR_ALERT "Attempted to load mesh from PLY file given vertex format with no position bit set.\n");
+        exit(EXIT_FAILURE);
     }
+    // pull vertices and their attribute data from ply file.
+    
+    printf("PULLING VERTICES!\n");
+    PLYElement *vertex_element = ply_get_element(&ply_stats, "vertex");
+    if (vertex_element == NULL) {
+        fprintf(stderr, ERROR_ALERT "Failed to find \"vertex\" data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
+        exit(EXIT_FAILURE);
+    }
+    
+    void *vertex_data;
+    if (!ply_read_element(file, vertex_element, &vertex_data)) {
+        fprintf(stderr, ERROR_ALERT "Failed to read \"vertex\" data from PLY file when attempting to load mesh from file %s.\n", ply_filename);
+        exit(EXIT_FAILURE);
+    }
+    
+    // check and match vertex attributes to the vertex element's properties in the PLY file.
+#define PROP_ERROR(STRING)\
+    { fprintf(stderr, ERROR_ALERT "Property error, " STRING);\
+    exit(EXIT_FAILURE); }
+    PLYProperty *x_prop = ply_get_property(vertex_element, "x");
+    PLYProperty *y_prop = ply_get_property(vertex_element, "y");
+    PLYProperty *z_prop = ply_get_property(vertex_element, "z");
+    if (x_prop == NULL) PROP_ERROR("no x property");
+    if (y_prop == NULL) PROP_ERROR("no y property");
+    if (z_prop == NULL) PROP_ERROR("no z property");
+
+    float *position_data = (float *) malloc(vertex_element->count * sizeof(float));
+    mem_check(position_data);
+    for (int i = 0; i < vertex_element->count; i++) {
+        float *dat = vertex_data + vertex_element->size * i;
+        float x = dat[x_prop->offset / sizeof(float)]; //...
+        float y = dat[y_prop->offset / sizeof(float)];
+        float z = dat[z_prop->offset / sizeof(float)];
+        position_data[3*i + 0] = x;
+        position_data[3*i + 1] = y;
+        position_data[3*i + 2] = z;
+        /* printf("x: %f\n", dat[x_prop->offset / sizeof(float)]); */
+        /* printf("y: %f\n", dat[y_prop->offset / sizeof(float)]); */
+        /* printf("z: %f\n", dat[z_prop->offset / sizeof(float)]); */
+    }
+    // attach this data to the mesh
+    mesh->attribute_data[ATTRIBUTE_TYPE_POSITION] = (void *) position_data;
+
+    if ((vertex_format & VERTEX_FORMAT_C) != 0) {
+        // caller wants color data from this file
+        PLYProperty r_prop = ply_get_property(vertex_element, "r");
+        if (r_prop == NULL) r_prop = ply_get_property(vertex_element, "red");
+        PLYProperty g_prop = ply_get_property(vertex_element, "g");
+        if (g_prop == NULL) g_prop = ply_get_property(vertex_element, "green");
+        PLYProperty b_prop = ply_get_property(vertex_element, "b");
+        if (b_prop == NULL) b_prop = ply_get_property(vertex_element, "blue");
+
+        if (r_prop == NULL) PROP_ERROR("no red property");
+        if (g_prop == NULL) PROP_ERROR("no green property");
+        if (b_prop == NULL) PROP_ERROR("no blue property");
+    }
+
+#undef PROP_ERROR
 }
 

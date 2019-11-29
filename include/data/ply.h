@@ -70,11 +70,14 @@ enum PLY_TYPES { // do not shuffle these!
 #define MAX_PLY_PROPERTY_NAME_LENGTH 32
 #define MAX_PLY_PROPERTIES 80
 
+#define MAX_PLY_LIST_SIZE 8 // a waste! Do variable list lengths in elements really complicate things?
+
 typedef struct PLYProperty_s {
     char name[MAX_PLY_PROPERTY_NAME_LENGTH];
     PLYType type;
     bool is_list;
     PLYType list_count_type;
+    unsigned int offset; // the amount of bytes from the start of a single element entry that this property/property list is when packed.
 } PLYProperty;
 
 typedef struct PLYElement_s {
@@ -82,6 +85,8 @@ typedef struct PLYElement_s {
     unsigned int count;
     unsigned int num_properties;
     struct PLYProperty_s properties[MAX_PLY_PROPERTIES];
+    unsigned int size; //size of the packed properties.
+    unsigned int line_start; // which line in the file this data should start (only relevant to ASCII format?)
 } PLYElement;
 
 typedef struct PLYStats_s {
@@ -96,5 +101,6 @@ void print_ply_element(PLYElement *element);
 /* void ply_read_element(FILE *file, PLYStats *ply_stats, char *element_name); */
 bool ply_read_element(FILE *file, PLYElement *element, void **element_data);
 PLYElement *ply_get_element(PLYStats *ply_stats, char *element_name);
+PLYProperty *ply_get_property(PLYElement *element, char *property_name);
 
 #endif // HEADER_DEFINED_PLY

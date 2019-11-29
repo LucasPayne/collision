@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    /* print_ply_stats(&stats); */
+    print_ply_stats(&stats);
 
     Mesh mesh;
     load_mesh_ply(&mesh, VERTEX_FORMAT_3C, filename);

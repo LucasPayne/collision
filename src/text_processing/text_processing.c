@@ -1,17 +1,23 @@
 /*--------------------------------------------------------------------------------
 PROJECT_LIBS:
+    + glad
+    + helper_gl
     + text_processing
     + data/ply
+    + mesh
 --------------------------------------------------------------------------------*/
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <math.h>
+#include "helper_gl.h"
 #include "helper_definitions.h"
 #include "text_processing.h"
 #include "data/ply.h"
+#include "mesh.h"
 
 void read_error(char *msg)
 {
@@ -30,12 +36,18 @@ int main(int argc, char *argv[])
 
     printf("Reading file %s ...\n", filename);
 
-    PLYStats stats;
-    if (!ply_stat(filename, &stats)) {
-        printf("misunderstood ply header\n");
-    } else {
-        printf("%d\n", stats.format);
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, "couldn't find file ...\n");
+        exit(EXIT_FAILURE);
     }
 
+    PLYStats stats;
+    if (!ply_stat(file, &stats)) {
+        printf("misunderstood ply header\n");
+        return 0;
+    }
 
+    print_ply_stats(&stats);
+    /* ply_read_element(file, &stats, "vertex"); */
 }

@@ -28,6 +28,10 @@
         free the application data. This data can be freed once a mesh handle is created/filled, and
         can be used with this module's draw functions to render the mesh from VRAM with a given renderer.
 
+    Mesh loading is also included here.
+    File formats:
+        PLY (The Stanford triangle format)
+
 ================================================================================*/
 #ifndef HEADER_DEFINED_MESH
 #define HEADER_DEFINED_MESH
@@ -36,6 +40,7 @@
 #include <stdint.h>
 #include "helper_definitions.h"
 #include "helper_gl.h"
+#include "data/ply.h"
 
 typedef uint8_t AttributeType;
 // Corresponds to layout qualified positions in shaders

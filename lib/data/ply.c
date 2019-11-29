@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "helper_definitions.h"
 #include "text_processing.h"
 #include "data/ply.h"
@@ -18,25 +19,56 @@ Usage:
     ... work with stats info to e.g. read ply data into buffers
 --------------------------------------------------------------------------------*/
 
+static char _ply_type_names[NUM_PLY_TYPES][7] = { // do not shuffle these!
+    "char",
+    "uchar",
+    "short",
+    "ushort",
+    "int",
+    "uint",
+    "float",
+    "double"
+};
+static size_t _ply_type_sizes[NUM_PLY_TYPES] = { // do not shuffle these!
+    1,
+    1,
+    2,
+    2,
+    4,
+    4,
+    4,
+    8
+};
+
+static void fprint_ply_type_name(FILE *file, PLYType type);
+static PLYType match_ply_type(char *string);
+
+
+
+static PLYType match_ply_type(char *string)
+{
+    for (int i = 0; i < NUM_PLY_TYPES; i++) {
+        if (strcmp(string, _ply_type_names[i]) == 0) {
+            return i;
+        }
+    }
+    return NULL_PLY_TYPE;
+}
+
+
+// Log this somewhere, not stderr?
 #define STAT_ERROR(MSG)\
 {\
     printf("STAT ERROR: \n");\
     printf((  MSG ));\
     printf("\n");\
-    fclose(file);\
+    print_ply_stats(ply_stats);\
     return false;\
 }
-
-bool ply_stat(char *filename, PLYStats *ply_stats)
-// Log this somewhere, not stderr?
+bool ply_stat(FILE *file, PLYStats *ply_stats)
 {
     memset(ply_stats, 0, sizeof(PLYStats)); // ?
 
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        fprintf(stderr, ERROR_ALERT "Unable to read file \"%s\" when attempting to stat a PLY file.\n", filename);
-        exit(EXIT_FAILURE);
-    }
     if (!try_read_line(file, "ply")) {
         STAT_ERROR("Bad magic number");
     }
@@ -44,7 +76,13 @@ bool ply_stat(char *filename, PLYStats *ply_stats)
         ply_stats->format = PLY_FORMAT_ASCII_1;
     }
     else if (try_read_line(file, "format binary 1.0")) {
-        ply_stats->format = PLY_FORMAT_BINARY_1;
+        ply_stats->format = PLY_FORMAT_BINARY_LITTLE_ENDIAN_1; // default?
+    }
+    else if (try_read_line(file, "format binary_little_endian 1.0")) {
+        ply_stats->format = PLY_FORMAT_BINARY_LITTLE_ENDIAN_1;
+    }
+    else if (try_read_line(file, "format binary_big_endian 1.0")) {
+        ply_stats->format = PLY_FORMAT_BINARY_BIG_ENDIAN_1;
     }
     else {
         STAT_ERROR("Invalid format");
@@ -79,27 +117,54 @@ bool ply_stat(char *filename, PLYStats *ply_stats)
             if (cur_element->num_properties == MAX_PLY_PROPERTIES) STAT_ERROR("Too many properties");
             cur_property = &cur_element->properties[cur_element->num_properties];
 
-            char property_type[20];
+            char property_type[64];
             char property_name[MAX_PLY_PROPERTY_NAME_LENGTH];
-            if (sscanf(_line_buf, "property %20s %8s", property_type, property_name) == EOF) STAT_ERROR("Bad property arguments");
-            if (strcmp(property_type, "float") == 0) {
-                cur_property->type = PLY_FLOAT;
-            } else if (strcmp(property_type, "int") == 0) {
-                cur_property->type = PLY_INT;
-            } else {
-                STAT_ERROR("Bad property type");
-            }
+            if (sscanf(_line_buf, "property %s %s", property_type, property_name) == EOF) STAT_ERROR("Bad property arguments");
+            cur_property->type = match_ply_type(property_type);
+            if (cur_property->type == NULL_PLY_TYPE) STAT_ERROR("Bad property type");
             strncpy(cur_property->name, property_name, MAX_PLY_PROPERTY_NAME_LENGTH);
 
             cur_element->num_properties ++;
         }
-        print_ply_stats(ply_stats);
-        STAT_ERROR("misc. stat error");
+        /* print_ply_stats(ply_stats); */
+        /* STAT_ERROR("misc. stat error"); */
     }
-    fclose(file);
     return true;
 }
 #undef STAT_ERROR
+
+
+/* void ply_read_element(FILE *file, PLYStats *ply_stats, char *element_name, void *element_data, property_array_indices) */
+/* { */
+/*     int i; */
+/*     for (i = 0; i < ply_stats->num_elements; i++) { */
+/*         if (strncpy(ply_stats->elements[i].name, element_name, MAX_PLY_ELEMENT_NAME_LENGTH) == 0) { */
+/*             break; */
+/*         } */
+/*     } */
+/*     if (i > ply_stats->num_elements) { */
+/*         fprintf(stderr, ERROR_ALERT "Attempted to extract element \"%s\" from a PLY file, name not found in file PLY stats.\n", element_name); */
+/*         exit(EXIT_FAILURE); */
+/*     } */
+/*     PLYElement *element = &ply_stats->elements[i - 1]; */
+    /* printf("Extracting element:\n"); */
+    /* print_ply_element(element); */
+/* } */
+
+void print_ply_element(PLYElement *element)
+{
+    printf("\tname: %s\n", element->name);
+    printf("\tcount: %d\n", element->count);
+    printf("\tnum_properties: %d\n", element->num_properties);
+    for (int i = 0; i < element->num_properties; i++) {
+        PLYProperty *property = &element->properties[i];
+        printf("\tProperty %d:\n", i);
+        printf("\t\tproperty name: %s\n", property->name);
+        printf("\t\tproperty type: %d (", property->type);
+            fprint_ply_type_name(stdout, property->type);
+            printf(")\n");
+    }
+}
 
 
 void print_ply_stats(PLYStats *ply_stats)
@@ -110,16 +175,26 @@ void print_ply_stats(PLYStats *ply_stats)
     for (int i = 0; i < ply_stats->num_elements; i++) {
         PLYElement *element = &ply_stats->elements[i];
         printf("Element %d:\n", i);
-        printf("name: %s\n", element->name);
-        printf("count: %d\n", element->count);
-        printf("num_properties: %d\n", element->num_properties);
-        for (int ii = 0; ii < element->num_properties; ii++) {
-            PLYProperty *property = &element->properties[ii];
-            printf("Property %d:\n", ii);
-            printf("property name: %s\n", property->name);
-            printf("property type: %d\n", property->type);
-        }
+        print_ply_element(element);
     }
 }
+
+static void fprint_ply_type_name(FILE *file, PLYType type)
+{
+    switch (type) {
+        case PLY_FLOAT:
+            fprintf(file, "float");
+            return;
+        case PLY_DOUBLE:
+            fprintf(file, "double");
+            return;
+        case PLY_INT:
+            fprintf(file, "int");
+            return;
+    }
+    fprintf(stderr, ERROR_ALERT "Attempted to print an invalid/unmapped PLY type name from PLY type id %d.\n", type);
+    exit(EXIT_FAILURE);
+}
+
 
 

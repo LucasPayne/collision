@@ -7,9 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <math.h>
 #include "helper_definitions.h"
 #include "mesh.h"
+#include "data/ply.h"
 
 // Static helper functions
 //--------------------------------------------------------------------------------
@@ -353,13 +355,13 @@ Uniform *renderer_add_uniform(Renderer *renderer, char *name, UniformData (*get_
 {
     // uniform type: a GL_ type
     if (renderer->num_uniforms >= MAX_RENDERER_UNIFORMS) {
-        fprintf(stderr, "ERROR: too many uniforms added to renderer.\n");
+        fprintf(stderr, ERROR_ALERT "Too many uniforms added to renderer.\n");
         exit(EXIT_FAILURE);
     }
     Uniform *new_uniform = &renderer->uniforms[renderer->num_uniforms];
     
     if (strlen(name) > MAX_UNIFORM_NAME_LENGTH) {
-        fprintf(stderr, "ERROR: uniform name \"%s\" too long (MAX_UNIFORM_NAME_LENGTH: %d).\n", name, MAX_UNIFORM_NAME_LENGTH);
+        fprintf(stderr, ERROR_ALERT "Uniform name \"%s\" too long (MAX_UNIFORM_NAME_LENGTH: %d).\n", name, MAX_UNIFORM_NAME_LENGTH);
         exit(EXIT_FAILURE);
     }
     strncpy(new_uniform->name, name, MAX_UNIFORM_NAME_LENGTH);
@@ -428,7 +430,6 @@ void print_vertex_attribute_types(void)
                 putchar('0');
             }
         }
-        // A terrible crash may have been caused by doing this below, for some reason.
         /* for (int ii = 0; ii < NUM_ATTRIBUTE_TYPES; ii++) { */
         /*     if (ii == NUM_ATTRIBUTE_TYPES - 1 - g_attribute_info[i].attribute_type) { */
         /*         putchar('1'); */
@@ -441,3 +442,18 @@ void print_vertex_attribute_types(void)
         printf("gl_size: %d\n", g_attribute_info[i].gl_size);
     }
 }
+
+void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
+{
+    FILE *file = fopen(ply_filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, ERROR_ALERT "Failed to open file \"%s\" when attempting to load a mesh from a PLY file.\n", ply_filename);
+        exit(EXIT_FAILURE);
+    }
+    PLYStats ply_stats;
+    if (!ply_stat(file, &ply_stats)) {
+        fprintf(stderr, ERROR_ALERT "Failed to interpret file \"%s\" when loading a mesh from a PLY file.\n", ply_filename);
+        exit(EXIT_FAILURE);
+    }
+}
+

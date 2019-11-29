@@ -42,24 +42,32 @@ end_header
 #ifndef HEADER_DEFINED_PLY
 #define HEADER_DEFINED_PLY
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef uint8_t PLYFormat;
 enum PLY_FORMATS {
     PLY_FORMAT_ASCII_1,
-    PLY_FORMAT_BINARY_1,
+    PLY_FORMAT_BINARY_LITTLE_ENDIAN_1,
+    PLY_FORMAT_BINARY_BIG_ENDIAN_1,
     NUM_PLY_FORMATS
 };
-typedef uint8_t PLYType;
-enum PLY_TYPES {
-    PLY_FLOAT,
+typedef int8_t PLYType;
+#define NULL_PLY_TYPE -1
+enum PLY_TYPES { // do not shuffle these!
+    PLY_CHAR,
+    PLY_UCHAR,
+    PLY_SHORT,
+    PLY_USHORT,
     PLY_INT,
+    PLY_UINT,
+    PLY_FLOAT,
+    PLY_DOUBLE,
     NUM_PLY_TYPES
 };
 
-
-#define MAX_PLY_ELEMENTS 8
-#define MAX_PLY_ELEMENT_NAME_LENGTH 8
-#define MAX_PLY_PROPERTY_NAME_LENGTH 8
+#define MAX_PLY_ELEMENTS 12
+#define MAX_PLY_ELEMENT_NAME_LENGTH 32
+#define MAX_PLY_PROPERTY_NAME_LENGTH 32
 #define MAX_PLY_PROPERTIES 80
 
 typedef struct PLYProperty_s {
@@ -80,7 +88,9 @@ typedef struct PLYStats_s {
     struct PLYElement_s elements[MAX_PLY_ELEMENTS];
 } PLYStats;
 
-bool ply_stat(char *filename, PLYStats *ply_stats);
+bool ply_stat(FILE *file, PLYStats *ply_stats);
 void print_ply_stats(PLYStats *ply_stats);
+void print_ply_element(PLYElement *element);
+/* void ply_read_element(FILE *file, PLYStats *ply_stats, char *element_name); */
 
 #endif // HEADER_DEFINED_PLY

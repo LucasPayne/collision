@@ -54,6 +54,8 @@ MAKEFILE=Makefile
 .SECONDEXPANSION:
 
 # Commands and flags
+# uh what does this do
+# man gcc | less "+/^\s*-rdynamic"
 CC=gcc -rdynamic -Iinclude -Wall
 CFLAGS=-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL
 
@@ -69,27 +71,18 @@ list:
 .PHONY .SILENT: new
 new: ; $(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 
-# This wasn't actually matching, implicit rule still uses $(CC) and $(CFLAGS) so it can compile the object. Why is it remaking? Because object files
-# are deleted.
-# %.o: $(LIB_DIR)/%.c
-# 	$(CC) -c $< -o $(CLUTTER_DIR)/$@
-
-# %:
-# 	 echo $(SRC_DIR)/$@/$@.c $(shell $(SCRIPTS_DIR)/application_dependencies.sh $@)
+# how to organize new stuff like this that isn't just a single straight-from-C module?
+.PHONY: parsers
+parsers:
+	flex -o lib/text_processing/ply.yy.c lib/text_processing/ply.l
 
 # This is not using the right clutter directory structure
 build/clutter/lib/%.o: lib/%.c
 	mkdir -p $(patsubst %.o,%,$@)
 	$(CC) -c $< -o $@
 
-# %.o: $$(echo src/$$@/$$@.c)
-# 	mkdir -p $(patsubst %.o,%,$@)
-# 	$(CC) -c $< -o $@
 
 %: $(SRC_DIR)/$$@/$$@.c $$(shell $(SCRIPTS_DIR)/application_dependencies.sh $$@)
 	$(CC) -o "$(BUILD_DIR)/$@" $^ $(CFLAGS)
 	$(BUILD_DIR)/$@
 
-# do_%: $(SRC_DIR)/$$(shell echo $$@ | cut -c 4-)/$$(shell echo $$@ | cut -c 4-).c $$(shell $$(SCRIPTS_DIR)/application_dependencies.sh $$(shell echo $$@ | cut -c 4-))
-# 	$(CC) -o "$(BUILD_DIR)/$(shell echo $@ | cut -c 4-)" $^ $(CFLAGS)
-# 	$(BUILD_DIR)/$(shell echo $@ | cut -c 4-)

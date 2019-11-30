@@ -406,5 +406,3 @@ void print_ply_stats(PLYStats *ply_stats)
     }
 }
 
-
-

@@ -147,13 +147,17 @@ static void _lex_error(char *string)
     exit(EXIT_FAILURE);
 }
 
-void read_ply(PLY *ply, char *filename)
+PLY *read_ply(char *filename)
 {
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
         fprintf(stderr, ERROR_ALERT "Couldn't open PLY file for lexing");
         exit(EXIT_FAILURE);
     }
+
+    PLY *ply = (PLY *) malloc(sizeof(PLY));
+    mem_check(ply);
+
     yyin = file;
     init_ply(&g_ply);
     init_ply_element(&g_ply_element);
@@ -164,4 +168,6 @@ void read_ply(PLY *ply, char *filename)
     ply->filename = (char *) malloc((strlen(filename) + 1) * sizeof(char));
     mem_check(ply->filename);
     strncpy(ply->filename, filename, strlen(filename));
+
+    return ply;
 }

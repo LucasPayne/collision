@@ -46,6 +46,7 @@ end_header
 
 typedef uint8_t PLYFormat;
 enum PLY_FORMATS {
+    PLY_FORMAT_NONE,
     PLY_FORMAT_ASCII_1,
     PLY_FORMAT_BINARY_LITTLE_ENDIAN_1,
     PLY_FORMAT_BINARY_BIG_ENDIAN_1,
@@ -89,7 +90,7 @@ typedef struct PLYProperty_s {
 void init_ply(PLY *ply);
 void init_ply_element(PLYElement *ply_element);
 void init_ply_property(PLYProperty *ply_property);
-void read_ply(PLY *ply, char *filename);
+PLY *read_ply(char *filename);
 void print_ply(PLY *ply);
 
 #endif // HEADER_DEFINED_PLY

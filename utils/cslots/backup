@@ -1,0 +1,130 @@
+
+/*================================================================================
+
+cslots utility
+Intended for storing meta-information/build directives in a source file.
+
+================================================================================*/
+%option noyywrap nodefault
+%x CSLOTS
+
+LEAD    [\*\s]*
+
+%{
+#include <ctype.h>
+
+static void print_entry(char *name);
+static char g_leading_string[512];
+static char g_prefix[512];
+static char g_suffix[512];
+%}
+
+%%
+    /* maybe need to make this pattern more specific */
+[A-z_0-9]+":"\s*$ {
+    /* Checks this pattern against the leading string (slot group name) given as a command line argument.
+     * Surely flex has some sort of thing to make this easier? Regexes must be compiled, but this more general one
+     * can be further checked to change control flow. Just do it in C?
+     */
+    /* puts(yytext); */
+    int i = 0;
+    while (isspace(yytext[i]) || yytext[i] == '*') i++;
+    int j = i;
+    while (yytext[j] != ':') j++;
+    yytext[j] = '\0';
+    /* puts(yytext + i); */
+    /* puts(g_leading_string); */
+    if (strcmp(yytext + i, g_leading_string) == 0) {
+        /* printf("beginning cslots\n"); */
+        BEGIN CSLOTS;
+    }
+}
+<CSLOTS>{LEAD}"-" {
+    int c;
+    while ((c = input()) && c != '\n');
+}
+<CSLOTS>{LEAD}"+" {
+    print_entry(yytext);
+}
+<CSLOTS>[ \n\t]* {
+    /* */
+}
+<CSLOTS>. {
+    BEGIN INITIAL;
+}
+. { /* */ }
+"\n" { /* */ }
+
+%%
+
+static void print_entry(char *name)
+{
+    char slot_name[512];
+    int c;
+    int i = 0;
+    while ((c = input()) && c != '\n' && i < 512 - 1) { 
+        if (!isspace(c)) slot_name[i++] = c;
+    }
+    slot_name[i] = '\0';
+    for (int i = 0; g_prefix[i] != '\0'; i++) {
+        // slot name print directive
+        if (strncmp(g_prefix + i, ">n", 2) == 0) {
+            i += 1;
+        } else {
+            putchar(g_prefix[i]);
+        }
+    }
+    printf("%s", slot_name);
+    printf("%s", g_suffix);
+    putchar(' ');
+}
+
+static void arg_error(char *flag)
+{
+    fprintf(stderr, "bad flag: %s\n", flag);
+    exit(EXIT_FAILURE);
+}
+static void print_help(void)
+{
+printf("usage:\n");
+printf("\tcslots <slot group name> [--prefix <prefix>] [--suffix <suffix>]\n");
+printf("\tPatterns:\n");
+printf("\t\t>n : the name of the slot entry currently being printed\n");
+printf("cslots:\n");
+printf("\tFilter to pull meta-information/build directives out of source files.\n");
+}
+
+int main(int argc, char *argv[])
+{
+// takes input from stdin
+    if (argc == 2 && (strcmp(argv[1], "--help") || strcmp(argv[1], "-h"))) {
+        print_help();
+        return 0;
+    }
+
+    int got_input = 0;
+    g_prefix[0] = '\0';
+    g_suffix[0] = '\0';
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--prefix") == 0) {
+            if (i + 1 >= argc) arg_error("-p");
+            strncpy(g_prefix, argv[i + 1], 512);
+            i ++;
+        }
+        else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--suffix") == 0) {
+            if (i + 1 >= argc) arg_error("-s");
+            strncpy(g_suffix, argv[i + 1], 512);
+            i ++;
+        }
+        else if (got_input) {
+            arg_error("invalid");
+        } else {
+            strncpy(g_leading_string, argv[i], 512);
+            got_input = 1;
+        }
+    }
+    if (!got_input) arg_error("no leading string given");
+
+    yyin = stdin;
+    yylex();
+}

@@ -1,0 +1,169 @@
+
+/*================================================================================
+    Lexing for PLY file headers. Gives stat information about the contents
+    of the PLY file.
+
+notes:
+    currently no error-checking for name size
+    should be done at flex action level or the ~state-machine reactor~?
+================================================================================*/
+%option noyywrap nodefault
+%s Magic
+%s Versioning
+%s Elements
+%s ElementName
+%s ElementCount
+%s Properties
+%s PropertyListCountType
+%s PropertyType
+%s PropertyName
+
+%{
+#include "data/ply.h"
+
+enum return_types {
+// Return types are for the caller to call yylex and check whether the header is correctly formed. If a return type is returned
+// as expected, then global variables should be called if needed.
+    ERROR,
+    MAGIC_NUMBER,
+    FORMAT,
+    ELEMENT,
+    END_HEADER,
+    PROPERTY,
+};
+
+static PLYFormat g_format;
+static char g_element_name[MAX_PLY_ELEMENT_NAME_LENGTH];
+static unsigned int g_element_count;
+static char g_property_name[MAX_PLY_PROPERTY_NAME_LENGTH];
+static PLYType g_property_list_count_type;
+static PLYType g_property_type;
+
+%}
+
+%%
+
+^"comment "[^\n]*$ { /* pass over */ }
+<Magic>^"ply"$ { return MAGIC_NUMBER; }
+<Magic>^"version " { BEGIN Versioning; }
+<Versioning>"ascii 1.0"$ { BEGIN Elements; g_format = PLY_FORMAT_ASCII_1; return FORMAT; }
+<Versioning>"binary_little_endian 1.0"$ { BEGIN Elements; g_format = PLY_FORMAT_BINARY_LITTLE_ENDIAN_1; return FORMAT; }
+<Versioning>"binary_big_endian 1.0"$ { BEGIN Elements; g_format = PLY_FORMAT_BINARY_BIG_ENDIAN_1; return FORMAT; }
+<Elements>^"element " { BEGIN ElementName; }
+<ElementName>[a-z]+   {
+    BEGIN ElementCount;
+    strncpy(g_element_name, yytext, MAX_PLY_ELEMENT_NAME_LENGTH);
+}
+<ElementCount>[0-9]+$ {
+    BEGIN Properties;
+    g_element_count = atoi(yytext);
+    return ELEMENT;
+}
+<Properties>"^property list "    { BEGIN PropertyListCountType; }
+<PropertyListCountType>"uint "   { BEGIN PropertyType; g_property_list_count_type = PLY_UINT; }
+<PropertyListCountType>"uchar "  { BEGIN PropertyType; g_property_list_count_type = PLY_UCHAR; }
+<PropertyListCountType>"ushort " { BEGIN PropertyType; g_property_list_count_type = PLY_USHORT; }
+<Properties>"^property " {
+    BEGIN PropertyType;
+    g_property_list_count_type = NULL_PLY_TYPE;
+}
+<Properties>"^end_header$" { return END_HEADER; }
+<PropertyType>"char "     { BEGIN PropertyName; g_property_type = PLY_CHAR; }
+<PropertyType>"uchar "    { BEGIN PropertyName; g_property_type = PLY_UCHAR; }
+<PropertyType>"short "    { BEGIN PropertyName; g_property_type = PLY_SHORT; }
+<PropertyType>"ushort "   { BEGIN PropertyName; g_property_type = PLY_USHORT; }
+<PropertyType>"int "      { BEGIN PropertyName; g_property_type = PLY_INT; }
+<PropertyType>"uint "     { BEGIN PropertyName; g_property_type = PLY_UINT; }
+<PropertyType>"float "    { BEGIN PropertyName; g_property_type = PLY_FLOAT; }
+<PropertyType>"double "   { BEGIN PropertyName; g_property_type = PLY_DOUBLE; }
+<PropertyName>[_A-z][_A-z0-9]+ {
+    BEGIN Properties;
+    strncpy(g_property_name, yytext, MAX_PLY_PROPERTY_NAME_LENGTH);
+    return PROPERTY;
+}
+"." { return ERROR; }
+"\n" { return ERROR; }
+
+    /* for properties, rather
+*/
+%%
+#include <stdbool.h>
+#include "helper_definitions.h"
+#include "data/ply.h"
+
+static void _lex_error(char *string)
+{
+    fprintf(stderr, ERROR_ALERT "Lexing error: %s\n", string);
+    exit(EXIT_FAILURE);
+}
+void lex_ply_header(PLYStats *ply_stat, char *filename)
+{
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) perror("couldn't open PLY file for lexing");
+    yyin = file;
+
+
+    if (yylex() != MAGIC_NUMBER) _lex_error("bad magic number for PLY file");
+    if (yylex() != FORMAT) _lex_error("bad format for PLY file");
+    ply_stat->format = g_format;
+    ply_stat->num_elements = 0;
+
+    PLYElement *new_element = NULL;
+    PLYProperty *new_property = NULL;
+    int ret_val;
+    while ((ret_val = yylex()) != END_HEADER) {
+        switch(ret_val) {
+        case ERROR:
+            _lex_error("bad PLY file");
+        break;
+        case ELEMENT: // create a new element
+            if (ply_stat->num_elements >= MAX_PLY_ELEMENTS) _lex_error("too many elements for PLY file");
+            new_element = &ply_stat->elements[ply_stat->num_elements];
+
+            new_element->count = g_element_count;
+            strncpy(new_element->name, g_element_name, MAX_PLY_ELEMENT_NAME_LENGTH);
+            new_element->num_properties = 0;
+
+            ply_stat->num_elements ++;
+        break;
+        case PROPERTY: // add a new property to the currently-being-created element
+            if (new_element == NULL) perror("internal error. matched property while an element hasn't been matched yet.");
+            if (new_element->num_properties >= MAX_PLY_PROPERTIES) _lex_error("too many properties for an element in PLY file");
+            new_property = &new_element->properties[new_element->num_properties];
+
+            new_property->type = g_property_type;
+            new_property->is_list = g_property_list_count_type != NULL_PLY_TYPE;
+            new_property->list_count_type = g_property_list_count_type;
+
+            strncpy(new_property->name, g_property_name, MAX_PLY_PROPERTY_NAME_LENGTH);
+
+            new_element->num_properties ++;
+        break;
+        }
+    }
+}
+
+/*
+typedef struct PLYProperty_s {
+    char name[MAX_PLY_PROPERTY_NAME_LENGTH];
+    PLYType type;
+    bool is_list;
+    PLYType list_count_type;
+    unsigned int offset; // the amount of bytes from the start of a single element entry that this property/property list is when packed.
+} PLYProperty;
+
+typedef struct PLYElement_s {
+    char name[MAX_PLY_ELEMENT_NAME_LENGTH];
+    unsigned int count;
+    unsigned int num_properties;
+    struct PLYProperty_s properties[MAX_PLY_PROPERTIES];
+    unsigned int size; //size of the packed properties.
+    unsigned int line_start; // which line in the file this data should start (only relevant to ASCII format?)
+} PLYElement;
+
+typedef struct PLYStats_s {
+    PLYFormat format;
+    unsigned int num_elements;
+    struct PLYElement_s elements[MAX_PLY_ELEMENTS];
+} PLYStats;
+*/

@@ -3,8 +3,10 @@ PROJECT_LIBS:
     + glad
     + helper_gl
     + text_processing
-    + data/ply
     + mesh
+APPLICATION_LIBS:
+    + local_libs/things
+    + stuff
 --------------------------------------------------------------------------------*/
 
 #include <glad/glad.h>

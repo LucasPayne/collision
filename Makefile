@@ -1,41 +1,57 @@
-# Stuff about Makefiles
-#--------------------------------------------------------------------------------
-# Escaping
-# --------
-# https://stackoverflow.com/questions/7654386/how-do-i-properly-escape-data-for-a-makefile
-# \#
-# $$
-# Automatic variables:
-# --------------------
-# Suppose you are writing a pattern rule to compile a ‘.c’ file
-# into a ‘.o’ file: how do you write the ‘cc’ command so
-# that it operates on the right source file name? You cannot write
-# the name in the recipe, because the name is different each time
-# the implicit rule is applied.
-#
-# What you do is use a special feature of make, the automatic
-# variables. These variables have values computed afresh for each rule that is
-# executed, based on the target and prerequisites of the rule. In this
-# example, you would use ‘$@’ for the object file name and ‘$<’
-# for the source file name.
-#
-#
-# https://stackoverflow.com/questions/10024279/how-to-use-shell-commands-in-makefile
-# each line is run by a separate shell, so this variable
-# will not survive to the next line, so you must then use
-# it immediately
-#
-# Shell function:
-# https://www.gnu.org/software/make/manual/html_node/Shell-Function.html
-# The shell function is unlike any other function other than the wildcard
-# function (see The Function wildcard) in that it communicates with the world
-# outside of make.
-#--------------------------------------------------------------------------------
-
-
+#================================================================================
 # Project structure
+# =================
+# This project is organized into applications and libraries/modules.
+# Applications are compiled to [[[ build/applications/ ]]], and modules are compiled
+# to [[[ build/lib/ ]]], which reflects the [[[ lib/ ]]] directory but with object files and build
+# output.
+#
+# Applications
+# ------------
+# These are separate executable projects, no matter the size. They can be quick tests of modules and facilities, areas
+# for learning certain things, or just misc. stuff.
+# Their source is in the [[[ src/ ]]] directory. This source must contain a central C file with main. Applications are built with
+#	$make <application name>,
+# which a make rule automatically resolves to a build process.
+# Dependencies are given in the source instead of this makefile. The make rule passes the C source through a small utility called
+# cslots (install at [[[ utils/cslots/ ]]] and run $cslots --help), which outputs the dependencies given in the file as, e.g.:
+# /* 
+# PROJECT_LIBS:
+# 	+ things_module
+# 	- topology
+# 	+ camping/fishing
+# ...
+# */
+# Here, build/lib/things_module/things_module.o and build/lib/camping/fishing/fishing.o must be built and linked to the application executable.
+# These let you slot in attributes to a source file, used here to slot in project module dependencies.
+#
+# Project libraries/modules
+# -------------------------
+# Making an application executable causes make rules to be run for each project module dependency of the application.
+# These make rules are either:
+#	- default behaviour.
+#		By default, it is assumed the library is a simple C module with a straightforward make process.
+#	- sourced from a file named Makefile in the library source directory.
+#		This file should contain a build rule for the library object.
+#		Its working directory as a sub-make process is the [[[ build/lib/<library name>/ ]]] directory,
+#		and an exported variable LIB is provided for the [[[ lib/<library name>/ ]]] directory.
+#
+# Schematic system
+# ----------------
+# Some base schematics are kept in [[[ utils/schematics/ ]]]. These are used with the command
+# 	$make new
+# which gives a command line selection of the wanted schematic and name. This creates
+# a basic project structure in the [[[ src/ ]]] directory.
+#
+#
+# notes
+#--------------------------------------------------------------------------------
+# Rebuilding/timing rules not correct.
+# Headers not accounted for. May want to rearrange them.
+# Variables in recipes seem to be empty.
+#================================================================================
 BUILD_DIR=build
-CLUTTER_DIR=build/clutter
+APPLICATIONS_DIR=build/applications
 LIB_DIR=lib
 INCLUDE_DIR=include
 SRC_DIR=src
@@ -43,20 +59,11 @@ SCRIPTS_DIR=scripts
 SCHEMATICS_DIR=utils/schematics
 MAKEFILE=Makefile
 
-# GNU make feature:
-# Secondary expansions always take place within the scope of the automatic variables
-# for that target. This means that you can use variables such
-# as $@, $*, etc. during the second expansion and they will
-# have their expected values, just as in the recipe. All
-# you have to do is defer the expansion by escaping the $.
-# ---
-# They are expanded at the time make checks the prerequisites of a target.
 .SECONDEXPANSION:
+.EXPORT_ALL_VARIABLES:
 
-# Commands and flags
-# uh what does this do
-# man gcc | less "+/^\s*-rdynamic"
-CC=gcc -rdynamic -Iinclude -Wall
+# Giving absolute directories as this is important for recursive use of make.
+CC=gcc -rdynamic -I$(CURDIR)/include -Wall
 CFLAGS=-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL
 
 # General Makefile options
@@ -71,18 +78,45 @@ list:
 .PHONY .SILENT: new
 new: ; $(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 
-# how to organize new stuff like this that isn't just a single straight-from-C module?
-.PHONY: parsers
-parsers:
-	flex -o lib/text_processing/ply.yy.c lib/text_processing/ply.l
+#================================================================================
+# Project library making
+#---------------------------------------------------------------------------------
+# Recur to sub-Makefiles. These are called Makefile.
+# Making is done in the build directory, so these sub-Makefiles should take that into account,
+# and can use an exported variable LIB which gives the location of the source files.
+# ---- remember headers
+#
+.PRECIOUS: build/lib/%.o
+build/lib/%.o:
+	mkdir -p "$(shell dirname "$@")";\
+	test -f "$(CURDIR)/$(subst build/,,$(shell dirname "$@"))/Makefile" && (\
+		cd "$(shell dirname "$@")" && LIB=$(CURDIR)/$(subst build/,,$(shell dirname "$@"))\
+			$(MAKE) -e --file=$(CURDIR)/$(subst build/,,$(shell dirname "$@"))/Makefile;\
+	) || (\
+		$(CC) -o $@ -c $(subst build/,,$(@:.o=.c)) $(CFLAGS);\
+	)
+#================================================================================
 
-# This is not using the right clutter directory structure
-build/clutter/lib/%.o: lib/%.c
-	mkdir -p $(patsubst %.o,%,$@)
-	$(CC) -c $< -o $@
+#================================================================================
+# Application making
+#--------------------------------------------------------------------------------
+# The cslots utility is used to extract build directives from the source file for the application.
+# This is done with secondary expansion, delaying expansions until a target is targetted,
+# so the make system can use an implicit dependency graph with an "outgoing nodes" function.
+# Example slot name conversion: things/thing -> build/lib/things/thing/thing.o
+#
+%: $(SRC_DIR)/$$@/$$@.c $$(shell cat $(SRC_DIR)/$$@/$$@.c | cslots PROJECT_LIBS --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
+	mkdir -p $(APPLICATIONS_DIR)
+	$(CC) -o "$(APPLICATIONS_DIR)/$@" $^ $(CFLAGS)
+#================================================================================
 
+.PHONY: clean
+clean:
+	rm -r build/*
 
-%: $(SRC_DIR)/$$@/$$@.c $$(shell $(SCRIPTS_DIR)/application_dependencies.sh $$@)
-	$(CC) -o "$(BUILD_DIR)/$@" $^ $(CFLAGS)
-	$(BUILD_DIR)/$@
-
+#================================================================================
+# TESTS
+#--------------------------------------------------------------------------------
+.PHONY: t1
+t1:
+	echo $(shell cat $(SRC_DIR)/text_processing/text_processing.c | cslots PROJECT_LIBS --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{n}.o')

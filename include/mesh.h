@@ -40,7 +40,6 @@
 #include <stdint.h>
 #include "helper_definitions.h"
 #include "helper_gl.h"
-#include "data/ply.h"
 
 typedef uint8_t AttributeType;
 // Corresponds to layout qualified positions in shaders

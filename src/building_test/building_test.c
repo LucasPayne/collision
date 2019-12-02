@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
     identity_matrix4x4f(&mat);
     print_matrix4x4f(&mat);
 
-    PLY *ply = read_ply(DATA_DIR "models/plytest.ply");
-    /* PLY *ply = read_ply(DATA_DIR "models/plytest2.ply"); */
+    /* PLY *ply = read_ply(DATA_DIR "models/plytest.ply"); */
+    PLY *ply = read_ply(DATA_DIR "models/plytest2.ply");
     /* PLY *ply = read_ply(DATA_DIR "models/dolphins.ply"); */
     print_ply(ply);
 

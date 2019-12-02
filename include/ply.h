@@ -87,6 +87,23 @@ typedef struct PLY_s {
     PLYElement *first_element;
 } PLY;
 
+typedef struct PLYQueryProperty_s {
+    char *pattern_string;
+    PLYType pack_type;
+    struct PLYQueryProperty_s *next;
+} PLYQueryProperty;
+typedef struct PLYQueryElement_s {
+    char *pattern_string;
+    int num_properties;
+    PLYQueryProperty first_property;
+    struct PLYQueryElement_s *next;
+} PLYQueryElement;
+typedef struct PLYQuery_s {
+    char *query_string;
+    int num_elements;
+    PLYQueryElement *first_element;
+} PLYQuery;
+
 void init_ply(PLY *ply);
 void init_ply_element(PLYElement *ply_element);
 void init_ply_property(PLYProperty *ply_property);

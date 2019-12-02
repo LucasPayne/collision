@@ -27,14 +27,14 @@
 #
 # Project libraries/modules
 # -------------------------
-# Making an application executable causes make rules to be run for each project module dependency of the application.
+# Making an application causes make rules to be run for each project module dependency of the application.
 # These make rules are either:
 #	- default behaviour.
 #		By default, it is assumed the library is a simple C module with a straightforward make process.
 #	- sourced from a file named Makefile in the library source directory.
 #		This file should contain a build rule for the library object.
-#		Its working directory as a sub-make process is the [[[ build/lib/<library name>/ ]]] directory,
-#		and an exported variable LIB is provided for the [[[ lib/<library name>/ ]]] directory.
+#		Its working directory as a sub-make process is [[[ build/lib/<library name>/ ]]], and an
+#		exported variable LIB is provided for the [[[ lib/<library name>/ ]]] directory.
 #
 # Schematic system
 # ----------------

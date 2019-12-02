@@ -1,5 +1,10 @@
 /*================================================================================
-    Lexing for PLY file headers.
+    flex+C module for creating an internal PLY handle from a file.
+
+    Hopefully, with flex it is easier to make sure the lexing really matches common uses/
+    standards of PLY files. The way it is done here is with a finite state machine,
+    building up a global PLY handle with elements and properties. Each state tries
+    to match certain regular expressions/strings to build up information for the PLY handle.
 
 notes:
 ================================================================================*/
@@ -50,10 +55,15 @@ static PLYProperty g_ply_property;
 <Versioning>^"format ascii 1.0"$                { BEGIN Elements; g_ply.format = PLY_FORMAT_ASCII_1; debug("version read"); }
 <Versioning>^"format binary_little_endian 1.0"$ { BEGIN Elements; g_ply.format = PLY_FORMAT_BINARY_LITTLE_ENDIAN_1; debug("version read"); }
 <Versioning>^"format binary_big_endian 1.0"$    { BEGIN Elements; g_ply.format = PLY_FORMAT_BINARY_BIG_ENDIAN_1; debug("version read"); }
-    /* remember to alter duplicate for properties state as well. need to remove this duplication.
+    /* ---remember to alter duplicate for properties state as well. need to remove this duplication.
         could have Properties go to the Elements state and back up a character when getting an unknown input, so Elements can handle it (e.g. get end_header). */
-<Elements>^"element " { g_at_least_one_element = true; BEGIN ElementName; debug("element started reading"); }
+<Elements>^"element " {
+    // A new element has started declaration.
+    g_at_least_one_element = true;
+    BEGIN ElementName;
+    debug("element started reading"); }
 <ElementName>[A-z]+ {
+    // Allocate memory for element name.
     BEGIN ElementCount;
     g_ply_element.name = (char *) malloc((strlen(yytext) + 1) * sizeof(char));
     mem_check(g_ply_element.name);
@@ -61,21 +71,30 @@ static PLYProperty g_ply_property;
     debug("read element name");
 }
 <ElementCount>" "[0-9]+$ {
+    // The new element has completed declaration, add this.
     BEGIN Properties;
     g_ply_element.count = atoi(yytext);
     add_element();
     debug("read element count, finished reading new element declaration");
 }
-<Properties>^"property list "    { BEGIN PropertyListCountType; g_ply_property.is_list = true; debug("property list started reading"); }
+<Properties>^"property list "    {
+    // A new list-type property has started declaration.
+    BEGIN PropertyListCountType;
+    g_ply_property.is_list = true;
+    debug("property list started reading");
+}
+    /* Read the unsigned integer type of the list count. */
 <PropertyListCountType>"uint "   { BEGIN PropertyType; g_ply_property.list_count_type = PLY_UINT; debug("property list count type read"); }
 <PropertyListCountType>"uchar "  { BEGIN PropertyType; g_ply_property.list_count_type = PLY_UCHAR; debug("property list count type read"); }
 <PropertyListCountType>"ushort " { BEGIN PropertyType; g_ply_property.list_count_type = PLY_USHORT; debug("property list count type read"); }
 <Properties>^"property " {
+    // A new regular property has started declaration.
     BEGIN PropertyType;
     g_ply_property.is_list = false;
     g_ply_property.list_count_type = PLY_NONE_TYPE;
     debug("property started reading");
 }
+    /* Read the type of the property. */
 <PropertyType>"char "     { BEGIN PropertyName; g_ply_property.type = PLY_CHAR; debug("property type read"); }
 <PropertyType>"uchar "    { BEGIN PropertyName; g_ply_property.type = PLY_UCHAR; debug("property type read"); }
 <PropertyType>"short "    { BEGIN PropertyName; g_ply_property.type = PLY_SHORT; debug("property type read"); }
@@ -85,6 +104,7 @@ static PLYProperty g_ply_property;
 <PropertyType>"float "    { BEGIN PropertyName; g_ply_property.type = PLY_FLOAT; debug("property type read"); }
 <PropertyType>"double "   { BEGIN PropertyName; g_ply_property.type = PLY_DOUBLE; debug("property type read"); }
 <PropertyName>[A-z]+ {
+    // The new property has completed declaration, add this.
     BEGIN Properties;
     g_ply_property.name = (char *) malloc((strlen(yytext) + 1) * sizeof(char));
     mem_check(g_ply_property.name);
@@ -92,12 +112,14 @@ static PLYProperty g_ply_property;
     add_property();
     debug("property name read, finished reading new property declaration");
 }
-    /* duplicate rule ... would like to do something like <Element,Properties> */
+    /* ---duplicate rule ... would like to do something like <Element,Properties> */
 <Properties>^"element " { g_at_least_one_element = true; BEGIN ElementName; debug("element started reading"); }
 <Properties>^"end_header"$ {
+    // The header is complete. Make sure at least one element has been declared.
     if (!g_at_least_one_element) _lex_error("no elements defined");
     return END_HEADER;
 }
+    /* States are inclusive, so these actions eat newlines and catch errors. */
 "\n" { /* */ }
 "." { return ERROR; }
 
@@ -105,7 +127,6 @@ static PLYProperty g_ply_property;
 #include <stdbool.h>
 #include "helper_definitions.h"
 #include "ply.h"
-
 
 static void add_element(void)
 {
@@ -142,12 +163,10 @@ static void add_property(void)
     g_last_ply_element->num_properties ++;
 }
 
-
 static void debug(char *debug_string)
 {
     if (g_debugging) puts(debug_string);
 }
-
 
 static void _lex_error(char *string)
 {
@@ -159,7 +178,7 @@ PLY *read_ply(char *filename)
 {
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
-        fprintf(stderr, ERROR_ALERT "Couldn't open PLY file for lexing");
+        fprintf(stderr, ERROR_ALERT "Couldn't open PLY file for lexing.");
         exit(EXIT_FAILURE);
     }
 

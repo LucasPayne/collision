@@ -95,7 +95,7 @@ typedef struct PLYQueryProperty_s {
 typedef struct PLYQueryElement_s {
     char *pattern_string;
     int num_properties;
-    PLYQueryProperty first_property;
+    PLYQueryProperty *first_property;
     struct PLYQueryElement_s *next;
 } PLYQueryElement;
 typedef struct PLYQuery_s {
@@ -104,13 +104,29 @@ typedef struct PLYQuery_s {
     PLYQueryElement *first_element;
 } PLYQuery;
 
+//================================================================================
+// Zero initialization and destructors
+//================================================================================
 void init_ply(PLY *ply);
 void init_ply_element(PLYElement *ply_element);
 void init_ply_property(PLYProperty *ply_property);
 void destroy_ply(PLY *ply);
 void destroy_ply_element(PLYElement *ply_element);
 void destroy_ply_property(PLYProperty *ply_property);
+
+//================================================================================
+// File reading
+//================================================================================
 PLY *read_ply(char *filename);
+
+//================================================================================
+// Querying
+//================================================================================
+PLYQuery *read_ply_query(char *query_string);
+
+//================================================================================
+// Printing and serialization
+//================================================================================
 void print_ply(PLY *ply);
 void print_ply_element(PLYElement *ply_element);
 void print_ply_property(PLYProperty *ply_property);

@@ -15,7 +15,7 @@ PROJECT_LIBS:
 #include "project_definitions.h"
 #include "text_processing.h"
 #include "matrix_mathematics.h"
-#include "testing/lextest.h"
+/* #include "testing/lextest.h" */
 #include "ply.h"
 
 int main(int argc, char *argv[])
@@ -24,7 +24,10 @@ int main(int argc, char *argv[])
     identity_matrix4x4f(&mat);
     print_matrix4x4f(&mat);
 
-    PLYStats stats;
-    lex_ply_header(&stats, DATA_DIR "models/plytest2.ply");
-    print_ply_stats(&stats);
+    PLY *ply = read_ply(DATA_DIR "models/plytest.ply");
+    /* PLY *ply = read_ply(DATA_DIR "models/plytest2.ply"); */
+    /* PLY *ply = read_ply(DATA_DIR "models/dolphins.ply"); */
+    print_ply(ply);
+
+    destroy_ply(ply);
 }

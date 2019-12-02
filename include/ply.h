@@ -45,7 +45,7 @@ end_header
 #include <stdbool.h>
 
 typedef uint8_t PLYFormat;
-enum PLY_FORMATS {
+enum PLY_FORMATS { // do not shuffle these!
     PLY_FORMAT_NONE,
     PLY_FORMAT_ASCII_1,
     PLY_FORMAT_BINARY_LITTLE_ENDIAN_1,
@@ -53,8 +53,8 @@ enum PLY_FORMATS {
     NUM_PLY_FORMATS
 };
 typedef int8_t PLYType;
-#define NULL_PLY_TYPE -1
 enum PLY_TYPES { // do not shuffle these!
+    PLY_NONE_TYPE,
     PLY_CHAR,
     PLY_UCHAR,
     PLY_SHORT,
@@ -66,19 +66,6 @@ enum PLY_TYPES { // do not shuffle these!
     NUM_PLY_TYPES
 };
 
-typedef struct PLY_s {
-    char *filename;
-    PLYFormat format;
-    int num_elements;
-    PLYElement *first_element;
-} PLY;
-typedef struct PLYElement_s {
-    char *name;
-    int count;
-    int num_properties;
-    struct PLYElement_s *next_element;
-    PLYProperty *first_property;
-} PLYElement;
 typedef struct PLYProperty_s {
     char *name;
     PLYType type;
@@ -86,11 +73,29 @@ typedef struct PLYProperty_s {
     PLYType list_count_type;
     struct PLYProperty_s *next_property;
 } PLYProperty;
+typedef struct PLYElement_s {
+    char *name;
+    int count;
+    int num_properties;
+    struct PLYElement_s *next_element;
+    PLYProperty *first_property;
+} PLYElement;
+typedef struct PLY_s {
+    char *filename;
+    PLYFormat format;
+    int num_elements;
+    PLYElement *first_element;
+} PLY;
 
 void init_ply(PLY *ply);
 void init_ply_element(PLYElement *ply_element);
 void init_ply_property(PLYProperty *ply_property);
+void destroy_ply(PLY *ply);
+void destroy_ply_element(PLYElement *ply_element);
+void destroy_ply_property(PLYProperty *ply_property);
 PLY *read_ply(char *filename);
 void print_ply(PLY *ply);
+void print_ply_element(PLYElement *ply_element);
+void print_ply_property(PLYProperty *ply_property);
 
 #endif // HEADER_DEFINED_PLY

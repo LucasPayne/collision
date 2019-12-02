@@ -15,7 +15,8 @@ static char _ply_format_names[NUM_PLY_FORMATS][28] = { // do not shuffle these!
     "binary_little_endian 1.0",
     "binary_big_endian 1.0",
 };
-static char _ply_type_names[NUM_PLY_TYPES][7] = { // do not shuffle these!
+static char _ply_type_names[NUM_PLY_TYPES][12] = { // do not shuffle these!
+    "none_type",
     "char",
     "uchar",
     "short",
@@ -57,7 +58,7 @@ static PLYType match_ply_type(char *string)
             return i;
         }
     }
-    return NULL_PLY_TYPE;
+    return PLY_NONE_TYPE;
 }
 
 
@@ -66,7 +67,7 @@ static PLYType match_ply_type(char *string)
 //--------------------------------------------------------------------------------
 void init_ply(PLY *ply)
 {
-    ply->name = NULL;
+    ply->filename = NULL;
     ply->format = PLY_FORMAT_NONE;
     ply->num_elements = 0;
     ply->first_element = NULL;
@@ -78,7 +79,7 @@ void destroy_ply(PLY *ply)
         PLYElement *cur_element = ply->first_element;
         do {
             PLYElement *destroy_this = cur_element;
-            cur_element = cur_element->next;
+            cur_element = cur_element->next_element;
             destroy_ply_element(destroy_this);
         } while (cur_element != NULL);
     }
@@ -99,7 +100,7 @@ void destroy_ply_element(PLYElement *ply_element)
         PLYProperty *cur_property = ply_element->first_property;
         do {
             PLYProperty *destroy_this = cur_property;
-            cur_property = cur_property->next;
+            cur_property = cur_property->next_property;
             destroy_ply_property(destroy_this);
         } while (cur_property != NULL);
     }
@@ -108,10 +109,10 @@ void destroy_ply_element(PLYElement *ply_element)
 void init_ply_property(PLYProperty *ply_property)
 {
     ply_property->name = NULL;
-    ply_property->type = NULL_PLY_TYPE;
+    ply_property->type = PLY_NONE_TYPE;
     ply_property->is_list = false;
-    ply_property->list_count_type = NULL_PLY_TYPE;
-    ply_property->next_propety = NULL;
+    ply_property->list_count_type = PLY_NONE_TYPE;
+    ply_property->next_property = NULL;
 }
 void destroy_ply_property(PLYProperty *ply_property)
 {
@@ -124,15 +125,17 @@ void destroy_ply_property(PLYProperty *ply_property)
 void print_ply(PLY *ply)
 {
     printf("PLY object:\n");
-    printf("filename: %80s\n", ply->filename);
+    printf("============================================================\n");
+    printf("filename: %.80s\n", ply->filename == NULL ? "!!! NO FILENAME GIVEN !!! (or this is the filename, for some reason)" : ply->filename);
+    printf("format: %.80s (%d)\n", _ply_format_names[ply->format], ply->format);
     printf("num_elements: %d\n", ply->num_elements);
-    printf("format: %80s (%d)\n", _ply_format_names[ply->format], ply->format);
     printf("Elements:\n");
     if (ply->first_element == NULL) {
         printf("no elements\n");
     } else {
         PLYElement *print_this = ply->first_element;
         do {
+            printf("------------------------------------------------------------\n");
             print_ply_element(print_this);
             print_this = print_this->next_element;
         } while (print_this != NULL);
@@ -140,7 +143,7 @@ void print_ply(PLY *ply)
 }
 void print_ply_element(PLYElement *ply_element)
 {
-    printf("name: %80s\n", ply_element->name);
+    printf("name: %.80s\n", ply_element->name == NULL ? "!!! NO NAME GIVEN !!! (or this is the name, for some reason)" : ply_element->name);
     printf("count: %d\n", ply_element->count);
     printf("num_properties: %d\n", ply_element->num_properties);
     printf("Properties:\n");
@@ -149,6 +152,7 @@ void print_ply_element(PLYElement *ply_element)
     } else {
         PLYProperty *print_this = ply_element->first_property;
         do {
+            printf(" - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
             print_ply_property(print_this);
             print_this = print_this->next_property;
         } while (print_this != NULL);
@@ -156,26 +160,8 @@ void print_ply_element(PLYElement *ply_element)
 }
 void print_ply_property(PLYProperty *ply_property)
 {
-
+    printf("name: %.80s\n", ply_property->name == NULL ? "!!! NO NAME GIVEN !!! (or this is the name, for some reason)" : ply_property->name);
+    printf("type: %.80s (%d)\n", _ply_type_names[ply_property->type], ply_property->type);
+    printf("is_list: %s\n", ply_property->is_list ? "true" : "false");
+    printf("list_count_type: %.80s (%d)\n", _ply_type_names[ply_property->list_count_type], ply_property->list_count_type);
 }
-
-typedef struct PLY_s {
-    char *filename;
-    PLYFormat format;
-    int num_elements;
-    PLYElement *first_element;
-} PLY;
-typedef struct PLYElement_s {
-    char *name;
-    int count;
-    int num_properties;
-    struct PLYElement_s *next_element;
-    PLYProperty *first_property;
-} PLYElement;
-typedef struct PLYProperty_s {
-    char *name;
-    PLYType type;
-    bool is_list;
-    PLYType list_count_type;
-    struct PLYProperty_s *next_property;
-} PLYProperty;

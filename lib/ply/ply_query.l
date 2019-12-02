@@ -5,6 +5,7 @@
         Upper C declarations and global variable definitions.
     ================================================================================*/
 %option noyywrap nodefault
+%option prefix="_PLY_QUERY_yy"
 %x ElementPatterns
 %x Properties
 %x PropertyPattern
@@ -15,6 +16,10 @@
 
 #define ERROR 0
 #define DONE 1
+
+static const bool g_debugging = true;
+static void debug(char *debug_string);
+
 static void lex_error(char *error_string);
 static void add_query_element(void);
 static void add_query_property(void);
@@ -29,9 +34,6 @@ static PLYQueryProperty g_ply_query_property;
     /*================================================================================
         Patterns and actions
     ================================================================================*/
-
-"" { BEGIN ElementPatterns; }
-
 <ElementPatterns>"["[A-z]+("|"[A-z]+)*"]" {
     int c;
     // Must be followed by ": "
@@ -39,28 +41,36 @@ static PLYQueryProperty g_ply_query_property;
         lex_error("error");
         return ERROR;
     }
-    g_ply_query_element.pattern_string = (char *) malloc((strlen(yytext) + 1) * sizeof(char));
+    g_ply_query_element.pattern_string = (char *) malloc((strlen(yytext) + 1 - 2) * sizeof(char)); // -2 since the brackets are removed
     mem_check(g_ply_query_element.pattern_string);
-    strncpy(g_ply_query_element.pattern_string, yytext, strlen(yytext));
+    strncpy(g_ply_query_element.pattern_string, yytext + 1, strlen(yytext) - 2); // ---check if this is correct
     add_query_element();
+    debug("New element pattern declaration started");
     BEGIN Properties;
 }
 <ElementPatterns>"\n" { /* eat newlines */ }
 <ElementPatterns>. { lex_error("bad element pattern"); return ERROR; }
-<Properties>"float32 " { g_ply_query_property.pack_type = PLY_FLOAT; BEGIN PropertyPattern; }
-<Properties>"int32 " { g_ply_query_property.pack_type = PLY_INT; BEGIN PropertyPattern; }
+<Properties>"float " { g_ply_query_property.pack_type = PLY_FLOAT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
+<Properties>"int " { g_ply_query_property.pack_type = PLY_INT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
 <Properties>"\n" { /* eat newlines */ }
 <Properties>. { lex_error("bad property"); return ERROR; }
 <PropertyPattern>[A-z]+("|"[A-z]+)* {
     int c;
     // query string must finish or this pattern must be followed by ", "
-    if ((c = input()) != EOF && (c != ',' || (c = input()) != ' ')) {
-        lex_error("error");
+    bool finished = ((c = input()) == EOF || c == '\0');
+    if (!finished) {
+        if (c != ',' || (c = input()) != ' ') {
+            lex_error("error");
+        }
     }
     g_ply_query_property.pattern_string = (char *) malloc((strlen(yytext) + 1) * sizeof(char));
     mem_check(g_ply_query_property.pattern_string);
-    strncpy(g_ply_query_property.pattern_string, yytext, strlen(yytext));
+    strcpy(g_ply_query_property.pattern_string, yytext);
     add_query_property();
+
+    debug("property declaration complete");
+    if (finished) return DONE;
+    BEGIN Properties;
 }
     /* <PropertyPattern>"[" { */
     /*     // Go back to reading element patterns */
@@ -82,6 +92,10 @@ static void lex_error(char *error_string)
 {
     fprintf(stderr, ERROR_ALERT "Lexing error: %s\n", error_string);
     exit(EXIT_FAILURE);
+}
+static void debug(char *debug_string)
+{
+    if (g_debugging) puts(debug_string);
 }
 static void add_query_element(void)
 {
@@ -119,14 +133,33 @@ static void add_query_property(void)
 
 PLYQuery *read_ply_query(char *query_string)
 {
+    printf("Reading ply query ...\n");
+
     memset(&g_ply_query, 0, sizeof(PLYQuery));
     memset(&g_ply_query_element, 0, sizeof(PLYQueryElement));
     memset(&g_ply_query_property, 0, sizeof(PLYQueryProperty));
-    yy_scan_string(query_string);
+    g_last_ply_query_element = NULL;
+
+    printf("Starting lexer ...\n");
+    /* for (int i = 0; i < 500000000; i++) continue; */
+
+    printf("query string: %s\n", query_string);
+    YY_BUFFER_STATE yy_buffer = yy_scan_bytes(query_string, strlen(query_string) + 1);
+    yy_switch_to_buffer(yy_buffer);
+    BEGIN ElementPatterns;
+
+    /* for (int i = 0; i < 500000000; i++) continue; */
 
     if (yylex() == ERROR) return NULL;
+    printf("lexer complete\n");
+
     PLYQuery *query = (PLYQuery *) malloc(sizeof(PLYQuery));
     mem_check(query);
     memcpy(query, &g_ply_query, sizeof(PLYQuery));
+    query->query_string = (char *) malloc((strlen(query_string) + 1) * sizeof(char));
+    mem_check(query->query_string);
+    strcpy(query->query_string, query_string);
+
+    yy_delete_buffer(yy_buffer);
     return query;
 }

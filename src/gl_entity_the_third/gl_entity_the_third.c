@@ -8,7 +8,7 @@ PROJECT_LIBS:
     + matrix_mathematics
     + mesh
     + mesh_gen
-
+    + ply
 
 ------ BUGS
 Alternative management example with SeeingMesh.
@@ -28,12 +28,15 @@ Works to a good extent, doesn't seem to make it faster.
 #include <stdbool.h>
 #include <math.h>
 #include <string.h>
+#include "project_definitions.h"
 #include "helper_gl.h"
 #include "helper_input.h"
 #include "entity.h"
 #include "matrix_mathematics.h"
 #include "mesh.h"
 #include "mesh_gen.h"
+#include "ply.h"
+#include "ply_mesh.h"
 
 #define Transform_TYPE_ID 1
 #define SeeingMesh_TYPE_ID 2
@@ -243,7 +246,7 @@ static void cube_rotate(ObjectLogic *logic, EntityID entity)
     translate_matrix4x4f(&transform->matrix, x, y, 0.0);
     if (frand() > 0.9999) {
         // sort of like a state machine, swap the objectlogic component to another
-        destroy_aspect(logic->aspect_id);
+        /* destroy_aspect(logic->aspect_id); */ //----------------
         ObjectLogic *flicker_logic = entity_add_aspect(entity, ObjectLogic);
         flicker_logic->update = cube_ghost_flicker;
         return;
@@ -373,6 +376,14 @@ void init_program(void)
     identity_matrix4x4f(&g_projection_matrix);
 
     init_entity_model();
+
+    //================================================================================
+    // Test mesh loading
+    //================================================================================
+    Mesh loaded_mesh;
+    load_mesh_ply(&loaded_mesh, VERTEX_FORMAT_3, DATA_DIR "models/plytest2.ply");
+    exit(EXIT_SUCCESS);
+
 
     // managers
     new_default_manager(Transform, Transform_serialize);

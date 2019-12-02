@@ -72,6 +72,7 @@ typedef struct PLYProperty_s {
     bool is_list;
     PLYType list_count_type;
     struct PLYProperty_s *next_property;
+    // Initialized when filling data of PLY object.
 } PLYProperty;
 typedef struct PLYElement_s {
     char *name;
@@ -79,17 +80,28 @@ typedef struct PLYElement_s {
     int num_properties;
     struct PLYElement_s *next_element;
     PLYProperty *first_property;
+    // Initialized when filling data of PLY object.
+    size_t offset; // maybe not useful anymore
+    /* Since there can be lists of variable size in a PLY file, it is useful to
+     * build up an array of property offsets.
+     * This void ** points to an array of pointers, one for each property. These point
+     * to an array of locations of [count] length, the locations as offsets of the i'th property at i.
+     */
+    size_t **property_offsets;
 } PLYElement;
 typedef struct PLY_s {
     char *filename;
     PLYFormat format;
     int num_elements;
     PLYElement *first_element;
+    // Not neccessarily initialized.
+    void *data;
 } PLY;
 
 typedef struct PLYQueryProperty_s {
     char *pattern_string;
     PLYType pack_type;
+    bool is_list;
     struct PLYQueryProperty_s *next;
 } PLYQueryProperty;
 typedef struct PLYQueryElement_s {
@@ -113,6 +125,9 @@ void init_ply_property(PLYProperty *ply_property);
 void destroy_ply(PLY *ply);
 void destroy_ply_element(PLYElement *ply_element);
 void destroy_ply_property(PLYProperty *ply_property);
+void destroy_ply_query_property(PLYQueryProperty *query_property);
+void destroy_ply_query_element(PLYQueryElement *query_element);
+void destroy_ply_query(PLYQuery *query);
 
 //================================================================================
 // File reading
@@ -122,13 +137,16 @@ PLY *read_ply(char *filename);
 //================================================================================
 // Data extraction
 //================================================================================
-void *ply_binary_data(PLY *ply);
-size_t ply_size(PLY *ply);
+void ply_get_binary_data(PLY *ply);
 
 //================================================================================
 // Querying
 //================================================================================
 PLYQuery *read_ply_query(char *query_string);
+void *ply_get(PLY *ply, char *query_string);
+// Search through the PLY object
+void *ply_get_element(PLY *ply, char *element_name);
+void *ply_get_property(PLYElement *element, char *property_name);
 
 //================================================================================
 // Printing and serialization
@@ -136,5 +154,8 @@ PLYQuery *read_ply_query(char *query_string);
 void print_ply(PLY *ply);
 void print_ply_element(PLYElement *ply_element);
 void print_ply_property(PLYProperty *ply_property);
+void print_ply_query_property(PLYQueryProperty *ply_query_property);
+void print_ply_query_element(PLYQueryElement *ply_query_element);
+void print_ply_query(PLYQuery *ply_query);
 
 #endif // HEADER_DEFINED_PLY

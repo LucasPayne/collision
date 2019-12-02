@@ -42,6 +42,7 @@ static size_t _ply_type_sizes[NUM_PLY_TYPES] = { // do not shuffle these!
 //      uint32_t
 //      int32_t
 // The ASCII is just interpreted as these, and the binary types are promoted if needed.
+//      ---- demoting doubles
 static bool ply_float_type(PLYType type)
 {
     return type == PLY_FLOAT || type == PLY_DOUBLE;
@@ -70,11 +71,21 @@ static PLYType match_ply_type(char *string)
 //--------------------------------------------------------------------------------
 // Data extraction
 //--------------------------------------------------------------------------------
-void *ply_binary_data(PLY *ply)
+#define GROW_DATA(AMOUNT)\
+{\
+    size_t to_size = offset + ( AMOUNT );\
+    if (to_size >= data_size) {\
+        while (to_size >= data_size) data_size *= 2;\
+        data = realloc(data, data_size);\
+        mem_check(data);\
+    }\
+}
+void ply_get_binary_data(PLY *ply)
 {
+    printf("Getting PLY binary data ...\n");
     FILE *file = fopen(ply->filename, "r");
     if (file == NULL) {
-        fprintf(stderr, ERROR_ALERT "Could not open PLY file %.120s for extraction of binary data.\n");
+        fprintf(stderr, ERROR_ALERT "Could not open PLY file for extraction of binary data.\n");
         exit(EXIT_FAILURE);
     }
     // read lines until the end of header (need a better way to do this for arbitrary line lengths)
@@ -83,46 +94,83 @@ void *ply_binary_data(PLY *ply)
     while(fgets(line_buffer, 4096, file) != NULL) {
         if (strcmp(line_buffer, "end_header\n") == 0) break;
     }
+    printf("Eaten past header\n");
     
-    printf("size: %d\n", ply_size(ply));
-    void *data = malloc(ply_size(ply));
+    size_t data_size = 4096;
+    void *data = malloc(data_size);
     mem_check(data);
-    void *pos = data;
+    size_t offset = 0;
     PLYElement *cur_element = ply->first_element;
+
+    printf("Allocated some space for the read data (it can grow later).\n");
 
     switch(ply->format) {
     case PLY_FORMAT_ASCII_1:
+        printf("Reading binary data from ASCII formatted PLY file.\n");
         while (cur_element != NULL) {
-            printf("ELEMENT\n");
+            printf("===============================\n");
+            printf("Reading a new element ...\n");
+            printf("===============================\n");
+            // Set this element region's byte offset from the start.
+            cur_element->offset = offset;
+
+            // Since PLY files can contain lists of variable length, this keeps track of the offsets of properties.
+            // --- why have this tree structure in here? why not just put in the properties?
+            size_t **property_offsets = (size_t **) malloc(cur_element->num_properties * sizeof(size_t *));
+            mem_check(property_offsets);
+            for (int i = 0; i < cur_element->num_properties; i++) {
+                property_offsets[i] = (size_t *) malloc(cur_element->count * sizeof(size_t));
+                mem_check(property_offsets[i]);
+            }
+            printf("Allocated memory for the property offsets (it can grow later).\n");
+
             for (int i = 0; i < cur_element->count; i++) {
-                printf("element entry!!\n");
+                printf("-------------------------------\n");
+                printf("Reading an element entry ...\n");
+                printf("-------------------------------\n");
                 PLYProperty *cur_property = cur_element->first_property;
+                int prop_index = 0;
                 while (cur_property != NULL) {
-                    printf("property entry!!!!\n");
+
+                    property_offsets[prop_index][i] = offset; //---order
+
                     uint32_t list_count = 1; // leave list count at 1 if it isn't a list property.
                     if (cur_property->is_list) {
                         fscanf(file, "%u", &list_count);
                     }
-                    // Using C's standard ASCII type formats.
-                    if (ply_float_type(cur_property->type)) {
-                        float float_val;
-                        fscanf(file, "%f", &float_val);
-                        memcpy(pos, &float_val, sizeof(float));
-                        pos += sizeof(float);
-                    } else if (ply_unsigned_int_type(cur_property->type)) {
-                        uint32_t unsigned_int_val;
-                        fscanf(file, "%u", &unsigned_int_val);
-                        memcpy(pos, &unsigned_int_val, sizeof(uint32_t));
-                        pos += sizeof(uint32_t);
-                    } else if (ply_signed_int_type(cur_property->type)) {
-                        int32_t signed_int_val;
-                        fscanf(file, "%d", &signed_int_val);
-                        memcpy(pos, &signed_int_val, sizeof(int32_t));
-                        pos += sizeof(int32_t);
+                    for (int k = 0; k < list_count; k++) {
+                        // Using C's standard ASCII type formats.
+                        if (ply_float_type(cur_property->type)) {
+                            float float_val;
+                            fscanf(file, "%f", &float_val);
+                            GROW_DATA(sizeof(float));
+                            memcpy(data + offset, &float_val, sizeof(float));
+                            offset += sizeof(float);
+                        } else if (ply_unsigned_int_type(cur_property->type)) {
+                            uint32_t unsigned_int_val;
+                            fscanf(file, "%u", &unsigned_int_val);
+                            GROW_DATA(sizeof(uint32_t));
+                            memcpy(data + offset, &unsigned_int_val, sizeof(uint32_t));
+                            offset += sizeof(uint32_t);
+                        } else if (ply_signed_int_type(cur_property->type)) {
+                            int32_t signed_int_val;
+                            fscanf(file, "%d", &signed_int_val);
+                            size_t to_size = offset + sizeof(int32_t);
+                            GROW_DATA(sizeof(int32_t));
+                            memcpy(data + offset, &signed_int_val, sizeof(int32_t));
+                            offset += sizeof(int32_t);
+                        }
+                        printf(" - ");
                     }
+                    printf("\n");
                     cur_property = cur_property->next_property;
+                    // Remember to increment!
+                    prop_index ++;
+                    printf("Done reading a property entry\n");
                 }
             }
+            // Give the element the property offsets.
+            cur_element->property_offsets = property_offsets;
             cur_element = cur_element->next_element;
         }
     break;
@@ -130,40 +178,187 @@ void *ply_binary_data(PLY *ply)
         fprintf(stderr, ERROR_ALERT "PLY format given for extraction of binary data is not implemented.\n");
         exit(EXIT_FAILURE);
     }
-
-    return data;
+    // Give this data to the PLY object.
+    ply->data = data;
 }
-
-size_t ply_size(PLY *ply)
-{
-    /* gives the amount of space the PLY file data will take up in application memory.
-     */
-    size_t total_size = 0;
-    PLYElement *cur_element = ply->first_element;
-    while (cur_element != NULL) {
-        PLYProperty *cur_property = cur_element->first_property;
-        while (cur_property != NULL) {
-            size_t application_type_size;
-            if (ply_float_type(cur_property->type)) {
-                application_type_size = sizeof(float);
-            } else if (ply_unsigned_int_type(cur_property->type)) {
-                application_type_size = sizeof(uint32_t);
-            } else if (ply_signed_int_type(cur_property->type)) {
-                application_type_size = sizeof(int32_t);
-            }
-            total_size += application_type_size * cur_element->count;
-            cur_property = cur_property->next_property;
-        }
-        cur_element = cur_element->next_element;
-    }
-    return total_size;
-}
+#undef GROW_DATA
 
 //--------------------------------------------------------------------------------
 // Querying
 //--------------------------------------------------------------------------------
-void ply_get(PLY *ply, char *query_string)
+#define GROW_GOT_DATA(AMOUNT)\
+{\
+    size_t to_size = got_data_offset + ( AMOUNT );\
+    if (to_size >= got_data_size) {\
+        while(to_size >= got_data_size) got_data_size *= 2;\
+        got_data = realloc(got_data, got_data_size);\
+        mem_check(got_data)\
+    }\
+}
+void *ply_get(PLY *ply, char *query_string)
 {
+    // Since data is allocated early, free it before returning an error to handle!
+    
+    
+    if (ply->data == NULL) { // if it is not null, it has already been loaded.
+        printf("Didn't have data, getting now ...\n");
+        ply_get_binary_data(ply);
+        if (ply->data == NULL) {
+            fprintf(stderr, ERROR_ALERT "Could not retrieve binary data from PLY file when querying.\n");
+        }
+        printf("Got the data.\n");
+    }
+
+    printf("Querying with \"%s\" ...\n", query_string);
+    printf("started ply_get\n");
+
+
+    PLYQuery *query = read_ply_query(query_string);
+    PLYQueryElement *cur_query_element = query->first_element;
+
+
+    printf("read the ply query\n");
+    print_ply_query(query);
+
+    size_t got_data_size = 4096;
+    void *got_data = malloc(got_data_size);
+    mem_check(got_data);
+    size_t got_data_offset = 0;
+
+    while (cur_query_element != NULL) {
+        if (cur_query_element->pattern_string == NULL) {
+            fprintf(stderr, ERROR_ALERT "Pattern string not set during PLY query\n");
+            exit(EXIT_FAILURE);
+        }
+        printf("Matching new element query \"%s\" ...\n", cur_query_element->pattern_string);
+
+        char *p = cur_query_element->pattern_string;
+
+        PLYElement *got_element = NULL;
+        while (got_element == NULL) {
+            // Splits the string by bars.
+            char *end = strchr(p, '|');
+            if (end != NULL) {
+                *end = '\0';
+            }
+            //- Operate on substring ----------------------
+            got_element = ply_get_element(ply, p);
+            //---------------------------------------------
+            if (end == NULL) break;
+            p = end + 1;
+        }
+        if (got_element == NULL) {
+            fprintf(stderr, ERROR_ALERT "Couldn't find element in PLY query.\n");
+            exit(EXIT_FAILURE);
+        }
+        printf("Matched element %s\n", got_element->name);
+
+        // Collect the matched properties into this malloc'd space.
+        PLYProperty **got_properties = (PLYProperty **) malloc(cur_query_element->num_properties * sizeof(PLYProperty *));
+        mem_check(got_properties);
+
+        // Got an element, pack its properties.
+        PLYQueryProperty *cur_query_property = cur_query_element->first_property;
+        int prop_index = 0;
+        while (cur_query_property != NULL) {
+            printf("Matching new property query \"%s\" ...\n", cur_query_property->pattern_string);
+            if (cur_query_property->pattern_string == NULL) {
+                fprintf(stderr, ERROR_ALERT "Query string not set during PLY query\n");
+                exit(EXIT_FAILURE);
+            }
+            PLYProperty *got_property = NULL;
+            char *p = cur_query_property->pattern_string;
+            while (got_property == NULL) {
+                // Splits the string by bars.
+                char *end = strchr(p, '|');
+                if (end != NULL) {
+                    *end = '\0';
+                }
+                //- Operate on substring ----------------------
+                //------------------------------------------------Need to check the type!
+                printf("looking for %s ...\n", p);
+                got_property = ply_get_property(got_element, p);
+                //---------------------------------------------
+                if (end == NULL) break;
+                p = end + 1;
+            }
+            if (got_property == NULL) {
+                fprintf(stderr, ERROR_ALERT "Couldn't find property in PLY query.\n");
+                exit(EXIT_FAILURE);
+            }
+            printf("Matched property query with \"%s\".\n", got_property->name);
+            // Matched a property, add this to the gotten properties for packing later.
+            got_properties[prop_index] = got_property;
+            cur_query_property = cur_query_property->next;
+            // Increment the property index!
+            prop_index++;
+        }
+
+        // Now that an element pattern has been matched, and its property patterns have been matched to actual properties,
+        // pack these.
+        printf("Transfering data and packing according to format pattern ...\n");
+        size_t ply_data_offset = 0;
+        for (int i = 0; i < got_element->count; i++) {
+            // Get this ply element data (all properties in the order of the PLY file).
+            for (int k = 0; k < cur_query_element->num_properties; k++) {
+
+                // Store the i'th entry in the PLY data of the k'th matched property.
+                size_t sz;
+                if (ply_float_type(got_properties[k]->type)) sz = sizeof(float);
+                else if (ply_unsigned_int_type(got_properties[k]->type)) sz = sizeof(uint32_t);
+                else if (ply_signed_int_type(got_properties[k]->type)) sz = sizeof(int32_t);
+                GROW_GOT_DATA(sz);
+                //-----------------------------------Seriously awful, change this.
+                // ----put the offset info in the property instead. this just gets the index, awfully.
+                int prop_index = 0;
+                {
+                    PLYProperty *cur_property = got_element->first_property;
+                    while (cur_property != NULL) {
+                        if (cur_property == got_properties[k]) break;
+                        prop_index ++;
+                        cur_property = cur_property->next_property;
+                    }
+                    if (prop_index >= got_element->num_properties) { fprintf(stderr, "couldn't find in awful hack\n"); exit(EXIT_FAILURE); }
+                }
+                memcpy(got_data + got_data_offset, ply->data + got_element->property_offsets[prop_index][i], sz);
+                got_data_offset += sz;
+            }
+        }
+
+        // Remember to free!
+        free(got_properties);
+        cur_query_element = cur_query_element->next;
+    }
+
+    destroy_ply_query(query);
+    //---check if forgot to free anything.
+    printf("Completed getting queried data.\n");
+    return got_data;
+}
+#undef GROW_GOT_DATA
+
+void *ply_get_element(PLY *ply, char *element_name)
+{
+    PLYElement *cur_element = ply->first_element;
+    while (cur_element != NULL) {
+        if (cur_element->name != NULL && strcmp(cur_element->name, element_name) == 0) {
+            return cur_element;
+        }
+        cur_element = cur_element->next_element;
+    }
+    return NULL;
+}
+void *ply_get_property(PLYElement *element, char *property_name)
+{
+    PLYProperty *cur_property = element->first_property;
+    while (cur_property != NULL) {
+        printf("\"%s\" = \"%s\"?\n", cur_property->name, property_name);
+        if (cur_property->name != NULL && strcmp(cur_property->name, property_name) == 0) {
+            return cur_property;
+        }
+        cur_property = cur_property->next_property;
+    }
+    return NULL;
 }
 
 //--------------------------------------------------------------------------------
@@ -208,6 +403,13 @@ void destroy_ply_element(PLYElement *ply_element)
             destroy_ply_property(destroy_this);
         } while (cur_property != NULL);
     }
+    if (ply_element->property_offsets != NULL) {
+        for (int i = 0; i < ply_element->num_properties; i++) {
+            if (ply_element->property_offsets[i] != NULL) {
+                free(ply_element->property_offsets[i]);
+            }
+        }
+    }
     free(ply_element);
 }
 void init_ply_property(PLYProperty *ply_property)
@@ -223,6 +425,35 @@ void destroy_ply_property(PLYProperty *ply_property)
     if (ply_property->name != NULL) free(ply_property->name);
     free(ply_property);
 }
+
+void destroy_ply_query(PLYQuery *query)
+{
+    if (query->query_string != NULL) free(query->query_string);
+    PLYQueryElement *cur_element = query->first_element;
+    while (cur_element != NULL) {
+        PLYQueryElement *destroy_this = cur_element;
+        cur_element = cur_element->next;
+        destroy_ply_query_element(destroy_this);
+    }
+    free(query);
+}
+void destroy_ply_query_element(PLYQueryElement *query_element)
+{
+    if (query_element->pattern_string != NULL) free(query_element->pattern_string);
+    PLYQueryProperty *cur_property = query_element->first_property;
+    while (cur_property != NULL) {
+        PLYQueryProperty *destroy_this = cur_property;
+        cur_property = cur_property->next;
+        destroy_ply_query_property(destroy_this);
+    }
+    free(query_element);
+}
+void destroy_ply_query_property(PLYQueryProperty *query_property)
+{
+    if (query_property->pattern_string != NULL) free(query_property->pattern_string);
+    free(query_property);
+}
+
 //--------------------------------------------------------------------------------
 // Printers and serializers
 //--------------------------------------------------------------------------------
@@ -269,5 +500,42 @@ void print_ply_property(PLYProperty *ply_property)
     printf("is_list: %s\n", ply_property->is_list ? "true" : "false");
     printf("list_count_type: %.80s (%d)\n", _ply_type_names[ply_property->list_count_type], ply_property->list_count_type);
 }
+#define SERIALIZE_NONE(THING) "!!! NO " THING " GIVEN !!! (or this is it for some reason)"
+void print_ply_query(PLYQuery *ply_query)
+{
+    printf("query_string: \"%.500s\"\n", ply_query->query_string == NULL ? SERIALIZE_NONE("QUERY STRING") : ply_query->query_string);
+    printf("num_elements: %d\n", ply_query->num_elements);
+    if (ply_query->first_element == NULL) {
+        printf("no elements\n");
+    } else {
+        PLYQueryElement *print_this = ply_query->first_element;
+        do {
+            printf("------------------------------------------------------------\n");
+            print_ply_query_element(print_this);
+            print_this = print_this->next;
+        } while (print_this != NULL);
+    }
+}
+void print_ply_query_element(PLYQueryElement *ply_query_element)
+{
+    printf("pattern_string: \"%.500s\"\n", ply_query_element->pattern_string == NULL ? SERIALIZE_NONE("PATTERN STRING") : ply_query_element->pattern_string);
+    printf("num_properties: %d\n", ply_query_element->num_properties);
+    if (ply_query_element->first_property == NULL) {
+        printf("no properties\n");
+    } else {
+        PLYQueryProperty *print_this = ply_query_element->first_property;
+        do {
+            printf(" - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
+            print_ply_query_property(print_this);
+            print_this = print_this->next;
+        } while (print_this != NULL);
+    }
+}
+void print_ply_query_property(PLYQueryProperty *ply_query_property)
+{
+    printf("pattern_string: \"%.500s\"\n", ply_query_property->pattern_string == NULL ? SERIALIZE_NONE("PATTERN STRING") : ply_query_property->pattern_string);
+    printf("pack_type: %.80s (%d)\n", _ply_type_names[ply_query_property->pack_type], ply_query_property->pack_type);
+}
 
 
+#undef SERIALIZE_NONE

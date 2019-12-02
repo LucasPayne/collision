@@ -1,8 +1,6 @@
 /*================================================================================
-
 cslots utility
 Intended for storing meta-information/build directives in a source file.
-
 ================================================================================*/
 %option noyywrap nodefault
 %x CSLOTS
@@ -92,19 +90,21 @@ static void arg_error(char *flag)
 }
 static void print_help(void)
 {
-printf("usage:\n");
-printf("\tcslots <slot group name> [--prefix <prefix>] [--suffix <suffix>]\n");
-printf("\tPatterns:\n");
-printf("\t\t>n : the name of the slot entry currently being printed\n");
 printf("cslots:\n");
 printf("\tFilter to pull meta-information/build directives out of source files.\n");
+printf("usage:\n");
+printf("\tcslots <slot group name> --pattern <pattern>\n");
+printf("\tPatterns:\n");
+printf("\t\t{n} : the name of the slot entry currently being printed\n");
+printf("\t\t{h} : if the slot entry is a path, this gets the head of that path\n");
+printf("\tExample:\n");
+printf("\t\tcslots PROJECT_LIBS --pattern \"{n}/{h}.o\"\n");
 }
 
 int main(int argc, char *argv[])
 {
 // takes input from stdin
     if (argc == 2 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)) {
-        printf("HELP\n");
         print_help();
         return 0;
     }

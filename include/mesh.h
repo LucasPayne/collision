@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include "helper_definitions.h"
 #include "helper_gl.h"
+#include "ply.h"
 
 typedef uint8_t AttributeType;
 // Corresponds to layout qualified positions in shaders
@@ -154,7 +155,8 @@ typedef struct Renderer_s {
 typedef struct Mesh_s {
     VertexFormat vertex_format;
     unsigned int num_vertices;
-    void **attribute_data[NUM_ATTRIBUTE_TYPES];
+    /* void **attribute_data[NUM_ATTRIBUTE_TYPES]; */ // I think this was a mistake
+    void *attribute_data[NUM_ATTRIBUTE_TYPES];
     unsigned int num_triangles;
     unsigned int *triangles;
 } Mesh;
@@ -235,6 +237,13 @@ typedef struct MeshHandle_s {
 // Helper functions to select shader entries in the renderer structure e.g. iteratively.
     GLuint renderer_shader_of_type(Renderer *renderer, int shader_type);
     char *renderer_shader_path_of_type(Renderer *renderer, int shader_type);
+
+//================================================================================
+// Loaders
+// notes:
+//      Maybe should remove this functionality from here.
+//================================================================================
+void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename);
 
 
 #endif // HEADER_DEFINED_MESH

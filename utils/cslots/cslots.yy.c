@@ -458,20 +458,18 @@ int yy_flex_debug = 0;
 char *yytext;
 #line 1 "cslots.l"
 /*================================================================================
-
 cslots utility
 Intended for storing meta-information/build directives in a source file.
-
 ================================================================================*/
 
-#line 13 "cslots.l"
+#line 11 "cslots.l"
 #include <ctype.h>
 
 static void print_entry(char *name);
 static char g_leading_string[512];
 static char g_pattern[512];
-#line 474 "cslots.yy.c"
-#line 475 "cslots.yy.c"
+#line 472 "cslots.yy.c"
+#line 473 "cslots.yy.c"
 
 #define INITIAL 0
 #define CSLOTS 1
@@ -689,11 +687,11 @@ YY_DECL
 		}
 
 	{
-#line 20 "cslots.l"
+#line 18 "cslots.l"
 
-#line 22 "cslots.l"
+#line 20 "cslots.l"
     /* maybe need to make this pattern more specific */
-#line 697 "cslots.yy.c"
+#line 695 "cslots.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -755,7 +753,7 @@ case 1:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 23 "cslots.l"
+#line 21 "cslots.l"
 {
     /* Checks this pattern against the leading string (slot group name) given as a command line argument.
      * Surely flex has some sort of thing to make this easier? Regexes must be compiled, but this more general one
@@ -777,7 +775,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 41 "cslots.l"
+#line 39 "cslots.l"
 {
     int c;
     while ((c = input()) && c != '\n');
@@ -785,7 +783,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 45 "cslots.l"
+#line 43 "cslots.l"
 {
     print_entry(yytext);
 }
@@ -793,35 +791,35 @@ YY_RULE_SETUP
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 48 "cslots.l"
+#line 46 "cslots.l"
 {
     /* */
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 51 "cslots.l"
+#line 49 "cslots.l"
 {
     BEGIN INITIAL;
 }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 54 "cslots.l"
+#line 52 "cslots.l"
 { /* */ }
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 55 "cslots.l"
+#line 53 "cslots.l"
 { /* */ }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 57 "cslots.l"
+#line 55 "cslots.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 825 "cslots.yy.c"
+#line 823 "cslots.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(CSLOTS):
 	yyterminate();
@@ -1827,7 +1825,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 57 "cslots.l"
+#line 55 "cslots.l"
 
 
 static void print_entry(char *name)
@@ -1867,19 +1865,21 @@ static void arg_error(char *flag)
 }
 static void print_help(void)
 {
-printf("usage:\n");
-printf("\tcslots <slot group name> [--prefix <prefix>] [--suffix <suffix>]\n");
-printf("\tPatterns:\n");
-printf("\t\t>n : the name of the slot entry currently being printed\n");
 printf("cslots:\n");
 printf("\tFilter to pull meta-information/build directives out of source files.\n");
+printf("usage:\n");
+printf("\tcslots <slot group name> --pattern <pattern>\n");
+printf("\tPatterns:\n");
+printf("\t\t{n} : the name of the slot entry currently being printed\n");
+printf("\t\t{h} : if the slot entry is a path, this gets the head of that path\n");
+printf("\tExample:\n");
+printf("\t\tcslots PROJECT_LIBS --pattern \"{n}/{h}.o\"\n");
 }
 
 int main(int argc, char *argv[])
 {
 // takes input from stdin
     if (argc == 2 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)) {
-        printf("HELP\n");
         print_help();
         return 0;
     }

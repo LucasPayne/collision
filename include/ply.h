@@ -52,7 +52,7 @@ enum PLY_FORMATS { // do not shuffle these!
     PLY_FORMAT_BINARY_BIG_ENDIAN_1,
     NUM_PLY_FORMATS
 };
-typedef int8_t PLYType;
+typedef uint8_t PLYType;
 enum PLY_TYPES { // do not shuffle these!
     PLY_NONE_TYPE,
     PLY_CHAR,
@@ -118,6 +118,12 @@ void destroy_ply_property(PLYProperty *ply_property);
 // File reading
 //================================================================================
 PLY *read_ply(char *filename);
+
+//================================================================================
+// Data extraction
+//================================================================================
+void *ply_binary_data(PLY *ply);
+size_t ply_size(PLY *ply);
 
 //================================================================================
 // Querying

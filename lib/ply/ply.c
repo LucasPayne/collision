@@ -36,15 +36,21 @@ static size_t _ply_type_sizes[NUM_PLY_TYPES] = { // do not shuffle these!
     4,
     8
 };
+
+// Internal application data for ply files is only stored as types
+//      float
+//      uint32_t
+//      int32_t
+// The ASCII is just interpreted as these, and the binary types are promoted if needed.
 static bool ply_float_type(PLYType type)
 {
     return type == PLY_FLOAT || type == PLY_DOUBLE;
 }
-static bool ply_int_type(PLYType type)
+static bool ply_signed_int_type(PLYType type)
 {
     return type == PLY_CHAR || type == PLY_SHORT || type == PLY_INT;
 }
-static bool ply_uint_type(PLYType type)
+static bool ply_unsigned_int_type(PLYType type)
 {
     return type == PLY_UCHAR || type == PLY_USHORT || type == PLY_UINT;
 }
@@ -59,6 +65,98 @@ static PLYType match_ply_type(char *string)
         }
     }
     return PLY_NONE_TYPE;
+}
+
+//--------------------------------------------------------------------------------
+// Data extraction
+//--------------------------------------------------------------------------------
+void *ply_binary_data(PLY *ply)
+{
+    FILE *file = fopen(ply->filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, ERROR_ALERT "Could not open PLY file %.120s for extraction of binary data.\n");
+        exit(EXIT_FAILURE);
+    }
+    // read lines until the end of header (need a better way to do this for arbitrary line lengths)
+    // --- line endings
+    char line_buffer[4096];
+    while(fgets(line_buffer, 4096, file) != NULL) {
+        if (strcmp(line_buffer, "end_header\n") == 0) break;
+    }
+    
+    printf("size: %d\n", ply_size(ply));
+    void *data = malloc(ply_size(ply));
+    mem_check(data);
+    void *pos = data;
+    PLYElement *cur_element = ply->first_element;
+
+    switch(ply->format) {
+    case PLY_FORMAT_ASCII_1:
+        while (cur_element != NULL) {
+            printf("ELEMENT\n");
+            for (int i = 0; i < cur_element->count; i++) {
+                printf("element entry!!\n");
+                PLYProperty *cur_property = cur_element->first_property;
+                while (cur_property != NULL) {
+                    printf("property entry!!!!\n");
+                    uint32_t list_count = 1; // leave list count at 1 if it isn't a list property.
+                    if (cur_property->is_list) {
+                        fscanf(file, "%u", &list_count);
+                    }
+                    // Using C's standard ASCII type formats.
+                    if (ply_float_type(cur_property->type)) {
+                        float float_val;
+                        fscanf(file, "%f", &float_val);
+                        memcpy(pos, &float_val, sizeof(float));
+                        pos += sizeof(float);
+                    } else if (ply_unsigned_int_type(cur_property->type)) {
+                        uint32_t unsigned_int_val;
+                        fscanf(file, "%u", &unsigned_int_val);
+                        memcpy(pos, &unsigned_int_val, sizeof(uint32_t));
+                        pos += sizeof(uint32_t);
+                    } else if (ply_signed_int_type(cur_property->type)) {
+                        int32_t signed_int_val;
+                        fscanf(file, "%d", &signed_int_val);
+                        memcpy(pos, &signed_int_val, sizeof(int32_t));
+                        pos += sizeof(int32_t);
+                    }
+                    cur_property = cur_property->next_property;
+                }
+            }
+            cur_element = cur_element->next_element;
+        }
+    break;
+    default:
+        fprintf(stderr, ERROR_ALERT "PLY format given for extraction of binary data is not implemented.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return data;
+}
+
+size_t ply_size(PLY *ply)
+{
+    /* gives the amount of space the PLY file data will take up in application memory.
+     */
+    size_t total_size = 0;
+    PLYElement *cur_element = ply->first_element;
+    while (cur_element != NULL) {
+        PLYProperty *cur_property = cur_element->first_property;
+        while (cur_property != NULL) {
+            size_t application_type_size;
+            if (ply_float_type(cur_property->type)) {
+                application_type_size = sizeof(float);
+            } else if (ply_unsigned_int_type(cur_property->type)) {
+                application_type_size = sizeof(uint32_t);
+            } else if (ply_signed_int_type(cur_property->type)) {
+                application_type_size = sizeof(int32_t);
+            }
+            total_size += application_type_size * cur_element->count;
+            cur_property = cur_property->next_property;
+        }
+        cur_element = cur_element->next_element;
+    }
+    return total_size;
 }
 
 //--------------------------------------------------------------------------------
@@ -171,3 +269,5 @@ void print_ply_property(PLYProperty *ply_property)
     printf("is_list: %s\n", ply_property->is_list ? "true" : "false");
     printf("list_count_type: %.80s (%d)\n", _ply_type_names[ply_property->list_count_type], ply_property->list_count_type);
 }
+
+

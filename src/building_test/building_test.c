@@ -29,5 +29,8 @@ int main(int argc, char *argv[])
     /* PLY *ply = read_ply(DATA_DIR "models/dolphins.ply"); */
     print_ply(ply);
 
+    void *data = ply_binary_data(ply);
+    for (int i = 0; i < 10; i++) printf("%f\n", *(((float *) data) + i));
+
     destroy_ply(ply);
 }

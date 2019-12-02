@@ -590,8 +590,8 @@ void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
 float X|x|xpos|x_position|posx|position_x|x_coord|coord_x, \
 float Y|y|ypos|y_position|posy|position_y|y_coord|coord_y, \
 float Z|z|zpos|z_position|posz|position_z|z_coord|coord_z";
-    float *pos_data = (float *) ply_get(ply, pos_query);
-    mesh->attribute_data[ATTRIBUTE_TYPE_POSITION] = (void *) pos_data;
+    void *pos_data = ply_get(ply, pos_query);
+    mesh->attribute_data[ATTRIBUTE_TYPE_POSITION] = pos_data;
     mesh->num_vertices = 8; // need this information
 
     if ((vertex_format & VERTEX_FORMAT_C) != 0) {
@@ -599,20 +599,29 @@ float Z|z|zpos|z_position|posz|position_z|z_coord|coord_z";
 float r|red|R|RED, \
 float g|green|G|GREEN, \
 float b|blue|B|BLUE";
-        float *color_data = (float *) ply_get(ply, color_query);
-        mesh->attribute_data[ATTRIBUTE_TYPE_COLOR] = (void *) color_data;
+        void *color_data = ply_get(ply, color_query);
+        mesh->attribute_data[ATTRIBUTE_TYPE_COLOR] = color_data;
     }
     if ((vertex_format & ~VERTEX_FORMAT_3 & ~VERTEX_FORMAT_C) != 0) {
         fprintf(stderr, ERROR_ALERT "Attempted to extract mesh data with unsupported vertex format from PLY file.\n");
         exit(EXIT_FAILURE);
     }
 
+#if 1
     printf("Loading face data.\n");
     // Triangles and face data
     char *face_query = "[face|faces|triangle|triangles|tris|tri]: \
-list uint vertex_indices|indices|triangle_indices|tri_indices|index_list|indices_list";
+list int vertex_indices|indices|triangle_indices|tri_indices|index_list|indices_list";
     printf("Loaded face data.\n");
     void *face_data = ply_get(ply, face_query);
+
+
+/*     mesh->triangles = face_data; */
+    for (int i = 0; i < 12; i++) {
+        printf("%u ", ((uint32_t *) face_data)[i]);
+    }
+    printf("\n");
+#endif
 
     printf("================================================================================\n");
     printf("Finished loading PLY mesh.\n");

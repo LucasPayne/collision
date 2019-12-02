@@ -381,7 +381,7 @@ void init_program(void)
     // Test mesh loading
     //================================================================================
     Mesh loaded_mesh;
-    load_mesh_ply(&loaded_mesh, VERTEX_FORMAT_3, DATA_DIR "models/plytest2.ply");
+    load_mesh_ply(&loaded_mesh, VERTEX_FORMAT_3, DATA_DIR "models/dolphins.ply");
     exit(EXIT_SUCCESS);
 
 

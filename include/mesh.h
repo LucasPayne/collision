@@ -158,7 +158,7 @@ typedef struct Mesh_s {
     /* void **attribute_data[NUM_ATTRIBUTE_TYPES]; */ // I think this was a mistake
     void *attribute_data[NUM_ATTRIBUTE_TYPES];
     unsigned int num_triangles;
-    unsigned int *triangles;
+    unsigned int *triangles; //----change to exact types, uint32_t
 } Mesh;
 
 /* A "mesh handle" contains information to handle a single "mesh" entity

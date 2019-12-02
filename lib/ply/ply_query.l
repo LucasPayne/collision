@@ -50,8 +50,10 @@ static PLYQueryProperty g_ply_query_property;
 }
 <ElementPatterns>"\n" { /* eat newlines */ }
 <ElementPatterns>. { lex_error("bad element pattern"); return ERROR; }
-<Properties>"float " { g_ply_query_property.pack_type = PLY_FLOAT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
-<Properties>"int " { g_ply_query_property.pack_type = PLY_INT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
+<Properties>"list float " { g_ply_query_property.is_list = true; g_ply_query_property.pack_type = PLY_FLOAT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
+<Properties>"list int " { g_ply_query_property.is_list = true; g_ply_query_property.pack_type = PLY_INT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
+<Properties>"float " { g_ply_query_property.is_list = false; g_ply_query_property.pack_type = PLY_FLOAT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
+<Properties>"int " { g_ply_query_property.is_list = false; g_ply_query_property.pack_type = PLY_INT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
 <Properties>"\n" { /* eat newlines */ }
 <Properties>. { lex_error("bad property"); return ERROR; }
 <PropertyPattern>[A-z]+("|"[A-z]+)* {

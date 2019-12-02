@@ -137,6 +137,9 @@ void ply_get_binary_data(PLY *ply)
                     uint32_t list_count = 1; // leave list count at 1 if it isn't a list property.
                     if (cur_property->is_list) {
                         fscanf(file, "%u", &list_count);
+                        GROW_DATA(sizeof(uint32_t));
+                        memcpy(data + offset, &list_count, sizeof(uint32_t));
+                        offset += sizeof(uint32_t);
                     }
                     for (int k = 0; k < list_count; k++) {
                         // Using C's standard ASCII type formats.
@@ -241,6 +244,7 @@ void *ply_get(PLY *ply, char *query_string)
             if (end != NULL) {
                 *end = '\0';
             }
+            printf("Checking %s ...\n", p);
             //- Operate on substring ----------------------
             got_element = ply_get_element(ply, p);
             //---------------------------------------------
@@ -301,15 +305,9 @@ void *ply_get(PLY *ply, char *query_string)
         for (int i = 0; i < got_element->count; i++) {
             // Get this ply element data (all properties in the order of the PLY file).
             for (int k = 0; k < cur_query_element->num_properties; k++) {
-
-                // Store the i'th entry in the PLY data of the k'th matched property.
-                size_t sz;
-                if (ply_float_type(got_properties[k]->type)) sz = sizeof(float);
-                else if (ply_unsigned_int_type(got_properties[k]->type)) sz = sizeof(uint32_t);
-                else if (ply_signed_int_type(got_properties[k]->type)) sz = sizeof(int32_t);
-                GROW_GOT_DATA(sz);
-                //-----------------------------------Seriously awful, change this.
+                //////////////////////////////////////////////////////////////////////////////////
                 // ----put the offset info in the property instead. this just gets the index, awfully.
+                //-----------------------------------Seriously awful, change this.
                 int prop_index = 0;
                 {
                     PLYProperty *cur_property = got_element->first_property;
@@ -320,10 +318,33 @@ void *ply_get(PLY *ply, char *query_string)
                     }
                     if (prop_index >= got_element->num_properties) { fprintf(stderr, "couldn't find in awful hack\n"); exit(EXIT_FAILURE); }
                 }
-                memcpy(got_data + got_data_offset, ply->data + got_element->property_offsets[prop_index][i], sz);
-                got_data_offset += sz;
+                //////////////////////////////////////////////////////////////////////////////////
+
+                uint32_t count = 1;
+                size_t count_offset = 0; // shifted up if there needs to be room for a list count
+                if (got_properties[k]->is_list) {
+                    // the data stored here should be a 32-bit unsigned int, and denote the number of list entries to read.
+                    count = ((uint32_t *) (ply->data + got_element->property_offsets[prop_index][i]))[0];
+                    GROW_GOT_DATA(sizeof(uint32_t));
+                    memcpy(got_data + got_data_offset, ply->data + got_element->property_offsets[prop_index][i], sizeof(uint32_t));
+                    count_offset += sizeof(uint32_t);
+                }
+                size_t sz;
+                // Build up the size according to the promoted (----demoted) types of the entries (either if list or singleton property).
+                if (ply_float_type(got_properties[k]->type)) sz = sizeof(float) * count;
+                else if (ply_unsigned_int_type(got_properties[k]->type)) sz = sizeof(uint32_t) * count;
+                else if (ply_signed_int_type(got_properties[k]->type)) sz = sizeof(int32_t) * count;
+                else {
+                    fprintf(stderr, ERROR_ALERT "Unrecognized property type when extracing binary data from PLY file through query.\n");
+                    exit(EXIT_FAILURE);
+                }
+                GROW_GOT_DATA(sz);
+                // Store the i'th entry in the PLY data of the k'th matched property. This takes into account variable list property lengths.
+                memcpy(got_data + got_data_offset, ply->data + got_element->property_offsets[prop_index][i] + count_offset, sz);
+                got_data_offset += sz + count_offset;
             }
         }
+        printf("Finished extracting and packing element.\n");
 
         // Remember to free!
         free(got_properties);
@@ -341,7 +362,9 @@ void *ply_get_element(PLY *ply, char *element_name)
 {
     PLYElement *cur_element = ply->first_element;
     while (cur_element != NULL) {
+        printf("\"%s\" = \"%s\"?\n", cur_element->name, element_name);
         if (cur_element->name != NULL && strcmp(cur_element->name, element_name) == 0) {
+            printf("Got!\n");
             return cur_element;
         }
         cur_element = cur_element->next_element;

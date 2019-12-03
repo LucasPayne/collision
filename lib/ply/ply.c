@@ -198,8 +198,14 @@ void ply_get_binary_data(PLY *ply)
         mem_check(got_data)\
     }\
 }
-void *ply_get(PLY *ply, char *query_string)
+void *ply_get(PLY *ply, char *query_string, int *num_entries)
 {
+    // num_elements: return information here about how many elements of the queried type there are.
+    // Pass NULL to ignore this.
+    // ////////////////////note: this shouldn't be here?
+    // NOTE----Maybe shouldn't allow multiple elements in a query. It doesn't make sense to pack them together, and just one after the other is multiple queries.
+    // So, alot of that multiple-elements structure here has been pointless.
+    
     // Since data is allocated early, free it before returning an error to handle!
     
     
@@ -261,7 +267,7 @@ void *ply_get(PLY *ply, char *query_string)
         PLYProperty **got_properties = (PLYProperty **) malloc(cur_query_element->num_properties * sizeof(PLYProperty *));
         mem_check(got_properties);
 
-        // Got an element, pack its properties.
+        // Got an element, match its properties.
         PLYQueryProperty *cur_query_property = cur_query_element->first_property;
         int prop_index = 0;
         while (cur_query_property != NULL) {
@@ -319,12 +325,14 @@ void *ply_get(PLY *ply, char *query_string)
                     if (prop_index >= got_element->num_properties) { fprintf(stderr, "couldn't find in awful hack\n"); exit(EXIT_FAILURE); }
                 }
                 //////////////////////////////////////////////////////////////////////////////////
-
+                ///// I don't know if using count_offset is neccessary.
                 uint32_t count = 1;
                 size_t count_offset = 0; // shifted up if there needs to be room for a list count
                 if (got_properties[k]->is_list) {
                     // the data stored here should be a 32-bit unsigned int, and denote the number of list entries to read.
                     count = ((uint32_t *) (ply->data + got_element->property_offsets[prop_index][i]))[0];
+                    /* printf("count: %u\n", count); */
+                    /* getchar(); */
                     GROW_GOT_DATA(sizeof(uint32_t));
                     memcpy(got_data + got_data_offset, ply->data + got_element->property_offsets[prop_index][i], sizeof(uint32_t));
                     count_offset += sizeof(uint32_t);
@@ -340,9 +348,12 @@ void *ply_get(PLY *ply, char *query_string)
                 }
                 GROW_GOT_DATA(sz);
                 // Store the i'th entry in the PLY data of the k'th matched property. This takes into account variable list property lengths.
-                memcpy(got_data + got_data_offset, ply->data + got_element->property_offsets[prop_index][i] + count_offset, sz);
+                memcpy(got_data + got_data_offset + count_offset, ply->data + got_element->property_offsets[prop_index][i] + count_offset, sz);
                 got_data_offset += sz + count_offset;
             }
+            //////////////////////////////////////////////////////////////////////////////////
+            // Here, expecting that there is only one element. Have to remove multiple-elements querying.
+            if (num_entries != NULL) *num_entries = got_element->count;
         }
         printf("Finished extracting and packing element.\n");
 

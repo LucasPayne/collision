@@ -143,7 +143,7 @@ void ply_get_binary_data(PLY *ply);
 // Querying
 //================================================================================
 PLYQuery *read_ply_query(char *query_string);
-void *ply_get(PLY *ply, char *query_string);
+void *ply_get(PLY *ply, char *query_string, int *num_entries);
 // Search through the PLY object
 void *ply_get_element(PLY *ply, char *element_name);
 void *ply_get_property(PLYElement *element, char *property_name);

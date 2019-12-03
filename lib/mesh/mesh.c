@@ -443,136 +443,10 @@ void print_vertex_attribute_types(void)
     }
 }
 
-/* void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename) */
-/* { */
-/*     // make sure to zero initialize the mesh */
-/*     memset(mesh, 0, sizeof(Mesh)); */
-/*     printf("Loading mesh from PLY file %s ...\n", ply_filename); */
-
-/*     FILE *file = fopen(ply_filename, "r"); */
-/*     if (file == NULL) { */
-/*         fprintf(stderr, ERROR_ALERT "Failed to open file \"%s\" when attempting to load a mesh from a PLY file.\n", ply_filename); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
-/*     PLYStats ply_stats; */
-/*     if (!ply_stat(file, &ply_stats)) { */
-/*         fprintf(stderr, ERROR_ALERT "Failed to interpret file \"%s\" when loading a mesh from a PLY file.\n", ply_filename); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
-/*     if ((vertex_format & VERTEX_FORMAT_3) == 0) { */
-/*         fprintf(stderr, ERROR_ALERT "Attempted to load mesh from PLY file given vertex format with no position bit set.\n"); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
-/*     // pull vertices and their attribute data from ply file. */
-    
-/*     PLYElement *vertex_element = ply_get_element(&ply_stats, "vertex"); */
-/*     if (vertex_element == NULL) { */
-/*         fprintf(stderr, ERROR_ALERT "Failed to find vertex data from PLY file when attempting to load mesh from file %s.\n", ply_filename); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
-/*     void *vertex_data; */
-/*     if (!ply_read_element(file, vertex_element, &vertex_data)) { */
-/*         fprintf(stderr, ERROR_ALERT "Failed to read vertex data from PLY file when attempting to load mesh from file %s.\n", ply_filename); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
-    
-/*     // check and match vertex attributes to the vertex element's properties in the PLY file. */
-/* #define PROP_ERROR(STRING)\ */
-/*     { fprintf(stderr, ERROR_ALERT "Property error, " STRING);\ */
-/*     exit(EXIT_FAILURE); } */
-/*     PLYProperty *x_prop = ply_get_property(vertex_element, "x"); */
-/*     PLYProperty *y_prop = ply_get_property(vertex_element, "y"); */
-/*     PLYProperty *z_prop = ply_get_property(vertex_element, "z"); */
-/*     if (x_prop == NULL) PROP_ERROR("no x property"); */
-/*     if (y_prop == NULL) PROP_ERROR("no y property"); */
-/*     if (z_prop == NULL) PROP_ERROR("no z property"); */
-
-/*     float *position_data = (float *) malloc(vertex_element->count * sizeof(float)); */
-/*     mem_check(position_data); */
-/*     for (int i = 0; i < vertex_element->count; i++) { */
-/*         float *dat = vertex_data + vertex_element->size * i; */
-/*         float x = dat[x_prop->offset / sizeof(float)]; //... */
-/*         float y = dat[y_prop->offset / sizeof(float)]; */
-/*         float z = dat[z_prop->offset / sizeof(float)]; */
-/*         position_data[3*i + 0] = x; */
-/*         position_data[3*i + 1] = y; */
-/*         position_data[3*i + 2] = z; */
-/*         /1* printf("x: %f\n", dat[x_prop->offset / sizeof(float)]); *1/ */
-/*         /1* printf("y: %f\n", dat[y_prop->offset / sizeof(float)]); *1/ */
-/*         /1* printf("z: %f\n", dat[z_prop->offset / sizeof(float)]); *1/ */
-/*     } */
-/*     // attach this position data to the mesh */
-/*     mesh->attribute_data[ATTRIBUTE_TYPE_POSITION] = (void *) position_data; */
-
-/*     if ((vertex_format & VERTEX_FORMAT_C) != 0) { */
-/*         // caller wants color data from this file */
-/*         PLYProperty *r_prop = ply_get_property(vertex_element, "r"); */
-/*         if (r_prop == NULL) r_prop = ply_get_property(vertex_element, "red"); */
-/*         PLYProperty *g_prop = ply_get_property(vertex_element, "g"); */
-/*         if (g_prop == NULL) g_prop = ply_get_property(vertex_element, "green"); */
-/*         PLYProperty *b_prop = ply_get_property(vertex_element, "b"); */
-/*         if (b_prop == NULL) b_prop = ply_get_property(vertex_element, "blue"); */
-
-/*         if (r_prop == NULL) PROP_ERROR("no red property"); */
-/*         if (g_prop == NULL) PROP_ERROR("no green property"); */
-/*         if (b_prop == NULL) PROP_ERROR("no blue property"); */
-
-/*         float *color_data = (float *) malloc(vertex_element->count * sizeof(float)); */
-/*         mem_check(color_data); */
-/*         for (int i = 0; i < vertex_element->count; i++) { */
-/*             float *dat = vertex_data + vertex_element->size * i; */
-/*             float r = dat[r_prop->offset / sizeof(float)]; //... */
-/*             float g = dat[g_prop->offset / sizeof(float)]; */
-/*             float b = dat[b_prop->offset / sizeof(float)]; */
-/*             color_data[3*i + 0] = r; */
-/*             color_data[3*i + 1] = g; */
-/*             color_data[3*i + 2] = b; */
-/*         } */
-/*         // attach this color data to the mesh */
-/*         mesh->attribute_data[ATTRIBUTE_TYPE_COLOR] = (void *) color_data; */
-/*     } */
-
-/*     // now, read the triangle indices */
-/*     PLYElement *triangles_element = ply_get_element(&ply_stats, "triangle"); */
-/*     if (vertex_element == NULL) triangles_element = ply_get_element(&ply_stats, "triangles"); */
-/*     if (vertex_element == NULL) triangles_element = ply_get_element(&ply_stats, "faces"); */
-/*     if (vertex_element == NULL) triangles_element = ply_get_element(&ply_stats, "face"); */
-/*     if (vertex_element == NULL) { */
-/*         fprintf(stderr, ERROR_ALERT "Failed to find triangle data from PLY file when attempting to load mesh from file %s.\n", ply_filename); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
-/*     void *void_triangles_data; */
-/*     if (!ply_read_element(file, triangles_element, &void_triangles_data)) { */
-/*         fprintf(stderr, ERROR_ALERT "Failed to read triangle data from PLY file when attempting to load mesh from file %s.\n", ply_filename); */
-/*         exit(EXIT_FAILURE); */
-/*     } */
-    
-/*     /1* PLYProperty *index_prop = ply_get_property(triangles_element, "vertex_index"); *1/ */
-/*     /1* if (index_prop == NULL) index_prop = ply_get_property(triangles_element, "index"); *1/ */
-/*     /1* if (index_prop == NULL) PROP_ERROR("no vertex index property"); *1/ */
-
-/*     /1* unsigned int *index_data = (unsigned int *) malloc(3 * triangles_element->count * sizeof(unsigned int)); *1/ */
-/*     /1* mem_check(index_data); *1/ */
-/*     /1* for (int i = 0; i < triangles_element->count; i++) { *1/ */
-/*     /1*     if (triangles_data[4*i + 0] != 3) { *1/ */
-/*     /1*         PROP_ERROR("triangle property list should have 3 entries"); *1/ */ 
-/*     /1*     } *1/ */
-/*     /1*     int index_a = triangles_data[4*i + 1]; *1/ */
-/*     /1*     int index_b = triangles_data[4*i + 2]; *1/ */
-/*     /1*     int index_c = triangles_data[4*i + 3]; *1/ */
-/*     /1*     index_data[3*i + 0] = index_a; *1/ */
-/*     /1*     index_data[3*i + 1] = index_b; *1/ */
-/*     /1*     index_data[3*i + 2] = index_c; *1/ */
-/*     /1* } *1/ */
-
-
-/* #undef PROP_ERROR */
-/* } */
-
 //--------------------------------------------------------------------------------
 // Loaders
 //--------------------------------------------------------------------------------
-void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
+void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename, float size_factor)
 {
     memset(mesh, 0, sizeof(Mesh));
     printf("Loading mesh from PLY file %s ...\n", ply_filename);
@@ -590,16 +464,17 @@ void load_mesh_ply(Mesh *mesh, VertexFormat vertex_format, char *ply_filename)
 float X|x|xpos|x_position|posx|position_x|x_coord|coord_x, \
 float Y|y|ypos|y_position|posy|position_y|y_coord|coord_y, \
 float Z|z|zpos|z_position|posz|position_z|z_coord|coord_z";
-    void *pos_data = ply_get(ply, pos_query);
+    int num_vertices;
+    void *pos_data = ply_get(ply, pos_query, &num_vertices);
     mesh->attribute_data[ATTRIBUTE_TYPE_POSITION] = pos_data;
-    mesh->num_vertices = 8; // need this information
+    mesh->num_vertices = num_vertices;
 
     if ((vertex_format & VERTEX_FORMAT_C) != 0) {
         char *color_query = "[COLOR|COLORS|COLOUR|COLOURS|color|colors|colour|colours]: \
 float r|red|R|RED, \
 float g|green|G|GREEN, \
 float b|blue|B|BLUE";
-        void *color_data = ply_get(ply, color_query);
+        void *color_data = ply_get(ply, color_query, NULL);
         mesh->attribute_data[ATTRIBUTE_TYPE_COLOR] = color_data;
     }
     if ((vertex_format & ~VERTEX_FORMAT_3 & ~VERTEX_FORMAT_C) != 0) {
@@ -609,28 +484,71 @@ float b|blue|B|BLUE";
 
 #if 1
     printf("Loading face data.\n");
-    // Triangles and face data
+    
+    // Triangles and face data. This is queried for, then it is made sure each face has 3 vertex indices,
+    // then packs this data into the format used for meshes, with no counts (just ...|...|... etc.).
     char *face_query = "[face|faces|triangle|triangles|tris|tri]: \
 list int vertex_indices|indices|triangle_indices|tri_indices|index_list|indices_list";
     printf("Loaded face data.\n");
-    void *face_data = ply_get(ply, face_query);
-
-
-/*     mesh->triangles = face_data; */
-    for (int i = 0; i < 12; i++) {
-        printf("%u ", ((uint32_t *) face_data)[i]);
+    int num_faces;
+    void *face_data = ply_get(ply, face_query, &num_faces);
+    size_t face_data_offset = 0;
+    size_t triangles_size = 128;
+    void *triangles = malloc(triangles_size * sizeof(uint32_t));
+    size_t triangles_offset = 0;
+    for (int i = 0; i < num_faces; i++) {
+        if (((uint32_t *) (face_data + face_data_offset))[0] != 3) {
+            // not handling triangulation of arbitrary polygon lists
+            fprintf(stderr, ERROR_ALERT "Attempted to extract face from PLY file as a triangle, it does not have 3 vertex indices.\n");
+            exit(EXIT_FAILURE);
+        }
+        face_data_offset += sizeof(uint32_t);
+        // Now extract the three entries
+        for (int i = 0; i < 3; i++) {
+            size_t to_size = triangles_offset + sizeof(uint32_t);
+            if (to_size >= triangles_size) {
+                while (to_size >= triangles_size) triangles_size += 128;
+                triangles = (uint32_t *) realloc(triangles, triangles_size * sizeof(uint32_t));
+                mem_check(triangles);
+            }
+            /* printf("adding %u, ", ((uint32_t *) (face_data + face_data_offset))[0]); */
+            memcpy(triangles + triangles_offset, face_data + face_data_offset, sizeof(uint32_t));
+            face_data_offset += sizeof(uint32_t);
+            triangles_offset = to_size;
+        }
+        /* printf("\n"); */
+        /* getchar(); */
     }
-    printf("\n");
+
+    mesh->num_triangles = num_faces;
+    mesh->triangles = (uint32_t *) triangles;
+    free(face_data); // this is not stored in the mesh
+
 #endif
 
-    printf("================================================================================\n");
-    printf("Finished loading PLY mesh.\n");
-    printf("================================================================================\n");
-    print_mesh(mesh);
-    for (int i = 0; i < 8; i++) {
-        printf("%f %f %f\n", ((float *) mesh->attribute_data[ATTRIBUTE_TYPE_POSITION])[3*i + 0],
-                             ((float *) mesh->attribute_data[ATTRIBUTE_TYPE_POSITION])[3*i + 1],
-                             ((float *) mesh->attribute_data[ATTRIBUTE_TYPE_POSITION])[3*i + 2]);
+    /* printf("================================================================================\n"); */
+    /* printf("Finished loading PLY mesh.\n"); */
+    /* printf("================================================================================\n"); */
+    /* print_mesh(mesh); */
+    /* for (int i = 0; i < mesh->num_vertices; i++) { */
+    /*     printf("%f %f %f\n", ((float *) mesh->attribute_data[ATTRIBUTE_TYPE_POSITION])[3*i + 0], */
+    /*                          ((float *) mesh->attribute_data[ATTRIBUTE_TYPE_POSITION])[3*i + 1], */
+    /*                          ((float *) mesh->attribute_data[ATTRIBUTE_TYPE_POSITION])[3*i + 2]); */
+    /* } */
+    /* getchar(); */
+    /* for (int i = 0; i < mesh->num_triangles; i++) { */
+    /*     printf("%u %u %u\n", mesh->triangles[3*i + 0], */
+    /*                          mesh->triangles[3*i + 1], */
+    /*                          mesh->triangles[3*i + 2]); */
+    /* } */
+
+    //////////////////////////////////////////////////////////////////////////////////
+    // Resizing here for now. Need mesh editing facilities! Or just scale transform!
+    //////////////////////////////////////////////////////////////////////////////////
+    for (int i = 0; i < mesh->num_vertices; i++) {
+        ((float *) mesh->attribute_data[ATTRIBUTE_TYPE_POSITION])[3*i + 0] *= size_factor;
+        ((float *) mesh->attribute_data[ATTRIBUTE_TYPE_POSITION])[3*i + 1] *= size_factor;
+        ((float *) mesh->attribute_data[ATTRIBUTE_TYPE_POSITION])[3*i + 2] *= size_factor;
     }
 }
 

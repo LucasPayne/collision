@@ -1,1 +1,0 @@
-Testing the grid thing for a toy rasterizer

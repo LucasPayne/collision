@@ -76,7 +76,6 @@ managers control serialization of their aspects?
 #include "entity.h"
 
 // Small values for testing
-
 static bool entity_model_active = false;
 #define ENTITY_MAP_START_SIZE 12
 static EntityMapEntry *entity_map = NULL;

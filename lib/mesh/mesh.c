@@ -399,7 +399,7 @@ void serialize_mesh_handle(FILE *file, MeshHandle *mesh_handle)
     /*     if (i != 0) fprintf(file, ", "); */
     /*     fprintf(file, "%d", mesh_handle->vbos[i]); */
     /* } */
-    fprintf(file, "]\n");
+    /* fprintf(file, "]\n"); */
     fprintf(file, "num_vertices: %u\n", mesh_handle->num_vertices);
     fprintf(file, "num_triangles: %u\n", mesh_handle->num_triangles);
 }
@@ -427,6 +427,7 @@ Uniform *renderer_add_uniform(Renderer *renderer, char *name, UniformData (*get_
     return new_uniform;
 }
 
+//----remove this
 void renderer_recompile_shaders(Renderer *renderer)
 {
     if (renderer->vertex_shader != 0) {
@@ -512,6 +513,8 @@ float b|blue|B|BLUE";
     
     // Triangles and face data. This is queried for, then it is made sure each face has 3 vertex indices,
     // then packs this data into the format used for meshes, with no counts (just ...|...|... etc.).
+    //
+    // This complication is because PLY really defines a more generic numerical list data format, while this only wants groups of threes for triangle indices.
     char *face_query = "[face|faces|triangle|triangles|tris|tri]: \
 list int vertex_index|vertex_indices|indices|triangle_indices|tri_indices|index_list|indices_list";
     printf("Loaded face data.\n");

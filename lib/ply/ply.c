@@ -343,7 +343,7 @@ void *ply_get(PLY *ply, char *query_string, int *num_entries)
                 else if (ply_unsigned_int_type(got_properties[k]->type)) sz = sizeof(uint32_t) * count;
                 else if (ply_signed_int_type(got_properties[k]->type)) sz = sizeof(int32_t) * count;
                 else {
-                    fprintf(stderr, ERROR_ALERT "Unrecognized property type when extracing binary data from PLY file through query.\n");
+                    fprintf(stderr, ERROR_ALERT "Unrecognized property type when extracting binary data from PLY file through query.\n");
                     exit(EXIT_FAILURE);
                 }
                 GROW_GOT_DATA(sz);

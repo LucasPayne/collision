@@ -28,7 +28,7 @@
         free the application data. This data can be freed once a mesh handle is created/filled, and
         can be used with this module's draw functions to render the mesh from VRAM with a given renderer.
 
-    Mesh loading is also included here.
+    Mesh loading is also included here. This should be moved to another module such as mesh/ply.
     File formats:
         PLY (The Stanford triangle format)
 
@@ -90,6 +90,81 @@ enum ShaderType {
     NUM_SHADER_TYPES
 };
 
+typedef struct ShaderID_s {
+    uint32_t table_index;
+    uint32_t uuid; // 32 bits probably fine
+} ShaderID;
+#define NULL_SHADER_ID { 0, 0 }
+#define MAX_SHADER_NAME_LENGTH 32;
+typedef struct Shader_s {
+    ShaderID id;
+    char *hash_path;
+    char *resource_path;
+    GLuint vram_id;
+} Shader;
+
+#define SHADER_TABLE_START_SIZE 128
+static uint32_t g_last_shader_uuid = 0;
+static uint32_t g_shader_table_size = SHADER_TABLE_START_SIZE;
+static bool g_shader_table_initialized = false;
+static Shader **g_shader_table;
+
+ShaderID create_shader_id(void)
+{
+    if (!g_shader_table_initialized) {
+        g_shader_table_size = SHADER_TABLE_START_SIZE;
+        g_shader_table = (Shader **) calloc(1, sizeof(Shader *) * g_shader_table_size);
+        mem_check(g_shader_table);
+        g_shader_table_initialized = true;
+    }
+
+    int i = 0;
+    while (1) {
+        for (; i < g_shader_table_size; i++) {
+            if (g_shader_table[i] == NULL) {
+                ShaderID new_id;
+                new_id.table_index = i;
+                new_id.uuid = ++g_last_shader_uuid;
+                return new_id;
+            }
+        }
+        uint32_t previous_size = g_shader_table_size;
+        g_shader_table_size += SHADER_TABLE_START_SIZE; // grow the shader table linearly.
+        g_shader_table = (Shader **) realloc(g_shader_table, sizeof(Shader *) * g_shader_table_size);
+        mem_check(g_shader_table);
+        // Null initialize the new available shader pointers.
+        memset(g_shader_table + previous_size, 0, sizeof(Shader *) * (g_shader_table_size - previous_size));
+    }
+}
+
+Shader *create_shader(char *hash_path, char *resource_path, GLenum shader_type)
+{
+    // Load and compile the shader module in vram. vram_id will be given to the new shader.
+    vram_id = glCreateShader(shader_type);
+    load_and_compile_shader(vram_id, resource_path);
+
+    // Create a new shader on the heap and set the table pointer.
+    ShaderID id = create_shader_id();
+    g_shader_table[id.table_index] = (Shader *) calloc(1, sizeof(Shader));
+    mem_check(g_shader_table[id.table_index]);
+    Shader *new_shader = g_shader_table[id.table_index];
+
+    // Allocate memory for paths and give them to the new shader.
+    new_shader->hash_path = (char *) malloc((strlen(hash_path) + 1) * sizeof(char));
+    mem_check(new_shader->hash_path);
+    strcpy(new_shader->hash_path, hash_path);
+    new_shader->resource_path = (char *) malloc((strlen(resource_path) + 1) * sizeof(char));
+    mem_check(new_shader->resource_path);
+    strcpy(new_shader->resource_path, resource_path);
+
+    // Give ids to the new shader.
+    new_shader->id = id;
+    new_shader->vram_id = vram_id;
+
+    return new_shader;
+}
+
+
 /* "Uniforms" as a structure encapsulate the association of a uniform name, location,
  * and method of geting it for upload, which is attached to a renderer structure, so the renderer can
  * update the values of uniform variables relevant to the shader program it is using.
@@ -120,13 +195,6 @@ typedef struct Uniform_s {
 /* A "renderer" associates shaders for each shader type,
  * uniform variables to be updated when using the program linked from them,
  * and information enough to recompile these shaders into a new program.
- *
- * Rendering parameters and standard uniform variables are included in this structure.
- *
- * NOTES:
- *  I don't think this structure should contain information about the actual transformations
- *  used. So, the vertex shader will (probably) use MVP, yet the projection matrix could be
- *  given by a Camera structure, etc. So a "renderer" is just an association for shader program information.
  */
 #define MAX_RENDERER_UNIFORMS 8
 typedef struct Renderer_s {
@@ -135,17 +203,9 @@ typedef struct Renderer_s {
     int num_uniforms;
     Uniform uniforms[MAX_RENDERER_UNIFORMS];
 
-    GLuint program;
-    GLuint vertex_shader;
-    GLuint fragment_shader;
-    GLuint geometry_shader;
-    GLuint tesselation_control_shader;
-    GLuint tesselation_evaluation_shader;
-    char *vertex_shader_path;
-    char *fragment_shader_path;
-    char *geometry_shader_path;
-    char *tesselation_control_shader_path;
-    char *tesselation_evaluation_shader_path;
+    GLuint program_vram_id;
+
+    ShaderID shaders[NUM_SHADER_TYPES];
 } Renderer;
 
 /* A "mesh" is a structure around the data in application memory. This is intended to be filled
@@ -155,7 +215,6 @@ typedef struct Renderer_s {
 typedef struct Mesh_s {
     VertexFormat vertex_format;
     unsigned int num_vertices;
-    /* void **attribute_data[NUM_ATTRIBUTE_TYPES]; */ // I think this was a mistake
     void *attribute_data[NUM_ATTRIBUTE_TYPES];
     unsigned int num_triangles;
     unsigned int *triangles; //----change to exact types, uint32_t
@@ -180,8 +239,6 @@ typedef struct MeshHandle_s {
 //================================================================================
 // Basic usage
 //================================================================================
-//---Currently, this needs to be called. This could just be statically declared data.
-    void init_vertex_formats(void);
 // Initialize a new renderer structure which only uses vertex and fragment shaders.
     void new_renderer_vertex_fragment(Renderer *renderer, VertexFormat vertex_format, char *vertex_shader_path, char *fragment_shader_path);
 // Binding a renderer sets up the associated shader program and uniforms, ... so that GL draw calls will use them.

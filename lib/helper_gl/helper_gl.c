@@ -26,7 +26,7 @@ double dt(void)
 }
 
 // Its loop time
-void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *), GLbitfield clear_mask)
+void loop_time(GLFWwindow *window, void (*inner_func)(void), GLbitfield clear_mask)
 {
     double last_time = TIME;
     while (!glfwWindowShouldClose(window))
@@ -54,7 +54,7 @@ void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *), GLbitfield 
         glClear(clear_mask);
 
         if (inner_func != NULL) {
-            inner_func(window);
+            inner_func();
         }
 
         glFlush();
@@ -63,36 +63,6 @@ void loop_time(GLFWwindow *window, void (*inner_func)(GLFWwindow *), GLbitfield 
     // Cleanup
     glfwDestroyWindow(window);
     glfwTerminate();
-}
-
-
-GLFWwindow *init_glfw_create_context(char *name, int horiz, int vert)
-{
-    /* --- remove this, just do it "manually", have schematics anyway.
-     * --- Recreate helper functions when know more opengl.
-     * Attempts to create a GLFW OpenGL context associated to a window.
-     * Errors are handled in this function, can just assume returned
-     * GLFWwindow pointer is good.
-     */
-    if (!glfwInit()) {
-        fprintf(stderr, "GLFW error: something went wrong initializing GLFW\n");
-        exit(EXIT_FAILURE);
-    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    GLFWwindow *window = glfwCreateWindow(horiz, vert, name, NULL, NULL);
-    if (!window)
-    {
-        fprintf(stderr, "GLFW error: failed to create a window properly\n");
-        glfwTerminate();
-        exit(EXIT_FAILURE);
-    }
-    glfwMakeContextCurrent(window);
-
-    gladLoadGL();
-    glfwSwapInterval(1);
-
-    return window;
 }
 
 void force_aspect_ratio(GLFWwindow *window, GLsizei width, GLsizei height, double wanted_aspect_ratio)
@@ -270,48 +240,6 @@ void link_shader_program(GLuint shader_program)
     }
 }
 
-//--- deprecate this
-void recompile_shader_program(DynamicShaderProgram *dynamic_shader_program)
-{
-    if (dynamic_shader_program->vertex_shader_id != 0) {
-        recompile_shader(dynamic_shader_program->id, dynamic_shader_program->vertex_shader_id, dynamic_shader_program->vertex_shader_path);
-    }
-    if (dynamic_shader_program->fragment_shader_id != 0) {
-        recompile_shader(dynamic_shader_program->id, dynamic_shader_program->fragment_shader_id, dynamic_shader_program->fragment_shader_path);
-    }
-    if (dynamic_shader_program->geometry_shader_id != 0) {
-        recompile_shader(dynamic_shader_program->id, dynamic_shader_program->geometry_shader_id, dynamic_shader_program->geometry_shader_path);
-    }
-    link_shader_program(dynamic_shader_program->id);
-}
-
-static void recompile_shader(GLuint shader_program, GLuint shader, char *path)
-{
-    if (!glIsProgram(shader_program)
-            || !glIsShader(shader)) {
-        fprintf(stderr, "ERROR: Dynamic shader program has bad handles.\n");
-        exit(EXIT_FAILURE);
-    }
-    glDetachShader(shader_program, shader);
-    load_and_compile_shader(shader, path);
-    glAttachShader(shader_program, shader);
-}
-
-void print_dynamic_shader_program(DynamicShaderProgram *dynamic_shader_program)
-{
-    printf("Dynamic shader program:\n");
-    printf("\tShader program id: %d\n", dynamic_shader_program->id);
-    printf("\tVertex shader id: %d\n", dynamic_shader_program->vertex_shader_id);
-    printf("\tFragment shader id: %d\n", dynamic_shader_program->fragment_shader_id);
-    printf("\tGeometry shader id: %d\n", dynamic_shader_program->geometry_shader_id);
-    printf("\tVertex shader path: %s", dynamic_shader_program->vertex_shader_path);
-    putchar('\n');
-    printf("\tFragment shader path: %s", dynamic_shader_program->fragment_shader_path);
-    putchar('\n');
-    printf("\tGeometry shader path: %s", dynamic_shader_program->geometry_shader_path);
-    putchar('\n');
-}
-
 //--- Flesh this out and make sure it is correct.
 size_t gl_type_size(GLenum gl_type)
 {
@@ -321,3 +249,29 @@ size_t gl_type_size(GLenum gl_type)
     fprintf(stderr, ERROR_ALERT "Either invalid GL type %d was size checked, or gl_type_size does not yet map this type to its size.\n", gl_type);
     exit(EXIT_FAILURE);
 }
+
+
+GLFWwindow *gl_core_standard_window(char *name, void (*init_function)(void), void (*loop_function)(void), void (*close_function)(void))
+{
+    GLFWwindow *window;
+    int horiz = 512;
+    int vert = 512;
+    if (!glfwInit()) {
+        fprintf(stderr, "GLFW error: something went wrong initializing GLFW\n");
+        exit(EXIT_FAILURE);
+    }
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    window = glfwCreateWindow(horiz, vert, name, NULL, NULL);
+    if (!window) {
+        fprintf(stderr, "GLFW error: failed to create a window properly.\n");
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+
+    return window;
+}
+

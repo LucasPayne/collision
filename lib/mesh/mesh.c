@@ -20,7 +20,17 @@ static void zero_mesh_handle(MeshHandle *mesh_handle);
 
 // Static data
 //--------------------------------------------------------------------------------
-static AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES];
+// typedef struct AttributeInfo_s {
+//     AttributeType attribute_type;
+//     char name[MAX_ATTRIBUTE_NAME_LENGTH + 1];
+//     GLenum gl_type;
+//     GLuint gl_size;
+// } AttributeInfo;
+static const AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES] = {
+    { ATTRIBUTE_TYPE_POSITION, "vPosition", GL_FLOAT, 3 },
+    { ATTRIBUTE_TYPE_COLOR, "vColor", GL_FLOAT, 3 },
+    { ATTRIBUTE_TYPE_NORMAL, "vNormal", GL_FLOAT, 3},
+};
 //--------------------------------------------------------------------------------
 
 static void zero_mesh_handle(MeshHandle *mesh_handle)
@@ -217,9 +227,52 @@ void zero_init_renderer(Renderer *renderer)
     // if something is "zero initialized" to something other than 0, change this here.
 }
 
+
+Renderer *new_renderer_vertex_fragment(VertexFormat vertex_format, ShaderID vertex_shader_id, ShaderID fragment_shader_id)
+{
+    if (get_shader(vertex_shader_id) == NULL  ||  get_shader(fragment_shader_id) == NULL) {
+        fprintf(stderr, ERROR_ALERT "Attempted to create a new renderer with an invalid shader id.\n");
+        exit(EXIT_FAILURE);
+    }
+    RendererID id = create_renderer_id();
+    g_renderer_table[id.table_index] = (Renderer *) calloc(1, sizeof(Renderer));
+    mem_check(g_renderer_table[id.table_index]);
+    Renderer *renderer = g_renderer_table[id.table_index];
+
+    renderer->vertex_format = vertex_format;
+    renderer->shaders[Vertex] = vertex_shader_id;
+    renderer->shaders[Fragment] = fragment_shader_id;
+
+    renderer->program_vram_id = glCreateProgram();
+    renderer_compile_shaders(id);
+
+    return renderer;
+}
+
+void renderer_compile_shaders(RendererID id)
+{
+    Renderer *renderer;
+    if ((renderer = get_renderer(id)) == NULL) {
+        fprintf(stderr, ERROR_ALERT "Attempted to compile shaders for invalid renderer ID.\n");
+        exit(EXIT_FAILURE);
+    }
+    for (int i = 0; i < NUM_SHADER_TYPES; i++) {
+        if (renderer->shaders[i] != NULL_SHADER_ID) {
+            Shader *shader = get_shader(renderer->shaders[i]);
+            if (shader == NULL) {
+                fprintf(stderr, ERROR_ALERT "Attempted to compile shaders for renderer when it has an invalid shader ID.\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+}
+
+
 #define TRACING 0
 void new_renderer_vertex_fragment(Renderer *renderer, VertexFormat vertex_format, char *vertex_shader_path, char *fragment_shader_path)
 {
+
+
     /* Creates a new renderer only using vertex and fragment shaders. */
     zero_init_renderer(renderer);
 #if TRACING
@@ -387,34 +440,6 @@ void renderer_recompile_shaders(Renderer *renderer)
     link_shader_program(renderer->program);
 }
 
-
-// Vertex formats
-//--------------------------------------------------------------------------------
-
-static void set_attribute_info(AttributeType attribute_type, GLenum gl_type, GLuint gl_size, char *name)
-{
-    if (attribute_type >= NUM_ATTRIBUTE_TYPES) {
-        fprintf(stderr, ERROR_ALERT "Attempted to set attribute info for non-existent attribute type %d.\n", attribute_type);
-        exit(EXIT_FAILURE);
-    }
-    g_attribute_info[attribute_type].attribute_type = attribute_type;
-    g_attribute_info[attribute_type].gl_type = gl_type;
-    g_attribute_info[attribute_type].gl_size = gl_size;
-    if (strlen(name) > MAX_ATTRIBUTE_NAME_LENGTH) {
-        fprintf(stderr, ERROR_ALERT "Attribute name given \"%s\" when setting attribute info is too long. The maximum attribute name length is %d.\n", name, MAX_ATTRIBUTE_NAME_LENGTH);
-        exit(EXIT_FAILURE);
-    }
-    strncpy(g_attribute_info[attribute_type].name, name, MAX_ATTRIBUTE_NAME_LENGTH);
-}
-
-void init_vertex_formats(void)
-{
-    memset(g_attribute_info, 0, sizeof(g_attribute_info));
-    set_attribute_info(ATTRIBUTE_TYPE_POSITION, GL_FLOAT, 3, "vPosition");
-    set_attribute_info(ATTRIBUTE_TYPE_COLOR, GL_FLOAT, 3, "vColor");
-    set_attribute_info(ATTRIBUTE_TYPE_NORMAL, GL_FLOAT, 3, "vNormal");
-}
-
 void print_vertex_attribute_types(void)
 {
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
@@ -470,7 +495,7 @@ float Z|z|zpos|z_position|posz|position_z|z_coord|coord_z";
     mesh->num_vertices = num_vertices;
 
     if ((vertex_format & VERTEX_FORMAT_C) != 0) {
-        char *color_query = "[COLOR|COLORS|COLOUR|COLOURS|color|colors|colour|colours]: \
+        char *color_query = "[VERTEX|VERTICES|vertex|vertices|position|pos|positions|point|points|COLOR|COLORS|COLOUR|COLOURS|color|colors|colour|colours]: \
 float r|red|R|RED, \
 float g|green|G|GREEN, \
 float b|blue|B|BLUE";
@@ -488,7 +513,7 @@ float b|blue|B|BLUE";
     // Triangles and face data. This is queried for, then it is made sure each face has 3 vertex indices,
     // then packs this data into the format used for meshes, with no counts (just ...|...|... etc.).
     char *face_query = "[face|faces|triangle|triangles|tris|tri]: \
-list int vertex_indices|indices|triangle_indices|tri_indices|index_list|indices_list";
+list int vertex_index|vertex_indices|indices|triangle_indices|tri_indices|index_list|indices_list";
     printf("Loaded face data.\n");
     int num_faces;
     void *face_data = ply_get(ply, face_query, &num_faces);

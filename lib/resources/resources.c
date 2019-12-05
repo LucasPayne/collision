@@ -76,23 +76,49 @@ void ___load_resource(ResourceType type, ResourceHandle handle)
 // Usage:
 //      Shader *vertex_shader = resource_data(Shader, renderer->shaders[Vertex]);
 
-static ResourceID relocate_resource_handle(ResourceHandle *resource_handle)
+static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
 {
     /* Returns resource ID in handle after relocation/staying put. The caller should not know or care whether a dereference caused a relocation. */
+    
     // Table lookup the resource.
-    //================================================================================
     if (g_resource_table[resource_handle->id.table_index].uuid == resource_handle->id.uuid) {
         // The point of this. Resource loading and unloading should be very rare compared to references to the resource,
         // so that should be a constant fast lookup, yet still trigger a resource load if needed, unknown to the caller.
-        return id;
+        return resource_handle;
     }
-    //================================================================================
-    // If the table lookup didn't work, the resource may still be loaded somewhere else. This either gets that through
-    // the path lookup, or if that fails, loads the resource and returns the ID it is given.
-    ResourceID found_id = create_resource(resource_handle->id.type, resource_handle->_path);
-    // Update the resource handle.
-    resource_handle->_id = found_id;
-    return found_id;
+    // Try walk the resource tree to see if this path is associated to an active resource ID.
+    ResourceID id = find_resource(type, path);
+    if (id != NULL_RESOURCE_ID) {
+        // Resource is loaded.
+        return resource_handle;
+    }
+    // The resource isn't loaded. Trigger a load.
+    id = create_resource_id(type, path);
+    ResourceTableEntry *new_entry = &g_resource_table[id.table_index];
+    new_entry->uuid = id.uuid;
+    new_entry->type = type;
+    // Allocate and zero-initialize the memory needed for this type of resource, and give to the new resource entry.
+    new_entry->resource = calloc(1, g_resource_type_info[type].size);
+    mem_check(new_entry->resource);
+    // Store the path on the heap and give to the new resource entry.
+    new_entry->path = (char *) malloc((strlen(path) + 1) * sizeof(char));
+    mem_check(new_entry->path);
+    strcpy(new_entry->path, path);
+    
+    void *raw_data = g_resource_type_info[type].load(new_entry->path);
+
+    // Trigger the login function to post-load-initialize this resource type, if it has one.
+    if (g_resource_table[new_entry->type].login != NULL) {
+        new_entry->resource = g_resource_table[new_entry->type].login(raw_data);
+        free(raw_data);
+    } else {
+        // With no login function, the raw data is used. In this case, it is probably a binary preconditioned format.
+        new_entry->resource = raw_data;
+    }
+
+    // Update the resource handle with the new id for the newly loaded resource.
+    resource_handle->_id = new_entry->id;
+    return resource_handle;
 }
 
 // "create" resource. If this path is already loaded, returns the ID of the resource already in memory.
@@ -101,35 +127,35 @@ static ResourceID relocate_resource_handle(ResourceHandle *resource_handle)
 // that it needs to create the resource again, meaning either it triggers a load or finds the resource path already loaded. Then, the resource ID
 // must be updated. Anything else using the resource ID propogated from the first thing will trigger the same (since the uuid won't match), and since
 // the first thing probably triggered a resource load, the things using the same resource are just going to recheck the path and update their ID copies.
-static ResourceID create_resource(ResourceType type, char *path)
-{
-    ResourceID id = find_resource(type, path);
-    if (id != NULL_RESOURCE_ID) {
-        // Resource is loaded. Return the resource ID, but caller doesn't know it isn't "creating" it.
-        return id;
-    }
-    // Load the resource
-    //================================================================================
-    // This resource isn't loaded. Actually create the resource.
-    id = create_resource_id(type, path);
-    g_resource_table[id.table_index].uuid = id.uuid;
-    g_resource_table[id.table_index].type = type;
-    // Allocate and zero-initialize the memory needed for this type of resource, and give to the new resource entry.
-    g_resource_table[id.table_index].resource = calloc(1, g_resource_type_info[type].size);
-    mem_check(g_resource_table[id.table_index].resource);
-    // Store the path on the heap and give to the new resource entry.
-    g_resource_table[id.table_index].path = (char *) malloc((strlen(path) + 1) * sizeof(char));
-    mem_check(g_resource_table[id.table_index].path);
-    strcpy(g_resource_table[id.table_index].path, path);
+/* static ResourceID create_resource(ResourceType type, char *path) */
+/* { */
+/*     ResourceID id = find_resource(type, path); */
+/*     if (id != NULL_RESOURCE_ID) { */
+/*         // Resource is loaded. Return the resource ID, but caller doesn't know it isn't "creating" it. */
+/*         return id; */
+/*     } */
+/*     // Load the resource */
+/*     //================================================================================ */
+/*     // This resource isn't loaded. Actually create the resource. */
+/*     id = create_resource_id(type, path); */
+/*     g_resource_table[id.table_index].uuid = id.uuid; */
+/*     g_resource_table[id.table_index].type = type; */
+/*     // Allocate and zero-initialize the memory needed for this type of resource, and give to the new resource entry. */
+/*     g_resource_table[id.table_index].resource = calloc(1, g_resource_type_info[type].size); */
+/*     mem_check(g_resource_table[id.table_index].resource); */
+/*     // Store the path on the heap and give to the new resource entry. */
+/*     g_resource_table[id.table_index].path = (char *) malloc((strlen(path) + 1) * sizeof(char)); */
+/*     mem_check(g_resource_table[id.table_index].path); */
+/*     strcpy(g_resource_table[id.table_index].path, path); */
 
-    // ...
-    /* char *physical_filepath */
-    /* g_resource_type_info.load_resource( */
-    /* free(name); */
-    //================================================================================
+/*     // ... */
+/*     /1* char *physical_filepath *1/ */
+/*     /1* g_resource_type_info.load_resource( *1/ */
+/*     /1* free(name); *1/ */
+/*     //================================================================================ */
     
-    return id;
-}
+/*     return id; */
+/* } */
 
 static bool g_initialized_resource_table;
 static ResourceTableEntry *g_resource_table;
@@ -147,11 +173,9 @@ static ResourceID create_resource_id(ResourceType type, char *path)
     while (1) {
         for (; i < g_resource_table_size; i++) {
             if (g_shader_table[i] == NULL) {
-                ResourceID new_id;
                 new_id.table_index = i;
                 new_id.uuid = ++g_last_resource_uuid;
                 new_id.type = type;
-                new_id.path = path;
                 return new_id;
             }
         }

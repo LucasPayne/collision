@@ -1,0 +1,85 @@
+// "create" resource. If this path is already loaded, returns the ID of the resource already in memory.
+// Things that use resources get the resource IDs this way and don't know whether or not they caused a load or are sharing a resource loaded
+// by another thing. Then, the thing should be able to consistently use the same ID _until_ it doesn't work. This doesn't mean it fails, just
+// that it needs to create the resource again, meaning either it triggers a load or finds the resource path already loaded. Then, the resource ID
+// must be updated. Anything else using the resource ID propogated from the first thing will trigger the same (since the uuid won't match), and since
+// the first thing probably triggered a resource load, the things using the same resource are just going to recheck the path and update their ID copies.
+/* static ResourceID create_resource(ResourceType type, char *path) */
+/* { */
+/*     ResourceID id = find_resource(type, path); */
+/*     if (id != NULL_RESOURCE_ID) { */
+/*         // Resource is loaded. Return the resource ID, but caller doesn't know it isn't "creating" it. */
+/*         return id; */
+/*     } */
+/*     // Load the resource */
+/*     //================================================================================ */
+/*     // This resource isn't loaded. Actually create the resource. */
+/*     id = create_resource_id(type, path); */
+/*     g_resource_table[id.table_index].uuid = id.uuid; */
+/*     g_resource_table[id.table_index].type = type; */
+/*     // Allocate and zero-initialize the memory needed for this type of resource, and give to the new resource entry. */
+/*     g_resource_table[id.table_index].resource = calloc(1, g_resource_type_info[type].size); */
+/*     mem_check(g_resource_table[id.table_index].resource); */
+/*     // Store the path on the heap and give to the new resource entry. */
+/*     g_resource_table[id.table_index].path = (char *) malloc((strlen(path) + 1) * sizeof(char)); */
+/*     mem_check(g_resource_table[id.table_index].path); */
+/*     strcpy(g_resource_table[id.table_index].path, path); */
+
+/*     // ... */
+/*     /1* char *physical_filepath *1/ */
+/*     /1* g_resource_type_info.load_resource( *1/ */
+/*     /1* free(name); *1/ */
+/*     //================================================================================ */
+    
+/*     return id; */
+/* } */
+
+
+static ResourceTree *_add_or_get_resource_path(ResourceID id, char *path, bool adding)
+{
+    /* Fills out the resource forest enough to store the id at the leaf of this path branch. */
+    char *drive_end = strchr(path, '/');
+    if (drive_end == NULL) {
+        fprintf(stderr, ERROR_ALERT "Invalid resource path \"%s\".\n", path);
+        exit(EXIT_FAILURE);
+    }
+    drive_end[0] = '\0';
+    for (int i = 0; i < g_num_resource_drives; i++) {
+        if (strcmp(path, g_resource_drive_info[i].name) == 0) {
+            // Put this resource path into this resource drive's tree.
+            ResourceTree *tree = &g_resource_drive_info[i].tree;
+            path = strchr(path, '\0') + 1; // go past the drive name.
+            while (1) {
+                if (path == '\0') {
+                    fprintf(stderr, ERROR_ALERT "Attempted to add a resource path with an empty entry name.");
+                    exit(EXIT_FAILURE);
+                }
+                char *end = strchr(path, '/');
+                if (end == NULL) {
+                    // this is a leaf.
+                    if (adding) {
+                        ResourceTree *resource_id_leaf = add_resource_leaf(tree, path);
+                        resource_id_leaf->contents.resource_id = id;
+                        return resource_id_leaf;
+                    } else {
+                        ResourceTree *resource_id_leaf = get_resource_leaf(tree, path);
+                        return resource_id_leaf; // NULL if it wasn't found.
+                    }
+                }
+                end[0] = '\0';
+                if (adding) {
+                    // Finds or creates a branch so the addition can continue. (?)
+                    tree = add_resource_branch(tree, path);
+                } else {
+                    // Tries to find a branch. If not found, return NULL because the queried-for resource is not in the resource tree.
+                    tree = get_resource_branch(tree, path);
+                    if (tree == NULL) return NULL;
+                }
+                path = end + 1;
+            }
+        }
+    }
+    fprintf(stderr, ERROR_ALERT "Attempted to add resource path with invalid drive.\n");
+    exit(EXIT_FAILURE);
+}
+

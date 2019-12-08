@@ -1,0 +1,3 @@
+vertex_format: 3C
+vertex_shader: colored.vert
+fragment_shader: colored.frag

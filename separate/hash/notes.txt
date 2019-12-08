@@ -1,0 +1,13 @@
+
+
+char buf[512];
+int n;
+if (!dict_query(dictionary, "type,n:%d,stuff", buf, 512, &n)) {
+    return NULL;
+}
+// Now, buf will be full of the strings read, and n will contain the
+// e.g. n: 16 entry in the file.
+
+dict_query_n(buf, 0); // char *, the string value for "type"
+dict_query_n(buf, 1); // char *, the string value for "stuff"
+

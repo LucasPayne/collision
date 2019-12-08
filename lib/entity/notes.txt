@@ -1,0 +1,109 @@
+    Technical problem?
+    Object reference. There could be two concepts of IDs: one that is a consistent map lookup ID to
+    get a pointer to the object, and one which is unique over all objects that may have been destroyed.
+    These are universally unique independent of any object's lifetime. This can be done by incrementing
+    an int/long and trusting that it would be highly unlikely to run into problems. This seems inconvenient for a map
+    lookup structure, yet avoids the problem of something holding an object reference not being sure whether
+    the object is what it thinks (if it is destroyed, something holding a reference should know, and that
+    reference should not be replaced by some other object. With structure casts etc. which I am using now this could
+    be very bad).
+
+    So, maybe mix the two IDs:
+        Map lookup index:
+            Consistent over an object's lifetime.
+            Does not give trustworthy information on whether an object is destroyed, since this index can
+            be reallocated.
+        Universally-temporally unique ID:
+            (with increment allocation, could be thought of as the "time" the object was created.)
+            Consistent even after the object has been destroyed. This will not be used for map lookups.
+            This gives information on whether a reference is valid: if the map lookup doesn't get a null pointer,
+            the object's UTUID is checked. If it is different, then the object must have been destroyed and the
+            index reallocated, so treat this logically the same as if there had been a null pointer at this
+            index.
+
+    Error handling: at what level? Caller?
+
+    Off by one errors and string functions: check these.
+--------------------------------------------------------------------------------
+What about:
+differentiate between "managers" and "environmental processes".
+A manager reroutes calls to aspect bookkeeping functions. Creating IDs, initializing aspects.
+It can also have control over its index map, as long as it doesn't shuffle the map indices around,
+for example reordering aspect data in memory and changing the pointers in the map.
+
+There is a standard interface to create aspects. This way, aspects of a thing are distributed for control
+by different managers, yet are still "owned" by the entity ID. Environmental processes can be tightly associated
+to a manager or be arbitrary processes that query/subscribe to different aspect types.
+The point of using a manager (?) is to prepare data for specific types of processing (mesh handles, collision data,
+images, GUI elements, debug wireframes, misc. object logic, ...). An environmental process may want to iterate
+over data in a way that is not just going through and seeing what is not null in the aspect map. This may be an option,
+but the aspect map could just be for random access, correct/safe constant time lookup of aspects, and traversal
+of the entity-aspect model. For data processing, a manager may provide an iterator which itself may just be
+the map traversal, or take advantage of contiguity/structure bookkept by the manager to iterate possibly directly
+over a memory region.
+
+What about: If an aspect is created and there is no manager for its type, then there is a default manager which just mallocs.
+--------------------------------------------------------------------------------
+Aspect types, structures and usage.
+Could have:
+Macro for having standard metadata for aspect data, aspect ID and entity ID.
+This is inline (no substruct to access) but the pointer to the aspect data can
+be cast to an AspectProperties so it is "inherited" from this.
+
+----
+num_aspects right now is actually the size of the space for aspects
+
+managers: data guardians
+
+probably better to keep initial sizes small and force the data bookkeeping to be done, for testing
+
+serialization:
+--- serialization with macros forces each to define a seralization function.
+managers control serialization of their aspects?
+    --- currently doing this
+
+enum AspectTypes {
+    AspectType_Camera,
+    AspectType_MeshRenderer,
+    NUM_ASPECT_TYPES
+};
+
+#define ASPECT()\
+    AspectID aspect_id;\
+    EntityID entity_id;
+
+typedef struct Camera_s {
+ASPECT()
+    Matrix4x4f projection_matrix;
+    Renderer renderer;
+} Camera;
+
+typedef struct MeshRenderer_s {
+ASPECT()
+    MeshHandle mesh_handle;
+} MeshRenderer;
+
+static size_t aspect_type_sizes[NUM_ASPECT_TYPES] = {
+    sizeof(Camera),
+    sizeof(MeshRenderer)
+};
+
+EntityID entity = new_entity();
+MeshRenderer *mesh_renderer = (MeshRenderer *) get_aspect_data(entity_add_aspect(entity, AspectType_MeshRenderer));
+
+Could change name to _entity_add_aspect
+
+// Straight to getting data from this ID
+#define entity_add_aspect_get(ENTITY,ASPECT_NAME)\
+    (ASPECT_NAME *) get_aspect_data(_entity_add_aspect(( ENTITY ), AspectType_ ## ASPECT_NAME))
+
+
+EntityID entity = new_entity();
+// static data? transform matrix, name, ..., stuff multiple aspects may use/control/read
+Mesh mesh;
+create_cube_mesh(&mesh);
+MeshRenderer *mesh_renderer = entity_add_aspect(entity, MeshRenderer);
+upload_mesh(&mesh_renderer->mesh_handle, &mesh);
+Solid *solid = entity_add_aspect(entity, Solid);
+copy_mesh(&mesh, &solid->collision_mesh);
+solid->weight = 12.5;

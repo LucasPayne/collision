@@ -22,13 +22,6 @@ double dt(void);
 void loop_time(GLFWwindow *window, void (*inner_func)(void), GLbitfield clear_mask);
 
 //================================================================================
-// Shaders
-//================================================================================
-void link_shader_program(GLuint shader_program);
-void load_and_compile_shader(GLuint shader, const char *shader_path);
-void read_shader_source(const char *name, char **lines_out[], size_t *num_lines);
-
-//================================================================================
 // GL types, definitions, values, ...
 //================================================================================
 size_t gl_type_size(GLenum gl_type);

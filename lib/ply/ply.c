@@ -80,14 +80,11 @@ static PLYType match_ply_type(char *string)
         mem_check(data);\
     }\
 }
-void ply_get_binary_data(PLY *ply)
+void ply_get_binary_data(FILE *file, PLY *ply)
 {
+    fseek(file, 0, SEEK_SET);
     printf("Getting PLY binary data ...\n");
-    FILE *file = fopen(ply->filename, "r");
-    if (file == NULL) {
-        fprintf(stderr, ERROR_ALERT "Could not open PLY file for extraction of binary data.\n");
-        exit(EXIT_FAILURE);
-    }
+    
     // read lines until the end of header (need a better way to do this for arbitrary line lengths)
     // --- line endings
     char line_buffer[4096];
@@ -198,20 +195,19 @@ void ply_get_binary_data(PLY *ply)
         mem_check(got_data)\
     }\
 }
-void *ply_get(PLY *ply, char *query_string, int *num_entries)
+void *ply_get(FILE *file, PLY *ply, char *query_string, int *num_entries)
 {
     // num_elements: return information here about how many elements of the queried type there are.
     // Pass NULL to ignore this.
     // ////////////////////note: this shouldn't be here?
     // NOTE----Maybe shouldn't allow multiple elements in a query. It doesn't make sense to pack them together, and just one after the other is multiple queries.
     // So, alot of that multiple-elements structure here has been pointless.
-    
     // Since data is allocated early, free it before returning an error to handle!
     
-    
+    fseek(file, 0, SEEK_SET);
     if (ply->data == NULL) { // if it is not null, it has already been loaded.
         printf("Didn't have data, getting now ...\n");
-        ply_get_binary_data(ply);
+        ply_get_binary_data(file, ply);
         if (ply->data == NULL) {
             fprintf(stderr, ERROR_ALERT "Could not retrieve binary data from PLY file when querying.\n");
         }
@@ -400,14 +396,12 @@ void *ply_get_property(PLYElement *element, char *property_name)
 //--------------------------------------------------------------------------------
 void init_ply(PLY *ply)
 {
-    ply->filename = NULL;
     ply->format = PLY_FORMAT_NONE;
     ply->num_elements = 0;
     ply->first_element = NULL;
 }
 void destroy_ply(PLY *ply)
 {
-    if (ply->filename != NULL) free(ply->filename);
     if (ply->first_element != NULL) {
         PLYElement *cur_element = ply->first_element;
         do {
@@ -495,7 +489,6 @@ void print_ply(PLY *ply)
 {
     printf("PLY object:\n");
     printf("============================================================\n");
-    printf("filename: %.80s\n", ply->filename == NULL ? "!!! NO FILENAME GIVEN !!! (or this is the filename, for some reason)" : ply->filename);
     printf("format: %.80s (%d)\n", _ply_format_names[ply->format], ply->format);
     printf("num_elements: %d\n", ply->num_elements);
     printf("Elements:\n");

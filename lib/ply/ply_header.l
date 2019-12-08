@@ -122,6 +122,7 @@ static PLYProperty g_ply_property;
 
 %%
 #include <stdbool.h>
+#include <stdio.h>
 #include "helper_definitions.h"
 #include "ply.h"
 
@@ -171,13 +172,8 @@ static void _lex_error(char *string)
     exit(EXIT_FAILURE);
 }
 
-PLY *read_ply(char *filename)
+PLY *read_ply(FILE *file)
 {
-    FILE* file = fopen(filename, "r");
-    if (file == NULL) {
-        fprintf(stderr, ERROR_ALERT "Couldn't open PLY file for lexing.");
-        exit(EXIT_FAILURE);
-    }
     BEGIN INITIAL;
     yyrestart(file);
 
@@ -191,10 +187,5 @@ PLY *read_ply(char *filename)
     if (yylex() == ERROR) _lex_error("ERROR");
     memcpy(ply, &g_ply, sizeof(PLY));
 
-    ply->filename = (char *) malloc((strlen(filename) + 1) * sizeof(char));
-    mem_check(ply->filename);
-    strcpy(ply->filename, filename);
-
-    fclose(file);
     return ply;
 }

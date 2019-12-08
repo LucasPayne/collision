@@ -1,3 +1,21 @@
+/*
+The point of this is so that the standard binary format for a compiled asset is as close to
+program-ready as possible before any post-conditioning.
+
+So, this binary format is some minimal metadata (or implicit metadata due to how it is interpreted, maybe magic numbers as well),
+which allows the binary file to be loaded into memory as structured data.
+
+With the resource system, a MeshHandle is wrapped around with a ResourceHandle. This has a load behaviour which
+loads from the standard binary format for Meshes, which is almost the same as it will be in memory. The pointer fix-ups are
+done and maybe separate parts of it are put in different parts of memory.
+Post-conditioning is done, which passes the Mesh to a vram uploader, which fills a MeshHandle, which is then
+the loaded resource. The binary data read in initially is then freed.
+
+The compiled mesh format on disk is then really an implicitly defined format due to the structure of a mesh in the code. It should
+be easy to detect changes when regenerating serialization information and recompile assets. It is very close to the form the mesh
+will take in memory on whatever system the asset was compiled for.
+ 
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,6 +70,19 @@ typedef struct MeshData_s {
     uint32_t *triangle_indices;
 } MeshData;
 
+// How does the serializer know how large the dynamic arrays are? If serialization is going to mostly be done with generated code,
+// it might be fine to associate to every dynamic array entry of a serializable structure a function that retrieves the size of the array.
+// Because this needs to actually be entered, a file for configuring serialization could be used.
+//
+// A utility could go over the C source and generate basic metadata for structures (names, assign them ids, offsets and types and sizes of entries).
+// Serializing a structure expands a macro to a global ___StructureName___PODS_ID which hooks it up to the generated serialization information for this structure.
+// By default, the structure is serialized as is, so no interpretation of pointers, dynamic arrays, pointers to other structures. These are introduced explicitly
+// or if it makes sense, automatically (for structure pointers that makes sense, but dynamic arrays need some way to know the size. This could be stored in the struct, it could
+// be null terminated in some way, it could be a multiple of some type size, dependent on some configuration of the struct, ... . Serializer can't know, this needs user
+// configuration and direction.)
+//
+// One restrictive option for serializable dynamic arrays is to have an array-type address-info-structure for a structure contain an offset and type for an unsigned int
+// which will hold the array size. This is too restrictive.
 static size_t PODS_get_size_MeshData_triangle_indices(void *struct_ptr)
 {
     MeshData *mesh_data = (MeshData *) struct_ptr;

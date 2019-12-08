@@ -104,16 +104,7 @@ resolve in the same way.
 So resources can be media files, small data structures, associations of resources, etc. Or, they can be small data structures that
 are handles themselves e.g. for stuff in vram, so the resource will still want to be shared so it doesn't cause a reupload.
 
-================================================================================*/
-#ifndef HEADER_DEFINED_RESOURCES
-#define HEADER_DEFINED_RESOURCES
 
-#define MAX_RESOURCE_TYPE_NAME_LENGTH 32
-typedef struct ResourceTypeInfo_s {
-    ResourceType type; // Its type is being used as its index in the global resource type info array.
-    size_t size;
-    char resource_type_name[MAX_RESOURCE_TYPE_NAME_LENGTH + 1];
-    
     // Game Engine Architecture p300
     // Function pointers for post-load initialization and tear down.
     // "Logging in" and "logging out" for resource types.
@@ -124,43 +115,16 @@ typedef struct ResourceTypeInfo_s {
     // Then tear-down is simple in these cases, freeing the IDs with GL calls and doing a generic application-memory resource unload.
     // (so, could just free from the heap.)
 
-    void *(*load) (char *path);
-    void *(*login) (void *raw_data);
-    /* void (*logout) (ResourceHandle *); // ?... */
-} ResourceTypeInfo;
 
-/*
- * When a resource type is added, be it in a library module or in a specific application,
- * that module/application must define a global variable
- * ResourceType Name_RESOURCE_TYPE_ID;
- * Then the typing macro for resource type addition expands to give a new resource type a unique identifier by passing this global's address, and further
- * typed macro usage expands to this type id to lookup type info in a global table updated from calls to create a new resource type.
- *
- * A resource is always a struct. The resource type name given is the name of the struct, and this macro
- * expands to give type information (unique id, size, type name for debugging).
- *  
- * Logging in and logging out out resources could by default not do anything past the generic application-memory struct allocation/deallocation.
- * If a resource owns things, handles to GL objects in vram, (? sub-resources (if reference counting is used ?)), or needs
- * conditioning (if the resource load is a runtime conditioning from a PLY file, then it needs to be done rather than
- * just directly loading a binary image of the wanted structure.)
- *
- * The macro could just expand to name_login and name_logout functions that must be defined, then
- * puts it in the resource type info structure.
- */
-#define add_resource_type(RESOURCE_TYPE_NAME)\
-     ___add_resource_type(&( RESOURCE_TYPE_NAME ## _ RESOURCE_TYPE_ID ),\
-                          sizeof(RESOURCE_TYPE_NAME ## _RESOURCE_TYPE_ID),\
-                          " ## RESOURCE_TYPE_NAME ## ")\
-
-#define resource_data(STRUCTURE_NAME,HANDLE)\
-    ( (STRUCTURE_NAME *) ___resource_data(STRUCTURE_NAME ## _RESOURCE_TYPE_ID, ( HANDLE )) )
-
-#define load_resource(STRUCTURE_NAME,HANDLE)\
-    ___load_resource(STRUCTURE_NAME ## _RESOURCE_TYPE_ID, ( HANDLE ))
+================================================================================*/
+#ifndef HEADER_DEFINED_RESOURCES
+#define HEADER_DEFINED_RESOURCES
 
 typedef uint64_t ResourceUUID;
 typedef uint32_t ResourceType;
 
+// A "null" resource ID or resource table entry has uuid zero. This is a macro for
+// returning a null resource ID for errors.
 typedef struct ResourceID_s {
     uint32_t table_index;
     ResourceUUID uuid;
@@ -179,28 +143,97 @@ typedef struct ResourceHandle_s {
     // Owner of this handle must not access these directly.
     ResourceID _id;
     char *_path;
+    void *_parameters;
 } ResourceHandle;
+
+#define MAX_RESOURCE_TYPE_NAME_LENGTH 32
+typedef struct ResourceTypeInfo_s {
+    ResourceType type; // Its type is being used as its index in the global resource type info array.
+    size_t size;
+    char name[MAX_RESOURCE_TYPE_NAME_LENGTH + 1];
+    void *(*load) (ResourceHandle *handle);
+    bool has_parameters;
+    size_t parameters_size;
+} ResourceTypeInfo;
 
 #define MAX_RESOURCE_BRANCH_NAME_LENGTH 32
 typedef struct ResourceTree_s {
     char name[MAX_RESOURCE_BRANCH_NAME_LENGTH + 1];
     struct ResourceTree_s *next;
     bool is_leaf;
-    union contents {
+    union contents_union {
         struct ResourceTree_s *first_child;
         ResourceID resource_id;
-    };
+    } contents;
 } ResourceTree;
 
-// These functions are non-static because type-name to type-id macros resolve to them.
-void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name);
-void *___resource_data(ResourceType type, ResourceHandle handle);
-void ___load_resource(ResourceType type, ResourceHandle handle);
 
-// Path lookup
+/*
+ * When a resource type is added, be it in a library module or in a specific application,
+ * that module/application must define a global variable
+ * ResourceType Name_RTID;
+ * Then the typing macro for resource type addition expands to give a new resource type a unique identifier by passing this global's address, and further
+ * typed macro usage expands to this type id to lookup type info in a global table updated from calls to create a new resource type.
+ *
+ * A resource is always a struct. The resource type name given is the name of the struct, and this macro
+ * expands to give type information (unique id, size, type name for debugging).
+ *  
+ * Logging in and logging out out resources could by default not do anything past the generic application-memory struct allocation/deallocation.
+ * If a resource owns things, handles to GL objects in vram, (? sub-resources (if reference counting is used ?)), or needs
+ * conditioning (if the resource load is a runtime conditioning from a PLY file, then it needs to be done rather than
+ * just directly loading a binary image of the wanted structure.)
+ *
+ * The macro could just expand to name_login and name_logout functions that must be defined, then
+ * puts it in the resource type info structure.
+ */
+////////////////////////////////////////////////////////////////////////////////
+// Resource type name macro doesn't work! Look this up!
+////////////////////////////////////////////////////////////////////////////////
+
+#define add_resource_type(RESOURCE_TYPE_NAME)\
+     ___add_resource_type(&( RESOURCE_TYPE_NAME ## _RTID ),\
+                          sizeof(RESOURCE_TYPE_NAME),\
+                          " ## RESOURCE_TYPE_NAME ## ",\
+                          ( RESOURCE_TYPE_NAME ## _load ))
+
+#define add_resource_parameters(RESOURCE_TYPE_NAME)\
+    ___add_resource_parameters(( RESOURCE_TYPE_NAME ## _RTID ),\
+                               sizeof( RESOURCE_TYPE_NAME ## Parameters ))
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#define resource_parameters(STRUCTURE_NAME,HANDLE)\
+    ( (STRUCTURE_NAME ## Parameters *) ( HANDLE )._parameters )
+
+#define resource_data(STRUCTURE_NAME,HANDLE)\
+    ( (STRUCTURE_NAME *) ___resource_data( &( HANDLE ) ) )
+
+#define init_resource_handle(RESOURCE_TYPE_NAME,RESOURCE_HANDLE,PATH)\
+    ___init_resource_handle(( RESOURCE_TYPE_NAME ## _RTID),\
+                            &( RESOURCE_HANDLE ),\
+                            ( PATH ))
+
+// These functions are non-static because type-name to type-id macros resolve to them.
+void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(ResourceHandle *));
+void ___add_resource_parameters(ResourceType resource_type, size_t parameters_size);
+void *___resource_data(ResourceHandle *handle);
+void ___init_resource_handle(ResourceType resource_type, ResourceHandle *resource_handle, char *path);
+
+// Paths and search
 //================================================================================
-ResourceID lookup_resource(ResourceID id, char *path);
+bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_buffer_size);
+FILE *resource_file_open(char *path, char *suffix, char *flags);
+void resource_path_add(char *drive_name, char *path);
 ResourceID add_resource(ResourceID id, char *path);
+ResourceID lookup_resource(char *path);
+
+// Testing
+//================================================================================
+void test_resource_tree(void);
+
+// Helper functions and printing
+//================================================================================
+void print_resource_tree(void);
+void print_resource_types(void);
 
 
 #endif // HEADER_DEFINED_RESOURCES

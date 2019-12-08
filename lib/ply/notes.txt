@@ -1,8 +1,8 @@
 Packing format
 
-vertex|position: float x|xpos, float y|ypos, float z|zpos
+[vertex|position]: float x|xpos, float y|ypos, float z|zpos
 
-(<name|name|...>: <type> <name|name|...>, ...), ...
+([name|name|...]: <type> <name|name|...>, ...), ...
 
 uv1: float u, float v, uv2: float u, float v
 ->

@@ -41,6 +41,7 @@ end_header
 ================================================================================*/
 #ifndef HEADER_DEFINED_PLY
 #define HEADER_DEFINED_PLY
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -90,7 +91,6 @@ typedef struct PLYElement_s {
     size_t **property_offsets;
 } PLYElement;
 typedef struct PLY_s {
-    char *filename;
     PLYFormat format;
     int num_elements;
     PLYElement *first_element;
@@ -132,18 +132,18 @@ void destroy_ply_query(PLYQuery *query);
 //================================================================================
 // File reading
 //================================================================================
-PLY *read_ply(char *filename);
+PLY *read_ply(FILE *file);
 
 //================================================================================
 // Data extraction
 //================================================================================
-void ply_get_binary_data(PLY *ply);
+void ply_get_binary_data(FILE *file, PLY *ply);
 
 //================================================================================
 // Querying
 //================================================================================
 PLYQuery *read_ply_query(char *query_string);
-void *ply_get(PLY *ply, char *query_string, int *num_entries);
+void *ply_get(FILE *file, PLY *ply, char *query_string, int *num_entries);
 // Search through the PLY object
 void *ply_get_element(PLY *ply, char *element_name);
 void *ply_get_property(PLYElement *element, char *property_name);

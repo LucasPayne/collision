@@ -25,6 +25,14 @@
         exit(EXIT_FAILURE);\
     }
 
+#define fopen_check(FILE_PTR)\
+{\
+    if (( FILE_PTR ) == NULL) {\
+        fprintf(stderr, ERROR_ALERT "Couldn't open file.\n");\
+        exit(EXIT_FAILURE);\
+    }\
+}
+
 //================================================================================
 // Memory management/usage
 //================================================================================

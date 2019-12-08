@@ -8,8 +8,7 @@
 
 
 typedef uint16_t MapIndex;
-typedef uint64_t UUID; // ?
-#define NULL_ENTITY_ID { 0, 0 } // ???
+typedef uint64_t UUID;
 typedef struct EntityID_s {
     MapIndex map_index;
     UUID uuid;
@@ -17,8 +16,8 @@ typedef struct EntityID_s {
 
 
 typedef uint16_t AspectType;
-// "null" overall is aspect type of 0 (is this horrible?)
-#define NULL_ASPECT_TYPE 0
+// "null" aspect type is 0. Although, indexing into arrays by aspect type may be wanted ...
+
 typedef struct AspectID_s {
     MapIndex map_index;
     UUID uuid;
@@ -34,9 +33,14 @@ typedef struct EntityMapEntry_s {
 } EntityMapEntry;
 
 
-// null manager: type 0
+// A manager encapsulates aspect type information and how this type of aspect is managed.
+// This is created for an aspect type on the creation of its manager, with the information
+// filled out using macros.
+#define MAX_MANAGER_NAME_LENGTH 32
 typedef struct Manager_s {
-    AspectType type;
+    AspectType type_id;
+    size_t size;
+    char name[MAX_MANAGER_NAME_LENGTH];
     uint16_t aspect_map_size;
     void **aspect_map;
     UUID last_uuid;
@@ -70,16 +74,40 @@ void default_manager_new_aspect(Manager *manager, AspectID aspect);
 void default_manager_destroy_aspect(Manager *manager, AspectID aspect);
 void default_manager_aspect_iterator(Iterator *iterator);
 
+/* #define add_resource_type(RESOURCE_TYPE_NAME)\ */
+/*      ___add_resource_type(&( RESOURCE_TYPE_NAME ## _RTID ),\ */
+/*                           sizeof(RESOURCE_TYPE_NAME ## _RTID),\ */
+/*                           " ## RESOURCE_TYPE_NAME ## ",\ */
+/*                           ( RESOURCE_TYPE_NAME ## _load ))\ */
+
+////////////////////////////////////////////////////////////////////////////////
+// Aspect type name macro doesn't work! Look this up!
+////////////////////////////////////////////////////////////////////////////////
 #define new_default_manager(ASPECT_TYPE_NAME,SERIALIZE)\
-    _new_manager(ASPECT_TYPE_NAME ## _TYPE_ID, default_manager_new_aspect, default_manager_destroy_aspect, default_manager_aspect_iterator, ( SERIALIZE ))
+    _new_manager(&( ASPECT_TYPE_NAME ## _TYPE_ID ),\
+                 sizeof( ASPECT_TYPE_NAME ),\
+                 " ## ASPECT_TYPE_NAME ## ",\
+                 default_manager_new_aspect,\
+                 default_manager_destroy_aspect,\
+                 default_manager_aspect_iterator,\
+                 ( SERIALIZE ))
+
 #define new_manager(ASPECT_TYPE_NAME,NEW_ASPECT,DESTROY_ASPECT,ASPECT_ITERATOR,SERIALIZE)\
-    _new_manager(ASPECT_TYPE_NAME ## _TYPE_ID, ( NEW_ASPECT ), ( DESTROY_ASPECT ), ( ASPECT_ITERATOR ), ( SERIALIZE ))
-Manager *_new_manager(AspectType type,
+    _new_manager(&( ASPECT_TYPE_NAME ## _TYPE_ID ),\
+                 sizeof( ASPECT_TYPE_NAME ),\
+                 " ## ASPECT_TYPE_NAME ## ",\
+                 ( NEW_ASPECT ),\
+                 ( DESTROY_ASPECT ),\
+                 ( ASPECT_ITERATOR ),\
+                 ( SERIALIZE ))
+
+Manager *_new_manager(AspectType *type_pointer,
+                      size_t size,
+                      char *type_name,
                       void (*new_aspect)(Manager *, AspectID),
                       void (*destroy_aspect)(Manager *, AspectID),
                       void (*aspect_iterator)(Iterator *),
                       void (*serialize) (FILE *, void *));
-
 Manager *manager_of_type(AspectType type);
 
 //================================================================================
@@ -129,6 +157,7 @@ void print_entity(EntityID entity);
     _print_aspects_of_type(ASPECT_TYPE_NAME ## _TYPE_ID)
 void _print_aspects_of_type(AspectType type);
 
+void print_aspect_types(void);
 
 
 #endif // HEADER_DEFINED_ENTITY

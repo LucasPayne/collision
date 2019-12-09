@@ -80,13 +80,10 @@ void default_manager_aspect_iterator(Iterator *iterator);
 /*                           " ## RESOURCE_TYPE_NAME ## ",\ */
 /*                           ( RESOURCE_TYPE_NAME ## _load ))\ */
 
-////////////////////////////////////////////////////////////////////////////////
-// Aspect type name macro doesn't work! Look this up!
-////////////////////////////////////////////////////////////////////////////////
 #define new_default_manager(ASPECT_TYPE_NAME,SERIALIZE)\
     _new_manager(&( ASPECT_TYPE_NAME ## _TYPE_ID ),\
                  sizeof( ASPECT_TYPE_NAME ),\
-                 " ## ASPECT_TYPE_NAME ## ",\
+                 ( #ASPECT_TYPE_NAME ),\
                  default_manager_new_aspect,\
                  default_manager_destroy_aspect,\
                  default_manager_aspect_iterator,\
@@ -95,7 +92,7 @@ void default_manager_aspect_iterator(Iterator *iterator);
 #define new_manager(ASPECT_TYPE_NAME,NEW_ASPECT,DESTROY_ASPECT,ASPECT_ITERATOR,SERIALIZE)\
     _new_manager(&( ASPECT_TYPE_NAME ## _TYPE_ID ),\
                  sizeof( ASPECT_TYPE_NAME ),\
-                 " ## ASPECT_TYPE_NAME ## ",\
+                 ( #ASPECT_TYPE_NAME ),\
                  ( NEW_ASPECT ),\
                  ( DESTROY_ASPECT ),\
                  ( ASPECT_ITERATOR ),\

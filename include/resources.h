@@ -11,6 +11,8 @@ typedef struct Shader_s {
     GLuint vram_id;
 } Shader;
 
+----There is a serious problem with parameterized resources. Are they the same thing with different parameters? What is the "id" then? Can't just be the path.
+----Doesn't seem useful.
 To implement parameterized configurations, the resource type info struct could have
 a union of function pointers and a flag for which type of call to use. Can functions pointers be cast
 to a generic type so there are no type errors when macros expand to include login functions?
@@ -151,7 +153,7 @@ typedef struct ResourceTypeInfo_s {
     ResourceType type; // Its type is being used as its index in the global resource type info array.
     size_t size;
     char name[MAX_RESOURCE_TYPE_NAME_LENGTH + 1];
-    void *(*load) (ResourceHandle *handle);
+    void *(*load) (char *path);
     bool has_parameters;
     size_t parameters_size;
 } ResourceTypeInfo;
@@ -186,36 +188,34 @@ typedef struct ResourceTree_s {
  * The macro could just expand to name_login and name_logout functions that must be defined, then
  * puts it in the resource type info structure.
  */
-////////////////////////////////////////////////////////////////////////////////
-// Resource type name macro doesn't work! Look this up!
-////////////////////////////////////////////////////////////////////////////////
 
 #define add_resource_type(RESOURCE_TYPE_NAME)\
      ___add_resource_type(&( RESOURCE_TYPE_NAME ## _RTID ),\
                           sizeof(RESOURCE_TYPE_NAME),\
-                          " ## RESOURCE_TYPE_NAME ## ",\
+                          ( #RESOURCE_TYPE_NAME ),\
                           ( RESOURCE_TYPE_NAME ## _load ))
 
 #define add_resource_parameters(RESOURCE_TYPE_NAME)\
     ___add_resource_parameters(( RESOURCE_TYPE_NAME ## _RTID ),\
                                sizeof( RESOURCE_TYPE_NAME ## Parameters ))
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define resource_parameters(STRUCTURE_NAME,HANDLE)\
-    ( (STRUCTURE_NAME ## Parameters *) ( HANDLE )._parameters )
-
 #define resource_data(STRUCTURE_NAME,HANDLE)\
     ( (STRUCTURE_NAME *) ___resource_data( &( HANDLE ) ) )
 
+#define new_resource_handle(RESOURCE_TYPE_NAME,PATH)\
+    ___new_resource_handle(( RESOURCE_TYPE_NAME ## _RTID),\
+                           ( PATH ))
+
+////// Should be "update", because this should _not_ be used to create a new resource handle, rather replace it.
 #define init_resource_handle(RESOURCE_TYPE_NAME,RESOURCE_HANDLE,PATH)\
     ___init_resource_handle(( RESOURCE_TYPE_NAME ## _RTID),\
                             &( RESOURCE_HANDLE ),\
                             ( PATH ))
 
 // These functions are non-static because type-name to type-id macros resolve to them.
-void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(ResourceHandle *));
-void ___add_resource_parameters(ResourceType resource_type, size_t parameters_size);
+void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(char *));
 void *___resource_data(ResourceHandle *handle);
+ResourceHandle ___new_resource_handle(ResourceType resource_type, char *path);
 void ___init_resource_handle(ResourceType resource_type, ResourceHandle *resource_handle, char *path);
 
 // Paths and search
@@ -234,6 +234,7 @@ void test_resource_tree(void);
 //================================================================================
 void print_resource_tree(void);
 void print_resource_types(void);
+void print_resource_path(void);
 
 
 #endif // HEADER_DEFINED_RESOURCES

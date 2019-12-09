@@ -115,14 +115,7 @@ void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, v
     new_info->type = g_num_resource_types - 1;
     new_info->size = size;
     new_info->load = load;
-    new_info->has_parameters = false;
-    new_info->parameters_size = 0;
     strncpy(new_info->name, name, MAX_RESOURCE_TYPE_NAME_LENGTH);
-}
-void ___add_resource_parameters(ResourceType resource_type, size_t parameters_size)
-{
-    g_resource_type_info[resource_type].has_parameters = true;
-    g_resource_type_info[resource_type].parameters_size = parameters_size;
 }
 /*
 This gives a new resource ID which should be used instantly after creation. When returned, this is a usable ID, so
@@ -191,6 +184,7 @@ When a resource handle is initialized, its id is null. This will cause a path lo
 when the handle is dereferenced, possibly loading the resource, or just giving the handle
 the (for now) valid id.
 
+////// Should be "update", because this should _not_ be used to create a new resource handle, rather replace it.
 
 This function is static because a type-symbol macro expands to it.
  */
@@ -203,12 +197,16 @@ void ___init_resource_handle(ResourceType resource_type, ResourceHandle *resourc
     resource_handle->_path = (char *) malloc((strlen(path) + 1) * sizeof(char));
     mem_check(resource_handle->_path);
     strcpy(resource_handle->_path, path);
-
-    // Prepare zero-intialized parameters for the resource handle, if it has any.
-    if (g_resource_type_info[resource_type].has_parameters) {
-        resource_handle->_parameters = calloc(1, g_resource_type_info[resource_type].parameters_size);
-        mem_check(resource_handle->_parameters);
-    }
+}
+ResourceHandle ___new_resource_handle(ResourceType resource_type, char *path)
+{
+    ResourceHandle resource_handle;
+    resource_handle._id = null_resource_id();
+    resource_handle._id.type = resource_type;
+    resource_handle._path = (char *) malloc((strlen(path) + 1) * sizeof(char));
+    mem_check(resource_handle._path);
+    strcpy(resource_handle._path, path);
+    return resource_handle;
 }
 
 /*
@@ -343,8 +341,13 @@ will attempt to open, with a pair in the global path variable of TextureLibrary:
 FILE *resource_file_open(char *path, char *suffix, char *flags)
 {
     char path_buffer[1024];
-    if (!resource_file_path(path, suffix, path_buffer, 1024)) return NULL;
-    return fopen(path, flags);
+    if (!resource_file_path(path, suffix, path_buffer, 1024)) {
+        return NULL;
+    }
+    //@@@
+    printf("MATCHED PATH: \"%s\"\n", path_buffer);
+    FILE *file = fopen(path_buffer, flags);
+    return file;
 }
 
 bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_buffer_size)
@@ -669,6 +672,16 @@ void print_resource_types(void)
         printf("type id: %d\n", g_resource_type_info[i].type);
         printf("size: %ld\n", g_resource_type_info[i].size);
         printf("has load function?: %s\n", g_resource_type_info[i].load == NULL ? "No" : "Yes");
+    }
+}
+
+void print_resource_path(void)
+{
+    printf("RESOURCE PATH: ");
+    if (g_resource_path == NULL) {
+        printf("Not initialized\n");
+    } else {
+        printf("\"%s\"\n", g_resource_path);
     }
 }
 

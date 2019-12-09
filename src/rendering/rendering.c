@@ -3,7 +3,9 @@ PROJECT_LIBS:
     + glad
     + helper_gl
     + helper_input
+    + dictionary
     + resources
+    + rendering
 ================================================================================*/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -15,6 +17,7 @@ PROJECT_LIBS:
 #include "helper_gl.h"
 #include "helper_input.h"
 #include "resources.h"
+#include "rendering.h"
 //--------------------------------------------------------------------------------
 static double ASPECT_RATIO;
 //--------------------------------------------------------------------------------

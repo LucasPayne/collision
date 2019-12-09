@@ -47,7 +47,7 @@
 //================================================================================
 #define argcheck(NUM)\
     if (argc != NUM) {\
-        fprintf(stderr, "give good args");\
+        fprintf(stderr, "give good args\n");\
         exit(EXIT_FAILURE);\
     }
 

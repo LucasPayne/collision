@@ -12,7 +12,7 @@ things such as type names are typedef'd.
      GraphicsMat4x4f
      GraphicsUniformID
 --------------------------------------------------------------------------------*/
-#include "rendering_gl.h"
+#include "rendering/gl.h"
 /*--------------------------------------------------------------------------------
 This rendering module is built using the resources system. This is a shared
 object system which gives "resources" identifiers as paths. Instead of holding
@@ -119,7 +119,7 @@ typedef struct /* Resource */ Mesh_s {
     GraphicsID attribute_buffer_ids[NUM_ATTRIBUTE_TYPES];
     uint32_t num_triangles;
     GraphicsID triangles_id;
-} MeshHandle;
+} Mesh;
 
 /*--------------------------------------------------------------------------------
 Shader bookkeeping stuff. Reading the source into application memory
@@ -127,7 +127,7 @@ Shader bookkeeping stuff. Reading the source into application memory
 loading and compilation, and linking, with error handling and log printing.
 --------------------------------------------------------------------------------*/
 void read_shader_source(const char *name, char **lines_out[], size_t *num_lines);
-void load_and_compile_shader(GraphicsID shader_id, const char *shader_path);
+bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path);
 void link_shader_program(GraphicsID shader_program_id);
 
 #endif // HEADER_DEFINED_RENDERING

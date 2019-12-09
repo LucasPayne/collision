@@ -1,6 +1,12 @@
-
+/*--------------------------------------------------------------------------------
+   Rendering module.
+Dependencies:
+	resources:  Basic graphics objects are formed as resources, special kinds of shared objects tied to assets.
+	dictionary: A basic key-value-pair file format for configuring graphics objects.
+--------------------------------------------------------------------------------*/
 #include "resources.h"
 #include "rendering.h"
+#include "dictionary.h"
 #include "string_processing.h"
 
 // Rendering resources
@@ -62,11 +68,9 @@ static void *GraphicsProgram_load(char *path)
     
     const int buf_size = 64;
     char buf[buf_size];
-    if (!key_dictionary("vertex_format", buf, buf_size)) return NULL;
+    if (!dictionary_get("vertex_format", buf, buf_size)) return NULL;
     int i;
     if ((i = string_in(buf, "3,C,3C")) == -1) return NULL;
-
-
     free(dic);
 }
 ResourceType Mesh_RTID;

@@ -3,6 +3,11 @@
 %x Key
 %x Pattern
 
+%{
+#define ERROR 0
+#define SUCCESS 1
+%}
+
 %%
 
 %%
@@ -10,8 +15,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdarg.h>
-#include "dict.h"
-
+#include "dictionary.h"
 
 bool dict_query(Dictionary *dictionary, char *query_string, ...)
 {

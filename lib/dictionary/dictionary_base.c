@@ -1,78 +1,22 @@
-%option noyywrap nodefault
-%option prefix="_DICT_READ_yy"
-%x Key
-%x Value
-%x Comment
-%x CommentOneLine
-
-%{
+/*--------------------------------------------------------------------------------
+  The basis of the dictionary module. The other components are defined in
+  lexer files.
+--------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <ctype.h>
-#include "dict.h"
+#include <string.h>
+#include "helper_definitions.h"
+#include "dictionary.h"
 
-static char *DictNode_key(DictNode *node);
-static char *DictNode_value(DictNode *node);
+// Static declarations
+//--------------------------------------------------------------------------------
 static uint32_t make_hash(char *key);
+static char *DictNode_value(DictNode *node);
+static char *DictNode_key(DictNode *node);
 
-#define g_buf_size 1024
-static char g_key[g_buf_size];
-static Dictionary *g_dictionary;
-
-int g_comment_depth = 0; // can't do this in C, but be fine with nesting /* */ comments.
-
-%}
-
-%%
-
-    /* "thing:%s,stuff:%d,nice:%d" */
-
-
-<Key>[0-9A-z_]+":"[ \t\n]* {
-    char *colon = strchr(yytext, ':');
-    if (colon - yytext >= g_buf_size) {
-        fprintf(stderr, "ERROR: Buffer size not large enough to store key.\n");
-        exit(EXIT_FAILURE);
-    }
-    strncpy(g_key, yytext, colon - yytext);
-    g_key[colon - yytext] = '\0';
-    BEGIN Value;
-}
-<Key,CommentOneLine>"/*" { printf("GOOOO "); g_comment_depth = 1; BEGIN Comment; }
-<Key>"//" { printf("magic missile --> "); BEGIN CommentOneLine; }
-<CommentOneLine>. { printf("ah "); }
-<CommentOneLine>"\n" { printf(" out of mana\n"); BEGIN Key; }
-<Key>[ \n\t] { /* */ }
-<Key>. {
-    fprintf(stderr, "Failed reading key.\n");
-    exit(EXIT_FAILURE);
-}
-<Comment>"/*" { printf("HERE WE GO AGAIN "); g_comment_depth ++; }
-<Comment>"*/" { printf(" brrrsshhh\n"); g_comment_depth --; if (g_comment_depth == 0) BEGIN Key; }
-<Comment>.|"\n" { printf("vroom-vroom "); /* */ }
-
-<Value>[^\n]* {
-    dict_add(g_dictionary, g_key, yytext);
-#if 0
-    // View the dictionary being filled.
-    printf("Key: %s, Value: %s\n", g_key, yytext);
-    printf("Hash: %u\n", make_hash(g_key) % g_dictionary->size);
-    print_dictionary(g_dictionary);
-    getchar();
-#endif
-    input(); // eat the newline
-    BEGIN Key;
-}
-<Value>.|"\n" {
-    fprintf(stderr, "Failed reading value.\n");
-    exit(EXIT_FAILURE);
-}
-
-%%
-#include <stdio.h>
-#include <stdbool.h>
-
+// Definitions
+//--------------------------------------------------------------------------------
 static char *DictNode_key(DictNode *node)
 {
     return &(node->_string);
@@ -81,7 +25,6 @@ static char *DictNode_value(DictNode *node)
 {
     return &(node->_string) + node->value_pos;
 }
-
 
 static uint32_t make_hash(char *key)
 {
@@ -134,7 +77,7 @@ bool dict_get(Dictionary *dictionary, char *key, char *buffer, size_t buffer_siz
     return false;
 }
 
-void ___free_end_dict_list(DictNode *cur)
+static void ___free_end_dict_list(DictNode *cur)
 {
     if (cur->next != NULL) ___free_end_dict_list(cur->next);
     free(cur);
@@ -182,44 +125,4 @@ void print_dictionary(Dictionary *dictionary)
         }
         printf("]\n");
     }
-}
-//--------------------------------------------------------------------------------
-// Testing
-//--------------------------------------------------------------------------------
-void test_get(char *key)
-{
-    const int buf_size = 1024;
-    printf("Querying for \"%s\": ", key);
-    char buf[buf_size];
-    if (!dict_get(g_dictionary, key, buf, buf_size)) printf("Not found!\n");
-    else printf("got \"%s\"\n", buf);
-}
-
-int main(int argc, char **argv)
-{
-    if (argc != 2) {
-        fprintf(stderr, "give good args\n");
-        exit(EXIT_FAILURE);
-    }
-
-    FILE *file = fopen(argv[1], "r");
-    if (file == NULL) {
-        fprintf(stderr, "file failed to open\n");
-        exit(EXIT_FAILURE);
-    }
-    yyin = file;
-
-    destroy_dictionary(g_dictionary);
-    g_dictionary = new_dictionary(50);
-
-
-    BEGIN Key;
-    yylex();
-
-    print_dictionary(g_dictionary);
-
-    test_get("thing");
-    test_get("nice");
-    test_get("ary");
-    test_get("that");
 }

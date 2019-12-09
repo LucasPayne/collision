@@ -1,0 +1,5 @@
+#!/bin/bash
+if [ $# -ne 1 ] ; then
+    echo "give good args"
+fi
+(cd ../.. && ./run dictionary_test -ff) ; ../../build/applications/dictionary_test $1

@@ -63,6 +63,7 @@ typedef uint8_t GraphicsProgramType;
 #define GRAPHICS_PROGRAM_VGTTF (1 << Vertex) & (1 << Geometry) & (1 << TesselationControl) & (1 << TesselationEvaluation) & (1 << Fragment)
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
+extern ResourceType Shader_RTID;
 typedef struct /* Resource */ Shader_s {
     ShaderType shader_type;
     GraphicsID shader_id;
@@ -95,6 +96,7 @@ typedef struct Uniform_s {
 } Uniform;
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
+extern ResourceType GraphicsProgram_RTID;
 typedef struct /* Resource */ GraphicsProgram_s {
     GraphicsID program_id;
     GraphicsProgramType program_type;
@@ -112,6 +114,7 @@ typedef struct MeshData_s {
     uint32_t *triangles;
 } MeshData;
 
+extern ResourceType Mesh_RTID;
 typedef struct /* Resource */ Mesh_s {
     VertexFormat vertex_format;
     uint32_t num_vertices;
@@ -120,6 +123,7 @@ typedef struct /* Resource */ Mesh_s {
     uint32_t num_triangles;
     GraphicsID triangles_id;
 } Mesh;
+
 
 /*--------------------------------------------------------------------------------
 Shader bookkeeping stuff. Reading the source into application memory

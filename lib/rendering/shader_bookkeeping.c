@@ -84,6 +84,7 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
 }
 bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
 {
+#define DEBUG 0
     /* notes:
      * Error handling here should be done in a log system. So, something can still try to compile a shader
      * and fail, and handle that itself, while in testing a log can be checked, without causing a program exit.
@@ -96,6 +97,11 @@ bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
     char **lines = NULL;
     size_t num_lines = 0;
     read_shader_source(shader_path, &lines, &num_lines);
+#if DEBUG == 1
+    for (int i = 0; i < num_lines; i++) {
+        printf("%s", lines[i]);
+    }
+#endif
     glShaderSource(shader_id, num_lines, (const GLchar * const*) lines, NULL);
     free(lines[0]);
     free(lines);
@@ -104,9 +110,12 @@ bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
     GLint compiled;
     glGetShaderiv(shader_id, GL_COMPILE_STATUS, &compiled);
     // Successfully attempted compilation, checking errors ...
+#if 1
     if (compiled == GL_FALSE) {
         return false;
-#if 0
+    }
+#else
+    if (compiled == GL_FALSE) {
 	// Print out the log TODO: Print this to a logging system.
         fprintf(stderr, ERROR_ALERT "Shader %s failed to compile.\n", shader_path);
         GLint log_length;
@@ -121,10 +130,12 @@ bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
         fprintf(stderr, "%s", log);
         free(log);
         exit(EXIT_FAILURE);
-#endif
+        return false;
     }
+#endif
     // Successfully compiled shader
     return true;
+#undef DEBUG
 }
 void link_shader_program(GraphicsID shader_program_id)
 {

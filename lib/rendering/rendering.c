@@ -28,7 +28,7 @@ static void *Shader_load(char *path)
     ShaderType shader_type;
     char *suffix;
     // Want to keep the shader asset as a simple file, so infer the shader type from the path. 
-    if (suffix = strrchr(path, '.') == NULL) return NULL;
+    if ((suffix = strrchr(path, '.')) == NULL) return NULL;
     if (strcmp(suffix + 1, "vert") == 0) {
         shader_type = Vertex;
     } else if (strcmp(suffix + 1, "frag") == 0) {
@@ -38,14 +38,18 @@ static void *Shader_load(char *path)
     } else {
         return NULL;
     }
-    GraphicsID shader_id = glCreateShader(shader_type);
+    GLenum gl_shader_type = gl_shader_type(shader_type);
+    if (gl_shader_type == 0) return NULL;
+    GraphicsID shader_id = glCreateShader(gl_shader_type);
+    printf("created id: %d\n", shader_id);
     // Load the shader source from the physical path, and attempt to compile it.
-    char *shader_path_buffer[1024];
+    char shader_path_buffer[1024];
     if (!resource_file_path(path, "", shader_path_buffer, 1024)) {
         fprintf(stderr, "FAILED TO GET SHADER FILE PATH\n");
         exit(EXIT_FAILURE);
         return NULL;
     }
+    printf("Shader path: \"%s\"\n", shader_path_buffer);
     if (!load_and_compile_shader(shader_id, shader_path_buffer)) {
         fprintf(stderr, "FAILED TO COMPILE SHADER\n");
         exit(EXIT_FAILURE);
@@ -56,6 +60,7 @@ static void *Shader_load(char *path)
     Shader *shader = (Shader *) calloc(1, sizeof(Shader));
     mem_check(shader);
     shader->shader_type = shader_type;
+    printf("Setting shader_id: %u\n", shader_id);
     shader->shader_id = shader_id;
     return (void *) shader;
 }

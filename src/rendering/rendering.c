@@ -33,9 +33,32 @@ static void key_callback(GLFWwindow *window, int key,
 
 void init_program(void)
 {
+    init_resources_rendering();
+    resource_path_add("Shaders", "/home/lucas/code/collision/src/rendering/shaders");
+
+    {
+        ResourceHandle shader = new_resource_handle(Shader, "Shaders/example.vert");
+        printf("shader_id: %u\n", resource_data(Shader, shader)->shader_id);
+    }
+    {
+        ResourceHandle shader = new_resource_handle(Shader, "Shaders/passthrough.frag");
+        printf("shader_id: %u\n", resource_data(Shader, shader)->shader_id);
+    }
 }
 void loop(void)
 {
+    {
+        ResourceHandle shader = new_resource_handle(Shader, "Shaders/example.vert");
+        printf("shader_id: %u\n", resource_data(Shader, shader)->shader_id);
+    }
+    {
+        ResourceHandle shader = new_resource_handle(Shader, "Shaders/passthrough.frag");
+        printf("shader_id: %u\n", resource_data(Shader, shader)->shader_id);
+    }
+    {
+        /* ResourceHandle shader = new_resource_handle(Shader, "Shaders/bungel.vert"); */
+        /* printf("shader_id: %u\n", resource_data(Shader, shader)->shader_id); */
+    }
 }
 void close_program(void)
 {

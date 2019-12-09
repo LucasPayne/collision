@@ -89,6 +89,8 @@ new: ; $(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 .PRECIOUS: build/lib/%.o
 build/lib/%.o:
 	mkdir -p "$(shell dirname "$@")";\
+	# echo "!!!!!!!!!! MAKING $@ !!!!!!!!!!!!!!!"
+	# sleep 1.5
 	test -f "$(CURDIR)/$(subst build/,,$(shell dirname "$@"))/Makefile" && (\
 		cd "$(shell dirname "$@")" && LIB=$(CURDIR)/$(subst build/,,$(shell dirname "$@"))\
 			$(MAKE) -e --file=$(CURDIR)/$(subst build/,,$(shell dirname "$@"))/Makefile;\

@@ -8,4 +8,7 @@ dictionary.o: $(LIB)/dictionary_read.l $(LIB)/dictionary_query.l $(LIB)/dictiona
 	flex -o dictionary_query.yy.c $(LIB)/dictionary_query.l
 	$(CC) -o dictionary_query.o -c dictionary_query.yy.c $(CFLAGS)
 	$(CC) -o dictionary_base.o -c $(LIB)/dictionary_base.c $(CFLAGS)
-	ar rvs dictionary.o dictionary_base.o dictionary_read.o dictionary_query.o
+	ld -relocatable -o dictionary.o dictionary_base.o dictionary_read.o dictionary_query.o
+
+# This manages to put everything in a ".o" library, but interreferences aren't resolved. So, above partial link works.
+# ar rvs dictionary.o dictionary_base.o dictionary_read.o dictionary_query.o

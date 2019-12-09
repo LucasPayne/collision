@@ -1,11 +1,12 @@
 /*================================================================================
+    Rendering and rendering resources module.
 ================================================================================*/
 #ifndef HEADER_DEFINED_RENDERING
 #define HEADER_DEFINED_RENDERING
 #include <stdint.h>
 /*--------------------------------------------------------------------------------
-Graphics API definitions. This module is still dependent on the OpenGL, but
-things such as type names are typedef'd.
+Graphics API definitions. This module is still dependent on OpenGL, but
+things such as type names and enum mappings are typedef'd/macro'd.
      GraphicsID
      GraphicsInt
      GraphicsFloat
@@ -37,6 +38,7 @@ enum AttributeTypes {
 #define ATTRIBUTE_BITMASK_SIZE 32
 typedef uint32_t VertexFormat;
 #define NUM_VERTEX_FORMATS 3
+#define VERTEX_FORMAT_NONE 0
 #define VERTEX_FORMAT_3 1 << ATTRIBUTE_TYPE_POSITION
 #define VERTEX_FORMAT_C 1 << ATTRIBUTE_TYPE_COLOR
 #define VERTEX_FORMAT_N 1 << ATTRIBUTE_TYPE_NORMAL
@@ -45,6 +47,9 @@ typedef uint32_t VertexFormat;
 #define VERTEX_FORMAT_3N VERTEX_FORMAT_3 | VERTEX_FORMAT_N
 #define VERTEX_FORMAT_3CN VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_N
 #define VERTEX_FORMAT_3CU VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_U
+// Translate from strings of the form "3CU", etc., to vertex format bitmasks.
+// This is how they will be used in text files.
+VertexFormat string_to_VertexFormat(char *string);
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
 typedef uint8_t ShaderType;
@@ -81,20 +86,27 @@ enum UniformTypes {
     UNIFORM_MAT4X4F
 };
 #define MAX_UNIFORM_NAME_LENGTH 31
+typedef union UniformGetter_u {
+    GraphicsInt *global_int;
+    GraphicsInt *global_float;
+    GraphicsInt *global_mat4x4f;
+    GraphicsInt (*int_getter)(void);
+    GraphicsFloat (*float_getter)(void);
+    GraphicsMat4x4f (*mat4x4f_getter)(void);
+} UniformGetter;
 typedef struct Uniform_s {
     char name[MAX_UNIFORM_NAME_LENGTH + 1];
     GraphicsUniformID location;
     UniformType type;
-    union UniformGetter {
-        GraphicsInt *global_int_getter;
-        GraphicsInt *global_float_getter;
-        GraphicsInt *global_mat4x4f_getter;
-        GraphicsInt (*int_getter)(void);
-        GraphicsFloat (*float_getter)(void);
-        GraphicsMat4x4f (*mat4x4f_getter)(void);
-    } getter;
+    UniformGetter getter;
 } Uniform;
 /*--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------*/
+
+/*--------------------------------------------------------------------------------
+A "graphics program" is a linked set of shader objects. It holds these as resource
+handles so that shader objects are not recompiled for each program they link into.
+A graphics program is itself a resource.
 --------------------------------------------------------------------------------*/
 extern ResourceType GraphicsProgram_RTID;
 typedef struct /* Resource */ GraphicsProgram_s {
@@ -102,10 +114,12 @@ typedef struct /* Resource */ GraphicsProgram_s {
     GraphicsProgramType program_type;
     ResourceHandle shaders[NUM_SHADER_TYPES]; /* Resources: Shader[] */
     VertexFormat vertex_format;
-    uint16_t num_uniforms;
-    Uniform *uniform_array;
 } GraphicsProgram;
+void *GraphicsProgram_load(char *path);
 
+/*--------------------------------------------------------------------------------
+  Mesh stuff
+--------------------------------------------------------------------------------*/
 typedef struct MeshData_s {
     VertexFormat vertex_format;
     uint32_t num_vertices;
@@ -123,6 +137,23 @@ typedef struct /* Resource */ Mesh_s {
     uint32_t num_triangles;
     GraphicsID triangles_id;
 } Mesh;
+void *Mesh_load(char *path);
+void upload_mesh(Mesh *mesh, MeshData *mesh_data);
+void upload_and_free_mesh(Mesh *mesh, MeshData *mesh_data);
+
+/*--------------------------------------------------------------------------------
+An "Artist" is what is used to draw objects. This structure associates a graphics program
+with the uniform data and retrieval needed to provide the context enough to render with this
+graphics program.
+--------------------------------------------------------------------------------*/
+typedef struct Artist_s {
+    ResourceHandle graphics_program; // Resource: GraphicsProgram
+    uint16_t num_uniforms;
+    Uniform *uniform_array;
+} Artist;
+void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, UniformType uniform_type);
+void Artist_bind(Artist *artist);
+void Artist_draw_mesh(Artist *artist, Mesh *mesh);
 
 
 /*--------------------------------------------------------------------------------
@@ -133,5 +164,12 @@ loading and compilation, and linking, with error handling and log printing.
 void read_shader_source(const char *name, char **lines_out[], size_t *num_lines);
 bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path);
 void link_shader_program(GraphicsID shader_program_id);
+
+/*--------------------------------------------------------------------------------
+Loading stuff. Possibly should be outside of this module, but since a mesh loading
+function explicitly accounts for possible ways to compile a mesh asset, these
+are here.
+--------------------------------------------------------------------------------*/
+void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file);
 
 #endif // HEADER_DEFINED_RENDERING

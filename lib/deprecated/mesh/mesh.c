@@ -198,6 +198,17 @@ void renderer_upload_uniforms(Renderer *renderer)
     }
 }
 
+//================================================================================
+//================================================================================
+//================================================================================
+//================================================================================
+//================================================================================
+// Refactor and use this
+//================================================================================
+//================================================================================
+//================================================================================
+//================================================================================
+//================================================================================
 void render_mesh(Renderer *renderer, MeshHandle *mesh_handle, GLenum primitive_mode)
 {
     // vertex format compatibility: renderer must not require attribute types the
@@ -364,7 +375,7 @@ void serialize_mesh_handle(FILE *file, MeshHandle *mesh_handle)
 
 Uniform *renderer_add_uniform(Renderer *renderer, char *name, UniformData (*get_uniform_value)(void), GLuint uniform_type)
 {
-    // uniform type: a GL_ type
+    // uniform type: a GL_ type (--??)
     if (renderer->num_uniforms >= MAX_RENDERER_UNIFORMS) {
         fprintf(stderr, ERROR_ALERT "Too many uniforms added to renderer. The maximum is set to %d.\n", MAX_RENDERER_UNIFORMS);
         exit(EXIT_FAILURE);

@@ -65,7 +65,7 @@ EntityID new_entity(int start_num_aspects);
 void *get_aspect_data(AspectID aspect);
 
 #define entity_add_aspect(ENTITY_ID,ASPECT_TYPE_NAME)\
-    (ASPECT_TYPE_NAME *) get_aspect_data(_entity_add_aspect(( ENTITY_ID ), ASPECT_TYPE_NAME ## _TYPE_ID))
+    ( (ASPECT_TYPE_NAME *) get_aspect_data(_entity_add_aspect(( ENTITY_ID ), ASPECT_TYPE_NAME ## _TYPE_ID)) )
 AspectID _entity_add_aspect(EntityID entity, AspectType type);
 void init_entity_model(void);
 

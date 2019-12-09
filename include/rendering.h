@@ -120,6 +120,8 @@ void *GraphicsProgram_load(char *path);
 /*--------------------------------------------------------------------------------
   Mesh stuff
 --------------------------------------------------------------------------------*/
+extern const AttributeInfo g_attribute_info[];
+
 typedef struct MeshData_s {
     VertexFormat vertex_format;
     uint32_t num_vertices;

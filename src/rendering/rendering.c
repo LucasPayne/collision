@@ -18,6 +18,7 @@ PROJECT_LIBS:
 #include <stdbool.h>
 #include <math.h>
 #include <string.h>
+#include "helper_definitions.h"
 #include "helper_gl.h"
 #include "helper_input.h"
 #include "resources.h"
@@ -26,6 +27,7 @@ PROJECT_LIBS:
 #include "matrix_mathematics.h"
 //--------------------------------------------------------------------------------
 static double ASPECT_RATIO;
+static Matrix4x4f g_mvp_matrix;
 //--------------------------------------------------------------------------------
 
 static void key_callback(GLFWwindow *window, int key,
@@ -68,8 +70,8 @@ static Matrix4x4f Transform_matrix(Transform *transform)
 static AspectType Body_TYPE_ID;
 typedef struct /* Aspect */ Body_s {
 ASPECT_PROPERTIES()
-    Artist artist;
-    ResourceHandle model; // Resource: Model
+    ResourceHandle artist; /* Resource: Artist */
+    ResourceHandle mesh; /* Resource: Mesh */
     int test_val;
 } Body;
 
@@ -87,7 +89,16 @@ void Camera_view(Camera *camera)
     /* printf("frag path: %s\n", program->shaders[Fragment]._path); */
 
     for_aspect(Body, body)
-        printf("test_val: %d\n", body->test_val);
+        /* printf("test_val: %d\n", body->test_val); */
+        Mesh *mesh = resource_data(Mesh, body->mesh);
+        printf("mesh num_vertices: %d, num_triangles: %d\n", mesh->num_vertices, mesh->num_triangles);
+        GraphicsProgram *graphics_program = resource_data(GraphicsProgram, resource_data(Artist, body->artist)->graphics_program);
+        printf("graphics program id: %u\n", graphics_program->program_id);
+        // Set up the mvp matrix this program provides.
+        identity_matrix4x4f(&g_mvp_matrix);
+        Matrix4x4f model_matrix = Transform_matrix(get_sibling_aspect(body, Transform));
+        right_multiply_matrix4x4f(&g_mvp_matrix, &model_matrix);
+        Artist_draw_mesh(resource_data(Artist, body->artist), mesh);
     end_for_aspect()
 }
 void Camera_init(Camera *camera)
@@ -97,8 +108,27 @@ void Camera_init(Camera *camera)
 }
 //-End aspects----------------------------------------------------------------------
 
+// Uniform getters
+GraphicsFloat get_uniform_aspect_ratio(void) { return (GraphicsFloat) ASPECT_RATIO; }
+GraphicsMat4x4f get_uniform_mvp_matrix(void)
+{
+    GraphicsMat4x4f mat;
+    memcpy(&mat, &g_mvp_matrix, sizeof(Matrix4x4f));
+    /* print_matrix4x4f(&g_mvp_matrix); */
+    /* for (int i = 0; i < 16; i++) { */
+    /*     printf("%f/%f, ", mat.vals[i], g_mvp_matrix.vals[i]); */
+    /* } */
+    /* printf("\n"); */
+    return mat;
+    /* print_matrix4x4f(&g_mvp_matrix); */
+    /* return *((GraphicsMat4x4f *) &g_mvp_matrix.vals); */
+}
+/* GraphicsMat4x4f get_uniform_mvp_matrix(void) { for(int i = 0; i < 16; i++) printf("%d, ", ((GraphicsMat4x4f *) &g_mvp_matrix)->vals[i]);printf("\n");return *((GraphicsMat4x4f *) &g_mvp_matrix); } */
+
 void init_program(void)
 {
+    identity_matrix4x4f(&g_mvp_matrix);
+
     init_entity_model();
     new_default_manager(Camera, NULL);
     new_default_manager(Body, NULL);
@@ -106,16 +136,30 @@ void init_program(void)
 
     init_resources_rendering();
     resource_path_add("Shaders", "/home/lucas/code/collision/src/rendering/shaders");
+    resource_path_add("Meshes", "/home/lucas/code/collision/src/rendering/meshes");
+    // Create artists
+    ResourceHandle res_artist_1 = new_resource_handle(Artist, "Virtual/artists/1");
+    Artist *artist_1 = resource_data(Artist, res_artist_1);
+    artist_1->graphics_program = new_resource_handle(GraphicsProgram, "Shaders/programs/default");
+    Artist_add_uniform(artist_1, "mvp_matrix", (UniformGetter) get_uniform_mvp_matrix, UNIFORM_MAT4X4F);
+    Artist_add_uniform(artist_1, "aspect_ratio", (UniformGetter) get_uniform_aspect_ratio, UNIFORM_FLOAT);
+
 
     EntityID cameraman = new_entity(1);
     Camera_init(entity_add_aspect(cameraman, Camera));
-    /* Camera_init(entity_add_aspect(cameraman, Camera), "Shaders/programs/default"); */
+    for (int i = 0; i < 100; i++) {
+        EntityID dude = new_entity(2);
+        Transform_set(entity_add_aspect(dude, Transform), 2*frand()-1.0, 2*frand()-1.0, 2*frand()-1.0, M_PI*frand(),M_PI*frand(),M_PI*frand());
+        Body *body = entity_add_aspect(dude, Body);
+        body->test_val = 3;
+        body->mesh = new_resource_handle(Mesh, "Meshes/icosohedron");
+        body->artist = new_resource_handle(Artist, "Virtual/artists/1");
+        /* Artist_init(&body->artist, */ 
+        /* Artist_add_uniform(&body->artist, (UniformGetter) get_uniform_mvp_matrix */
+    }
 
-    { EntityID dude = new_entity(1);
-    entity_add_aspect(dude, Body)->test_val = 3; }
-
-    { EntityID dude = new_entity(1);
-    entity_add_aspect(dude, Body)->test_val = 7; }
+    /* { EntityID dude = new_entity(1); */
+    /* entity_add_aspect(dude, Body)->test_val = 7; } */
 
 #if 0
     {

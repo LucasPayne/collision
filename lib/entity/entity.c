@@ -266,7 +266,7 @@ static void entity_extend_aspects(EntityID entity)
 
 void default_manager_new_aspect(Manager *manager, AspectID aspect)
 {
-    // Default manager just mallocs for the aspect data
+    // Default manager just mallocs for the aspect data (and zero initializes)
     manager->aspect_map[aspect.map_index] = (void *) calloc(1, g_managers[aspect.type].size);
     mem_check(manager->aspect_map[aspect.map_index]);
 }

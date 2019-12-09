@@ -23,6 +23,7 @@ identifiers are shared.
 #include "resources.h"
 void init_resources_rendering(void);
 /*--------------------------------------------------------------------------------
+Vertex attributes and vertex formats.
 Vertex formats are accounted for with bitmasks. The bitmask may be lengthened
 later if needed. This allows quick superset/subset testing for vertex format
 compatability.
@@ -35,6 +36,15 @@ enum AttributeTypes {
     ATTRIBUTE_TYPE_UV,
     NUM_ATTRIBUTE_TYPES
 };
+// Attribute types are associated to an AttributeInfo structure by their value as an index.
+#define MAX_ATTRIBUTE_NAME_LENGTH 32
+typedef struct AttributeInfo_s {
+    AttributeType attribute_type;
+    char name[MAX_ATTRIBUTE_NAME_LENGTH + 1];
+    GLenum gl_type;
+    GLuint gl_size;
+} AttributeInfo;
+
 #define ATTRIBUTE_BITMASK_SIZE 32
 typedef uint32_t VertexFormat;
 #define NUM_VERTEX_FORMATS 3
@@ -141,18 +151,23 @@ typedef struct /* Resource */ Mesh_s {
 } Mesh;
 void *Mesh_load(char *path);
 void upload_mesh(Mesh *mesh, MeshData *mesh_data);
-void upload_and_free_mesh(Mesh *mesh, MeshData *mesh_data);
 
 /*--------------------------------------------------------------------------------
 An "Artist" is what is used to draw objects. This structure associates a graphics program
 with the uniform data and retrieval needed to provide the context enough to render with this
 graphics program.
 --------------------------------------------------------------------------------*/
-typedef struct Artist_s {
+extern ResourceType Artist_RTID; // Comment on resources+rendering system:
+                                 //   An Artist is a "virtual" resource. It is not built
+                                 //   from a collection of assets, but is defined in code
+                                 //   when creating a new Artist, and its path just needs
+                                 //   to be unique, such as "Virtual/artists/1".
+typedef struct /* Resource */ Artist_s {
     ResourceHandle graphics_program; // Resource: GraphicsProgram
     uint16_t num_uniforms;
     Uniform *uniform_array;
 } Artist;
+void *Artist_load(char *path);
 void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, UniformType uniform_type);
 void Artist_bind(Artist *artist);
 void Artist_draw_mesh(Artist *artist, Mesh *mesh);

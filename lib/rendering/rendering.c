@@ -133,6 +133,11 @@ void *GraphicsProgram_load(char *path)
     return (void *) program;
 }
 ResourceType Mesh_RTID;
+#define load_error(STRING)\
+{\
+    fprintf(stderr, "ERROR LOADING MESH: %s\n", ( STRING ));\
+    exit(EXIT_FAILURE);\
+}
 void *Mesh_load(char *path)
 {
 #if 0
@@ -142,29 +147,45 @@ void *Mesh_load(char *path)
     }
 #endif
     FILE *file = resource_file_open(path, ".Mesh", "r");
-    if (file == NULL) goto load_error;
+    if (file == NULL) load_error("file can't open");
     Dictionary *dict = dictionary_read(file);
-    if (dict == NULL) goto load_error;
+    if (dict == NULL) load_error("dictionary can't be made");
     const int buf_size = 512;
     char buf[buf_size];
-    if (!dict_get(dict, "vertex_format", buf, buf_size)) goto load_error;
+    if (!dict_get(dict, "vertex_format", buf, buf_size)) load_error("vertex_format cannot be found");
     VertexFormat vertex_format = string_to_VertexFormat(buf);
-    if (vertex_format == VERTEX_FORMAT_NONE) goto load_error;
-    if (!dict_get(dict, "filetype", buf, buf_size)) goto load_error;
-    if (strncmp(buf, "ply", buf_size)) {
+    if (vertex_format == VERTEX_FORMAT_NONE) load_error("vertex_format is invalid");
+    if (!dict_get(dict, "filetype", buf, buf_size)) load_error("filetype cannot be found");
+    if (strncmp(buf, "ply", buf_size) == 0) {
         // Loading the mesh from a PLY file.
-        MeshData mesh_data;
         FILE *ply_file = resource_file_open(path, ".ply", "r");
-        if (ply_file == NULL) goto load_error;
+        if (ply_file == NULL) load_error("cannot open resource PLY file");
+        MeshData mesh_data;
         load_mesh_ply(&mesh_data, vertex_format, ply_file);
-        
+        Mesh *mesh = (Mesh *) calloc(1, sizeof(Mesh));
+        mem_check(mesh);
+        upload_mesh(mesh, &mesh_data);
+        //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////
+        // DESTROY THE MESH DATA !!!!
+        //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////
+        printf("GOT A MESH!!!\n");
+        return mesh;
     } else {
         // Invalid mesh filetype or it is not supported.
-        goto load_error;
+        load_error("invalid mesh filetype");
     }
-load_error:
-    fprintf("ERROR LOADING MESH\n");
-    exit(EXIT_FAILURE);
+}
+#undef load_error
+
+ResourceType Artist_RTID;
+void *Artist_load(char *path)
+{
+    // An Artist is a "virtual resource".
+    Artist *artist = (Artist *) calloc(1, sizeof(Artist));
+    mem_check(artist);
+    return artist;
 }
 
 void init_resources_rendering(void)
@@ -172,6 +193,7 @@ void init_resources_rendering(void)
     add_resource_type(Shader);
     add_resource_type(GraphicsProgram);
     add_resource_type(Mesh);
+    add_resource_type(Artist); // "Virtual" resource
 }
 
 //================================================================================
@@ -197,6 +219,12 @@ void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, Unifor
     strncpy(new_uniform->name, name, MAX_UNIFORM_NAME_LENGTH);
 
     new_uniform->location = glGetUniformLocation(resource_data(GraphicsProgram, artist->graphics_program), new_uniform->name);
+    if (new_uniform->location < 0) {
+        fprintf(stderr, ERROR_ALERT "Failed to find location for uniform \"%s\".\n", new_uniform->name);
+        getchar();
+    }
+    printf("%s location: %d\n", new_uniform->name, new_uniform->location);
+    getchar();
     new_uniform->getter = getter;
     new_uniform->type = uniform_type;
 }
@@ -213,6 +241,7 @@ void Artist_bind(Artist *artist)
     /* Set the graphics context up with what is needed to draw with this artist.
      * This gets and uploads the attached uniforms and binds the associated graphics
      * program to the context. */
+    printf("program id: %u\n", resource_data(GraphicsProgram, artist->graphics_program)->program_id);
     glUseProgram(resource_data(GraphicsProgram, artist->graphics_program)->program_id);
     for (int i = 0; i < artist->num_uniforms; i++) {
         switch (artist->uniform_array[i].type) {
@@ -245,11 +274,16 @@ void Artist_draw_mesh(Artist *artist, Mesh *mesh)
 {
     if ((resource_data(GraphicsProgram, artist->graphics_program)->vertex_format & (~mesh->vertex_format)) != 0) { // mesh's vertex format bitmask is not a superset of the graphics program's
         fprintf(stderr, ERROR_ALERT "Attempted to render a mesh with artist with incompatible vertex format.\n");
+        fprintf(stderr, "%u\n", mesh->vertex_format);
         exit(EXIT_FAILURE);
     }
     Artist_bind(artist);
+    printf("vertex array id: %u\n", mesh->vertex_array_id);
     glBindVertexArray(mesh->vertex_array_id);
+    printf("triangles id: %u\n", mesh->triangles_id);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->triangles_id);
+    printf("DRAWING\n");
+    printf("num triangles: %u\n", mesh->num_triangles);
     glDrawElements(GL_TRIANGLES,
                    3 * mesh->num_triangles,
                    GL_UNSIGNED_INT,
@@ -332,13 +366,85 @@ list int vertex_index|vertex_indices|indices|triangle_indices|tri_indices|index_
 //--------------------------------------------------------------------------------
 // Helper, strings, serialization, ...
 //--------------------------------------------------------------------------------
+//----Do more
 VertexFormat string_to_VertexFormat(char *string)
 {
     if (strcmp(string, "3") == 0) return VERTEX_FORMAT_3;
     if (strcmp(string, "3C") == 0) return VERTEX_FORMAT_3C;
-    if (strcmp(string, "3U") == 0) return VERTEX_FORMAT_3U;
-    if (strcmp(string, "3CU") == 0) return VERTEX_FORMAT_3CU;
-    if (strcmp(string, "3UC") == 0) return VERTEX_FORMAT_3CU;
+    if (strcmp(string, "3N") == 0) return VERTEX_FORMAT_3N;
+    if (strcmp(string, "3CN") == 0) return VERTEX_FORMAT_3CN;
     return VERTEX_FORMAT_NONE;
 }
 
+//--------------------------------------------------------------------------------
+// Mesh stuff
+//--------------------------------------------------------------------------------
+const AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES] = {
+    { ATTRIBUTE_TYPE_POSITION, "vPosition", GL_FLOAT, 3 },
+    { ATTRIBUTE_TYPE_COLOR, "vColor", GL_FLOAT, 3 },
+    { ATTRIBUTE_TYPE_NORMAL, "vNormal", GL_FLOAT, 3},
+};
+
+void upload_mesh(Mesh *mesh, MeshData *mesh_data)
+{
+    /* Given a a Mesh to be initialized, and a MeshData consisting of vertex attribute data and other mesh information
+     * in application memory, upload this data to video memory, and fill out the mesh structure (the handle) with IDs and
+     * information enough to own these graphics objects.
+     */
+    // Make sure the mesh handle is zero initialized before filling.
+    memset(mesh, 0, sizeof(Mesh));
+    // Copy over basic properties.
+    mesh->num_triangles = mesh_data->num_triangles;
+    mesh->num_vertices = mesh_data->num_vertices;
+    mesh->vertex_format = mesh_data->vertex_format;
+
+    // Upload vertex attribute data and associate to the mesh handle.
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        if (((mesh_data->vertex_format >> i) & 1) == 1) { // vertex format has attribute i set
+	   // Upload this vertex attribute data to VRAM and give the ID to the mesh.	
+            if (mesh_data->attribute_data[i] == NULL) {
+                fprintf(stderr, ERROR_ALERT "Attempted to upload mesh which does not have data for one of its attributes.\n");
+                exit(EXIT_FAILURE);
+            }
+            GLuint attribute_buffer;
+            glGenBuffers(1, &attribute_buffer);
+            glBindBuffer(GL_ARRAY_BUFFER, attribute_buffer);
+            glBufferData(GL_ARRAY_BUFFER,
+                         g_attribute_info[i].gl_size * gl_type_size(g_attribute_info[i].gl_type) * mesh_data->num_vertices,
+                         mesh_data->attribute_data[i],
+                         GL_DYNAMIC_DRAW);
+            // Give this buffer ID to the mesh.
+            mesh->attribute_buffer_ids[i] = attribute_buffer;
+        }
+    }
+    // Upload triangle-index/triangle-list data and give it to the mesh.
+    GLuint triangle_buffer;
+    glGenBuffers(1, &triangle_buffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*sizeof(uint32_t) * mesh_data->num_triangles, mesh_data->triangles, GL_DYNAMIC_DRAW);
+    mesh->triangles_id = triangle_buffer;
+    // Finished triangle indices.
+
+    // Create a vertex array object (VAO) and associate the vertex attribute arrays to it, then give it to the mesh:
+    // , creating and binding a new VAO ID
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    // , binding the attribute buffers to the vao
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        if (((mesh_data->vertex_format >> i) & 1) == 1) { // vertex format has attribute i set
+            glBindBuffer(GL_ARRAY_BUFFER, mesh->attribute_buffer_ids[i]);
+            glVertexAttribPointer(g_attribute_info[i].attribute_type, // location is currently set to the type index, so layout qualifiers need to match up the position in shaders.
+                                  g_attribute_info[i].gl_size, // "gl_size" is the number of values per vertex, e.g. 3, 4.
+                                  g_attribute_info[i].gl_type,
+                                  GL_FALSE, // not normalized
+                                  0,        // no stride (contiguous data in buffer)
+                                  (void *) 0); // Buffer offset. Separate buffer objects for each attribute are being used.
+            glEnableVertexAttribArray(g_attribute_info[i].attribute_type);
+        }
+    }
+    // , binding the triangle indices to the vertex array object
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
+    // , and finally, give this VAO ID to the mesh.
+    mesh->vertex_array_id = vao;
+}

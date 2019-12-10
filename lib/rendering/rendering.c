@@ -115,6 +115,15 @@ void *GraphicsProgram_load(char *path)
         return NULL;
     }
     strncpy(fragment_shader_path, buf, buf_size);
+#if 1
+    char uniform_string[buf_size];
+    strncpy(uniform_string, buf, buf_size);
+    if (!dict_get(dict, "uniforms", buf, buf_size)) {
+        fprintf(stderr, "COULD NOT FIND uniforms\n");
+        return NULL;
+    }
+    strncpy(uniform_string, buf, buf_size);
+#endif
 
     GraphicsProgram *program = (GraphicsProgram *) calloc(1, sizeof(GraphicsProgram));
     mem_check(program);
@@ -123,7 +132,8 @@ void *GraphicsProgram_load(char *path)
     program->program_type = GRAPHICS_PROGRAM_VF; // Only using vertex and fragment shaders.
     program->vertex_format = vertex_format;
 
-    // If create new resource handles !!! REMEMBER TO FREE if resource load fails. So, adding them last.
+    //////////////////////////////////////////////////////////////////////////////////
+    // If create new resource handles !!! REMEMBER TO FREE if resource load fails.
     program->shaders[Vertex] = new_resource_handle(Shader, vertex_shader_path);
     program->shaders[Fragment] = new_resource_handle(Shader, fragment_shader_path);
 
@@ -132,8 +142,53 @@ void *GraphicsProgram_load(char *path)
     glAttachShader(program->program_id, resource_data(Shader, program->shaders[Fragment])->shader_id);
     link_shader_program(program->program_id);
 
+    // Now that the program has been compiled, gather the uniform locations.
+    // Example in .GraphicsProgram file:
+    // uniforms: mat4x4 mvp_matrix, float aspect_ratio, float frand, vec3 model_pos
+#if 1
+    /* A way to query the standard dictionary file for information, store
+     * as certain types, give error/malformation information, and facilities
+     * for storing things further than key-value-pairs, or list-type values,
+     * tabbed lists, ... , is really needed instead of hardcoding string processing
+     * and retrieval from the dictionary in each thing that uses one.
+     */
+    char *entry = uniform_string;
+    while (*entry != '\0') {
+        char *end = strchr(entry, ',');
+        if (end == NULL) end = strchr(entry, '\0');
+        while (isspace(*entry)) entry++;
+        
+        char *sep = strchr(entry, ' ');
+        if (sep == NULL || sep >= end) {
+            goto uniform_list_error;
+        }
+        char buf[512];
+        strncpy(buf, entry, sep - entry);
+        buf[sep - entry] = '\0';
+            /* printf("Got type \"%s\"\n", buf); */
+            /* getchar(); */
+        UniformType uniform_type = string_to_UniformType(buf);
+        if (uniform_type == UNIFORM_NONE) {
+            goto uniform_list_error;
+        }
+        strncpy(buf, sep + 1, end - (sep + 1));
+        buf[end - (sep + 1)] = '\0';
+            /* printf("Got name \"%s\"\n", buf); */
+            /* getchar(); */
+
+        // Add this uniform to the graphics program.
+        GraphicsProgram_add_uniform(program, uniform_type, buf);
+
+        if (end == '\0') break;
+        entry = end + 1;
+    }
+#endif
+
     destroy_dictionary(dict);
     return (void *) program;
+uniform_list_error:
+    fprintf(stderr, ERROR_ALERT "Bad uniform list given in text file.\n");
+    exit(EXIT_FAILURE);
 }
 ResourceType Mesh_RTID;
 #define load_error(STRING)\
@@ -202,6 +257,35 @@ void init_resources_rendering(void)
 //================================================================================
 //   Artist
 //================================================================================
+
+void GraphicsProgram_add_uniform(GraphicsProgram *program, UniformType uniform_type, char *name)
+{
+    if (strlen(name) > MAX_UNIFORM_NAME_LENGTH) {
+        fprintf(stderr, ERROR_ALERT "Uniform name \"%s\" too long (MAX_UNIFORM_NAME_LENGTH: %d).\n", name, MAX_UNIFORM_NAME_LENGTH);
+        exit(EXIT_FAILURE);
+    }
+    if (program->uniform_array == NULL) {
+        program->num_uniforms = 1;
+        program->uniform_array = (Uniform *) calloc(program->num_uniforms, sizeof(Uniform));
+        mem_check(program->uniform_array);
+    } else {
+        program->num_uniforms ++;
+        program->uniform_array = (Uniform *) realloc(program->uniform_array, program->num_uniforms * sizeof(Uniform));
+        mem_check(program->uniform_array);
+    }
+    Uniform *new_uniform = &program->uniform_array[program->num_uniforms - 1];
+    strncpy(new_uniform->name, name, MAX_UNIFORM_NAME_LENGTH);
+
+    new_uniform->location = glGetUniformLocation(program->program_id, name);
+    if (new_uniform->location < 0) {
+        fprintf(stderr, ERROR_ALERT "Failed to find location for uniform \"%s\".\n", new_uniform->name);
+        exit(EXIT_FAILURE);
+    }
+    new_uniform->type = uniform_type;
+    /* printf("Added new uniform: %s, %d\n", new_uniform->name, new_uniform->type); */
+    /* getchar(); */
+}
+
 void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, UniformType uniform_type)
 {
     if (strlen(name) > MAX_UNIFORM_NAME_LENGTH) {
@@ -239,6 +323,55 @@ void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, Unifor
         exit(EXIT_FAILURE);\
     }\
 }
+
+
+/*
+Usage of an artist for drawing:
+
+
+some outline (not how it should work)
+
+for_aspect(Camera, camera)
+    Matrix4x4f vp_matrix = camera->projection_matrix;
+    right_multiply_matrix4x4f(vp_matrix, Transform_matrix(get_sibling_aspect(camera, Transform)));
+
+    for_aspect(Body, body)
+        Transform *transform = get_sibling_aspect(body, Transform);
+
+        Matrix4x4f mvp_matrix = vp_matrix;
+        right_multiply_matrix4x4f(mvp_matrix, Transform_matrix(transform));
+
+        Artist *artist = resource_data(Artist, body->artist);
+
+        Artist_bind(artist);
+        Artist_prepare_float(artist, "aspect_ratio", g_aspect_ratio);
+        Artist_prepare_mat4x4(artist, "mvp_matrix", mvp_matrix.vals);
+        Artist_prepare_vec3(artist, "model_position", vec3(transform->x, transform->y, transform->z));
+        Artist_draw_mesh(artist, resource_data(Mesh, body->mesh));
+    end_for_aspect()
+end_for_aspect()
+*/
+
+
+void Artist_prepare_float(Artist *artist, char *name, float val)
+{
+    GraphicsProgram *program = resource_data(GraphicsProgram, artist->graphics_program);
+
+    glUniform1f(artist->uniform_array[i].location,
+                artist->uniform_array[i].getter.float_getter());
+}
+
+
+void *Artist_bind(Artist *artist)
+{
+    /* Set the graphics context up with what is needed to draw with this artist.
+     */
+    GraphicsProgram *program = resource_data(GraphicsProgram, artist->graphics_program);
+    glUseProgram(program->program_id);
+    
+    artist->prepare();
+}
+
 void Artist_bind(Artist *artist)
 {
     /* Set the graphics context up with what is needed to draw with this artist.
@@ -372,6 +505,13 @@ VertexFormat string_to_VertexFormat(char *string)
     if (strcmp(string, "3N") == 0) return VERTEX_FORMAT_3N;
     if (strcmp(string, "3CN") == 0) return VERTEX_FORMAT_3CN;
     return VERTEX_FORMAT_NONE;
+}
+UniformType string_to_UniformType(char *string)
+{
+    if (strcmp(string, "float") == 0) return UNIFORM_FLOAT;
+    if (strcmp(string, "int") == 0) return UNIFORM_INT;
+    if (strcmp(string, "mat4x4") == 0) return UNIFORM_MAT4X4F;
+    return UNIFORM_NONE;
 }
 
 //--------------------------------------------------------------------------------

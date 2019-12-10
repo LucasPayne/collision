@@ -6,7 +6,10 @@
 #include <stdint.h>
 /*--------------------------------------------------------------------------------
 Graphics API definitions. This module is still dependent on OpenGL, but
-things such as type names and enum mappings are typedef'd/macro'd.
+things such as type names and enum mappings are typedef'd/macro'd. With
+correct typedefs it is less easy to make the mistake of, for example,
+retrieving a uniform location as a GLuint. -1 is used for a failed
+retrieval, and this will not be caught.
      GraphicsID
      GraphicsInt
      GraphicsFloat
@@ -16,9 +19,17 @@ things such as type names and enum mappings are typedef'd/macro'd.
 #include "rendering/gl.h"
 /*--------------------------------------------------------------------------------
 This rendering module is built using the resources system. This is a shared
-object system which gives "resources" identifiers as paths. Instead of holding
+object system which gives "resources" identifiers as "paths". Instead of holding
 an object, a resource handle is held to make sure that objects with the same
 identifiers are shared.
+
+Notes on the resource system and its use here:
+    "Paths" in the resource system may or may not be associated with assets. Asset-associated
+    resources (such as a shader or a graphics program or a mesh) will build or load
+    this resource from files related to that path by the global path-variable, attaching
+    "drives" to physical paths. "Virtual" resources do not use this path to look up
+    asset data, so could be prepended by "Virtual/", if this is not a physical drive.
+    An example of this use is in an "Artist" resource.
 --------------------------------------------------------------------------------*/
 #include "resources.h"
 void init_resources_rendering(void);
@@ -37,6 +48,7 @@ enum AttributeTypes {
     NUM_ATTRIBUTE_TYPES
 };
 // Attribute types are associated to an AttributeInfo structure by their value as an index.
+// This attribute information is stored in a global array.
 #define MAX_ATTRIBUTE_NAME_LENGTH 32
 typedef struct AttributeInfo_s {
     AttributeType attribute_type;
@@ -44,6 +56,7 @@ typedef struct AttributeInfo_s {
     GLenum gl_type;
     GLuint gl_size;
 } AttributeInfo;
+extern const AttributeInfo g_attribute_info[];
 
 #define ATTRIBUTE_BITMASK_SIZE 32
 typedef uint32_t VertexFormat;
@@ -88,27 +101,26 @@ typedef struct /* Resource */ Shader_s {
 --------------------------------------------------------------------------------*/
 typedef uint8_t UniformType;
 enum UniformTypes {
-    UNIFORM_GLOBAL_FLOAT,
-    UNIFORM_GLOBAL_INT,
-    UNIFORM_GLOBAL_MAT4X4F,
+    UNIFORM_NONE,
     UNIFORM_FLOAT,
     UNIFORM_INT,
-    UNIFORM_MAT4X4F
+    UNIFORM_MAT4X4F,
 };
+// The string for a uniform type is whatever GLSL uses for the variable type.
+// This is so uniform types can be stored in text files, and the names are
+// the same as would appear in uniform declarations in a GLSL source file.
+UniformType string_to_UniformType(char *string);
 #define MAX_UNIFORM_NAME_LENGTH 31
 typedef union UniformGetter_u {
-    GraphicsInt *global_int;
-    GraphicsInt *global_float;
-    GraphicsInt *global_mat4x4f;
     GraphicsInt (*int_getter)(void);
     GraphicsFloat (*float_getter)(void);
     GraphicsMat4x4f (*mat4x4f_getter)(void);
 } UniformGetter;
 typedef struct Uniform_s {
     char name[MAX_UNIFORM_NAME_LENGTH + 1];
-    GraphicsUniformID location;
     UniformType type;
-    UniformGetter getter;
+    GraphicsUniformID location;
+    UniformGetter getter; //------remove this
 } Uniform;
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
@@ -116,7 +128,15 @@ typedef struct Uniform_s {
 /*--------------------------------------------------------------------------------
 A "graphics program" is a linked set of shader objects. It holds these as resource
 handles so that shader objects are not recompiled for each program they link into.
-A graphics program is itself a resource.
+A graphics program is itself available as a resource.
+
+Another thing encapsulated by a graphics program is the uniform interface. This
+is a set of names and types for the uniform values required by this program. This
+will depend on what shaders are linked and what uniforms they require. If standard
+names are given for common uniform variables, organizing this may be easier.
+This uniform-interface provides a way to "bind" a graphics program to an application,
+using an "artist", which holds the graphics program as a resource and gives
+uniform-retrieval information for each uniform required by the graphics program.
 --------------------------------------------------------------------------------*/
 extern ResourceType GraphicsProgram_RTID;
 typedef struct /* Resource */ GraphicsProgram_s {
@@ -124,14 +144,15 @@ typedef struct /* Resource */ GraphicsProgram_s {
     GraphicsProgramType program_type;
     ResourceHandle shaders[NUM_SHADER_TYPES]; /* Resources: Shader[] */
     VertexFormat vertex_format;
+    uint16_t num_uniforms;
+    Uniform *uniform_array;
 } GraphicsProgram;
 void *GraphicsProgram_load(char *path);
+void GraphicsProgram_add_uniform(GraphicsProgram *program, UniformType uniform_type, char *name);
 
 /*--------------------------------------------------------------------------------
   Mesh stuff
 --------------------------------------------------------------------------------*/
-extern const AttributeInfo g_attribute_info[];
-
 typedef struct MeshData_s {
     VertexFormat vertex_format;
     uint32_t num_vertices;
@@ -154,8 +175,14 @@ void upload_mesh(Mesh *mesh, MeshData *mesh_data);
 
 /*--------------------------------------------------------------------------------
 An "Artist" is what is used to draw objects. This structure associates a graphics program
-with the uniform data and retrieval needed to provide the context enough to render with this
-graphics program.
+with the uniform-retrieval information needed to provide the context enough to render with this
+graphics program. So, it is a sort of binding of the graphics program to the
+application using the artist. While the graphics program has a consistent uniform-interface,
+it does not know where to get these values when needed.
+
+So, the "artist" is what collects data needed for drawing under a certain "style".
+The other important parameter to a drawing command is a model, mesh, or other kind
+of renderable object.
 --------------------------------------------------------------------------------*/
 extern ResourceType Artist_RTID; // Comment on resources+rendering system:
                                  //   An Artist is a "virtual" resource. It is not built

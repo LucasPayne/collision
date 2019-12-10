@@ -89,7 +89,7 @@ The resource type IDs are sorted out automatically, although they are not necces
 
 This function is non-static because a macro expands to it. Then
      add_resource_type(Texture)
-expands to type metadata and passes in a global ResourceType pointer called Texture_RTID, gives it a size, the name of the structure,
+expands to type metadata and passes in a global ResourceType pointer to Texture_RTID, gives it a size, the name of the structure,
 and load function Texture_load. This allocates it an ID so further usage of macros which use the symbol Texture use this ID.
  */
 void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(char *))

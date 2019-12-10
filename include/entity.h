@@ -51,7 +51,7 @@ typedef struct Manager_s {
 } Manager;
 
 
-// in-line substruct macro (so, make sure to put this at the top of aspect structures, means they all get this metadata)
+// in-line substruct macro (so, make sure to put this at the top of aspect structures, meaning they all get this metadata)
 #define ASPECT_PROPERTIES()\
     AspectID aspect_id;\
     EntityID entity_id;

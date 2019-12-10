@@ -276,6 +276,8 @@ void GraphicsProgram_add_uniform(GraphicsProgram *program, UniformType uniform_t
     Uniform *new_uniform = &program->uniform_array[program->num_uniforms - 1];
     strncpy(new_uniform->name, name, MAX_UNIFORM_NAME_LENGTH);
 
+    printf("Program ID: %d, name: %s\n", (int) program->program_id, name);
+    getchar();
     new_uniform->location = glGetUniformLocation(program->program_id, name);
     if (new_uniform->location < 0) {
         fprintf(stderr, ERROR_ALERT "Failed to find location for uniform \"%s\".\n", new_uniform->name);
@@ -326,9 +328,49 @@ void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, Unifor
 
 
 /*
-Usage of an artist for drawing:
+Usage of an artist for drawing.
+
+So far, an "artist" is a thin wrapper around a graphics program. Why should this be used?
+One reason is the complication of having to set up a graphics program with information
+about the application using it, callback functions etc. But it is a shared resource, a compiled
+~object file~. So, rather let the graphics program resource expose its uniform-interface.
+GraphicsProgram:
+    Uniform interface (required/non-required)
+    Minimal vertex format
+    ---and stuff for textures, buffers, whatever may be needed in this encapsulation later.
 
 
+"Standard" uniforms. A uniform variable is a general thing, and will have many uses,
+but there is still a standard core of stuff that needs to be uploaded on a draw
+call for a 3D mesh.
+
+What about having an artist hold an optional "prepare" function. This will be
+called when the artist is bound, and use the same functions for uniform uploading
+("preparing") as would be used after binding for standard uniform uploads. This means
+that non-standard uniforms used in its graphics program may be prepared
+(or ignored, if there is an initialized value in the shaders/if there is a signifier in the .GraphicsProgram file).
+
+Then, there could even be error messages for program misuse, and I think this would be very
+important for practical use of this higher-level graphics-object stuff. In the .GraphicsProgram file,
+the list of uniforms may be
+    uniforms: float! aspect_ratio, mat4x4! mvp_matrix, float! color, bool grayscale
+Here, aspect_ratio and mvp_matrix are required standard uniforms. base_color is a required non-standard uniform,
+and grayscale is an optional non-standard uniform, possibly initializing to false in the shader.
+
+Now when an artist is bound, it stores flags for each of its graphics program's uniforms (at the start, so these
+are altered by the call to the artist's .prepare function).
+The usage of a draw call is:
+Bind an artist, prepare standard uniforms, draw call.
+At a draw call, the flags are checked. If there is any required uniform with an inactive flag, an error is raised.
+This says what graphics program, what uniform, its type/name, etc., so this can quickly be looked at.
+
+This will lead you to either change the standard uploads (their names, add more), or
+go look at the way you initialized the artist, and hook up the required uniforms.
+
+Also, since the .prepare function is called first on binding the artist, you will not need to worry about
+the artist preparing its own standard uniforms, as they will be overwritten.
+
+-
 some outline (not how it should work)
 
 for_aspect(Camera, camera)
@@ -338,7 +380,7 @@ for_aspect(Camera, camera)
     for_aspect(Body, body)
         Transform *transform = get_sibling_aspect(body, Transform);
 
-        Matrix4x4f mvp_matrix = vp_matrix;
+        Matrix4x4f mvp_matrix = vp_matrix;)
         right_multiply_matrix4x4f(mvp_matrix, Transform_matrix(transform));
 
         Artist *artist = resource_data(Artist, body->artist);
@@ -352,7 +394,7 @@ for_aspect(Camera, camera)
 end_for_aspect()
 */
 
-
+#if 0
 void Artist_prepare_float(Artist *artist, char *name, float val)
 {
     GraphicsProgram *program = resource_data(GraphicsProgram, artist->graphics_program);
@@ -368,9 +410,9 @@ void *Artist_bind(Artist *artist)
      */
     GraphicsProgram *program = resource_data(GraphicsProgram, artist->graphics_program);
     glUseProgram(program->program_id);
-    
-    artist->prepare();
+    if (artist->prepare != NULL) artist->prepare(artist);
 }
+#endif
 
 void Artist_bind(Artist *artist)
 {

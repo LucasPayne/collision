@@ -30,14 +30,6 @@ static double ASPECT_RATIO;
 static Matrix4x4f g_mvp_matrix;
 //--------------------------------------------------------------------------------
 
-static void key_callback(GLFWwindow *window, int key,
-                int scancode, int action,
-                int mods)
-{
-    key_callback_quit(window, key, scancode, action, mods);
-    key_callback_arrows_down(window, key, scancode, action, mods);
-}
-
 // Aspects
 //================================================================================
 
@@ -84,20 +76,23 @@ void Camera_view(Camera *camera)
 {
     //todo: Take into account rendering target, probably just a window sub-rectangle. 
     /* GraphicsProgram *program = resource_data(GraphicsProgram, camera->graphics_program); */
-    printf("~~~ VIEWING ~~~\n");
+    /* printf("~~~ VIEWING ~~~\n"); */
     /* printf("vert path: %s\n", program->shaders[Vertex]._path); */
     /* printf("frag path: %s\n", program->shaders[Fragment]._path); */
 
     for_aspect(Body, body)
         /* printf("test_val: %d\n", body->test_val); */
         Mesh *mesh = resource_data(Mesh, body->mesh);
-        printf("mesh num_vertices: %d, num_triangles: %d\n", mesh->num_vertices, mesh->num_triangles);
+        /* printf("mesh num_vertices: %d, num_triangles: %d\n", mesh->num_vertices, mesh->num_triangles); */
         GraphicsProgram *graphics_program = resource_data(GraphicsProgram, resource_data(Artist, body->artist)->graphics_program);
-        printf("graphics program id: %u\n", graphics_program->program_id);
+        /* printf("graphics program id: %u\n", graphics_program->program_id); */
         // Set up the mvp matrix this program provides.
         identity_matrix4x4f(&g_mvp_matrix);
+        right_multiply_matrix4x4f(&g_mvp_matrix, &camera->projection_matrix);
         Matrix4x4f model_matrix = Transform_matrix(get_sibling_aspect(body, Transform));
+        /* right_multiply_by_transpose_matrix4x4f(&g_mvp_matrix, &model_matrix); */
         right_multiply_matrix4x4f(&g_mvp_matrix, &model_matrix);
+        /* print_matrix4x4f(&g_mvp_matrix); */
         Artist_draw_mesh(resource_data(Artist, body->artist), mesh);
     end_for_aspect()
 }
@@ -141,18 +136,19 @@ void init_program(void)
     ResourceHandle res_artist_1 = new_resource_handle(Artist, "Virtual/artists/1");
     Artist *artist_1 = resource_data(Artist, res_artist_1);
     artist_1->graphics_program = new_resource_handle(GraphicsProgram, "Shaders/programs/default");
+
     Artist_add_uniform(artist_1, "mvp_matrix", (UniformGetter) get_uniform_mvp_matrix, UNIFORM_MAT4X4F);
     Artist_add_uniform(artist_1, "aspect_ratio", (UniformGetter) get_uniform_aspect_ratio, UNIFORM_FLOAT);
 
 
     EntityID cameraman = new_entity(1);
     Camera_init(entity_add_aspect(cameraman, Camera));
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 3; i++) {
         EntityID dude = new_entity(2);
         Transform_set(entity_add_aspect(dude, Transform), 2*frand()-1.0, 2*frand()-1.0, 2*frand()-1.0, M_PI*frand(),M_PI*frand(),M_PI*frand());
         Body *body = entity_add_aspect(dude, Body);
         body->test_val = 3;
-        body->mesh = new_resource_handle(Mesh, "Meshes/icosohedron");
+        body->mesh = new_resource_handle(Mesh, "Meshes/dolphins");
         body->artist = new_resource_handle(Artist, "Virtual/artists/1");
         /* Artist_init(&body->artist, */ 
         /* Artist_add_uniform(&body->artist, (UniformGetter) get_uniform_mvp_matrix */
@@ -174,6 +170,13 @@ void init_program(void)
 }
 void loop(void)
 {
+
+    for_aspect(Transform, transform)
+        transform->theta_x += dt() * 3;
+        transform->z += dt() * 3;
+        transform->y += dt() * 3;
+        transform->x += dt() * 3;
+    end_for_aspect()
 
     for_aspect(Camera, camera)
         Camera_view(camera);
@@ -197,6 +200,22 @@ void loop(void)
 void close_program(void)
 {
 }
+static void key_callback(GLFWwindow *window, int key,
+                int scancode, int action,
+                int mods)
+{
+    key_callback_quit(window, key, scancode, action, mods);
+    key_callback_arrows_down(window, key, scancode, action, mods);
+
+    if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_SPACE) {
+            for_aspect(Body, body)
+                init_resource_handle(Mesh, body->mesh, "Meshes/cube");
+            end_for_aspect()
+        }
+    }
+}
+
 
 void reshape(GLFWwindow* window, int width, int height)
 {

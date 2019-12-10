@@ -23,6 +23,9 @@ Dependencies:
 ResourceType Shader_RTID;
 void *Shader_load(char *path)
 {
+    /* printf("loading shader from path \"%s\" ...\n", path); */
+    /* getchar(); */
+
     // Path format:
     //      Drive/path/to/shader.{vert,geom,frag}
     // Corresponds directly to a GLSL shader source file.
@@ -61,7 +64,7 @@ void *Shader_load(char *path)
     Shader *shader = (Shader *) calloc(1, sizeof(Shader));
     mem_check(shader);
     shader->shader_type = shader_type;
-    printf("Setting shader_id: %u\n", shader_id);
+    /* printf("Setting shader_id: %u\n", shader_id); */
     shader->shader_id = shader_id;
     return (void *) shader;
 }
@@ -218,13 +221,13 @@ void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, Unifor
     Uniform *new_uniform = &artist->uniform_array[artist->num_uniforms - 1];
     strncpy(new_uniform->name, name, MAX_UNIFORM_NAME_LENGTH);
 
-    new_uniform->location = glGetUniformLocation(resource_data(GraphicsProgram, artist->graphics_program), new_uniform->name);
+    new_uniform->location = glGetUniformLocation(resource_data(GraphicsProgram, artist->graphics_program)->program_id, new_uniform->name);
     if (new_uniform->location < 0) {
         fprintf(stderr, ERROR_ALERT "Failed to find location for uniform \"%s\".\n", new_uniform->name);
         getchar();
     }
-    printf("%s location: %d\n", new_uniform->name, new_uniform->location);
-    getchar();
+    /* printf("%s location: %d\n", new_uniform->name, new_uniform->location); */
+    /* getchar(); */
     new_uniform->getter = getter;
     new_uniform->type = uniform_type;
 }
@@ -241,7 +244,6 @@ void Artist_bind(Artist *artist)
     /* Set the graphics context up with what is needed to draw with this artist.
      * This gets and uploads the attached uniforms and binds the associated graphics
      * program to the context. */
-    printf("program id: %u\n", resource_data(GraphicsProgram, artist->graphics_program)->program_id);
     glUseProgram(resource_data(GraphicsProgram, artist->graphics_program)->program_id);
     for (int i = 0; i < artist->num_uniforms; i++) {
         switch (artist->uniform_array[i].type) {
@@ -278,12 +280,8 @@ void Artist_draw_mesh(Artist *artist, Mesh *mesh)
         exit(EXIT_FAILURE);
     }
     Artist_bind(artist);
-    printf("vertex array id: %u\n", mesh->vertex_array_id);
     glBindVertexArray(mesh->vertex_array_id);
-    printf("triangles id: %u\n", mesh->triangles_id);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->triangles_id);
-    printf("DRAWING\n");
-    printf("num triangles: %u\n", mesh->num_triangles);
     glDrawElements(GL_TRIANGLES,
                    3 * mesh->num_triangles,
                    GL_UNSIGNED_INT,

@@ -84,6 +84,8 @@ new: ; $(SCRIPTS_DIR)/make_new.sh $(SRC_DIR) $(SCHEMATICS_DIR) $(MAKEFILE)
 # Recur to sub-Makefiles. These are called Makefile.
 # Making is done in the build directory, so these sub-Makefiles should take that into account,
 # and can use an exported variable LIB which gives the location of the source files.
+# If a library does not have a makefile, then it is assumed that consists of a single C file with a
+# regular build process.
 # ---- remember headers
 #
 .PRECIOUS: build/lib/%.o

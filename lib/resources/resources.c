@@ -345,7 +345,7 @@ FILE *resource_file_open(char *path, char *suffix, char *flags)
         return NULL;
     }
     //@@@
-    printf("MATCHED PATH: \"%s\"\n", path_buffer);
+    /* printf("MATCHED PATH: \"%s\"\n", path_buffer); */
     FILE *file = fopen(path_buffer, flags);
     return file;
 }

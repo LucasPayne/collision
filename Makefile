@@ -64,7 +64,7 @@ MAKEFILE=Makefile
 
 # Giving absolute directories as this is important for recursive use of make.
 CC=gcc -rdynamic -I$(CURDIR)/include -Wall
-CFLAGS=-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL
+CFLAGS=-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng
 
 # General Makefile options
 default_target: list

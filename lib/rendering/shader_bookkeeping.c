@@ -61,7 +61,6 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
                 exit(EXIT_FAILURE);
             }
         }
-
         strncpy(shader_source + mem_used, line, len);
         lines[lines_mem_used] = shader_source + mem_used;
         mem_used += len;
@@ -94,6 +93,7 @@ bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
     // glShaderSource(GLuint shader, GLsizei count, const GLchar **string, const GLint *length)
     //=========================================================================================
     // Get the source and associate it to the shader
+    /* printf("Compiling %u, %s ...\n", shader_id, shader_path); */
     char **lines = NULL;
     size_t num_lines = 0;
     read_shader_source(shader_path, &lines, &num_lines);
@@ -110,14 +110,14 @@ bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
     GLint compiled;
     glGetShaderiv(shader_id, GL_COMPILE_STATUS, &compiled);
     // Successfully attempted compilation, checking errors ...
-#if 1
+#if 0
     if (compiled == GL_FALSE) {
         return false;
     }
 #else
     if (compiled == GL_FALSE) {
 	// Print out the log TODO: Print this to a logging system.
-        fprintf(stderr, ERROR_ALERT "Shader %s failed to compile.\n", shader_path);
+        printf(ERROR_ALERT "Shader %s failed to compile.\n", shader_path);
         GLint log_length;
         glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &log_length);
         char *log = (char *) malloc(log_length * sizeof(char));
@@ -126,10 +126,10 @@ bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
             exit(EXIT_FAILURE);
         }
         glGetShaderInfoLog(shader_id, log_length, NULL, log);
-        fprintf(stderr, ERROR_ALERT "Failed shader compilation error log:\n");
-        fprintf(stderr, "%s", log);
+        //!!!!---------- Really, really do need error logging system.
+        printf(ERROR_ALERT "Failed shader compilation error log:\n");
+        printf("%s", log);
         free(log);
-        exit(EXIT_FAILURE);
         return false;
     }
 #endif
@@ -137,14 +137,14 @@ bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
     return true;
 #undef DEBUG
 }
-void link_shader_program(GraphicsID shader_program_id)
+bool link_shader_program(GraphicsID shader_program_id)
 {
     /* Links the shader program and handles errors and error logs. */
     glLinkProgram(shader_program_id);
     GLint link_status;
     glGetProgramiv(shader_program_id, GL_LINK_STATUS, &link_status);
     if (link_status == GL_FALSE) {
-        fprintf(stderr, ERROR_ALERT "Failed to link shader program.\n");
+        printf(ERROR_ALERT "Failed to link shader program.\n");
         GLint log_length; 
         glGetProgramiv(shader_program_id, GL_INFO_LOG_LENGTH, &log_length);
         char *log = (char *) malloc(log_length * sizeof(char));
@@ -153,9 +153,10 @@ void link_shader_program(GraphicsID shader_program_id)
             exit(EXIT_FAILURE);
         }
         glGetProgramInfoLog(shader_program_id, log_length, NULL, log);
-        fprintf(stderr, ERROR_ALERT "Failed shader program link error log:\n");
-        fprintf(stderr, "%s", log);
+        printf(ERROR_ALERT "Failed shader program link error log:\n");
+        printf("%s", log);
         free(log);
-        exit(EXIT_FAILURE);
+        return false;
     }
+    return true;
 }

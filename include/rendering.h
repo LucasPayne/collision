@@ -85,10 +85,10 @@ enum ShaderTypes {
     NUM_SHADER_TYPES
 };
 typedef uint8_t GraphicsProgramType;
-#define GRAPHICS_PROGRAM_VF (1 << Vertex) & (1 << Fragment)
-#define GRAPHICS_PROGRAM_VGF (1 << Vertex) & (1 << Geometry) & (1 << Fragment)
-#define GRAPHICS_PROGRAM_VTTF (1 << Vertex) & (1 << TesselationControl) & (1 << TesselationEvaluation) & (1 << Fragment)
-#define GRAPHICS_PROGRAM_VGTTF (1 << Vertex) & (1 << Geometry) & (1 << TesselationControl) & (1 << TesselationEvaluation) & (1 << Fragment)
+#define GRAPHICS_PROGRAM_VF (1 << Vertex) | (1 << Fragment)
+#define GRAPHICS_PROGRAM_VGF (1 << Vertex) | (1 << Geometry) | (1 << Fragment)
+#define GRAPHICS_PROGRAM_VTTF (1 << Vertex) | (1 << TesselationControl) | (1 << TesselationEvaluation) | (1 << Fragment)
+#define GRAPHICS_PROGRAM_VGTTF (1 << Vertex) | (1 << Geometry) | (1 << TesselationControl) | (1 << TesselationEvaluation) | (1 << Fragment)
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
 extern ResourceType Shader_RTID;
@@ -96,6 +96,8 @@ typedef struct /* Resource */ Shader_s {
     ShaderType shader_type;
     GraphicsID shader_id;
 } Shader;
+void *Shader_load(char *path);
+bool Shader_reload(ResourceHandle handle);
 
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
@@ -138,6 +140,13 @@ This uniform-interface provides a way to "bind" a graphics program to an applica
 using an "artist", which holds the graphics program as a resource and gives
 uniform-retrieval information for each uniform required by the graphics program.
 --------------------------------------------------------------------------------*/
+#define UNIFORM_BLOCK_STANDARD 0
+/* typedef uint8_t GraphicsProgramType; */
+/* enum GraphicsProgramTypes { */
+/*     GRAPHICS_PROGRAM_NONE, */
+/*     GRAPHICS_PROGRAM_STANDARD_VIEW, */
+/*     GRAPHICS_PROGRAM_STANDARD_2D, */
+/* }; */
 extern ResourceType GraphicsProgram_RTID;
 typedef struct /* Resource */ GraphicsProgram_s {
     GraphicsID program_id;
@@ -147,7 +156,8 @@ typedef struct /* Resource */ GraphicsProgram_s {
     uint16_t num_uniforms;
     Uniform *uniform_array;
 } GraphicsProgram;
-void *GraphicsProgram_load(char *path);
+void *GraphicsProgram_load(char *path); // Load this from a .GraphicsProgram configuration file.
+bool GraphicsProgram_reload(ResourceHandle handle);
 void GraphicsProgram_add_uniform(GraphicsProgram *program, UniformType uniform_type, char *name);
 
 /*--------------------------------------------------------------------------------
@@ -191,11 +201,26 @@ extern ResourceType Artist_RTID; // Comment on resources+rendering system:
                                  //   to be unique, such as "Virtual/artists/1".
 typedef struct /* Resource */ Artist_s {
     ResourceHandle graphics_program; // Resource: GraphicsProgram
+    void (*prepare) (struct Artist_s *);
+    uint32_t uniform_flags[12]; //---Bitmask for active uniforms, n*32 allowed uniforms.
     uint16_t num_uniforms;
     Uniform *uniform_array;
 } Artist;
-void *Artist_load(char *path);
-void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, UniformType uniform_type);
+void *Artist_load(char *path); // Virtual "load". Allocates an Artist object.
+
+/* void Artist_prepare_float(Artist *artist, char *name, GraphicsFloat val); */
+/* void Artist_prepare_mat4x4(Artist *artist, char *name, GraphicsMat4x4f val); */
+/* void Artist_prepare_int(Artist *artist, char *name, GraphicsInt val); */
+
+/* void Artist_prepare_float(Artist *artist, char *name, GraphicsFloat val) */
+/* { */
+/*     GraphicsProgram *program = resource_data(GraphicsProgram, artist->graphics_program); */
+/*     artist->uniform_flags */
+/* } */
+
+
+
+/* void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, UniformType uniform_type); */
 void Artist_bind(Artist *artist);
 void Artist_draw_mesh(Artist *artist, Mesh *mesh);
 
@@ -207,7 +232,7 @@ loading and compilation, and linking, with error handling and log printing.
 --------------------------------------------------------------------------------*/
 void read_shader_source(const char *name, char **lines_out[], size_t *num_lines);
 bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path);
-void link_shader_program(GraphicsID shader_program_id);
+bool link_shader_program(GraphicsID shader_program_id);
 
 /*--------------------------------------------------------------------------------
 Loading stuff. Possibly should be outside of this module, but since a mesh loading
@@ -215,5 +240,26 @@ function explicitly accounts for possible ways to compile a mesh asset, these
 are here.
 --------------------------------------------------------------------------------*/
 void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file);
+
+
+/*--------------------------------------------------------------------------------
+  Images and texturing
+--------------------------------------------------------------------------------*/
+
+typedef struct ImageData_s {
+    uint32_t width;
+    uint32_t height;
+    /* GLenum swizzle[4]; // Swizzle for RGBA */
+    GLenum external_format; // Channels, is-integer e.g. GL_RG
+    GLenum external_type;   // Data type e.g. GL_UNSIGNED_SHORT, so the format in all is two unsigned 16-bit channels packed into data.
+    void *data;
+} ImageData;
+
+extern ResourceType Texture_RTID;
+typedef struct /* Resource */ Texture_s {
+    GLuint texture_id;
+} Texture;
+void *Texture_load(char *path);
+
 
 #endif // HEADER_DEFINED_RENDERING

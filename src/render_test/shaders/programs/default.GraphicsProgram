@@ -1,0 +1,8 @@
+// Testing for defining associations of shaders, for GraphicsPrograms, in key-value-pair files.
+// The "type" of a graphics program gives it the global standard uniforms.
+type: StandardView
+vertex_format: 3
+vertex_shader: Shaders/example.vert
+fragment_shader: Shaders/passthrough.frag
+uniforms: mat4x4 mvp_matrix, float base_diffuse, float aspect_ratio
+//, bool grayscale

@@ -1,0 +1,7 @@
+/*
+Some swimming dolphins!
+*/
+// Positional data only.
+vertex_format: 3
+// Given in the PLY file format.
+filetype: ply

@@ -48,7 +48,7 @@ void init_program(void)
     {
         EntityID entity = new_entity(2);
         Body_init(entity_add_aspect(entity, Body), "Virtual/artist", "Models/cube");
-        Transform_set(entity_add_aspect(entity, Transform), 0,0,0,0,0,0);
+        Transform_set(entity_add_aspect(entity, Transform), 0,0,0, 0,0,0);
     }
 }
 void loop(void)

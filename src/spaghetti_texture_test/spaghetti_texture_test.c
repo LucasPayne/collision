@@ -41,8 +41,8 @@ void init_program(void)
     const int diffuse_map_binding_point = GL_TEXTURE0;
 
     init_resources_rendering();
-    resource_path_add("Textures", "/home/lucas/code/collision/src/texture_test/textures");
-    resource_path_add("Shaders", "/home/lucas/code/collision/src/texture_test/shaders");
+    resource_path_add("Textures", "/home/lucas/code/collision/src/spaghetti_texture_test/textures");
+    resource_path_add("Shaders", "/home/lucas/code/collision/src/spaghetti_texture_test/shaders");
 
 
 #if 1
@@ -65,7 +65,7 @@ void init_program(void)
 
 #endif
 
-    ResourceHandle texture = new_resource_handle(Texture, "Textures/felix_klein");
+    ResourceHandle texture = new_resource_handle(Texture, "Textures/dirt");
     Texture *tex = resource_data(Texture, texture);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex->texture_id);

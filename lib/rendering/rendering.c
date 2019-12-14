@@ -20,8 +20,9 @@ Dependencies:
 #include "dictionary.h"
 
 
-// Rendering resources
-//================================================================================
+/*================================================================================
+  Shader resource
+================================================================================*/
 ResourceType Shader_RTID;
 void *Shader_load(char *path)
 {
@@ -90,19 +91,10 @@ bool Shader_reload(ResourceHandle handle)
     shader->shader_id = test_id;
     return true;
 }
-/* void Shader_unload(void *resource) */
-/* { */
-/*     // Probably shouldn't do unloading yet, because I don't know how the resource */
-/*     // system is going to trigger that anyway. */
-/*     Shader *shader = (Shader *) resource; */
-/*     glDeleteShader(shader->shader_id); */
-/* } */
-/* extern ResourceType Shader_RTID; */
-/* typedef struct /1* Resource *1/ Shader_s { */
-/*     ShaderType shader_type; */
-/*     GraphicsID shader_id; */
-/* } Shader; */
 
+/*================================================================================
+  GraphicsProgram resource
+================================================================================**/
 ResourceType GraphicsProgram_RTID;
 void *GraphicsProgram_load(char *path)
 {

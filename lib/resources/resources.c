@@ -1,47 +1,5 @@
 /*--------------------------------------------------------------------------------
     Resources, resource management, and resource loading module.
-
-Resources:
-Game Engine Architecture: Chapter 6.2, Resource management
-Game Programming Gems: A generic handle based resource manager
-
-notes:
-There could be a problem with paths on the heap. How do they deallocate? What references
-paths?
-
-References don't start at an ID, they do a path lookup and trigger a load if it isn't there. This gets an ID.
-Usage of the ID must always be preceded by a potential relocation.
-
-Resource handles. "Dereferencing" a resource handle like a C++ * prefix operator override.
-This does:
-    table index lookup of resource
-    path lookup of resource
-    resource load
-
-May do: don't load at start, just set the id to null. Then, have the resource handle dereference handler
-treat that as just a lookup miss, and try to find the loaded resource or trigger a load.
-This may make it harder to detect faulty resources, but tests could be written for that and I don't think that'll be a problem.
-
-This map:
-path -> Loaded ? ID of loaded resource
-               : null ID
-To what extent is this neccessary? Think more about things like hashing and what things need what information (handles need paths (?), etc.)
-If this path mapping is done, an idea for storing this as a stack instead of malloc'd strings everywhere:
-
-Shoving a tree of paths into a stack with worst-case 50 percent memory wasted (probably much less):
-    The tree root is at the start of the stack. Each entry reserves stack space for its next child, and this remains consistent.
-    Each entry has the offset of the next sibling in line, and if there is none, the offset is the reserved space. The interface to the tree is
-        get
-        add
-        remove
-    Adding to the tree starts at the root, and does a search at each level. If there is no match at a level, the reserved space has been reached, and this
-    is created. Creation then continues, reserving stack space at each depth for potential siblings at each level of the new branch.
-    Removing requires stitching up the sibling list of this level, and tests for siblings at each level-deletion to see if it should stay or not (monotonically,
-    stop removing up from the tail once this happens).
-
-    What about reuse of deleted space? Whenever a new entry reserves space for the next sibling, a free list is used, which is maintained somehow.
-All this is just for the path->id-if-loaded mapping, so first think if this is neccessary.
-
 --------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,12 +27,12 @@ static void make_indent(int indent);
 //--------------------------------------------------------------------------------
 // Resource types
 static int g_num_resource_types = 0;
-static ResourceTypeInfo *g_resource_type_info = NULL;
+ResourceTypeInfo *g_resource_type_info = NULL;
 
 // Resource table and ID allocation
 static bool g_initialized_resource_table;
 static uint32_t g_resource_table_size = 0;
-static ResourceTableEntry *g_resource_table;
+ResourceTableEntry *g_resource_table;
 static ResourceUUID g_last_resource_uuid = 0;
 
 // Resource paths and search
@@ -684,5 +642,4 @@ void print_resource_path(void)
         printf("\"%s\"\n", g_resource_path);
     }
 }
-
 

@@ -158,7 +158,7 @@ color_type
     ( channel_size == 2 ? (uint8_t) (val * (1 << 8)) / (1 << 16) : (uint8_t) val )
     if (color_type == PNG_COLOR_TYPE_GRAY) {
         /* printf("Doing grayscale.\n"); */
-        external_format = GL_RGB_INTEGER;
+        external_format = GL_RGB;
         // Grayscale PNG images are turned into RGB images by simply N->[N,N,N].
         // The 16-bit depth channel is downscaled to 8 bits.
         data = calloc(1, 3 * width * height * sizeof(uint8_t));
@@ -176,7 +176,7 @@ color_type
         }
     } else if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
         /* printf("gray alpha\n"); */
-        external_format = GL_RGBA_INTEGER;
+        external_format = GL_RGBA;
         // Grayscale+alpha PNG images are turned into RGBA images by [N,A]->[N,N,N,A].
         // 16-bit depth channels are downscaled to 8 bits.
         data = calloc(1, 4 * width * height * sizeof(uint8_t));
@@ -198,7 +198,7 @@ color_type
         /* printf("rgb or rgba\n"); */
         // Handling both RGB and RGBA in the same case, but with these slight differences.
         int n = color_type == PNG_COLOR_TYPE_RGB ? 3 : 4;
-        external_format = color_type == PNG_COLOR_TYPE_RGB ? GL_RGB_INTEGER : GL_RGBA_INTEGER;
+        external_format = color_type == PNG_COLOR_TYPE_RGB ? GL_RGB : GL_RGBA;
         // RGB and RGBA PNG images are copied over directly with 16->8-bit downsampling.
         data = calloc(1, n * width * height * sizeof(uint8_t));
         mem_check(data);
@@ -261,6 +261,8 @@ void *Texture_load(char *path)
                     image_data.width, image_data.height,
                     image_data.external_format, image_data.external_type,
                     image_data.data);
+    // Destroy the image data.
+    //-------------Organize actual destruction/tear-down functions. On-heap (destruction?) versus properties on heap (teardown, terminology?)
     free(image_data.data);
     glBindTexture(GL_TEXTURE_2D, 0);
 

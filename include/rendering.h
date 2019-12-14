@@ -220,7 +220,7 @@ void *Artist_load(char *path); // Virtual "load". Allocates an Artist object.
 
 
 
-/* void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, UniformType uniform_type); */
+void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, UniformType uniform_type);
 void Artist_bind(Artist *artist);
 void Artist_draw_mesh(Artist *artist, Mesh *mesh);
 

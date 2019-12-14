@@ -3,6 +3,11 @@
 ================================================================================*/
 #ifndef HEADER_DEFINED_RESOURCES
 #define HEADER_DEFINED_RESOURCES
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 /*--------------------------------------------------------------------------------
     Resource IDs
 --------------------------------------------------------------------------------

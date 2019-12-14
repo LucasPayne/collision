@@ -547,8 +547,8 @@ void Artist_bind(Artist *artist)
 void Artist_draw_mesh(Artist *artist, Mesh *mesh)
 {
     if ((resource_data(GraphicsProgram, artist->graphics_program)->vertex_format & (~mesh->vertex_format)) != 0) { // mesh's vertex format bitmask is not a superset of the graphics program's
-        fprintf(stderr, ERROR_ALERT "Attempted to render a mesh with artist with incompatible vertex format.\n");
-        fprintf(stderr, "%u\n", mesh->vertex_format);
+        fprintf(stderr, ERROR_ALERT "Attempted to render a mesh with artist with graphics program with incompatible vertex format.\n");
+        /* fprintf(stderr, "%u\n", mesh->vertex_format); */
         exit(EXIT_FAILURE);
     }
     Artist_bind(artist);
@@ -577,8 +577,12 @@ void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file)
         fprintf(stderr, ERROR_ALERT "Attempted to load PLY mesh with invalid vertex format (no position attribute).\n");
         exit(EXIT_FAILURE);
     }
+#define BASE_VERTEX_QUERY "VERTEX|VERTICES|vertex|vertices|position|pos|positions|point|points"
     
-    char *pos_query = "[VERTEX|VERTICES|vertex|vertices|position|pos|positions|point|points]: \
+    //--------------------------------------------------------------------------------
+    // Query for positions
+    //--------------------------------------------------------------------------------
+    char *pos_query = "[" BASE_VERTEX_QUERY "]: \
 float X|x|xpos|x_position|posx|position_x|x_coord|coord_x, \
 float Y|y|ypos|y_position|posy|position_y|y_coord|coord_y, \
 float Z|z|zpos|z_position|posz|position_z|z_coord|coord_z";
@@ -587,15 +591,30 @@ float Z|z|zpos|z_position|posz|position_z|z_coord|coord_z";
     mesh->attribute_data[ATTRIBUTE_TYPE_POSITION] = pos_data;
     mesh->num_vertices = num_vertices;
 
+    //--------------------------------------------------------------------------------
+    // Query for colors
+    //--------------------------------------------------------------------------------
     if ((vertex_format & VERTEX_FORMAT_C) != 0) {
-        char *color_query = "[VERTEX|VERTICES|vertex|vertices|position|pos|positions|point|points|COLOR|COLORS|COLOUR|COLOURS|color|colors|colour|colours]: \
+        char *color_query = "[" BASE_VERTEX_QUERY "|COLOR|COLORS|COLOUR|COLOURS|color|colors|colour|colours]: \
 float r|red|R|RED, \
 float g|green|G|GREEN, \
 float b|blue|B|BLUE";
         void *color_data = ply_get(file, ply, color_query, NULL);
         mesh->attribute_data[ATTRIBUTE_TYPE_COLOR] = color_data;
     }
-    if ((vertex_format & ~VERTEX_FORMAT_3 & ~VERTEX_FORMAT_C) != 0) {
+    
+    //--------------------------------------------------------------------------------
+    // Query for texture coordinates
+    //--------------------------------------------------------------------------------
+    if ((vertex_format & VERTEX_FORMAT_U) != 0) {
+        char *texture_coord_query = "[" BASE_VERTEX_QUERY "|TEXTURES|texcoords|TEXCOORD|texture_coordinates|UV|Uv|uv|texcoord|textures]: \
+float u|U|textureU|texU|tex_coord_u|tex_coord_U, \
+float v|V|textureV|texV|tex_coord_v|tex_coord_V";
+        void *texture_coord_data = ply_get(file, ply, texture_coord_query, NULL);
+        mesh->attribute_data[ATTRIBUTE_TYPE_UV] = texture_coord_data;
+    }
+
+    if ((vertex_format & ~VERTEX_FORMAT_3 & ~VERTEX_FORMAT_C & ~VERTEX_FORMAT_U) != 0) {
         fprintf(stderr, ERROR_ALERT "Attempted to extract mesh data with unsupported vertex format from PLY file.\n");
         exit(EXIT_FAILURE);
     }
@@ -634,6 +653,7 @@ list int vertex_index|vertex_indices|indices|triangle_indices|tri_indices|index_
     mesh->num_triangles = num_faces;
     mesh->triangles = (uint32_t *) triangles;
     free(face_data); // this is not stored in the mesh
+#undef BASE_VERTEX_QUERY
 }
 
 //--------------------------------------------------------------------------------

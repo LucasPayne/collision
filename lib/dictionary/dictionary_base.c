@@ -1,6 +1,7 @@
 /*--------------------------------------------------------------------------------
-  The basis of the dictionary module. The other components are defined in
-  lexer files.
+  The basis of the dictionary module.
+
+  The basic dictionary key-value pair structure is defined here.
 --------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdint.h>

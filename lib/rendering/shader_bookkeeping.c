@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include "helper_definitions.h"
 #include "rendering.h"
+#include "dictionary.h"
 
 void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
 {

@@ -8,8 +8,8 @@ Example:
     // comment
     person: 2222
 ================================================================================*/
-#ifndef HEADER_DEFINED_DICT
-#define HEADER_DEFINED_DICT
+#ifndef HEADER_DEFINED_DICTIONARY
+#define HEADER_DEFINED_DICTIONARY
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -37,7 +37,19 @@ void destroy_dictionary(Dictionary *dictionary);
 // Lexer dictionary__read.l
 Dictionary *dictionary_read(FILE *file);
 
-// Lexer dict_query.l
-/* bool dict_query(Dictionary *dictionary, char *query_string, ...); */
+/*--------------------------------------------------------------------------------
+  Querying
+--------------------------------------------------------------------------------*/
+typedef struct DictQuerier_s {
+    Dictionary *dictionary;
+    int num_rules;
 
-#endif // HEADER_DEFINED_DICT
+    char **type_names;
+    bool (**query_val_functions)(char *, void *); //e.g. bool query_val_vec4(char *string, void *val);
+} DictQuerier;
+
+void dict_query_rule_add(DictQuerier *q, char *type_name, bool (*query_val_function)(char *, void *));
+DictQuerier *dict_new_querier(Dictionary *dictionary);
+bool dict_query_get(DictQuerier *q, char *type_name, char *entry_name, void *data);
+
+#endif // HEADER_DEFINED_DICTIONARY

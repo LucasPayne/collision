@@ -19,6 +19,38 @@ Dependencies:
 #include "rendering.h"
 #include "dictionary.h"
 
+/*================================================================================
+  Text-file configuration and resources integration.
+================================================================================*/
+VertexFormat string_to_VertexFormat(char *string)
+{
+    VertexFormat vertex_format = 0;
+#define casemap(CHAR,VF) case ( CHAR ):\
+        vertex_format |= ( VF ); break;
+    for (int i = 0; string[i] != '\0'; i++) {
+        switch (string[i]) {
+            casemap('3', VERTEX_FORMAT_3);
+            casemap('C', VERTEX_FORMAT_C);
+            casemap('N', VERTEX_FORMAT_N);
+            casemap('U', VERTEX_FORMAT_U);
+            default:
+                return VERTEX_FORMAT_NONE;
+        }
+    }
+    return vertex_format;
+#undef casemap
+}
+static bool query_val_VertexFormat(char *string, void *data)
+{
+    VertexFormat vf = string_to_VertexFormat(string);
+    if (vf == VERTEX_FORMAT_NONE) return false;
+    memcpy(data, &vf, sizeof(vf));
+    return true;
+}
+void dict_query_rules_rendering(DictQuerier *q)
+{
+    dict_query_rule_add(q, "VertexFormat", query_val_VertexFormat);
+}
 
 /*================================================================================
   Shader resource
@@ -94,7 +126,7 @@ bool Shader_reload(ResourceHandle handle)
 
 /*================================================================================
   GraphicsProgram resource
-================================================================================**/
+================================================================================*/
 ResourceType GraphicsProgram_RTID;
 void *GraphicsProgram_load(char *path)
 {
@@ -110,12 +142,16 @@ void *GraphicsProgram_load(char *path)
     if (file == NULL) load_error("Could not open graphics program file.");
     Dictionary *dict = dictionary_read(file);
     if (dict == NULL) load_error("Could not read dictionary for graphics program.");
+    DictQuerier *q = dict_new_querier(dict);
+    if (q == NULL) load_error("Could not create querier.");
+    dict_query_rules_rendering(q);
+    
+    VertexFormat vertex_format;
+    if (!dict_query_get(q, "VertexFormat", "vertex_format", &vertex_format)) load_error("Non-existent/invalid vertex_format entry.");
     
     // Read in entries from the dictionary.
     const int buf_size = 512;
     char buf[buf_size];
-
-    VertexFormat vertex_format;
     char vertex_shader_path[buf_size];
     char fragment_shader_path[buf_size];
     #define dict_try(STRING)\
@@ -123,9 +159,6 @@ void *GraphicsProgram_load(char *path)
                 fprintf(stderr, "Could not find " #STRING ".\n");\
                 return NULL;\
         } }
-    dict_try("vertex_format");
-    vertex_format = string_to_VertexFormat(buf);
-    if (vertex_format == VERTEX_FORMAT_NONE) load_error("Invalid vertex format");
     dict_try("vertex_shader");
     strncpy(vertex_shader_path, buf, buf_size);
     dict_try("fragment_shader");
@@ -651,24 +684,6 @@ list int vertex_index|vertex_indices|indices|triangle_indices|tri_indices|index_
 //--------------------------------------------------------------------------------
 // Helper, strings, serialization, ...
 //--------------------------------------------------------------------------------
-VertexFormat string_to_VertexFormat(char *string)
-{
-    VertexFormat vertex_format = 0;
-#define casemap(CHAR,VF) case ( CHAR ):\
-        vertex_format |= ( VF ); break;
-    for (int i = 0; string[i] != '\0'; i++) {
-        switch (string[i]) {
-            casemap('3', VERTEX_FORMAT_3);
-            casemap('C', VERTEX_FORMAT_C);
-            casemap('N', VERTEX_FORMAT_N);
-            casemap('U', VERTEX_FORMAT_U);
-            default:
-                return VERTEX_FORMAT_NONE;
-        }
-    }
-    return vertex_format;
-#undef casemap
-}
 UniformType string_to_UniformType(char *string)
 {
     if (strcmp(string, "float") == 0) return UNIFORM_FLOAT;

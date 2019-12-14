@@ -158,11 +158,11 @@ FILE *resource_file_open(char *path, char *suffix, char *flags);
 void resource_path_add(char *drive_name, char *path);
 
 // Testing
-//================================================================================
+//--------------------------------------------------------------------------------
 void test_resource_tree(void);
 
 // Helper functions and printing
-//================================================================================
+//--------------------------------------------------------------------------------
 void print_resource_tree(void);
 void print_resource_types(void);
 void print_resource_path(void);

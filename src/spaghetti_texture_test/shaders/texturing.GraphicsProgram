@@ -1,0 +1,3 @@
+vertex_format: 3U
+vertex_shader: Shaders/texturing.vert
+fragment_shader: Shaders/texturing.frag

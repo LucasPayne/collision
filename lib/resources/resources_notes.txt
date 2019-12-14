@@ -1,0 +1,177 @@
+
+
+Resources:
+Game Engine Architecture: Chapter 6.2, Resource management
+Game Programming Gems: A generic handle based resource manager
+
+notes:
+There could be a problem with paths on the heap. How do they deallocate? What references
+paths?
+
+References don't start at an ID, they do a path lookup and trigger a load if it isn't there. This gets an ID.
+Usage of the ID must always be preceded by a potential relocation.
+
+Resource handles. "Dereferencing" a resource handle like a C++ * prefix operator override.
+This does:
+    table index lookup of resource
+    path lookup of resource
+    resource load
+
+May do: don't load at start, just set the id to null. Then, have the resource handle dereference handler
+treat that as just a lookup miss, and try to find the loaded resource or trigger a load.
+This may make it harder to detect faulty resources, but tests could be written for that and I don't think that'll be a problem.
+
+This map:
+path -> Loaded ? ID of loaded resource
+               : null ID
+To what extent is this neccessary? Think more about things like hashing and what things need what information (handles need paths (?), etc.)
+If this path mapping is done, an idea for storing this as a stack instead of malloc'd strings everywhere:
+
+Shoving a tree of paths into a stack with worst-case 50 percent memory wasted (probably much less):
+    The tree root is at the start of the stack. Each entry reserves stack space for its next child, and this remains consistent.
+    Each entry has the offset of the next sibling in line, and if there is none, the offset is the reserved space. The interface to the tree is
+        get
+        add
+        remove
+    Adding to the tree starts at the root, and does a search at each level. If there is no match at a level, the reserved space has been reached, and this
+    is created. Creation then continues, reserving stack space at each depth for potential siblings at each level of the new branch.
+    Removing requires stitching up the sibling list of this level, and tests for siblings at each level-deletion to see if it should stay or not (monotonically,
+    stop removing up from the tail once this happens).
+
+    What about reuse of deleted space? Whenever a new entry reserves space for the next sibling, a free list is used, which is maintained somehow.
+All this is just for the path->id-if-loaded mapping, so first think if this is neccessary.
+
+-----------------------------
+Some examples of ideas for how a resource system could be used
+
+ResourceType Shader_RTID;
+typedef struct Shader_s {
+    GLuint vram_id;
+} Shader;
+
+----There is a serious problem with parameterized resources. Are they the same thing with different parameters? What is the "id" then? Can't just be the path.
+----Doesn't seem useful.
+To implement parameterized configurations, the resource type info struct could have
+a union of function pointers and a flag for which type of call to use. Can functions pointers be cast
+to a generic type so there are no type errors when macros expand to include login functions?
+
+void login_shader(void *data, Stream *stream, int num_load_configs, char **load_configs)
+{
+    Shader *shader = (Shader *) data;
+
+    GLenum shader_type = str_to_shader_type(get_config(load_configs, "shader_type"));
+    GLuint vram_id = glCreateShader(shader_type);
+    load_and_compile_shader(vram_id, stream); //?
+
+    shader->vram_id = vram_id;
+}
+void logout_shader(void *data)
+{
+    Shader *shader = (Shader *) data;
+    glDeleteShader(shader->vram_id);
+}
+
+
+ResourceType Renderer_RESOURCE_TYPE_ID;
+typedef struct Renderer_s {
+    VertexFormat vertex_format;
+
+    int num_uniforms;
+    Uniform uniforms[MAX_RENDERER_UNIFORMS];
+
+    GLuint program_vram_id;
+
+    ResourceHandle shaders[NUM_SHADER_TYPES];
+} Renderer;
+void load_renderer ...
+
+ResourceType Model_RESOURCE_TYPE_ID;
+// ResourceType Model_RTID;
+typedef struct Model_s {
+    ResourceHandle mesh; // MeshHandle
+    ResourceHandle textures[12]; // TextureHandle
+    ResourceHandle renderer; // Renderer
+    int num_configs;
+    char **model_config; // just as an example of a non-resource
+} Model;
+static void login_model(void* data, Stream *stream)
+{
+    // Space is already allocated on the heap.
+    
+    Model *model = (Model *) data;
+    // Hand the model manifest to a lexer which fills the Model structure, due to a standard
+    // file format for composite resources.
+    read_model(model, stream); // fills in and allocates for model_config
+}
+
+static void logout_model(void *data)
+{
+    Model *model = (Model *) data;
+    remove_resource(MeshHandle, model->mesh); // this handles reference counting, so need not actually unload.
+    for(int i = 0; i < 12; i++) remove_resource(TextureHandle, model->textures[i]);
+    remove_resource(Renderer, model->renderer);
+
+    // Dynamic data is freed here.
+    for (int i = 0; i < model->num_configs; i++) {
+        free(model->model_config[i]);
+    }
+    free(model->model_config);
+
+    // whatever calls logout_model will free the structure from the heap.
+}
+
+add_resource_type
+
+
+Model *dolphin = load_resource(Model, "Project/models/dolphin.model");
+render_model(dolphin, camera);
+causes
+Renderer *renderer = resource_data(Renderer, model->renderer);
+causing path lookup, "Project/renderers/dolphin.renderer" (path loaded from whatever the .model file is)
+adds resource, uses type Renderer_RESOURCE_TYPE_ID to lookup in the global resource type info table the loading
+function, calls it with the renderer resource ID and resource handle's path, and this should load the renderer.
+Subsequent calls need only cause this if the renderer is unloaded, or if it is moved (unloaded and loaded), a path
+lookup is done but does not call the loading function.
+
+This renderer has resource handles to shaders. Say there are only vertex and fragment shaders, then when they are needed
+(probably very soon), this triggers again the call to load these resources from the paths stored in the mesh handles. Say the fragment shader
+is a standard one and is already being used, then the path lookup resolves and the dereference (say in the first draw call to this renderer)
+resolves to that fragment shader, already compiled in vram.
+
+The model rendering also triggers resource loads for textures, say some are standard bump/lighting maps, and one is unique and unloaded, these
+resolve in the same way.
+
+So resources can be media files, small data structures, associations of resources, etc. Or, they can be small data structures that
+are handles themselves e.g. for stuff in vram, so the resource will still want to be shared so it doesn't cause a reupload.
+
+
+    // Game Engine Architecture p300
+    // Function pointers for post-load initialization and tear down.
+    // "Logging in" and "logging out" for resource types.
+    // -----
+    // load_and_compiler_shader
+    // upload_and_free_mesh
+    // ^ These functions already work, so the resource type wraps around these as the loader.
+    // Then tear-down is simple in these cases, freeing the IDs with GL calls and doing a generic application-memory resource unload.
+    // (so, could just free from the heap.)
+
+
+
+/*
+ * When a resource type is added, be it in a library module or in a specific application,
+ * that module/application must define a global variable
+ * ResourceType Name_RTID;
+ * Then the typing macro for resource type addition expands to give a new resource type a unique identifier by passing this global's address, and further
+ * typed macro usage expands to this type id to lookup type info in a global table updated from calls to create a new resource type.
+ *
+ * A resource is always a struct. The resource type name given is the name of the struct, and this macro
+ * expands to give type information (unique id, size, type name for debugging).
+ *  
+ * Logging in and logging out out resources could by default not do anything past the generic application-memory struct allocation/deallocation.
+ * If a resource owns things, handles to GL objects in vram, (? sub-resources (if reference counting is used ?)), or needs
+ * conditioning (if the resource load is a runtime conditioning from a PLY file, then it needs to be done rather than
+ * just directly loading a binary image of the wanted structure.)
+ *
+ * The macro could just expand to name_login and name_logout functions that must be defined, then
+ * puts it in the resource type info structure.
+ */

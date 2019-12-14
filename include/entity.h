@@ -6,7 +6,10 @@
 #include <stdint.h>
 #include "iterator.h"
 
-
+/*--------------------------------------------------------------------------------
+    Entity IDs
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------*/
 typedef uint16_t MapIndex;
 typedef uint64_t UUID;
 typedef struct EntityID_s {
@@ -14,17 +17,22 @@ typedef struct EntityID_s {
     UUID uuid;
 } EntityID;
 
-
+/*--------------------------------------------------------------------------------
+    Aspect IDs
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------*/
 typedef uint16_t AspectType;
 // "null" aspect type is 0. Although, indexing into arrays by aspect type may be wanted ...
-
 typedef struct AspectID_s {
     MapIndex map_index;
     UUID uuid;
     AspectType type;
 } AspectID;
 
-
+/*--------------------------------------------------------------------------------
+    The global entity table
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------*/
 // "null" overall is null aspects entry (is this horrible?)
 typedef struct EntityMapEntry_s {
     UUID uuid;
@@ -32,7 +40,10 @@ typedef struct EntityMapEntry_s {
     AspectID *aspects;
 } EntityMapEntry;
 
-
+/*--------------------------------------------------------------------------------
+    Aspect managers
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------*/
 // A manager encapsulates aspect type information and how this type of aspect is managed.
 // This is created for an aspect type on the creation of its manager, with the information
 // filled out using macros.
@@ -51,6 +62,8 @@ typedef struct Manager_s {
 } Manager;
 
 
+/*--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------*/
 // in-line substruct macro (so, make sure to put this at the top of aspect structures, meaning they all get this metadata)
 #define ASPECT_PROPERTIES()\
     AspectID aspect_id;\
@@ -69,6 +82,8 @@ void *get_aspect_data(AspectID aspect);
 AspectID _entity_add_aspect(EntityID entity, AspectType type);
 void init_entity_model(void);
 
+/*--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------*/
 // A manager is a fancy (?) container. These defaults can do anything easy (such as malloc and iterate by going over the non-nulls in the map).
 void default_manager_new_aspect(Manager *manager, AspectID aspect);
 void default_manager_destroy_aspect(Manager *manager, AspectID aspect);

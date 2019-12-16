@@ -1,0 +1,14 @@
+/*
+Material for a Phong-shaded, directionally-lit,
+textured surface.
+*/
+vertex_format: 3NU
+vertex_shader: Shaders/test.vert
+fragment_shader: Shaders/test.frag
+block0: StandardGlobal
+block1: Standard3D
+block2: Lights
+properties: Properties
+num_textures: 2
+texture0: diffuse_map
+texture1: normal_map

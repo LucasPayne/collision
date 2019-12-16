@@ -31,6 +31,7 @@ PROJECT_LIBS:
 
 ShaderBlockID ShaderBlockID_StandardLoopWindow;
 typedef struct ShaderBlock_StandardLoopWindow_s {
+    // padding bytes would be in here if neccessary.
     float aspect_ratio;
     float time;
 } ShaderBlock_StandardLoopWindow;
@@ -64,8 +65,16 @@ void init_program(void)
 
     set_uniform_float(StandardLoopWindow, aspect_ratio, ASPECT_RATIO);
 
-    ResourceHandle mt = new_resource_handle(MaterialType, "Materials/simple");
-    resource_data(MaterialType, mt);
+    init_entity_model();
+    init_aspects_gameobjects();
+
+    EntityID cube = new_entity(2);
+    Body_init(entity_add_aspect(cube, Body), "Materials/simple1", "Models/cube");
+    Transform_set(entity_add_aspect(cube, Transform), 0,0,0, 0,0,0);
+
+
+    /* print_shader_block(StandardLoopWindow); */
+    /* getchar(); */
 
     /* printf("%.2f\n", ((ShaderBlock_StandardGlobal *) &g_shader_blocks[ShaderBlockID_StandardGlobal].shader_block)->aspect_ratio); */
 
@@ -93,15 +102,10 @@ void loop(void)
     set_uniform_float(StandardLoopWindow, time, time());
     printf("%.2f\n", ((ShaderBlock_StandardLoopWindow *) g_shader_blocks[ShaderBlockID_StandardLoopWindow].shader_block)->time);
 
-
-#if 0
     for_aspect(Body, body)
         Material *material = resource_data(Material, body->material);
         Mesh *mesh = resource_data(Mesh, body->mesh);
-
-        Artist_draw_mesh(artist, mesh);
     end_for_aspect()
-#endif
 }
 void close_program(void)
 {

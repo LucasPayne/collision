@@ -1,3 +1,0 @@
-/*
-Phong shading with directional lights and texturing.
-*/

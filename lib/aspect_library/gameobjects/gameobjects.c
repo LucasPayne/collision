@@ -53,8 +53,7 @@ Matrix4x4f Transform_matrix(Transform *transform)
 AspectType Body_TYPE_ID;
 void Body_init(Body *body, char *material_path, char *mesh_path)
 {
-    //---- very unfinished
-    /* body->artist = new_resource_handle(Artist, artist_path); */
+    body->material = new_resource_handle(Material, material_path);
     body->mesh = new_resource_handle(Mesh, mesh_path);
 }
 

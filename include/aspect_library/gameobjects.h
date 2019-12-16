@@ -44,12 +44,13 @@ Matrix4x4f Transform_matrix(Transform *transform);
 A Body is the seeable aspect of a gameobject. This gives information enough
 to render the gameobject.
 
-Currently, the only "body" is a mesh under a single graphics program.
-----Should put standard body-render loops here.
+Currently, this is just a single mesh+material pair. However, later, models
+may consist of multiple facets. However that would be a part of the rendering system.
 --------------------------------------------------------------------------------*/
 extern AspectType Body_TYPE_ID;
 typedef struct /* Aspect */ Body_s {
 ASPECT_PROPERTIES()
+    ResourceHandle material; /* Resource: Material */
     ResourceHandle mesh; /* Resource: Mesh */
 } Body;
 void Body_init(Body *body, char *material_path, char *mesh_path);

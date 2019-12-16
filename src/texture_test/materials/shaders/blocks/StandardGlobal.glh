@@ -1,6 +1,0 @@
-layout (std140) uniform StandardGlobal {
-    float time;
-    float aspect_ratio;
-    int screen_width;
-    int screen_height;
-};

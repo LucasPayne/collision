@@ -3,7 +3,6 @@
 Dependencies:
 	resources:  Basic graphics objects are formed as resources, special kinds of shared objects tied to assets.
 	dictionary: A basic key-value-pair file format used here for configuring graphics objects.
-        images:     Images are used, so this is a basic dependency.
 --------ply:        Really should not be a dependency (?).
 --------------------------------------------------------------------------------*/
 #include <glad/glad.h>
@@ -43,6 +42,7 @@ VertexFormat string_to_VertexFormat(char *string)
 
 static bool query_val_unsigned_int(char *string, void *data)
 {
+    // move to dictionary's basic types (built in to querier)
     unsigned int ui;
     if (sscanf(string, "%u", &ui) == EOF) return false;
     memcpy(data, &ui, sizeof(unsigned int));
@@ -59,7 +59,7 @@ void dict_query_rules_rendering(DictQuerier *q)
 {
     dict_query_rule_add(q, "VertexFormat", query_val_VertexFormat);
     
-    // move to general dictionary's general types 
+    // move to dictionary's basic types 
     dict_query_rule_add(q, "unsigned int", query_val_unsigned_int);
 }
 
@@ -191,6 +191,7 @@ void init_resources_rendering(void)
     add_resource_type(Texture);
 
     add_resource_type(MaterialType);
+    add_resource_type(Material);
 }
 
 //--------------------------------------------------------------------------------
@@ -334,7 +335,6 @@ void upload_mesh(Mesh *mesh, MeshData *mesh_data)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*sizeof(uint32_t) * mesh_data->num_triangles, mesh_data->triangles, GL_STATIC_DRAW);
     mesh->triangles_id = triangle_buffer;
-    // Finished triangle indices.
 
     // Create a vertex array object (VAO) and associate the vertex attribute arrays to it, then give it to the mesh:
     // , creating and binding a new VAO ID
@@ -359,18 +359,13 @@ void upload_mesh(Mesh *mesh, MeshData *mesh_data)
     mesh->vertex_array_id = vao;
 }
 
-//================================================================================
-//================================================================================
-//================================================================================
-//================================================================================
+//--------------------------------------------------------------------------------
 // Materials
-//================================================================================
-//================================================================================
-//================================================================================
-//================================================================================
+//--------------------------------------------------------------------------------
 ResourceType MaterialType_RTID;
 void *MaterialType_load(char *path)
 {
+    //----- Important: Some error conditions leave memory leaks. Seriously think about how to avoid this.
 #define load_error(STRING)\
     { fprintf(stderr, "Error while loading MaterialType: " STRING "\n"); return NULL; }
     // Try to open the .MaterialType dictionary for querying.
@@ -398,7 +393,7 @@ void *MaterialType_load(char *path)
     if (!dict_get(dict, "fragment_shader", buf, buf_size)) load_error("No fragment_shader entry."); //!!!! Destroy the above resource handle.
     material_type.shaders[Fragment] = new_resource_handle(Shader, buf);
 
-#if 1 // Uncomment when material-system shaders are working.
+    material_type.program_id = glCreateProgram();
     glAttachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Vertex])->shader_id);
     glAttachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Fragment])->shader_id);
     // Link the program, and do error-checking.
@@ -406,8 +401,9 @@ void *MaterialType_load(char *path)
     // Detach the shaders so they can be deleted if needed.
     glDetachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Vertex])->shader_id);
     glDetachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Fragment])->shader_id);
-#endif
 
+    // A material instance text-file of this material type defines its textures from their names given in this material type text-file. Collate these
+    // names.
     for (int i = 0; i < material_type.num_textures; i++) {
         char texture_token[32];
         sprintf(texture_token, "texture%d", i);
@@ -415,6 +411,9 @@ void *MaterialType_load(char *path)
         if (strlen(buf) > MATERIAL_MAX_TEXTURE_NAME_LENGTH) load_error("Texture name too long.");
         strncpy(material_type.texture_names[i], buf, MATERIAL_MAX_TEXTURE_NAME_LENGTH);
     }
+    // Collect shader-block information and bind their backing buffers to the linked program.
+    //      Possibly the material does not even need to keep information about its blocks after binding them to its program.
+    //      However, for printing at least it is useful.
     for (int i = 0; i < material_type.num_blocks; i++) {
         char block_token[32];
         sprintf(block_token, "block%d", i);
@@ -422,13 +421,76 @@ void *MaterialType_load(char *path)
         ShaderBlockID block_id = get_shader_block_id(buf);
         if (block_id < 0) load_error("Unsupported shader block.");
         material_type.shader_blocks[i] = block_id;
+        // Bind the block to the linked program.
+        GLuint block_index = glGetUniformBlockIndex(material_type.program_id, buf);
+        if (block_index == GL_INVALID_INDEX) {
+            // Hopefully the glsl compiler does not optimize away entire std140 uniform blocks.
+            load_error("Could not find uniform block.");
+        }
+        // The block id is both index into the global block info array, and the binding point.
+        glBindBufferBase(GL_UNIFORM_BUFFER, block_id, g_shader_blocks[block_id].vram_buffer_id);
     }
-    // Successfully filled the Materialtype.
+    // Successfully filled the MaterialType.
     MaterialType *out_material_type = (MaterialType *) calloc(1, sizeof(MaterialType));
     mem_check(out_material_type);
     memcpy(out_material_type, &material_type, sizeof(MaterialType));
     return out_material_type;
 #undef load_error
+}
+
+
+ResourceType Material_RTID;
+void *Material_load(char *path)
+{
+#define load_error(STRING)\
+    { fprintf(stderr, "Error while loading Material: " STRING "\n"); return NULL; }
+    // Try to open the .Material dictionary for querying.
+    FILE *file = resource_file_open(path, ".Material", "r");
+    if (file == NULL) load_error("File failed to open.");
+    Dictionary *dict = dictionary_read(file);
+    if (dict == NULL) load_error("Failed to create dictionary for file.");
+    DictQuerier *q = dict_new_querier(dict);
+    if (q == NULL) load_error("Could not create querier.");
+    dict_query_rules_rendering(q);
+
+    Material material;
+    const int buf_size = 1024;
+    char buf[buf_size];
+    if (!dict_get(dict, "material_type", buf, buf_size)) load_error("No resource path given for the material type (no material_type entry).");
+    material.material_type = new_resource_handle(MaterialType, buf);
+    MaterialType *material_type = resource_data(MaterialType, material.material_type);
+
+    // Create the texture resource handles for each texture of this material type.
+    for (int i = 0; i < material_type->num_textures; i++) {
+        char texture_token[MATERIAL_MAX_TEXTURE_NAME_LENGTH + 3 + 1]; // to handle texture names up to the maximum length
+        sprintf(texture_token, "tx_%s", material_type->texture_names[i]);
+        if (!dict_get(dict, texture_token, buf, buf_size)) load_error("Missing texture that is required for declared material type.");
+        material.textures[i] = new_resource_handle(Texture, buf);
+    }
+
+    Material *out_material = (Material *) malloc(sizeof(Material));
+    mem_check(out_material);
+    memcpy(out_material, &material, sizeof(Material));
+    return out_material;
+#undef load_error
+}
+
+
+
+void mesh_material_draw(Mesh *mesh, Material *material)
+{
+    MaterialType *material_type = resource_data(MaterialType, material->material_type);
+
+    glBindVertexArray(mesh->vertex_array_id);
+    glUseProgram(material_type->program_id);
+
+    // Bind the textures.
+    for (int i = 0; i < material_type->num_textures; i++) {
+        Texture *texture = resource_data(Texture, material->textures[i]);
+        glActiveTexture(GL_TEXTURE0 + i);
+    }
+
+    glDrawElements(GL_TRIANGLES, 3 * mesh->num_triangles, GL_UNSIGNED_INT, (void *) 0);
 }
 
 
@@ -449,7 +511,7 @@ texture1: normal_map
 */
 
 
-void print_shader_block(ShaderBlockID id)
+void ___print_shader_block(ShaderBlockID id)
 {
 #define bstring(BOOLEAN) ( ( BOOLEAN ) ? "true" : "false" )
     ShaderBlockInfo *block = &g_shader_blocks[id];
@@ -509,11 +571,8 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val)
 {
     g_shader_blocks[id].dirty = true;
-    puts(g_shader_blocks[id].name);
     size_t offset = ((bool *) entry_address) - ((bool *) g_shader_blocks[id].shader_block);
-    printf("%lu\n", offset);
     for (int i = 0; i < sizeof(float); i++) g_shader_blocks[id].dirty_flags[offset + i] = true;
-
     *entry_address = val;
 }
 

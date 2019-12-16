@@ -6,3 +6,7 @@ block0: StandardLoopWindow
 properties: Properties
 num_textures: 1
 texture0: diffuse_map
+
+/* num_textures: 2 */
+/* texture0: diffuse_map */
+/* texture1: normal_map */

@@ -114,7 +114,9 @@ typedef struct ShaderBlockInfo_s {
     GLuint vram_buffer_id;
     size_t size;
 } ShaderBlockInfo;
-void print_shader_block(ShaderBlockID id);
+#define print_shader_block(BLOCK_NAME)\
+    ___print_shader_block(( ShaderBlockID_ ## BLOCK_NAME ))
+void ___print_shader_block(ShaderBlockID id);
 #define MAX_NUM_SHADER_BLOCKS 128
 extern ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
@@ -128,8 +130,7 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name);
     ___set_uniform_float(( ShaderBlockID_ ## BLOCK_NAME ),\
                          &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
                          ( FLOAT_VALUE ))
-/* Pointer arithmetic can be used if needed. Then each material type has a dummy global just to allow the macro expansion
- * to calculate the offset. */
+/* Pointer arithmetic can be used if needed, to calculate the offset (it is used for bitflags.) */
 
 ShaderBlockID get_shader_block_id(char *name);
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val);
@@ -154,6 +155,16 @@ typedef struct /* Resource */ MaterialType_s {
     GLuint program_id;
 } MaterialType;
 void *MaterialType_load(char *path);
+
+/*--------------------------------------------------------------------------------
+    Material instances
+--------------------------------------------------------------------------------*/
+extern ResourceType Material_RTID;
+typedef struct /* Resource */ Material_RTID {
+    ResourceHandle material_type; /* Resource: MaterialType */
+    ResourceHandle textures[MATERIAL_MAX_TEXTURES]; /* Resource[]: Texture */
+} Material;
+void *Material_load(char *path);
 
 /*--------------------------------------------------------------------------------
   Mesh stuff

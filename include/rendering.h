@@ -107,12 +107,14 @@ bool Shader_reload(ResourceHandle handle);
 typedef int16_t ShaderBlockID; // null: -1
 typedef struct ShaderBlockInfo_s {
     bool dirty;
+    bool *dirty_flags;
     char *name;
     void *shader_block;
     ShaderBlockID id;
     GLuint vram_buffer_id;
     size_t size;
 } ShaderBlockInfo;
+void print_shader_block(ShaderBlockID id);
 #define MAX_NUM_SHADER_BLOCKS 128
 extern ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
@@ -124,7 +126,7 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name);
 
 #define set_uniform_float(BLOCK_NAME,ENTRY,FLOAT_VALUE)\
     ___set_uniform_float(( ShaderBlockID_ ## BLOCK_NAME ),\
-                         &(( ((ShaderBlock_ ## BLOCK_NAME *) &g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
+                         &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
                          ( FLOAT_VALUE ))
 /* Pointer arithmetic can be used if needed. Then each material type has a dummy global just to allow the macro expansion
  * to calculate the offset. */

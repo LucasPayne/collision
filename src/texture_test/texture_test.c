@@ -91,6 +91,7 @@ void init_program(void)
 void loop(void)
 {
     set_uniform_float(StandardLoopWindow, time, time());
+    printf("%.2f\n", ((ShaderBlock_StandardLoopWindow *) g_shader_blocks[ShaderBlockID_StandardLoopWindow].shader_block)->time);
 
 
 #if 0

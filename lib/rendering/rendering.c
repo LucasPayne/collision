@@ -448,6 +448,24 @@ texture0: diffuse_map
 texture1: normal_map
 */
 
+
+void print_shader_block(ShaderBlockID id)
+{
+#define bstring(BOOLEAN) ( ( BOOLEAN ) ? "true" : "false" )
+    ShaderBlockInfo *block = &g_shader_blocks[id];
+    printf("name: \"%s\"\n", block->name);
+    printf("id: %d\n", (int) block->id);
+    printf("dirty?: %s\n", bstring(block->dirty));
+    printf("size: %lu\n", block->size);
+    printf("vram_buffer_id: %u\n", block->vram_buffer_id);
+    printf("DIRTY FLAGS\n");
+    for (int i = 0; i < block->size; i++) {
+        printf("%d: %s\n", i, bstring(block->dirty_flags[i]));
+    }
+#undef bstring
+}
+
+
 static int g_num_shader_blocks = 0;
 ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
@@ -468,7 +486,15 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
     strcpy(new_block->name, name);
     new_block->shader_block = calloc(1, size);
     mem_check(new_block);
-    new_block->dirty = true; // The backing buffer contents must be uploaded at least once.
+    // This flag, if false, allows the checking of every entry to be skipped when synchronizing to the backing buffer.
+    new_block->dirty = true;
+
+    // Create a bool array of dirty flags for each entry in the flattened shdaer-block struct
+    // (with the padding, but it shouldn't matter.)
+    // IMPORTANT: The synchronizer doesn't know types. So, dirty flags must be set for the whole width of an updated entry.
+    new_block->dirty_flags = (bool *) malloc(sizeof(bool) * size);
+    mem_check(new_block->dirty_flags);
+    for (int i = 0; i < size; i++) new_block->dirty_flags[i] = true;
 
     // Create a VRAM buffer to back the block.
     GLuint ubo;
@@ -483,6 +509,11 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val)
 {
     g_shader_blocks[id].dirty = true;
+    puts(g_shader_blocks[id].name);
+    size_t offset = ((bool *) entry_address) - ((bool *) g_shader_blocks[id].shader_block);
+    printf("%lu\n", offset);
+    for (int i = 0; i < sizeof(float); i++) g_shader_blocks[id].dirty_flags[offset + i] = true;
+
     *entry_address = val;
 }
 

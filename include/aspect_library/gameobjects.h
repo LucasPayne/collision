@@ -50,10 +50,9 @@ Currently, the only "body" is a mesh under a single graphics program.
 extern AspectType Body_TYPE_ID;
 typedef struct /* Aspect */ Body_s {
 ASPECT_PROPERTIES()
-    ResourceHandle artist; /* Resource: Artist */
     ResourceHandle mesh; /* Resource: Mesh */
 } Body;
-void Body_init(Body *body, char *artist_path, char *mesh_path);
+void Body_init(Body *body, char *material_path, char *mesh_path);
 
 /*--------------------------------------------------------------------------------
 Logic is the behavioral aspect of a gameobject. It holds an update routine

@@ -1,13 +1,135 @@
 /*
 Material for a Phong-shaded, directionally-lit,
-textured surface.
+textured and (optionally) normal-mapped surface.
 */
+
+/*
+When a block is first used, the name given here is used as its identifier. Subsequent uses of blocks with that name
+should match. So, the way to use this is by having a glsl header file "StandardGlobal.glh", which contains the block definition.
+In this way, the first time one is used, the block can be queried through program introspection, to prepare a global
+block manager an interface to setting.
+
+For each block type, there may be a struct header file. What about including the same file?
+The pre-preprocessor for glsl files includes #define IS_GLSL.
+In the block header, it could be
+
+#ifdef IS_GLSL
+
+layout (std140) uniform StandardGlobal {
+    float time;
+    float aspect_ratio;
+    int screen_width;
+    int screen_height;
+};
+#else
+enum BLOCK_ENTRIES_StandardGlobal {
+    StandardGlobal_time,
+    StandardGlobal_aspect_ratio,
+    StandardGlobal_screen_width,
+    StandardGlobal_height,
+};
+#endif
+
+Then in code,
+
+shader_block_update_float(StandardGlobal, StandardGlobal_time, time());
+shader_block_update_mat4x4(Standard3D, Standard3D_mvp_matrix, &mvp_matrix.vals);
+
+and macros
+
+shader_block_update_float(StandardGlobal, time, time());
+
+An application controls global blocks. It declares this.
+Maybe don't query the block interface with introspection on the first shader program which happens to use it.
+Rather, create a dummy shader to introspect.
+
+shader_block_control("StandardGlobal
+-
+
+Material types are resources. A material is an instance of a material type, and they are themselves resources,
+for backing by parameter files and instancing of the same parameters/properties block.
+
+Material types can have references to global "shader blocks". When a material type is loaded, if the declared shader blocks
+are not being controlled by the application, it fails to load.
+
+A shader block is shared by material types. The values in the actual buffer backing the uniform blocks matching
+the global shader block (from a glsl header file) are controlled by the application, and this is declared.
+
+So, the application says what shader blocks it is going to support. Then, during the program execution, if a material
+resource load is triggered, and that references a material type, that material type is loaded, global shader blocks
+are checked/matched, the material type may trigger loads for the shader resources, it links its own program,
+then instances the material.
+
+
+For example, an application may not support a lighting-information block at all, or use a different one than another.
+A 2D/GUI application may not need to support Standard3D etc. at all, because it won't use shaders which depend on that anyway.
+A group of shaders for one application may have a global shared block, but this is just for the utility of sharing data, and
+the block could be very specific to the application/effect.
+( In this way it would be similar to the "aspect library" idea, for example there being a standard set of aspects for 3D game objects,
+  yet the aspect system can be used to a very specific degree in one application. )
+
+Then, shaders should be written to use the global block "modules" as much as possible, for modularity, ease of control of shader data in the application,
+and sharing of data. So a 3D shader will probably always use Standard3D.
+
+
+Declaring that a block is going to be controlled by the application requires follow-up. This means if Standard3D is declared, the
+shaders which depend on it expect it to be used in a certain way, filling the values with what they are supposed to mean. How the application
+does this/where it gets the values from is not specified from the block, it is just a data interface.
+
+Then for example
+
+
+
+Could the application declare its supported types just by headers? What about the same headers that material-system glsl shaders would include?
+
+#include "shader_blocks/StandardGlobal.glh"
+#include "shader_blocks/Standard3D.glh"
+#include "shader_blocks/Lights.glh"
+
+Lights.glh
+----------
+#ifdef IS_GLSL
+
+#else
+
+#endif
+
+In just the C-preprocessor, I don't know if this level of configuration is possible (for example, building up a global array of strings through just C-preprocessor includes.)
+--------------------------------------------------------------------------------
+
+Global built-up array of shader block infos.
+Shader block "header" file is generated, but no code generation in-line in the application for this.
+
+Shader block info:
+    Buffer object for backing the uniform block
+    Struct of C-packed values
+    Struct of uint16_t-replaced values for all properties, arrays, and structs (and those structs redefined for uint16_t etc.)
+        to be the map to std140-layout vram buffer
+    Struct of bitflags in the same manner
+
+Macro then expands to these with intuitive syntax:
+set_uniform_bool(Lights, directional_lights[i].enabled, false).
+This sets the bitflag. When a draw call is done, the flagged items are uploaded to the vram backing-buffer.
+
+
+
+
+for_aspect(Body, body)
+
+end_for_aspect()
+
+
+*/
+
+
 vertex_format: 3NU
-vertex_shader: Shaders/test.vert
-fragment_shader: Shaders/test.frag
-block0: StandardGlobal
+vertex_shader: Shaders/textured_phong.vert
+fragment_shader: Shaders/textured_phong.frag
+num_blocks: 3
+// block for window and time information, for interactive windowed applications
+block0: StandardLoopWindow
 block1: Standard3D
-block2: Lights
+block2: DirectionalLights
 properties: Properties
 num_textures: 2
 texture0: diffuse_map

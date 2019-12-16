@@ -3,10 +3,10 @@ Phong shading with directional lights and texturing.
 */
 #version 420
 
-// #include "StandardGlobal.glh"
+// #include "StandardLoopWindow.glh"
 // Is it at all a bad thing to just have things available to shaders? Since this is a shared block anyway, I think it would
 // just be convenient.
-layout (std140) uniform StandardGlobal {
+layout (std140) uniform StandardLoopWindow {
     float time;
     float aspect_ratio;
     int screen_width;

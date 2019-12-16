@@ -135,6 +135,184 @@ bool Shader_reload(ResourceHandle handle)
     return true;
 }
 
+/*================================================================================
+  GraphicsProgram resource
+================================================================================*/
+ResourceType GraphicsProgram_RTID;
+void *GraphicsProgram_load(char *path)
+{
+#define load_error(STRING)\
+    { fprintf(stderr, ( STRING )); fputc('\n', stderr); return NULL; }
+    //----------------Fatal error messages are here for now for testing.
+    // Path format:
+    //      Drive/path/to/graphicsprogram
+    // Associated build files:
+    //      .../path/to/graphicsprogram.GraphicsProgram
+    // This is a standard key-value pairs file with graphics program information.
+    FILE *file = resource_file_open(path, ".GraphicsProgram", "r");
+    if (file == NULL) load_error("Could not open graphics program file.");
+    Dictionary *dict = dictionary_read(file);
+    if (dict == NULL) load_error("Could not read dictionary for graphics program.");
+    DictQuerier *q = dict_new_querier(dict);
+    if (q == NULL) load_error("Could not create querier.");
+    dict_query_rules_rendering(q);
+    
+    VertexFormat vertex_format;
+    if (!dict_query_get(q, "VertexFormat", "vertex_format", &vertex_format)) load_error("Non-existent/invalid vertex_format entry.");
+    
+    // Read in entries from the dictionary.
+    const int buf_size = 512;
+    char buf[buf_size];
+    char vertex_shader_path[buf_size];
+    char fragment_shader_path[buf_size];
+    #define dict_try(STRING)\
+        { if (!dict_get(dict, ( STRING ), buf, buf_size)) {\
+                fprintf(stderr, "Could not find " #STRING ".\n");\
+                return NULL;\
+        } }
+    dict_try("vertex_shader");
+    strncpy(vertex_shader_path, buf, buf_size);
+    dict_try("fragment_shader");
+    strncpy(fragment_shader_path, buf, buf_size);
+#if 0
+    dict_try("type");
+    GraphicsProgramType graphics_program_type;
+    if (strcmp(buf, "StandardView") == 0) {
+        graphics_program_type = GRAPHICS_PROGRAM_STANDARD_VIEW;
+    } else if (strcmp(buf, "Standard2D") == 0) {
+        graphics_program_type = GRAPHICS_PROGRAM_STANDARD_2D;
+    } else {
+        load_error("Invalid graphics program type.");
+    }
+#endif
+
+#if 0
+    char uniform_string[buf_size];
+    if (!dict_get(dict, "uniforms", buf, buf_size)) {
+        fprintf(stderr, "COULD NOT FIND uniforms\n");
+        return NULL;
+    }
+    strncpy(uniform_string, buf, buf_size);
+#endif
+
+    GraphicsProgram *program = (GraphicsProgram *) calloc(1, sizeof(GraphicsProgram));
+    mem_check(program);
+    program->program_id = glCreateProgram();
+    if (program->program_id == 0) load_error("Could not create program ID.");
+    program->program_type = GRAPHICS_PROGRAM_VF; // Only using vertex and fragment shaders.
+    program->vertex_format = vertex_format;
+    /* program->program_type = graphics_program_type; //reused program_type... was for which shader stages are a part of it. */
+
+    //////////////////////////////////////////////////////////////////////////////////
+    // If create new resource handles !!! REMEMBER TO FREE if resource load fails.
+    program->shaders[Vertex] = new_resource_handle(Shader, vertex_shader_path);
+    program->shaders[Fragment] = new_resource_handle(Shader, fragment_shader_path);
+
+    // Resources for shaders have been associated. Now, attach them and link them to this GraphicsProgram object.
+    // The shader resource dereferences will trigger shader loads and compilation.
+    glAttachShader(program->program_id, resource_data(Shader, program->shaders[Vertex])->shader_id);
+    glAttachShader(program->program_id, resource_data(Shader, program->shaders[Fragment])->shader_id);
+    // link_shader_program links and does link-error checking.
+    link_shader_program(program->program_id);
+    // Detach the shaders so they can be deleted if needed (but for now, as resources, they are still loaded resources available
+    // for linking into other graphics programs).
+    glDetachShader(program->program_id, resource_data(Shader, program->shaders[Vertex])->shader_id);
+    glDetachShader(program->program_id, resource_data(Shader, program->shaders[Fragment])->shader_id);
+
+#if 0
+    GLuint uniform_block_index;
+    if (program->program_type == GRAPHICS_PROGRAM_STANDARD_VIEW) {
+        uniform_block_index = glGetUniformBlockIndex(program->program_id, "StandardView");
+        if (uniform_block_index == GL_INVALID_INDEX) load_error("Could not find standard uniform block \"StandardView\".");
+        // The standard uniform block (time, mvp matrix, aspect ratio, dimensions, stuff like that) is now bound to this program.
+        glUniformBlockBinding(program->program_id, uniform_block_index, UNIFORM_BLOCK_STANDARD);
+    } else if (program->program_type == GRAPHICS_PROGRAM_STANDARD_2D) {
+        GLuint uniform_block_index = glGetUniformBlockIndex(program->program_id, "Standard2D");
+        if (uniform_block_index == GL_INVALID_INDEX) load_error("Could not find standard uniform block \"Standard2D\".");
+        // The standard uniform block (time, mvp matrix, aspect ratio, dimensions, stuff like that) is now bound to this program.
+    } else {
+        load_error("Invalid graphics program type got through.");
+    }
+    glUniformBlockBinding(program->program_id, uniform_block_index, UNIFORM_BLOCK_STANDARD);
+#endif
+    // Now that the program has been compiled, gather the uniform locations.
+    // Example in .GraphicsProgram file:
+    // uniforms: mat4x4 mvp_matrix, float aspect_ratio, float frand, vec3 model_pos
+#if 0
+    /* A way to query the standard dictionary file for information, store
+     * as certain types, give error/malformation information, and facilities
+     * for storing things further than key-value-pairs, or list-type values,
+     * tabbed lists, ... , is really needed instead of hardcoding string processing
+     * and retrieval from the dictionary in each thing that uses one.
+     */
+    char *entry = uniform_string;
+    while (*entry != '\0') {
+        char *end = strchr(entry, ',');
+        if (end == NULL) end = strchr(entry, '\0');
+        while (isspace(*entry)) entry++;
+        
+        char *sep = strchr(entry, ' ');
+        if (sep == NULL || sep >= end) load_error("Bad list of uniforms given.");
+        char buf[512];
+        strncpy(buf, entry, sep - entry);
+        buf[sep - entry] = '\0';
+            /* printf("Got type \"%s\"\n", buf); */
+            /* getchar(); */
+        UniformType uniform_type = string_to_UniformType(buf);
+        if (uniform_type == UNIFORM_NONE) load_error("Invalid uniform type given.");
+        strncpy(buf, sep + 1, end - (sep + 1));
+        buf[end - (sep + 1)] = '\0';
+            /* printf("Got name \"%s\"\n", buf); */
+            /* getchar(); */
+
+        // Add this uniform to the graphics program.
+        GraphicsProgram_add_uniform(program, uniform_type, buf);
+
+        if (*end == '\0') break;
+        entry = end + 1;
+    }
+#endif
+
+    destroy_dictionary(dict);
+    /* printf("!!! program type: %u\n", program->program_type); */
+    /* getchar(); */
+    return (void *) program;
+#undef load_error
+#undef dict_try
+}
+bool GraphicsProgram_reload(ResourceHandle handle)
+{
+    //---not rereading the .GraphicsProgram file.
+    GraphicsProgram *program = resource_data(GraphicsProgram, handle);
+    GLuint test_id = glCreateProgram();
+
+    printf("program type: %u\n", program->program_type);
+    for (int i = 0; i < NUM_SHADER_TYPES; i++) {
+        /* printf("%u", (program->program_type & (1 << i)) != 0 ? 1 : 0); */
+        printf("%u", (program->program_type >> i) & 0x1);
+    }
+    printf("\n");
+    
+#define IS_ACTIVE(SHADER_TYPE_INDEX) ( (program->program_type & (1 << i)) != 0 )
+    for (int i = 0; i < NUM_SHADER_TYPES; i++) {
+        if (IS_ACTIVE(i)) { // program type bitmask contains i'th shader type, and the resource handle is non-null.
+            if (!Shader_reload(program->shaders[i])) return false;
+            glAttachShader(test_id, resource_data(Shader, program->shaders[i])->shader_id);
+        }
+    }
+    if (link_shader_program(test_id)) {
+        // The compilation on the test id worked. Make the graphicsprogram resource handle hold the new ID.
+        program->program_id = test_id;
+        for (int i = 0; i < NUM_SHADER_TYPES; i++) {
+            if (IS_ACTIVE(i)) {
+                glDetachShader(test_id, resource_data(Shader, program->shaders[i])->shader_id);
+            }
+        }
+        return true;
+    }
+    return false;
+#undef IS_ACTIVE
+}
 
 
 ResourceType Mesh_RTID;
@@ -184,13 +362,243 @@ void *Mesh_load(char *path)
 }
 #undef load_error
 
+ResourceType Artist_RTID;
+void *Artist_load(char *path)
+{
+    // An Artist is a "virtual resource".
+    Artist *artist = (Artist *) calloc(1, sizeof(Artist));
+    mem_check(artist);
+    return artist;
+}
+
 void init_resources_rendering(void)
 {
     add_resource_type(Shader);
+    add_resource_type(GraphicsProgram);
     add_resource_type(Mesh);
+    add_resource_type(Artist); // "Virtual" resource
     add_resource_type(Texture);
 
     add_resource_type(MaterialType);
+}
+
+//================================================================================
+//   Artist
+//================================================================================
+void GraphicsProgram_add_uniform(GraphicsProgram *program, UniformType uniform_type, char *name)
+{
+    if (strlen(name) > MAX_UNIFORM_NAME_LENGTH) {
+        fprintf(stderr, ERROR_ALERT "Uniform name \"%s\" too long (MAX_UNIFORM_NAME_LENGTH: %d).\n", name, MAX_UNIFORM_NAME_LENGTH);
+        exit(EXIT_FAILURE);
+    }
+    if (program->uniform_array == NULL) {
+        program->num_uniforms = 1;
+        program->uniform_array = (Uniform *) calloc(program->num_uniforms, sizeof(Uniform));
+        mem_check(program->uniform_array);
+    } else {
+        program->num_uniforms ++;
+        program->uniform_array = (Uniform *) realloc(program->uniform_array, program->num_uniforms * sizeof(Uniform));
+        mem_check(program->uniform_array);
+    }
+    Uniform *new_uniform = &program->uniform_array[program->num_uniforms - 1];
+    strncpy(new_uniform->name, name, MAX_UNIFORM_NAME_LENGTH);
+
+    /* printf("Program ID: %d, name: %s\n", (int) program->program_id, name); */
+    /* getchar(); */
+    new_uniform->location = glGetUniformLocation(program->program_id, name);
+    if (new_uniform->location < 0) {
+        fprintf(stderr, ERROR_ALERT "Failed to find location for uniform \"%s\".\n", new_uniform->name);
+        exit(EXIT_FAILURE);
+    }
+    new_uniform->type = uniform_type;
+    /* printf("Added new uniform: %s, %d\n", new_uniform->name, new_uniform->type); */
+    /* getchar(); */
+}
+
+void Artist_add_uniform(Artist *artist, char *name, UniformGetter getter, UniformType uniform_type)
+{
+    if (strlen(name) > MAX_UNIFORM_NAME_LENGTH) {
+        fprintf(stderr, ERROR_ALERT "Uniform name \"%s\" too long (MAX_UNIFORM_NAME_LENGTH: %d).\n", name, MAX_UNIFORM_NAME_LENGTH);
+        exit(EXIT_FAILURE);
+    }
+
+    if (artist->uniform_array == NULL) {
+        artist->num_uniforms = 1;
+        artist->uniform_array = (Uniform *) calloc(artist->num_uniforms, sizeof(Uniform));
+        mem_check(artist->uniform_array);
+    } else {
+        artist->num_uniforms ++;
+        artist->uniform_array = (Uniform *) realloc(artist->uniform_array, artist->num_uniforms * sizeof(Uniform));
+        mem_check(artist->uniform_array);
+    }
+    Uniform *new_uniform = &artist->uniform_array[artist->num_uniforms - 1];
+    strncpy(new_uniform->name, name, MAX_UNIFORM_NAME_LENGTH);
+
+    new_uniform->location = glGetUniformLocation(resource_data(GraphicsProgram, artist->graphics_program)->program_id, new_uniform->name);
+    if (new_uniform->location < 0) {
+        fprintf(stderr, ERROR_ALERT "Failed to find location for uniform \"%s\".\n", new_uniform->name);
+        getchar();
+    }
+    /* printf("%s location: %d\n", new_uniform->name, new_uniform->location); */
+    /* getchar(); */
+    new_uniform->getter = getter;
+    new_uniform->type = uniform_type;
+}
+
+#define null_check(UNION_ITEM)\
+{\
+    if (( UNION_ITEM ) == NULL) {\
+        fprintf(stderr, ERROR_ALERT "Haven't initialized a uniform value-getting function for artist.\n");\
+        exit(EXIT_FAILURE);\
+    }\
+}
+
+
+/*
+Usage of an artist for drawing.
+
+So far, an "artist" is a thin wrapper around a graphics program. Why should this be used?
+One reason is the complication of having to set up a graphics program with information
+about the application using it, callback functions etc. But it is a shared resource, a compiled
+~object file~. So, rather let the graphics program resource expose its uniform-interface.
+GraphicsProgram:
+    Uniform interface (required/non-required)
+    Minimal vertex format
+    ---and stuff for textures, buffers, whatever may be needed in this encapsulation later.
+
+
+"Standard" uniforms. A uniform variable is a general thing, and will have many uses,
+but there is still a standard core of stuff that needs to be uploaded on a draw
+call for a 3D mesh.
+
+What about having an artist hold an optional "prepare" function. This will be
+called when the artist is bound, and use the same functions for uniform uploading
+("preparing") as would be used after binding for standard uniform uploads. This means
+that non-standard uniforms used in its graphics program may be prepared
+(or ignored, if there is an initialized value in the shaders/if there is a signifier in the .GraphicsProgram file).
+
+Then, there could even be error messages for program misuse, and I think this would be very
+important for practical use of this higher-level graphics-object stuff. In the .GraphicsProgram file,
+the list of uniforms may be
+    uniforms: float! aspect_ratio, mat4x4! mvp_matrix, float! multiplier, bool grayscale
+Here, aspect_ratio and mvp_matrix are required standard uniforms. multiplier is a required non-standard uniform,
+and grayscale is an optional non-standard uniform, possibly initializing to false in the shader.
+
+Now when an artist is bound, it stores flags for each of its graphics program's uniforms (at the start, so these
+are altered by the call to the artist's .prepare function).
+The usage of a draw call is:
+Bind an artist, prepare standard uniforms, draw call.
+At a draw call, the flags are checked. If there is any required uniform with an inactive flag, an error is raised.
+This says what graphics program, what uniform, its type/name, etc., so this can quickly be looked at.
+
+This will lead you to either change the standard uploads (their names, add more), or
+go look at the way you initialized the artist, and hook up the required uniforms.
+
+What about superfluous uniforms? Uniform aliases? Common names for the mvp matrix, etc.?
+If a graphics program is thought of to encapsulate the minimal requirements for preparing a draw call under this program,
+then
+    Does the mesh have a compatible vertex format? (allowing superfluous vertex attributes)
+    Does the artists+usage-of-the-draw-call provide the neccessary uniforms? (allowing superfluous uniforms)
+    ...
+    etc., Does the material/... have required texture information? Or whatever else.
+
+Also, since the .prepare function is called first on binding the artist, you will not need to worry about
+the artist preparing its own standard uniforms, as they will be overwritten.
+
+-
+some outline (not how it should work)
+
+for_aspect(Camera, camera)
+    Matrix4x4f vp_matrix = camera->projection_matrix; // a "camera" as an entity w/ aspect will have a lens and a clipping rectangle. Not taking this fully into account yet.
+    right_multiply_matrix4x4f(vp_matrix, Transform_matrix(get_sibling_aspect(camera, Transform)));
+
+    for_aspect(Body, body)
+        Transform *transform = get_sibling_aspect(body, Transform);
+
+        Matrix4x4f mvp_matrix = vp_matrix;
+        right_multiply_matrix4x4f(mvp_matrix, Transform_matrix(transform));
+
+        Artist *artist = resource_data(Artist, body->artist);
+
+        Artist_bind(artist);
+        Artist_prepare_float(artist, "aspect_ratio", g_aspect_ratio);
+        Artist_prepare_mat4x4(artist, "mvp_matrix", mvp_matrix.vals);
+        Artist_prepare_vec3(artist, "model_position", vec3(transform->x, transform->y, transform->z));
+        Artist_draw_mesh(artist, resource_data(Mesh, body->mesh));
+    end_for_aspect()
+end_for_aspect()
+*/
+
+#if 0
+void Artist_prepare_float(Artist *artist, char *name, float val)
+{
+    GraphicsProgram *program = resource_data(GraphicsProgram, artist->graphics_program);
+
+    glUniform1f(artist->uniform_array[i].location,
+                artist->uniform_array[i].getter.float_getter());
+}
+
+
+void *Artist_bind(Artist *artist)
+{
+    /* Set the graphics context up with what is needed to draw with this artist.
+     */
+    GraphicsProgram *program = resource_data(GraphicsProgram, artist->graphics_program);
+    glUseProgram(program->program_id);
+    if (artist->prepare != NULL) artist->prepare(artist);
+}
+#endif
+
+void Artist_bind(Artist *artist)
+{
+    /* Set the graphics context up with what is needed to draw with this artist.
+     * This gets and uploads the attached uniforms and binds the associated graphics
+     * program to the context. */
+    glUseProgram(resource_data(GraphicsProgram, artist->graphics_program)->program_id);
+    for (int i = 0; i < artist->num_uniforms; i++) {
+        switch (artist->uniform_array[i].type) {
+            case UNIFORM_FLOAT:
+                null_check(artist->uniform_array[i].getter.float_getter);
+                glUniform1f(artist->uniform_array[i].location,
+                            artist->uniform_array[i].getter.float_getter());
+            break;
+            case UNIFORM_INT:
+                null_check(artist->uniform_array[i].getter.int_getter);
+                glUniform1i(artist->uniform_array[i].location,
+                            artist->uniform_array[i].getter.int_getter());
+            break;
+            case UNIFORM_MAT4X4F:
+                null_check(artist->uniform_array[i].getter.mat4x4f_getter);
+                glUniformMatrix4fv(artist->uniform_array[i].location,
+                                   1,        // Number of matrices
+                                   GL_FALSE, // Transpose/no-transpose
+                                   artist->uniform_array[i].getter.mat4x4f_getter().vals);
+            break;
+            default:
+                fprintf(stderr, ERROR_ALERT "Artist has a uniform which has an invalid uniform type, %d. (or this type is not accounted for yet.)\n", artist->uniform_array[i].type);
+                exit(EXIT_FAILURE);
+        }
+    }
+}
+#undef null_check
+
+void Artist_draw_mesh(Artist *artist, Mesh *mesh)
+{
+    if ((resource_data(GraphicsProgram, artist->graphics_program)->vertex_format & (~mesh->vertex_format)) != 0) { // mesh's vertex format bitmask is not a superset of the graphics program's
+        fprintf(stderr, ERROR_ALERT "Attempted to render a mesh with artist with graphics program with incompatible vertex format.\n");
+        /* fprintf(stderr, "%u\n", mesh->vertex_format); */
+        exit(EXIT_FAILURE);
+    }
+    Artist_bind(artist);
+    glBindVertexArray(mesh->vertex_array_id);
+    //---Note, reordered this because I think I was not properly associating the triangle index buffer to the vao.
+    // If there is a problem, maybe rethink that, but I don't think the triangle list needs to be bound each time here,
+    // rather just when filling the vao with state.
+    /* glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->triangles_id); */
+    glDrawElements(GL_TRIANGLES,
+                   3 * mesh->num_triangles,
+                   GL_UNSIGNED_INT,
+                   (void *) 0);
 }
 
 //--------------------------------------------------------------------------------
@@ -286,6 +694,16 @@ list int vertex_index|vertex_indices|indices|triangle_indices|tri_indices|index_
 #undef BASE_VERTEX_QUERY
 }
 
+//--------------------------------------------------------------------------------
+// Helper, strings, serialization, ...
+//--------------------------------------------------------------------------------
+UniformType string_to_UniformType(char *string)
+{
+    if (strcmp(string, "float") == 0) return UNIFORM_FLOAT;
+    if (strcmp(string, "int") == 0) return UNIFORM_INT;
+    if (strcmp(string, "mat4x4") == 0) return UNIFORM_MAT4X4F;
+    return UNIFORM_NONE;
+}
 
 //--------------------------------------------------------------------------------
 // Mesh stuff

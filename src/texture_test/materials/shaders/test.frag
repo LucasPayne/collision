@@ -21,7 +21,7 @@ struct DirectionalLight {
 #define MAX_DIRECTIONAL_LIGHTS 3
 layout (std140) uniform Lights {
     bool lighting_enabled;
-    DirectionLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
+    DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
 };
 
 layout (std140) uniform Properties {
@@ -53,7 +53,7 @@ void main(void)
         diffuse += light.color * max(0.0, dot(light.n_direction, normal));
         specularity += dot(light.n_half_vector, normal);
     }
-    specularitity = specular_multiplier * pow(specularity, specular_power);
+    specularity = specular_multiplier * pow(specularity, specular_power);
     color = texture(diffuse_map, fTexCoord) * diffuse
           + (texture(diffuse_map, fTexCoord) * specular_surface_color_reflectance + specularity) * specular_highlight_color;
 }

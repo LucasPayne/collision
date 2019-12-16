@@ -29,7 +29,26 @@ PROJECT_LIBS:
 #include "aspect_library/gameobjects.h"
 
 
-float uniform_get_time(void) { return time(); }
+ShaderBlockID ShaderBlockID_StandardLoopWindow;
+typedef struct ShaderBlock_StandardLoopWindow_s {
+    float aspect_ratio;
+    float time;
+} ShaderBlock_StandardLoopWindow;
+
+ShaderBlockID ShaderBlockID_Standard3D;
+typedef struct ShaderBlock_Standard3D_s {
+    float aspect_ratio;
+    float time;
+} ShaderBlock_Standard3D;
+
+ShaderBlockID ShaderBlockID_DirectionalLights;
+typedef struct ShaderBlock_DirectionalLights_s {
+    float aspect_ratio;
+    float time;
+} ShaderBlock_DirectionalLights;
+
+
+static float ASPECT_RATIO;
 
 void init_program(void)
 {
@@ -37,7 +56,24 @@ void init_program(void)
     resource_path_add("Textures", "/home/lucas/code/collision/src/texture_test/textures");
     resource_path_add("Shaders", "/home/lucas/code/collision/src/texture_test/shaders");
     resource_path_add("Models", "/home/lucas/code/collision/data/meshes");
+    resource_path_add("Materials", "/home/lucas/code/collision/src/texture_test/materials");
 
+    add_shader_block(StandardLoopWindow);
+    add_shader_block(Standard3D);
+    add_shader_block(DirectionalLights);
+
+    set_uniform_float(StandardLoopWindow, aspect_ratio, ASPECT_RATIO);
+
+    ResourceHandle mt = new_resource_handle(MaterialType, "Materials/simple");
+    resource_data(MaterialType, mt);
+
+    /* printf("%.2f\n", ((ShaderBlock_StandardGlobal *) &g_shader_blocks[ShaderBlockID_StandardGlobal].shader_block)->aspect_ratio); */
+
+    /* ResourceHandle mt = new_resource_handle(MaterialType, "Materials/textured_phong"); */
+    /* printf("%s\n", resource_data(MaterialType, mt)->texture_names[0]); */
+
+
+#if 0
     ResourceHandle res_artist = new_resource_handle(Artist, "Virtual/artist");
     Artist *artist = resource_data(Artist, res_artist);
     artist->graphics_program = new_resource_handle(GraphicsProgram, "Shaders/texturing");
@@ -50,12 +86,16 @@ void init_program(void)
         Body_init(entity_add_aspect(entity, Body), "Virtual/artist", "Models/cube");
         Transform_set(entity_add_aspect(entity, Transform), 0,0,0, 0,0,0);
     }
+#endif
 }
 void loop(void)
 {
-#if 1
+    set_uniform_float(StandardLoopWindow, time, time());
+
+
+#if 0
     for_aspect(Body, body)
-        Artist *artist = resource_data(Artist, body->artist);
+        Material *material = resource_data(Material, body->material);
         Mesh *mesh = resource_data(Mesh, body->mesh);
 
         Artist_draw_mesh(artist, mesh);
@@ -73,16 +113,17 @@ static void key_callback(GLFWwindow *window, int key,
     if (action == ( GLFW_ ## ACTION ) && key == ( GLFW_KEY_ ## KEY ))
     key_callback_quit(window, key, scancode, action, mods);
     key_callback_arrows_down(window, key, scancode, action, mods);
+#if 0
     CASE(PRESS, C) {
         // Should probably make a for_resource_type or for_resource.
         for_aspect(Body, body)
             GraphicsProgram_reload(resource_data(Artist, body->artist)->graphics_program);
         end_for_aspect()
     }
+#endif
 #undef CASE
 }
 
-static float ASPECT_RATIO;
 void reshape(GLFWwindow* window, int width, int height)
 {
     force_aspect_ratio(window, width, height, ASPECT_RATIO);

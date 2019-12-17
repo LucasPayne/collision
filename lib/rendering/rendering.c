@@ -420,13 +420,24 @@ void *MaterialType_load(char *path)
 
     // A material instance text-file of this material type defines its textures from their names given in this material type text-file. Collate these
     // names.
+    glUseProgram(material_type.program_id); // use it so sampler uniforms can be uploaded.
     for (int i = 0; i < material_type.num_textures; i++) {
         char texture_token[32];
         sprintf(texture_token, "texture%d", i);
         if (!dict_get(dict, texture_token, buf, buf_size)) load_error("Not all declared textures have been given.");
         if (strlen(buf) > MATERIAL_MAX_TEXTURE_NAME_LENGTH) load_error("Texture name too long.");
         strncpy(material_type.texture_names[i], buf, MATERIAL_MAX_TEXTURE_NAME_LENGTH);
+        // Bind this texture in the program to the binding point.
+        GLint texture_location = glGetUniformLocation(material_type.program_id, buf);
+        if (texture_location < 0) {
+            // ----Since a sampler in glsl is a loose uniform variable, maybe it could be optimized out. -1 being passed to texture functions
+            // fails silently, so it might be fine to not give a load error here.
+            load_error("Could not find sampler in linked program.");
+        }
+        glUniform1i(texture_location, i);
     }
+    glUseProgram(0);
+
     // Collect shader-block information and bind their backing buffers to the linked program.
     //      Possibly the material does not even need to keep information about its blocks after binding them to its program.
     //      However, for printing at least it is useful.
@@ -614,6 +625,14 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
     g_num_shader_blocks ++;
 }
 
+
+void ___set_uniform_mat4x4(ShaderBlockID id, float *entry_address, float *vals)
+{
+    g_shader_blocks[id].dirty = true;
+    size_t offset = ((bool *) entry_address) - ((bool *) g_shader_blocks[id].shader_block);
+    for (int i = 0; i < 16*sizeof(float); i++) g_shader_blocks[id].dirty_flags[offset + i] = true;
+    memcpy(entry_address, vals, 16*sizeof(float));
+}
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val)
 {
     g_shader_blocks[id].dirty = true;

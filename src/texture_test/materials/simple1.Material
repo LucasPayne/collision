@@ -1,2 +1,3 @@
 material_type: Materials/simple
 tx_diffuse_map: Textures/rail
+tx_diffuse_map2: Textures/red_mushroom

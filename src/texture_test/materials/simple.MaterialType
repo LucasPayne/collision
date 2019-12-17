@@ -4,8 +4,9 @@ fragment_shader: Shaders/simple.frag
 num_blocks: 1
 block0: StandardLoopWindow
 properties: Properties
-num_textures: 1
+num_textures: 2
 texture0: diffuse_map
+texture1: diffuse_map2
 
 /* num_textures: 2 */
 /* texture0: diffuse_map */

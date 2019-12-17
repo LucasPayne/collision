@@ -133,10 +133,16 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name);
     ___set_uniform_float(( ShaderBlockID_ ## BLOCK_NAME ),\
                          &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
                          ( FLOAT_VALUE ))
-/* Pointer arithmetic can be used if needed, to calculate the offset (it is used for bitflags.) */
 
+#define set_uniform_mat4x4(BLOCK_NAME,ENTRY,MAT4X4_POINTER)\
+    ___set_uniform_mat4x4(( ShaderBlockID_ ## BLOCK_NAME ),\
+                         &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
+                         ( MAT4X4_POINTER ))
+
+/* Pointer arithmetic can be used if needed, to calculate the offset (it is used for bitflags.) */
 ShaderBlockID get_shader_block_id(char *name);
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val);
+void ___set_uniform_mat4x4(ShaderBlockID id, float *entry_address, float *vals);
 
 /*--------------------------------------------------------------------------------
   Material types

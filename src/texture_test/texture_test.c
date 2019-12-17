@@ -36,10 +36,13 @@ typedef struct ShaderBlock_StandardLoopWindow_s {
     float time;
 } ShaderBlock_StandardLoopWindow;
 
+
+typedef struct mat4x4_s {
+    float vals[16];
+} mat4x4;
 ShaderBlockID ShaderBlockID_Standard3D;
 typedef struct ShaderBlock_Standard3D_s {
-    float aspect_ratio;
-    float time;
+    mat4x4 mvp_matrix;
 } ShaderBlock_Standard3D;
 
 ShaderBlockID ShaderBlockID_DirectionalLights;
@@ -109,9 +112,20 @@ void loop(void)
     set_uniform_float(StandardLoopWindow, time, time());
     printf("%.2f\n", ((ShaderBlock_StandardLoopWindow *) g_shader_blocks[ShaderBlockID_StandardLoopWindow].shader_block)->time);
 
+    Matrix4x4f vp_matrix;
+    identity_matrix4x4f(&vp_matrix);
     for_aspect(Body, body)
         Material *material = resource_data(Material, body->material);
         Mesh *mesh = resource_data(Mesh, body->mesh);
+
+        Transform *transform = get_sibling_aspect(body, Transform);
+        Matrix4x4f model_matrix = Transform_matrix(transform);
+        Matrix4x4f mvp_matrix = vp_matrix;
+        right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+
+        print_matrix4x4f(&mvp_matrix);
+
+        set_uniform_mat4x4(Standard3D, mvp_matrix, &mvp_matrix.vals);
 
         mesh_material_draw(mesh, material);
     end_for_aspect()

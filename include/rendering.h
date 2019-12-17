@@ -231,4 +231,12 @@ void *Texture_load(char *path);
 #include "dictionary.h"
 void dict_query_rules_rendering(DictQuerier *q);
 
+
+//--------------------------------------------------------------------------------
+// Working on currently
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+void synchronize_shader_blocks(void);
+void mesh_material_draw(Mesh *mesh, Material *material);
+
 #endif // HEADER_DEFINED_RENDERING

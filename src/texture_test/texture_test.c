@@ -105,6 +105,8 @@ void loop(void)
     for_aspect(Body, body)
         Material *material = resource_data(Material, body->material);
         Mesh *mesh = resource_data(Mesh, body->mesh);
+
+        mesh_material_draw(mesh, material);
     end_for_aspect()
 }
 void close_program(void)

@@ -18,6 +18,9 @@ Dependencies:
 #include "rendering.h"
 #include "dictionary.h"
 
+static int g_num_shader_blocks = 0;
+ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
+
 /*================================================================================
   Text-file configuration and resources integration.
 ================================================================================*/
@@ -414,6 +417,9 @@ void *MaterialType_load(char *path)
     // Collect shader-block information and bind their backing buffers to the linked program.
     //      Possibly the material does not even need to keep information about its blocks after binding them to its program.
     //      However, for printing at least it is useful.
+    //      ----
+    //      Actually, it may be needed so that draw calls can trigger synchronization of relevant shader-blocks.
+    //      All of them could be checked anyway, though, which may be easier.
     for (int i = 0; i < material_type.num_blocks; i++) {
         char block_token[32];
         sprintf(block_token, "block%d", i);
@@ -475,19 +481,34 @@ void *Material_load(char *path)
 #undef load_error
 }
 
-
+void synchronize_shader_blocks(void)
+{
+    for (int i = 0; i < g_num_shader_blocks; i++) {
+        if (!g_shader_blocks[i].dirty) continue;
+        // just update the whole buffer for now. I don't even know if it is worth subdataing.
+        glBindBuffer(GL_UNIFORM_BUFFER, g_shader_blocks[i].vram_buffer_id);
+        glBufferSubData(GL_UNIFORM_BUFFER, (GLintptr) 0, g_shader_blocks[i].size, g_shader_blocks[i].shader_block);
+        
+        g_shader_blocks[i].dirty = false;
+    }
+}
 
 void mesh_material_draw(Mesh *mesh, Material *material)
 {
+    printf("Drawing ...\n");
+
     MaterialType *material_type = resource_data(MaterialType, material->material_type);
 
     glBindVertexArray(mesh->vertex_array_id);
     glUseProgram(material_type->program_id);
 
+    synchronize_shader_blocks();
+
     // Bind the textures.
     for (int i = 0; i < material_type->num_textures; i++) {
         Texture *texture = resource_data(Texture, material->textures[i]);
         glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, texture->texture_id);
     }
 
     glDrawElements(GL_TRIANGLES, 3 * mesh->num_triangles, GL_UNSIGNED_INT, (void *) 0);
@@ -528,8 +549,6 @@ void ___print_shader_block(ShaderBlockID id)
 }
 
 
-static int g_num_shader_blocks = 0;
-ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
 void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
 {
@@ -562,7 +581,7 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
     GLuint ubo;
     glGenBuffers(1, &ubo);
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STATIC_DRAW); // GL_STATIC_COPY ?
+    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_DYNAMIC_DRAW); // Which buffer usage token should be used? (p96 OGLPG8e)
     new_block->vram_buffer_id = ubo;
 
     g_num_shader_blocks ++;

@@ -68,9 +68,16 @@ void init_program(void)
     init_entity_model();
     init_aspects_gameobjects();
 
-    EntityID cube = new_entity(2);
-    Body_init(entity_add_aspect(cube, Body), "Materials/simple1", "Models/cube");
-    Transform_set(entity_add_aspect(cube, Transform), 0,0,0, 0,0,0);
+    for (int i = 0; i < 1; i++) {
+        EntityID thing = new_entity(2);
+        Body_init(entity_add_aspect(thing, Body), "Materials/simple1", "Models/quad");
+        Transform_set(entity_add_aspect(thing, Transform), 0.1 * i, -0.1 * i, 0, 0,0,0);
+    }
+    /* for (int i = 0; i < 1; i++) { */
+    /*     EntityID thing = new_entity(2); */
+    /*     Body_init(entity_add_aspect(thing, Body), "Materials/simple2", "Models/quad"); */
+    /*     Transform_set(entity_add_aspect(thing, Transform), -0.5, -0.1, 0, 0,0,0); */
+    /* } */
 
 
     /* print_shader_block(StandardLoopWindow); */
@@ -124,7 +131,7 @@ static void key_callback(GLFWwindow *window, int key,
     CASE(PRESS, C) {
         // Should probably make a for_resource_type or for_resource.
         for_aspect(Body, body)
-            GraphicsProgram_reload(resource_data(Artist, body->artist)->graphics_program);
+            Material_reload(body->material);
         end_for_aspect()
     }
 #endif

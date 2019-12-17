@@ -24,11 +24,20 @@ ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 /*================================================================================
   Text-file configuration and resources integration.
 ================================================================================*/
+void print_vertex_format(VertexFormat vertex_format)
+{
+    printf("vertex_format: ");
+    for (int i = 0; i < ATTRIBUTE_BITMASK_SIZE; i++) {
+        printf("%d", (vertex_format & (1 << i)) == 0 ? 0 : 1);
+    }
+    printf("\n");
+}
 VertexFormat string_to_VertexFormat(char *string)
 {
     VertexFormat vertex_format = 0;
 #define casemap(CHAR,VF) case ( CHAR ):\
         vertex_format |= ( VF ); break;
+    puts(string);
     for (int i = 0; string[i] != '\0'; i++) {
         switch (string[i]) {
             casemap('3', VERTEX_FORMAT_3);
@@ -179,6 +188,8 @@ void *Mesh_load(char *path)
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
         printf("GOT A MESH!!!\n");
+        /* print_vertex_format(mesh->vertex_format); */
+        /* getchar(); */
         return mesh;
     } else {
         // Invalid mesh filetype or it is not supported.
@@ -294,11 +305,13 @@ list int vertex_index|vertex_indices|indices|triangle_indices|tri_indices|index_
 //--------------------------------------------------------------------------------
 // Mesh stuff
 //--------------------------------------------------------------------------------
+// Remember to add here when new vertex attributes are used!
 const AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES] = {
     { ATTRIBUTE_TYPE_POSITION, "vPosition", GL_FLOAT, 3 },
     { ATTRIBUTE_TYPE_COLOR, "vColor", GL_FLOAT, 3 },
     { ATTRIBUTE_TYPE_NORMAL, "vNormal", GL_FLOAT, 3},
-}; //----add texture coordinates.
+    { ATTRIBUTE_TYPE_UV, "vTexCoord", GL_FLOAT, 2},
+};
 
 void upload_mesh(Mesh *mesh, MeshData *mesh_data)
 {
@@ -315,7 +328,7 @@ void upload_mesh(Mesh *mesh, MeshData *mesh_data)
 
     // Upload vertex attribute data and associate to the mesh handle.
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        if (((mesh_data->vertex_format >> i) & 1) == 1) { // vertex format has attribute i set
+        if ((mesh->vertex_format & (1 << i)) != 0) { // vertex format has attribute i set
 	    // Upload this vertex attribute data to VRAM and give the ID to the mesh.	
             if (mesh_data->attribute_data[i] == NULL) {
                 fprintf(stderr, ERROR_ALERT "Attempted to upload mesh which does not have data for one of its attributes.\n");
@@ -480,6 +493,20 @@ void *Material_load(char *path)
     return out_material;
 #undef load_error
 }
+/* void Material_reload(ResourceHandle handle) */
+/* { */
+/*     // Reload the material-type's shaders. */
+/*     MaterialType *material = resource_data(Material, handle); */
+/*     for (int i = 0; i < NUM_SHADER_TYPES; i++) { */
+/*         if ((material->program_type & (1 << i)) != 0) { */
+/*             Shader_reload(material->shaders[i]); */
+/*         } */
+/*     } */
+/*     //-----Important: Resource system needs destruction and unloading. This leaks resources. */
+/*     // reload the file. */
+/*     // ----- */
+/* } */
+
 
 void synchronize_shader_blocks(void)
 {

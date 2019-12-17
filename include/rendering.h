@@ -68,11 +68,14 @@ typedef uint32_t VertexFormat;
 #define VERTEX_FORMAT_U (1 << ATTRIBUTE_TYPE_UV)
 #define VERTEX_FORMAT_3C (VERTEX_FORMAT_3 | VERTEX_FORMAT_C)
 #define VERTEX_FORMAT_3N (VERTEX_FORMAT_3 | VERTEX_FORMAT_N)
+#define VERTEX_FORMAT_3U (VERTEX_FORMAT_3 | VERTEX_FORMAT_U)
 #define VERTEX_FORMAT_3CN (VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_N)
 #define VERTEX_FORMAT_3CU (VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_U)
+#define VERTEX_FORMAT_3CNU (VERTEX_FORMAT_3 | VERTEX_FORMAT_C | VERTEX_FORMAT_N | VERTEX_FORMAT_U)
 // Translate from strings of the form "3CU", etc., to vertex format bitmasks.
 // This is how they will be used in text files.
 VertexFormat string_to_VertexFormat(char *string);
+void print_vertex_format(VertexFormat vertex_format); // prints the bits of the vertex format
 /*--------------------------------------------------------------------------------
     Shader types and graphics program types
 --------------------------------------------------------------------------------*/
@@ -155,6 +158,7 @@ typedef struct /* Resource */ MaterialType_s {
     GLuint program_id;
 } MaterialType;
 void *MaterialType_load(char *path);
+/* void Material_reload(ResourceHandle handle); */
 
 /*--------------------------------------------------------------------------------
     Material instances

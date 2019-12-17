@@ -1,4 +1,4 @@
-vertex_format: 3
+vertex_format: 3U
 vertex_shader: Shaders/simple.vert
 fragment_shader: Shaders/simple.frag
 num_blocks: 1

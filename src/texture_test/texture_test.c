@@ -66,6 +66,10 @@ void init_program(void)
     add_shader_block(Standard3D);
     add_shader_block(DirectionalLights);
 
+    /* for (int i = 0; i < g_num_shader_blocks; i++) { */
+    /*     ___print_shader_block(i); */
+    /* } */
+
     set_uniform_float(StandardLoopWindow, aspect_ratio, ASPECT_RATIO);
 
     init_entity_model();
@@ -111,6 +115,12 @@ void loop(void)
 {
     set_uniform_float(StandardLoopWindow, time, time());
     printf("%.2f\n", ((ShaderBlock_StandardLoopWindow *) g_shader_blocks[ShaderBlockID_StandardLoopWindow].shader_block)->time);
+#if 0
+    for (int i = 0; i < 16; i++) {
+        printf("%.2f ", ((ShaderBlock_Standard3D *) g_shader_blocks[ShaderBlockID_Standard3D].shader_block)->mvp_matrix.vals[i]);
+    }
+    printf("\n");
+#endif
 
     Matrix4x4f vp_matrix;
     identity_matrix4x4f(&vp_matrix);
@@ -119,13 +129,15 @@ void loop(void)
         Mesh *mesh = resource_data(Mesh, body->mesh);
 
         Transform *transform = get_sibling_aspect(body, Transform);
+        transform->theta_x += dt();
+
         Matrix4x4f model_matrix = Transform_matrix(transform);
         Matrix4x4f mvp_matrix = vp_matrix;
         right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
 
         print_matrix4x4f(&mvp_matrix);
 
-        set_uniform_mat4x4(Standard3D, mvp_matrix, &mvp_matrix.vals);
+        set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
 
         mesh_material_draw(mesh, material);
     end_for_aspect()

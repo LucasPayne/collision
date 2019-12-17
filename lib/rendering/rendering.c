@@ -18,7 +18,7 @@ Dependencies:
 #include "rendering.h"
 #include "dictionary.h"
 
-static int g_num_shader_blocks = 0;
+int g_num_shader_blocks = 0;
 ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
 /*================================================================================
@@ -444,19 +444,27 @@ void *MaterialType_load(char *path)
     //      ----
     //      Actually, it may be needed so that draw calls can trigger synchronization of relevant shader-blocks.
     //      All of them could be checked anyway, though, which may be easier.
+    printf("num_blocks: %d\n", material_type.num_blocks);
+    getchar();
     for (int i = 0; i < material_type.num_blocks; i++) {
         char block_token[32];
         sprintf(block_token, "block%d", i);
         if (!dict_get(dict, block_token, buf, buf_size)) load_error("Not all declared shader blocks have been given.");
         ShaderBlockID block_id = get_shader_block_id(buf);
+        puts(buf);
+        printf("block_id: %d\n", block_id);
+        getchar();
         if (block_id < 0) load_error("Unsupported shader block.");
         material_type.shader_blocks[i] = block_id;
         // Bind the block to the linked program.
         GLuint block_index = glGetUniformBlockIndex(material_type.program_id, buf);
+        printf("block_index: %d\n", block_index);
+        getchar();
         if (block_index == GL_INVALID_INDEX) {
             // Hopefully the glsl compiler does not optimize away entire std140 uniform blocks.
             load_error("Could not find uniform block.");
         }
+        glUniformBlockBinding(material_type.program_id, block_index, block_id);
         // The block id is both index into the global block info array, and the binding point.
         glBindBufferBase(GL_UNIFORM_BUFFER, block_id, g_shader_blocks[block_id].vram_buffer_id);
     }
@@ -523,8 +531,12 @@ void synchronize_shader_blocks(void)
 {
     for (int i = 0; i < g_num_shader_blocks; i++) {
         if (!g_shader_blocks[i].dirty) continue;
+        /* printf("Synchronizing %s\n", g_shader_blocks[i].name); */
+        /* ___print_shader_block(i); */
         // just update the whole buffer for now. I don't even know if it is worth subdataing.
         glBindBuffer(GL_UNIFORM_BUFFER, g_shader_blocks[i].vram_buffer_id);
+        /* printf("size: %lu\n", g_shader_blocks[i].size); */
+        /* glBufferData(GL_UNIFORM_BUFFER, g_shader_blocks[i].size, g_shader_blocks[i].shader_block, GL_DYNAMIC_DRAW); */
         glBufferSubData(GL_UNIFORM_BUFFER, (GLintptr) 0, g_shader_blocks[i].size, g_shader_blocks[i].shader_block);
         
         g_shader_blocks[i].dirty = false;
@@ -631,7 +643,11 @@ void ___set_uniform_mat4x4(ShaderBlockID id, float *entry_address, float *vals)
     g_shader_blocks[id].dirty = true;
     size_t offset = ((bool *) entry_address) - ((bool *) g_shader_blocks[id].shader_block);
     for (int i = 0; i < 16*sizeof(float); i++) g_shader_blocks[id].dirty_flags[offset + i] = true;
+    /* for (int i = 0; i < 16; i++) printf("%.2f ", vals[i]); */
+    /* getchar(); */
     memcpy(entry_address, vals, 16*sizeof(float));
+    /* for (int i = 0; i < 16; i++) printf("%.2f ", entry_address[i]); */
+    /* getchar(); */
 }
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val)
 {

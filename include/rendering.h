@@ -121,6 +121,7 @@ typedef struct ShaderBlockInfo_s {
     ___print_shader_block(( ShaderBlockID_ ## BLOCK_NAME ))
 void ___print_shader_block(ShaderBlockID id);
 #define MAX_NUM_SHADER_BLOCKS 128
+extern int g_num_shader_blocks;
 extern ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
 #define add_shader_block(BLOCK_NAME)\

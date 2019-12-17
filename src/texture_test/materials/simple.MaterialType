@@ -1,8 +1,9 @@
 vertex_format: 3U
 vertex_shader: Shaders/simple.vert
 fragment_shader: Shaders/simple.frag
-num_blocks: 1
+num_blocks: 2
 block0: StandardLoopWindow
+block1: Standard3D
 properties: Properties
 num_textures: 2
 texture0: diffuse_map

@@ -16,7 +16,7 @@ uniform sampler2D diffuse_map2;
 
 void main(void)
 {
-    color = (texture(diffuse_map, fTexCoord) + texture(diffuse_map2, fTexCoord)) / 2;
+    color = (texture(diffuse_map, fTexCoord) + texture(diffuse_map2, fTexCoord)) / 2 + fColor;
     /* color = fColor * texture(diffuse_map, fTexCoord); */
     /* color = fColor; */
 }

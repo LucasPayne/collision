@@ -20,7 +20,9 @@ void main(void)
 {
     gl_Position = mvp_matrix * vPosition;
 
-    fColor = vec4(1,cos(time),0.5,1);
-    fTexCoord = vec2(vTexCoord.x * cos(time) + vTexCoord.y * sin(time),
-                     -vTexCoord.x * sin(time) + vTexCoord.y * cos(time));
+    fColor = vec4(0,0,0,1);
+    /* fColor = vec4(1,cos(time),0.5,1); */
+    /* fTexCoord = vec2(vTexCoord.x * cos(time) + vTexCoord.y * sin(time), */
+    /*                  -vTexCoord.x * sin(time) + vTexCoord.y * cos(time)); */
+    fTexCoord = vTexCoord;
 }

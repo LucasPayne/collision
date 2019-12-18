@@ -12,6 +12,13 @@ typedef struct Matrix4x4f_s {
     float vals[4 * 4];
 } Matrix4x4f;
 
+typedef struct vec4_s {
+    float vals[4];
+} vec4;
+
+typedef struct vec3_s {
+    float vals[3];
+} vec3;
 
 // Identity matrix
 //================================================================================
@@ -26,6 +33,10 @@ void multiply_matrix4x4f(Matrix4x4f *to, Matrix4x4f *A, Matrix4x4f *B);
 void right_multiply_by_transpose_matrix4x4f(Matrix4x4f *matrix, Matrix4x4f *B);
 
 void right_multiply_matrix3x3f(Matrix3x3f *matrix, Matrix3x3f *B);
+
+vec4 matrix_vec4(Matrix4x4f *matrix, vec4 v);
+
+vec3 matrix4_vec3_normal(Matrix4x4f *matrix, vec3 v);
 
 //================================================================================
 // Transformations and coordinate frames
@@ -47,9 +58,6 @@ void z_angle_rotate_matrix3x3f(Matrix3x3f *matrix, float theta);
 //--------------------------------------------------------------------------------
 void translate_matrix4x4f(Matrix4x4f *matrix, float x, float y, float z);
 
-// Scaling
-//--------------------------------------------------------------------------------
-void scale_matrix4x4f(Matrix4x4f *matrix, float scale_factor);
 
 // Homogeneous transformations and coordinate frames
 //--------------------------------------------------------------------------------

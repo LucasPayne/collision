@@ -135,9 +135,10 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name);
                          &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
                          ( FLOAT_VALUE ))
 
+//////////////////////////////////////////////////////
 #define set_uniform_mat4x4(BLOCK_NAME,ENTRY,MAT4X4_POINTER)\
     ___set_uniform_mat4x4(( ShaderBlockID_ ## BLOCK_NAME ),\
-                         &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
+                         (( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
                          ( MAT4X4_POINTER ))
 
 /* Pointer arithmetic can be used if needed, to calculate the offset (it is used for bitflags.) */
@@ -196,6 +197,9 @@ typedef struct /* Resource */ Mesh_s {
     GraphicsID attribute_buffer_ids[NUM_ATTRIBUTE_TYPES];
     uint32_t num_triangles;
     GraphicsID triangles_id;
+
+    // Acceleration information
+    float bounding_sphere_radius;
 } Mesh;
 void *Mesh_load(char *path);
 void upload_mesh(Mesh *mesh, MeshData *mesh_data);

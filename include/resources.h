@@ -66,6 +66,7 @@ void ___init_resource_handle(ResourceType resource_type, ResourceHandle *resourc
 
 #define resource_data(STRUCTURE_NAME,HANDLE)\
     ( (STRUCTURE_NAME *) ___resource_data( &( HANDLE ) ) )
+
 #define new_resource_handle(RESOURCE_TYPE_NAME,PATH)\
     ___new_resource_handle(( RESOURCE_TYPE_NAME ## _RTID),\
                            ( PATH ))
@@ -74,6 +75,8 @@ void ___init_resource_handle(ResourceType resource_type, ResourceHandle *resourc
     ___init_resource_handle(( RESOURCE_TYPE_NAME ## _RTID),\
                             &( RESOURCE_HANDLE ),\
                             ( PATH ))
+
+bool reload_resource(ResourceHandle *handle);
 
 /*--------------------------------------------------------------------------------
     Resource types and the global resource type information array
@@ -84,8 +87,8 @@ expands to type information that will be put in the resource type info array.
 The type ID is the index into this array.
 
 The reason resource types work is that whenever a resource structure is declared,
-in whatever module/application, it must be declared along with a global "Thing_RTID",
-RTID standing for resource type ID.  The add resource type macro expands to pass a
+in whatever module/application, it must be declared along with a global ResourceType "Thing_RTID",
+RTID standing for resource type ID.  The add_resource_type macro expands to pass a
 pointer to this global value to the routine which adds the new type. Now, macros can
 use symbolic type names, because they expand to pass backend functions the global
 Thing_RTID value, which is an index into the type info array.
@@ -96,14 +99,26 @@ typedef struct ResourceTypeInfo_s {
     size_t size;
     char name[MAX_RESOURCE_TYPE_NAME_LENGTH + 1];
     void *(*load) (char *path);
+    void (*unload) (void *resource);
 } ResourceTypeInfo;
 extern ResourceTypeInfo *g_resource_type_info;
-void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(char *));
-#define add_resource_type(RESOURCE_TYPE_NAME)\
+void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(char *), void (*unload)(void *resource));
+
+// The resource's unload function does not free the allocated base resource structure. So,
+// a resource may not need to do any more unloading such as freeing allocated memory.
+// (and later, maybe dropping reference counts to handled resources.)
+#define add_resource_type_no_unload(RESOURCE_TYPE_NAME)\
      ___add_resource_type(&( RESOURCE_TYPE_NAME ## _RTID ),\
                           sizeof(RESOURCE_TYPE_NAME),\
                           ( #RESOURCE_TYPE_NAME ),\
-                          ( RESOURCE_TYPE_NAME ## _load ))
+                          ( RESOURCE_TYPE_NAME ## _load ),\
+                          NULL)
+#define add_resource_type(RESOURCE_TYPE_NAME)\
+     ___add_resource_type_no_unload(&( RESOURCE_TYPE_NAME ## _RTID ),\
+                          sizeof(RESOURCE_TYPE_NAME),\
+                          ( #RESOURCE_TYPE_NAME ),\
+                          ( RESOURCE_TYPE_NAME ## _load ),\
+                          ( RESOURCE_TYPE_NAME ## _unload ))
 
 /*--------------------------------------------------------------------------------
     The "resource tree" and resource-path querying
@@ -116,7 +131,7 @@ as (root) --> Shaders --> texturing --> test.frag.
 
 If this gets to a leaf, then the leaf contains the resource type ID, including the index
 into the global resource table. So, this is used so that resource handle "dereferences"
-synchonize to the correct ID if the resource is already loaded, and subsequent dereferences
+synchronize to the correct ID if the resource is already loaded, and subsequent dereferences
 will use that ID.
 
 If the path can't be followed, then the resource isn't loaded. Resources are added
@@ -139,7 +154,7 @@ ResourceID lookup_resource(char *path);
 /*--------------------------------------------------------------------------------
     The "resource path variable" and drives
 --------------------------------------------------------------------------------
-A "path variable" similar to a Unix path variable e.g. "/path/to/bin/:/path/to/usr/bin/",
+A "path variable", similar to a Unix path variable e.g. "/path/to/bin/:/path/to/usr/bin/",
 is kept which holds maps between "resource drives" and actual directories.
 
 The resource path variable is built up at runtime through the function

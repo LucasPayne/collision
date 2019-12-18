@@ -264,6 +264,10 @@ void *Texture_load(char *path)
     // Destroy the image data.
     //-------------Organize actual destruction/tear-down functions. On-heap (destruction?) versus properties on heap (teardown, terminology?)
     free(image_data.data);
+
+    // Set the texture defaults.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
     glBindTexture(GL_TEXTURE_2D, 0);
 
     texture->texture_id = texture_id;

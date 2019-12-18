@@ -50,7 +50,7 @@ This function is non-static because a macro expands to it. Then
 expands to type metadata and passes in a global ResourceType pointer to Texture_RTID, gives it a size, the name of the structure,
 and load function Texture_load. This allocates it an ID so further usage of macros which use the symbol Texture use this ID.
  */
-void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(char *))
+void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(char *), void (*unload)(void *resource))
 {
     if (strlen(name) > MAX_RESOURCE_TYPE_NAME_LENGTH) {
         fprintf(stderr, ERROR_ALERT "Resource type name \"%s\" is too long. The maximum resource type name length is set to %d.\n", name, MAX_RESOURCE_TYPE_NAME_LENGTH);
@@ -73,6 +73,7 @@ void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, v
     new_info->type = g_num_resource_types - 1;
     new_info->size = size;
     new_info->load = load;
+    new_info->unload = unload;
     strncpy(new_info->name, name, MAX_RESOURCE_TYPE_NAME_LENGTH);
 }
 /*
@@ -82,13 +83,11 @@ and with the allocated uuid.
 */
 static ResourceID create_resource_id(ResourceType type)
 {
-    printf("creating resource id ...\n");
     if (!g_initialized_resource_table) {
         g_resource_table_size = RESOURCE_TABLE_START_SIZE;
         g_resource_table = (ResourceTableEntry *) calloc(1, sizeof(ResourceTableEntry) * g_resource_table_size);
         mem_check(g_resource_table);
         g_initialized_resource_table = true;
-        printf("initialized resource table.\n");
     }
     int i = 0;
     while (1) {
@@ -224,6 +223,29 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
 #undef DEBUG
 }
 
+bool reload_resource(ResourceHandle *handle)
+{
+    // Load the resource again into a separate place (not associated to the resource table).
+    void *reloaded = g_resource_type_info[handle->_id.type].load(handle->_path);
+    // If it failed to reload, allow the caller to handle this. Don't do anything.
+    if (reloaded == NULL) {
+        //------error logging
+        printf(ERROR_ALERT "Failed to reload resource with path \"%s\".\n", handle->_path);
+        //----------Edit the resource tree!!!!
+        return false;
+    }
+    // If the resource type has an unload function, do this first. It will tear down the resource.
+    void (*unload)(void *) = g_resource_type_info[handle->_id.type].unload;
+    if (unload != NULL) {
+        unload(___resource_data(handle));
+    }
+    // Free the base resource structure. The resource should not be null, but checking anyway.
+    if (g_resource_table[handle->_id.table_index].resource != NULL) free(g_resource_table[handle->_id.table_index].resource);
+    // Now, replace the old base structure with the new base structure.
+    g_resource_table[handle->_id.table_index].resource = reloaded;
+    return true;
+}
+
 /*
 The resource path variable is created at runtime. This holds pairs, "drives" and their bound paths.
 A resource path starts with a drive, probably capitalized. This can be bound to multiple actual directories
@@ -302,8 +324,6 @@ FILE *resource_file_open(char *path, char *suffix, char *flags)
     if (!resource_file_path(path, suffix, path_buffer, 1024)) {
         return NULL;
     }
-    //@@@
-    /* printf("MATCHED PATH: \"%s\"\n", path_buffer); */
     FILE *file = fopen(path_buffer, flags);
     return file;
 }
@@ -349,7 +369,6 @@ bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_bu
         if (strlen(path_buffer) + strlen(suffix) >= path_buffer_size) goto buffer_size_error;
         strcpy(path_buffer + j + 1 + strlen(path), suffix);
 
-        for (int i = 0; i < drive_length; i++) putchar(drive[i]);
         if (strlen(drive_buffer) == drive_length && strncmp(drive_buffer, drive, drive_length) == 0) {
             // Checking lengths since a strncmp can have equal prefixes yet the drive buffer stores a longer drive name.
             return true;

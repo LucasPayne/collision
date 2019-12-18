@@ -53,6 +53,7 @@ Matrix4x4f Transform_matrix(Transform *transform)
 AspectType Body_TYPE_ID;
 void Body_init(Body *body, char *material_path, char *mesh_path)
 {
+    body->scale = 1;
     body->material = new_resource_handle(Material, material_path);
     body->mesh = new_resource_handle(Mesh, mesh_path);
 }
@@ -66,8 +67,31 @@ AspectType Logic_TYPE_ID;
     Camera
 ================================================================================*/
 AspectType Camera_TYPE_ID;
-void Camera_init(Camera *camera)
+void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far)
 {
-    identity_matrix4x4f(&camera->projection_matrix);
+    float l,r,b,t,n,f;
+    r = near_half_width;
+    l = -r;
+    t = aspect_ratio * r;
+    b = -t;
+    n = near;
+    f = far;
+
+    Matrix4x4f frustrum_matrix = {0};
+    frustrum_matrix.vals[4*0 + 0] = (2*n)/(r-l);
+    frustrum_matrix.vals[4*1 + 1] = (2*n)/(t-b);
+    frustrum_matrix.vals[4*2 + 2] = -(f+n)/(f-n);
+    frustrum_matrix.vals[4*0 + 2] = (r+l)/(r-l);
+    frustrum_matrix.vals[4*1 + 2] = (t+b)/(t-b);
+    frustrum_matrix.vals[4*2 + 3] = -(2*n*f)/(f-n);
+    frustrum_matrix.vals[4*3 + 2] = -1;
+
+    camera->plane_r = r;
+    camera->plane_l = l;
+    camera->plane_t = t;
+    camera->plane_b = b;
+    camera->plane_n = n;
+    camera->plane_f = f;
+    camera->projection_matrix = frustrum_matrix;
 }
 

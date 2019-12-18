@@ -12,6 +12,7 @@ Dependencies:
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <math.h>
 #include "helper_definitions.h"
 #include "resources.h"
 #include "ply.h" //----------Remove this dependency.
@@ -172,40 +173,51 @@ void *Mesh_load(char *path)
     if (!dict_get(dict, "vertex_format", buf, buf_size)) load_error("vertex_format cannot be found");
     VertexFormat vertex_format = string_to_VertexFormat(buf);
     if (vertex_format == VERTEX_FORMAT_NONE) load_error("vertex_format is invalid");
+    if ((vertex_format & VERTEX_FORMAT_3) == 0) load_error("vertex_format must contain a position attribute (symbol: 3).");
     if (!dict_get(dict, "filetype", buf, buf_size)) load_error("filetype cannot be found");
+
+    Mesh *mesh = (Mesh *) calloc(1, sizeof(Mesh));
+    MeshData mesh_data = {0};
+    mem_check(mesh);
     if (strncmp(buf, "ply", buf_size) == 0) {
         // Loading the mesh from a PLY file.
         FILE *ply_file = resource_file_open(path, ".ply", "r");
         if (ply_file == NULL) load_error("cannot open resource PLY file");
-        MeshData mesh_data;
         load_mesh_ply(&mesh_data, vertex_format, ply_file);
-        Mesh *mesh = (Mesh *) calloc(1, sizeof(Mesh));
-        mem_check(mesh);
         upload_mesh(mesh, &mesh_data);
-        //////////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////////
-        // DESTROY THE MESH DATA !!!!
-        //////////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////////
-        printf("GOT A MESH!!!\n");
-        /* print_vertex_format(mesh->vertex_format); */
-        /* getchar(); */
-        return mesh;
     } else {
         // Invalid mesh filetype or it is not supported.
+        free(mesh);
         load_error("invalid mesh filetype");
     }
+    
+    // Calculate the radius of the model-origin bounding sphere. This is not the optimal bounding sphere, but it will do for now.
+    float max_sq_dist = 0;
+    for (int i = 0; i < mesh->num_vertices; i++) {
+        float *vertex = (float *) (mesh_data.attribute_data[ATTRIBUTE_TYPE_POSITION] + 3*i);
+        float sq_dist = vertex[0]*vertex[0] + vertex[1]*vertex[1] + vertex[2]*vertex[2];
+        if (sq_dist > max_sq_dist) max_sq_dist = sq_dist;
+    }
+    mesh->bounding_sphere_radius = sqrt(max_sq_dist);
+
+    // DESTROY THE MESH DATA !!!!
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        if (mesh_data.attribute_data[i] != NULL) free(mesh_data.attribute_data[i]);
+    }
+    if (mesh_data.triangles != NULL) free(mesh_data.triangles);
+
+    return mesh;
 }
 #undef load_error
 
 void init_resources_rendering(void)
 {
-    add_resource_type(Shader);
-    add_resource_type(Mesh);
-    add_resource_type(Texture);
+    add_resource_type_no_unload(Shader);
+    add_resource_type_no_unload(Mesh);
+    add_resource_type_no_unload(Texture);
 
-    add_resource_type(MaterialType);
-    add_resource_type(Material);
+    add_resource_type_no_unload(MaterialType);
+    add_resource_type_no_unload(Material);
 }
 
 //--------------------------------------------------------------------------------
@@ -410,6 +422,7 @@ void *MaterialType_load(char *path)
     material_type.shaders[Fragment] = new_resource_handle(Shader, buf);
 
     material_type.program_id = glCreateProgram();
+    // Attach the shaders. If they aren't loaded resources, then this loads and tries to compile them.
     glAttachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Vertex])->shader_id);
     glAttachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Fragment])->shader_id);
     // Link the program, and do error-checking.
@@ -419,7 +432,7 @@ void *MaterialType_load(char *path)
     glDetachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Fragment])->shader_id);
 
     // A material instance text-file of this material type defines its textures from their names given in this material type text-file. Collate these
-    // names.
+    // names, and attach texture{i}'s declared texture name to texture unit GL_TEXTURE{i}.
     glUseProgram(material_type.program_id); // use it so sampler uniforms can be uploaded.
     for (int i = 0; i < material_type.num_textures; i++) {
         char texture_token[32];
@@ -444,22 +457,15 @@ void *MaterialType_load(char *path)
     //      ----
     //      Actually, it may be needed so that draw calls can trigger synchronization of relevant shader-blocks.
     //      All of them could be checked anyway, though, which may be easier.
-    printf("num_blocks: %d\n", material_type.num_blocks);
-    getchar();
     for (int i = 0; i < material_type.num_blocks; i++) {
         char block_token[32];
         sprintf(block_token, "block%d", i);
         if (!dict_get(dict, block_token, buf, buf_size)) load_error("Not all declared shader blocks have been given.");
         ShaderBlockID block_id = get_shader_block_id(buf);
-        puts(buf);
-        printf("block_id: %d\n", block_id);
-        getchar();
         if (block_id < 0) load_error("Unsupported shader block.");
         material_type.shader_blocks[i] = block_id;
         // Bind the block to the linked program.
         GLuint block_index = glGetUniformBlockIndex(material_type.program_id, buf);
-        printf("block_index: %d\n", block_index);
-        getchar();
         if (block_index == GL_INVALID_INDEX) {
             // Hopefully the glsl compiler does not optimize away entire std140 uniform blocks.
             load_error("Could not find uniform block.");
@@ -545,11 +551,12 @@ void synchronize_shader_blocks(void)
 
 void mesh_material_draw(Mesh *mesh, Material *material)
 {
-    printf("Drawing ...\n");
-
     MaterialType *material_type = resource_data(MaterialType, material->material_type);
 
     glBindVertexArray(mesh->vertex_array_id);
+    // Why does this need to be bound? Was it not called at the correct time when creating the meshes OpenGL objects?
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->triangles_id);
+
     glUseProgram(material_type->program_id);
 
     synchronize_shader_blocks();

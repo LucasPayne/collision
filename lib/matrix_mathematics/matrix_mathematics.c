@@ -8,6 +8,7 @@
 #include <string.h>
 #include "matrix_mathematics.h"
 
+
 // Static helper functions
 //--------------------------------------------------------------------------------
 static void fprint_matrixNxNf(FILE *file, Matrix4x4f *matrix, int N);
@@ -237,19 +238,28 @@ void translate_rotate_3d_matrix4x4f(Matrix4x4f *matrix, float x, float y, float 
     matrix->vals[2 + 3*4] = z;
 }
 
-// --------- INCORRECT!
-void scale_matrix4x4f(Matrix4x4f *matrix, float scale_factor)
+vec4 matrix_vec4(Matrix4x4f *matrix, vec4 v)
 {
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            matrix->vals[i + 3*j] *= scale_factor;
-        }
+    vec4 vp;
+    for (int i = 0; i < 4; i++) {
+        vp.vals[i] = matrix->vals[i + 4*0]
+                   + matrix->vals[i + 4*1]
+                   + matrix->vals[i + 4*2]
+                   + matrix->vals[i + 4*3];
     }
+    return vp;
 }
 
-/* void lookat_matrix4x4f(Matrix4x4f *matrix, float x, float y, float z, float at_x, float at_y, float at_z) */
-/* { */
-/*     /1* Create a matrix intended to be used for position a camera, which orients it in the x-z plane with Euler y rotations, then */
-/*      * tilts toward the given position. *1/ */
-/* } */
 
+// Use a 4x4 matrix (supposedly a rigid transformation matrix) and use it to transform a 3-vector without translations.
+// This is for transformation of normals.
+vec3 matrix4_vec3_normal(Matrix4x4f *matrix, vec3 v)
+{
+    vec3 vp;
+    for (int i = 0; i < 3; i++) {
+        vp.vals[i] = matrix->vals[i + 4*0]
+                   + matrix->vals[i + 4*1]
+                   + matrix->vals[i + 4*2];
+    }
+    return vp;
+}

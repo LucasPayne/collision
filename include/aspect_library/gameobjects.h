@@ -50,6 +50,7 @@ may consist of multiple facets. However that would be a part of the rendering sy
 extern AspectType Body_TYPE_ID;
 typedef struct /* Aspect */ Body_s {
 ASPECT_PROPERTIES()
+    float scale;
     ResourceHandle material; /* Resource: Material */
     ResourceHandle mesh; /* Resource: Mesh */
 } Body;
@@ -68,21 +69,49 @@ ASPECT_PROPERTIES()
     void (*update)(struct Logic_s *);
     void *data;
 } Logic;
-#define init_logic(LOGIC,OBJ_TYPE_NAME,UPDATE)\
+/* #define init_logic(LOGIC,OBJ_TYPE_NAME,UPDATE)\ */
+/* {\ */
+/*     ( LOGIC )->update = ( UPDATE );\ */
+/*     ( LOGIC )->data = (struct OBJ_TYPE_NAME ## Data *) calloc(1, sizeof(struct OBJ_TYPE_NAME ## Data));\ */
+/*     mem_check(( LOGIC )->data);\ */
+/* } */
+/* #define object_data(LOGIC,OBJ_TYPE_NAME)\ */
+/*     ((struct OBJ_TYPE_NAME ## Data *) ( LOGIC )->data) */
+
+#define get_logic_data(DATA_LVALUE,LOGIC_ASPECT_POINTER,DATA_STRUCT)\
+    DATA_STRUCT *DATA_LVALUE = (DATA_STRUCT *) ( LOGIC_ASPECT_POINTER )->data
+
+#define init_logic(LOGIC_ASPECT_POINTER,DATA_STRUCT,UPDATE_FUNCTION)\
 {\
-    ( LOGIC )->update = ( UPDATE );\
-    ( LOGIC )->data = (struct OBJ_TYPE_NAME ## Data *) calloc(1, sizeof(struct OBJ_TYPE_NAME ## Data));\
-    mem_check(( LOGIC )->data);\
+    ( LOGIC_ASPECT_POINTER )->update = ( UPDATE_FUNCTION );\
+    ( LOGIC_ASPECT_POINTER )->data = calloc(1, sizeof(DATA_STRUCT));\
 }
-#define object_data(LOGIC,OBJ_TYPE_NAME)\
-    ((struct OBJ_TYPE_NAME ## Data *) ( LOGIC )->data)
+
+// remember each entry in a macro is evaluated for each appearance.
+// may be problems with scope, interaction with surrounding text?
+#define init_get_logic_data(DATA_LVALUE,LOGIC_ASPECT_POINTER,DATA_STRUCT,UPDATE_FUNCTION)\
+{\
+    ( LOGIC_ASPECT_POINTER )->update = ( UPDATE_FUNCTION );\
+    ( LOGIC_ASPECT_POINTER )->data = calloc(1, sizeof(DATA_STRUCT));\
+}\
+    DATA_STRUCT *DATA_LVALUE = (DATA_STRUCT *) ( LOGIC_ASPECT_POINTER )->data
+
+    /* mem_check(( LOGIC_ASPECT_POINTER )->data);\ */
+
 
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
 extern AspectType Camera_TYPE_ID;
 typedef struct /* Aspect */ Camera_s {
 ASPECT_PROPERTIES()
+    float plane_r;
+    float plane_l;
+    float plane_t;
+    float plane_b;
+    float plane_n;
+    float plane_f;
     Matrix4x4f projection_matrix; // the lens
 } Camera;
+void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far);
 
 #endif // HEADER_DEFINED_ASPECT_LIBRARY_GAMEOBJECTS

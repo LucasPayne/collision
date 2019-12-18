@@ -18,6 +18,7 @@ PROJECT_LIBS:
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 #include "helper_definitions.h"
 #include "helper_gl.h"
 #include "helper_input.h"
@@ -52,6 +53,103 @@ typedef struct ShaderBlock_DirectionalLights_s {
 } ShaderBlock_DirectionalLights;
 
 
+typedef struct CameraControlData_s {
+    float move_speed;
+    float rotate_speed;
+} CameraControlData;
+static void camera_controls_update(Logic *logic)
+{
+    get_logic_data(data, logic, CameraControlData);
+
+    Transform *transform = get_sibling_aspect(logic, Transform);
+    /* printf("move speed: %.2f\n", data->move_speed); */
+    if (arrow_key_down(Left)) { 
+        transform->x += data->move_speed * dt();
+    }
+    if (arrow_key_down(Right)) {
+        transform->x -= data->move_speed * dt();
+    }
+    if (arrow_key_down(Up)) {
+        transform->z += data->move_speed * dt();
+    }
+    if (arrow_key_down(Down)) {
+        transform->z -= data->move_speed * dt();
+    }
+    if (alt_arrow_key_down(Left)) {
+        transform->theta_y -= data->rotate_speed*dt();
+    }
+    if (alt_arrow_key_down(Right)) {
+        transform->theta_y += data->rotate_speed*dt();
+    }
+    if (alt_arrow_key_down(Up)) {
+        transform->theta_x -= data->rotate_speed*dt();
+        if (transform->theta_x < -M_PI/3) transform->theta_x = -M_PI/3;
+    }
+    if (alt_arrow_key_down(Down)) {
+        transform->theta_x += data->rotate_speed*dt();
+        if (transform->theta_x > M_PI/3) transform->theta_x = M_PI/3;
+    }
+}
+
+static void rotate_update(Logic *logic)
+{
+    Transform *transform = get_sibling_aspect(logic, Transform);
+    transform->theta_y += 2 * dt();
+    transform->theta_z += 1.6 * dt();
+    transform->theta_x += 2.3 * dt();
+}
+
+
+enum FloorMode {
+    FLOOR_ROTATING,
+    FLOOR_STATIC,
+};
+typedef struct FloorData_s {
+    float rotate_speed;
+    int mode;
+    float rotate_amount;
+    float cur_rotate;
+} FloorData;
+static void floor_update(Logic *logic)
+{
+    Transform *transform = get_sibling_aspect(logic, Transform);
+    get_logic_data(data, logic, FloorData);
+
+    if (data->mode == FLOOR_STATIC) {
+        if (frand() < 0.001) {
+            data->mode = FLOOR_ROTATING;
+            int i = rand() % 3;
+            data->rotate_amount = (M_PI/2) * i;
+            data->cur_rotate = 0;
+        }
+    } else if (data->mode == FLOOR_ROTATING) {
+        float theta = data->rotate_speed * dt();
+        data->cur_rotate += theta;
+        if (data->cur_rotate > data->rotate_amount) {
+            theta = data->rotate_amount - (data->cur_rotate - theta);
+            data->mode = FLOOR_STATIC;
+        }
+        transform->theta_z += theta;
+    }
+}
+
+void make_floor(int x, int z)
+{
+    EntityID floor = new_entity(2);
+    Body *body = entity_add_aspect(floor, Body);
+    Body_init(body, "Materials/floor", "Models/quad");
+    float placing = 20;
+    body->scale = placing;
+    Transform_set(entity_add_aspect(floor, Transform), 2*placing*x, -12, 2*placing*z,  M_PI/2,0,0);
+    /* Transform_set(entity_add_aspect(floor, Transform), offx,-12 - 2*i,offz,  M_PI/2,0,0); */
+    Logic *logic = entity_add_aspect(floor, Logic);
+    init_get_logic_data(data, logic, FloorData, floor_update);
+    data->rotate_speed = 5;
+    data->mode = FLOOR_STATIC;
+    data->rotate_amount = 0;
+    data->cur_rotate = 0;
+}
+
 static float ASPECT_RATIO;
 
 void init_program(void)
@@ -75,71 +173,119 @@ void init_program(void)
     init_entity_model();
     init_aspects_gameobjects();
 
-    for (int i = 0; i < 1; i++) {
-        EntityID thing = new_entity(2);
-        Body_init(entity_add_aspect(thing, Body), "Materials/simple1", "Models/quad");
-        Transform_set(entity_add_aspect(thing, Transform), 0.1 * i, -0.1 * i, 0, 0,0,0);
+
+
+    {
+        EntityID camera_man = new_entity(2);
+        Transform_set(entity_add_aspect(camera_man, Transform), 0,0,0,0,0,0);
+        Camera *camera = entity_add_aspect(camera_man, Camera);
+/* void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far); */
+        Camera_init(camera, ASPECT_RATIO, 1, 0.9, 10);
+    
+        Logic *logic = entity_add_aspect(camera_man, Logic);
+        init_get_logic_data(data, logic, CameraControlData, camera_controls_update);
+        data->move_speed = 12;
+        data->rotate_speed = 5;
     }
-    /* for (int i = 0; i < 1; i++) { */
-    /*     EntityID thing = new_entity(2); */
-    /*     Body_init(entity_add_aspect(thing, Body), "Materials/simple2", "Models/quad"); */
-    /*     Transform_set(entity_add_aspect(thing, Transform), -0.5, -0.1, 0, 0,0,0); */
-    /* } */
 
-
-    /* print_shader_block(StandardLoopWindow); */
-    /* getchar(); */
-
-    /* printf("%.2f\n", ((ShaderBlock_StandardGlobal *) &g_shader_blocks[ShaderBlockID_StandardGlobal].shader_block)->aspect_ratio); */
-
-    /* ResourceHandle mt = new_resource_handle(MaterialType, "Materials/textured_phong"); */
-    /* printf("%s\n", resource_data(MaterialType, mt)->texture_names[0]); */
-
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            make_floor(i, j);
+        }
+    }
 
 #if 0
-    ResourceHandle res_artist = new_resource_handle(Artist, "Virtual/artist");
-    Artist *artist = resource_data(Artist, res_artist);
-    artist->graphics_program = new_resource_handle(GraphicsProgram, "Shaders/texturing");
-    Artist_add_uniform(artist, "time", (UniformGetter) uniform_get_time, UNIFORM_FLOAT);
-
-    init_entity_model();
-    init_aspects_gameobjects();
-    {
-        EntityID entity = new_entity(2);
-        Body_init(entity_add_aspect(entity, Body), "Virtual/artist", "Models/cube");
-        Transform_set(entity_add_aspect(entity, Transform), 0,0,0, 0,0,0);
+    for (int j = 0; j < 1; j++) {
+        float offx = 60*frand()-30;
+        float offz = 60*frand()-30;
+        for (int i = 0; i < 20; i++) {
+            EntityID floor = new_entity(2);
+            Body *body = entity_add_aspect(floor, Body);
+            Body_init(body, "Materials/floor", "Models/quad");
+            body->scale = 50;
+            Transform_set(entity_add_aspect(floor, Transform), offx,-12 - 2*i,offz,  M_PI/2,0,0);
+            Logic *logic = entity_add_aspect(floor, Logic);
+            init_get_logic_data(data, logic, FloorData, floor_update);
+            data->rotate_speed = sin(i*0.1);
+        }
+    }
+    for (int i = 0; i < 100; i++) {
+        EntityID thing = new_entity(3);
+        Body *body = entity_add_aspect(thing, Body);
+        Body_init(body, "Materials/simple1", "Models/dolphins");
+        body->scale = 0.01;
+        Transform_set(entity_add_aspect(thing, Transform), 25*(2*frand()*frand()-1), 25*(2*frand()*frand()-1), 25*(2*frand()*frand()-1), 0,0,0);
+        /* entity_add_aspect(floor, Logic)->update = floor_update; */
     }
 #endif
+
 }
 void loop(void)
 {
     set_uniform_float(StandardLoopWindow, time, time());
-    printf("%.2f\n", ((ShaderBlock_StandardLoopWindow *) g_shader_blocks[ShaderBlockID_StandardLoopWindow].shader_block)->time);
-#if 0
-    for (int i = 0; i < 16; i++) {
-        printf("%.2f ", ((ShaderBlock_Standard3D *) g_shader_blocks[ShaderBlockID_Standard3D].shader_block)->mvp_matrix.vals[i]);
-    }
-    printf("\n");
-#endif
 
-    Matrix4x4f vp_matrix;
-    identity_matrix4x4f(&vp_matrix);
-    for_aspect(Body, body)
-        Material *material = resource_data(Material, body->material);
-        Mesh *mesh = resource_data(Mesh, body->mesh);
+    for_aspect(Logic, logic)
+        logic->update(logic);
+    end_for_aspect()
 
-        Transform *transform = get_sibling_aspect(body, Transform);
-        transform->theta_x += dt();
+    for_aspect(Camera, camera)
+        Transform *camera_transform = get_sibling_aspect(camera, Transform);
+        Matrix4x4f view_matrix = Transform_matrix(camera_transform);
+        Matrix4x4f vp_matrix = camera->projection_matrix;
+        right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
 
-        Matrix4x4f model_matrix = Transform_matrix(transform);
-        Matrix4x4f mvp_matrix = vp_matrix;
-        right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+        // Calculate some camera positioning information for further usage in frustum culling.
+        // Unit-length camera direction vector
+        vec3 n_camera_dir; {
+            vec3 v = {0,0,1};
+            n_camera_dir = matrix4_vec3_normal(&view_matrix, v);
+        }
+        /* camera_transform->x -= n_camera_dir.vals[0] * 3 * dt(); */
+        /* camera_transform->y -= n_camera_dir.vals[1] * 3 * dt(); */
+        /* camera_transform->z -= n_camera_dir.vals[2] * 3 * dt(); */
 
-        print_matrix4x4f(&mvp_matrix);
+        printf("%.2f, %.2f, %.2f", view_matrix.vals[0 + 4*2]
+                                   ,view_matrix.vals[1 + 4*2]
+                                   ,view_matrix.vals[2 + 4*2]);
+        printf("\n");
 
-        set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
+        /* camera_transform->z -= 3*dt(); */
+        /* camera_transform->x -= view_matrix.vals[0 + 4*2] * 3 * dt(); */
+        /* camera_transform->y -= view_matrix.vals[1 + 4*2] * 3 * dt(); */
+        /* camera_transform->z -= view_matrix.vals[2 + 4*2] * 3 * dt(); */
 
-        mesh_material_draw(mesh, material);
+        for_aspect(Body, body)
+            Transform *transform = get_sibling_aspect(body, Transform);
+            Mesh *mesh = resource_data(Mesh, body->mesh);
+            // Frustum cull
+            float x,y,z,r;
+            x = transform->x; y = transform->y; z = transform->z; r = mesh->bounding_sphere_radius;
+            // Let v=(x,y,z) be the position of the sphere and r be its radius. For each frustum plane, take a reference point p on the plane and an inward-pointing normal n.
+            // Let p' = p - rn be an outwardly extruded plane reference point.
+            // Then, if the dot product of the vector v-p' with the vector n is >= 0, the sphere's center is touching/inside the extruded frustum volume.
+            // This extruded volume is approximately the Minkowski product of the sphere and the frustum, and is a superset of it, so no unwanted culls will be made,
+            // and the intersection test is much simpler.
+            // ---
+            // Near plane
+            
+
+
+
+            Material *material = resource_data(Material, body->material);
+
+            Matrix4x4f model_matrix = Transform_matrix(transform);
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    model_matrix.vals[4*i + j] *= body->scale;
+                }
+            }
+            Matrix4x4f mvp_matrix = vp_matrix;
+            right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+
+            set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
+
+            mesh_material_draw(mesh, material);
+        end_for_aspect()
     end_for_aspect()
 }
 void close_program(void)
@@ -153,14 +299,34 @@ static void key_callback(GLFWwindow *window, int key,
     if (action == ( GLFW_ ## ACTION ) && key == ( GLFW_KEY_ ## KEY ))
     key_callback_quit(window, key, scancode, action, mods);
     key_callback_arrows_down(window, key, scancode, action, mods);
-#if 0
+#if 1
     CASE(PRESS, C) {
         // Should probably make a for_resource_type or for_resource.
         for_aspect(Body, body)
-            Material_reload(body->material);
+            reload_resource(&resource_data(MaterialType, resource_data(Material, body->material)->material_type)->shaders[Vertex]);
+            reload_resource(&resource_data(MaterialType, resource_data(Material, body->material)->material_type)->shaders[Fragment]);
+            reload_resource(&resource_data(Material, body->material)->material_type);
+            reload_resource(&body->material);
+        end_for_aspect()
+    }
+    CASE(PRESS, M) {
+        for_aspect(Body, body)
+            reload_resource(&body->mesh);
         end_for_aspect()
     }
 #endif
+    CASE(PRESS, SPACE) {
+        for_aspect(Camera, camera)
+            get_logic_data(data, get_sibling_aspect(camera, Logic), CameraControlData);
+            data->move_speed = 120;
+        end_for_aspect()
+    }
+    CASE(RELEASE, SPACE) {
+        for_aspect(Camera, camera)
+            get_logic_data(data, get_sibling_aspect(camera, Logic), CameraControlData);
+            data->move_speed = 50;
+        end_for_aspect()
+    }
 #undef CASE
 }
 

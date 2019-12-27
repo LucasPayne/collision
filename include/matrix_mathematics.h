@@ -12,13 +12,19 @@ typedef struct Matrix4x4f_s {
     float vals[4 * 4];
 } Matrix4x4f;
 
+// Vector stuff
 typedef struct vec4_s {
     float vals[4];
 } vec4;
-
 typedef struct vec3_s {
     float vals[3];
 } vec3;
+vec3 vec3_mul(vec3 a, float x);
+vec3 vec3_add(vec3 a, vec3 b);
+vec3 vec3_sub(vec3 a, vec3 b);
+vec3 vec3_neg(vec3 a);
+float vec3_dot(vec3 a, vec3 b);
+
 
 // Identity matrix
 //================================================================================
@@ -75,6 +81,7 @@ void fprint_matrix4x4f(FILE *file, Matrix4x4f *matrix);
 void fprint_matrix3x3f(FILE *file, Matrix3x3f *matrix);
 void print_matrix4x4f(Matrix4x4f *matrix);
 void print_matrix3x3f(Matrix3x3f *matrix);
+
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

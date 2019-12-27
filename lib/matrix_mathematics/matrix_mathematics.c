@@ -242,13 +242,51 @@ vec4 matrix_vec4(Matrix4x4f *matrix, vec4 v)
 {
     vec4 vp;
     for (int i = 0; i < 4; i++) {
-        vp.vals[i] = matrix->vals[i + 4*0]
-                   + matrix->vals[i + 4*1]
-                   + matrix->vals[i + 4*2]
-                   + matrix->vals[i + 4*3];
+        vp.vals[i] = v.vals[0] * matrix->vals[i + 4*0]
+                   + v.vals[1] * matrix->vals[i + 4*1]
+                   + v.vals[2] * matrix->vals[i + 4*2]
+                   + v.vals[3] * matrix->vals[i + 4*3];
     }
     return vp;
 }
+
+float vec3_dot(vec3 a, vec3 b)
+{
+    return a.vals[0]*b.vals[0] + a.vals[1]*b.vals[1] + a.vals[2]*b.vals[2];
+}
+vec3 vec3_add(vec3 a, vec3 b)
+{
+    vec3 v;
+    v.vals[0] = a.vals[0]+b.vals[0];
+    v.vals[1] = a.vals[1]+b.vals[1];
+    v.vals[2] = a.vals[2]+b.vals[2];
+    return v;
+}
+vec3 vec3_mul(vec3 a, float x)
+{
+    vec3 v;
+    v.vals[0] = a.vals[0]*x;
+    v.vals[1] = a.vals[1]*x;
+    v.vals[2] = a.vals[2]*x;
+    return v;
+}
+vec3 vec3_sub(vec3 a, vec3 b)
+{
+    vec3 v;
+    v.vals[0] = a.vals[0]-b.vals[0];
+    v.vals[1] = a.vals[1]-b.vals[1];
+    v.vals[2] = a.vals[2]-b.vals[2];
+    return v;
+}
+vec3 vec3_neg(vec3 a)
+{
+    vec3 v;
+    v.vals[0] = -a.vals[0];
+    v.vals[1] = -a.vals[1];
+    v.vals[2] = -a.vals[2];
+    return v;
+}
+
 
 
 // Use a 4x4 matrix (supposedly a rigid transformation matrix) and use it to transform a 3-vector without translations.
@@ -257,9 +295,9 @@ vec3 matrix4_vec3_normal(Matrix4x4f *matrix, vec3 v)
 {
     vec3 vp;
     for (int i = 0; i < 3; i++) {
-        vp.vals[i] = matrix->vals[i + 4*0]
-                   + matrix->vals[i + 4*1]
-                   + matrix->vals[i + 4*2];
+        vp.vals[i] = v.vals[0] * matrix->vals[i + 4*0]
+                   + v.vals[1] * matrix->vals[i + 4*1]
+                   + v.vals[2] * matrix->vals[i + 4*2];
     }
     return vp;
 }

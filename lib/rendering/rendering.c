@@ -97,7 +97,7 @@ void *Shader_load(char *path)
     } else if (strcmp(suffix + 1, "frag") == 0) {
         shader_type = Fragment;
     } else if (strcmp(suffix + 1, "geom") == 0) {
-        shader_type = Geometry;
+        shader_type = Geom;
     } else {
         return NULL;
     }
@@ -149,23 +149,20 @@ bool Shader_reload(ResourceHandle handle)
 }
 
 
-
-ResourceType Mesh_RTID;
+ResourceType Geometry_RTID;
 #define load_error(STRING)\
 {\
-    fprintf(stderr, "ERROR LOADING MESH: %s\n", ( STRING ));\
+    fprintf(stderr, ERROR_ALERT "Error loading goemetry: %s\n", ( STRING ));\
     exit(EXIT_FAILURE);\
 }
-void *Mesh_load(char *path)
+void *Geometry_load(char *path)
 {
-#if 0
-    FILE *image_file = resource_file_open(path, ".Mesh.image", "rb");
-    if (image_file != NULL) {
-        // ...
-    }
-#endif
+    /* File-backed Geometry:
+     *  - Triangle mesh described in a .Mesh file
+     *      (currently this just has the vertex format and mesh data filetype (PLY))
+     */
     FILE *file = resource_file_open(path, ".Mesh", "r");
-    if (file == NULL) load_error("file can't open");
+    if (file == NULL) load_error("could not find a .Mesh file");
     Dictionary *dict = dictionary_read(file);
     if (dict == NULL) load_error("dictionary can't be made");
     const int buf_size = 512;
@@ -176,21 +173,21 @@ void *Mesh_load(char *path)
     if ((vertex_format & VERTEX_FORMAT_3) == 0) load_error("vertex_format must contain a position attribute (symbol: 3).");
     if (!dict_get(dict, "filetype", buf, buf_size)) load_error("filetype cannot be found");
 
-    Mesh *mesh = (Mesh *) calloc(1, sizeof(Mesh));
+
     MeshData mesh_data = {0};
-    mem_check(mesh);
+    Geometry geometry;
     if (strncmp(buf, "ply", buf_size) == 0) {
         // Loading the mesh from a PLY file.
         FILE *ply_file = resource_file_open(path, ".ply", "r");
         if (ply_file == NULL) load_error("cannot open resource PLY file");
         load_mesh_ply(&mesh_data, vertex_format, ply_file);
-        upload_mesh(mesh, &mesh_data);
+        geometry = upload_mesh(&mesh_data);
     } else {
         // Invalid mesh filetype or it is not supported.
-        free(mesh);
         load_error("invalid mesh filetype");
     }
     
+#if 0
     // Calculate the radius of the model-origin bounding sphere. This is not the optimal bounding sphere, but it will do for now.
     float max_sq_dist = 0;
     for (int i = 0; i < mesh->num_vertices; i++) {
@@ -199,6 +196,7 @@ void *Mesh_load(char *path)
         if (sq_dist > max_sq_dist) max_sq_dist = sq_dist;
     }
     mesh->bounding_sphere_radius = sqrt(max_sq_dist);
+#endif
 
     // DESTROY THE MESH DATA !!!!
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
@@ -206,14 +204,17 @@ void *Mesh_load(char *path)
     }
     if (mesh_data.triangles != NULL) free(mesh_data.triangles);
 
-    return mesh;
+    Geometry *geometry_out = (Geometry *) calloc(1, sizeof(Geometry));
+    mem_check(geometry_out);
+    memcpy(geometry_out, &geometry, sizeof(Geometry));
+    return geometry_out;
 }
 #undef load_error
 
 void init_resources_rendering(void)
 {
     add_resource_type_no_unload(Shader);
-    add_resource_type_no_unload(Mesh);
+    add_resource_type_no_unload(Geometry);
     add_resource_type_no_unload(Texture);
 
     add_resource_type_no_unload(MaterialType);
@@ -225,7 +226,7 @@ void init_resources_rendering(void)
 //--------------------------------------------------------------------------------
 void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file)
 {
-    memset(mesh, 0, sizeof(Mesh));
+    memset(mesh, 0, sizeof(MeshData));
     mesh->vertex_format = vertex_format;
 
     PLY *ply = read_ply(file);
@@ -325,66 +326,17 @@ const AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES] = {
     { ATTRIBUTE_TYPE_UV, "vTexCoord", GL_FLOAT, 2},
 };
 
-void upload_mesh(Mesh *mesh, MeshData *mesh_data)
+Geometry upload_mesh(MeshData *mesh_data)
 {
-    /* Given a a Mesh to be initialized, and a MeshData consisting of vertex attribute data and other mesh information
-     * in application memory, upload this data to video memory, and fill out the mesh structure (the handle) with IDs and
-     * information enough to own these graphics objects.
-     */
-    // Make sure the mesh handle is zero initialized before filling.
-    memset(mesh, 0, sizeof(Mesh));
-    // Copy over basic properties.
-    mesh->num_triangles = mesh_data->num_triangles;
-    mesh->num_vertices = mesh_data->num_vertices;
-    mesh->vertex_format = mesh_data->vertex_format;
-
-    // Upload vertex attribute data and associate to the mesh handle.
+    // Upload a triangle mesh (for the mesh+material pair rendering of objects).
+    gm_triangles(mesh_data->vertex_format);
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        if ((mesh->vertex_format & (1 << i)) != 0) { // vertex format has attribute i set
-	    // Upload this vertex attribute data to VRAM and give the ID to the mesh.	
-            if (mesh_data->attribute_data[i] == NULL) {
-                fprintf(stderr, ERROR_ALERT "Attempted to upload mesh which does not have data for one of its attributes.\n");
-                exit(EXIT_FAILURE);
-            }
-            GLuint attribute_buffer;
-            glGenBuffers(1, &attribute_buffer);
-            glBindBuffer(GL_ARRAY_BUFFER, attribute_buffer);
-            glBufferData(GL_ARRAY_BUFFER,
-                         g_attribute_info[i].gl_size * gl_type_size(g_attribute_info[i].gl_type) * mesh_data->num_vertices,
-                         mesh_data->attribute_data[i],
-                         GL_STATIC_DRAW);
-            // Give this buffer ID to the mesh.
-            mesh->attribute_buffer_ids[i] = attribute_buffer;
+        if (mesh_data->vertex_format & (1 << i)) {
+            attribute_buf(i, mesh_data->attribute_data[i], mesh_data->num_vertices); // hope the buffer is the right size!
         }
     }
-    // Upload triangle-index/triangle-list data and give it to the mesh.
-    GLuint triangle_buffer;
-    glGenBuffers(1, &triangle_buffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*sizeof(uint32_t) * mesh_data->num_triangles, mesh_data->triangles, GL_STATIC_DRAW);
-    mesh->triangles_id = triangle_buffer;
-
-    // Create a vertex array object (VAO) and associate the vertex attribute arrays to it, then give it to the mesh:
-    // , creating and binding a new VAO ID
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    // , binding the attribute buffers and triangle index buffer to the vertex array object
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangle_buffer);
-    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        if (((mesh_data->vertex_format >> i) & 1) == 1) { // vertex format has attribute i set
-            glBindBuffer(GL_ARRAY_BUFFER, mesh->attribute_buffer_ids[i]);
-            glVertexAttribPointer(g_attribute_info[i].attribute_type, // location is currently set to the type index, so layout qualifiers need to match up the position in shaders.
-                                  g_attribute_info[i].gl_size, // "gl_size" is the number of values per vertex, e.g. 3, 4.
-                                  g_attribute_info[i].gl_type,
-                                  GL_FALSE, // not normalized
-                                  0,        // no stride (contiguous data in buffer)
-                                  (void *) 0); // Buffer offset. Separate buffer objects for each attribute are being used.
-            glEnableVertexAttribArray(g_attribute_info[i].attribute_type);
-        }
-    }
-    // , and finally, give this VAO ID to the mesh.
-    mesh->vertex_array_id = vao;
+    gm_index_buf(mesh_data->triangles, 3*mesh_data->num_triangles);
+    return gm_done();
 }
 
 //--------------------------------------------------------------------------------
@@ -549,30 +501,6 @@ void synchronize_shader_blocks(void)
     }
 }
 
-void mesh_material_draw(Mesh *mesh, Material *material)
-{
-    MaterialType *material_type = resource_data(MaterialType, material->material_type);
-
-    glBindVertexArray(mesh->vertex_array_id);
-    // Why does this need to be bound? Was it not called at the correct time when creating the meshes OpenGL objects?
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->triangles_id);
-
-    glUseProgram(material_type->program_id);
-
-    synchronize_shader_blocks();
-
-    // Bind the textures.
-    for (int i = 0; i < material_type->num_textures; i++) {
-        Texture *texture = resource_data(Texture, material->textures[i]);
-        glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, texture->texture_id);
-    }
-
-    glDrawElements(GL_TRIANGLES, 3 * mesh->num_triangles, GL_UNSIGNED_INT, (void *) 0);
-}
-
-
-
 /*
 vertex_format: 3NU
 vertex_shader: Shaders/test.vert
@@ -673,3 +601,233 @@ ShaderBlockID get_shader_block_id(char *name)
     }
     return -1;
 }
+
+// working on currently
+//---------------------
+
+static bool g_gm_initialized = false;
+static bool g_gm_specifying = false;
+
+static Geometry g_gm_id;
+
+static uint32_t *g_gm_index_buffer;
+static int g_gm_index_count;
+
+static void *g_gm_attribute_buffers[NUM_ATTRIBUTE_TYPES];
+static size_t g_gm_attribute_positions[NUM_ATTRIBUTE_TYPES];
+static int g_gm_attribute_counts[NUM_ATTRIBUTE_TYPES];
+
+#define gm_size_error()\
+{\
+    fprintf(stderr, ERROR_ALERT "Attempted to specify too-large geometry.\n");\
+    exit(EXIT_FAILURE);\
+}
+#define gm_attribute_error()\
+{\
+    fprintf(stderr, ERROR_ALERT "Attribute given in geometry upload which does not match the declared vertex format.\n");\
+    exit(EXIT_FAILURE);\
+}
+#define gm_init_check()\
+{\
+    if (!g_gm_initialized) {\
+        gm_init();\
+    }\
+}
+    
+
+static void gm_reset(void)
+{
+    memset(&g_gm_id, 0, sizeof(Geometry));
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        g_gm_attribute_positions[i] = 0;
+        g_gm_attribute_counts[i] = 0;
+    }
+    g_gm_index_count = 0;
+}
+static void gm_init(void)
+{
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        g_gm_attribute_buffers[i] = calloc(1, GM_ATTRIBUTE_BUFFER_SIZE);
+        mem_check(g_gm_attribute_buffers[i]);
+        g_gm_attribute_positions[i] = 0;
+    }
+    g_gm_index_buffer = calloc(1, GM_INDEX_BUFFER_SIZE);
+    mem_check(g_gm_index_buffer);
+    g_gm_initialized = true;
+}
+void attribute_3f(AttributeType attribute_type, float a, float b, float c)
+{
+    if ((g_gm_id.vertex_format & (1 << attribute_type)) == 0) gm_attribute_error();
+    if (g_attribute_info[attribute_type].gl_size != 3 || g_attribute_info[attribute_type].gl_type != GL_FLOAT) {
+        fprintf(stderr, ERROR_ALERT "Type mismatch when specifying attribute value. Make sure that the right attribute_* function is used.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t pos = g_gm_attribute_positions[attribute_type];
+    if (pos + 3*sizeof(float) > GM_ATTRIBUTE_BUFFER_SIZE) gm_size_error();
+    memcpy(g_gm_attribute_buffers[attribute_type] + pos, &a, sizeof(float));
+    memcpy(g_gm_attribute_buffers[attribute_type] + pos + sizeof(float), &b, sizeof(float));
+    memcpy(g_gm_attribute_buffers[attribute_type] + pos + 2*sizeof(float), &c, sizeof(float));
+    g_gm_attribute_positions[attribute_type] += 3*sizeof(float);
+
+    g_gm_attribute_counts[attribute_type] ++;
+}
+void attribute_buf(AttributeType attribute_type, void *buf, int count)
+{
+    /* Specify the attribute data from a buffer. This will be faster than streaming through, if you already
+     * have the data in the format needed for the attribute.
+     */
+
+    //---- specifying by count is easier, so removed this.
+    /* // Check if the size is a multiple of the width of one of these attributes. */
+    /* // --- could probably afford to make it easier to get this width instead of using this expression. */
+    /* size_t width = g_attribute_info[attribute_type].gl_size * gl_type_size(g_attribute_info[attribute_type].gl_type); */
+    /* if (size % width != 0) { */
+    /*     fprintf(stderr, ERROR_ALERT "Attempted to give geometry attribute data from a buffer with size not a multiple of the width of this attribute type. %zu % %zu != 0.\n", size, width); */
+    /*     exit(EXIT_FAILURE); */
+    /* } */
+    /* size_t count = size / width; */
+
+    size_t width = g_attribute_info[attribute_type].gl_size * gl_type_size(g_attribute_info[attribute_type].gl_type); // the width of a single one of these attributes.
+    size_t pos = g_gm_attribute_positions[attribute_type];
+    if ((g_gm_id.vertex_format & (1 << attribute_type)) == 0) gm_attribute_error();
+    if (pos + width * count > GM_ATTRIBUTE_BUFFER_SIZE) gm_size_error();
+    memcpy(g_gm_attribute_buffers[attribute_type] + pos, buf, width * count);
+    g_gm_attribute_positions[attribute_type] += width * count;
+    g_gm_attribute_counts[attribute_type] += count;
+}
+
+
+void gm_index(uint32_t index)
+{
+    if (g_gm_index_count >= GM_INDEX_BUFFER_SIZE) gm_size_error();
+
+    g_gm_index_buffer[g_gm_index_count] = index;
+    g_gm_index_count ++;
+}
+void gm_index_buf(uint32_t *indices, int count)
+{
+    if (g_gm_index_count + count > GM_INDEX_BUFFER_SIZE) gm_size_error();
+    memcpy(g_gm_index_buffer + g_gm_index_count, indices, count * sizeof(uint32_t));
+    g_gm_index_count += count;
+}
+
+
+void gm_triangles(VertexFormat vertex_format)
+{
+    gm_init_check();
+    gm_reset();
+    g_gm_specifying = true;
+    g_gm_id.vertex_format = vertex_format;
+    g_gm_id.primitive_type = Triangles;
+    g_gm_id.is_indexed = true;
+    g_gm_id.dynamic = true;
+}
+void gm_lines(VertexFormat vertex_format)
+{
+    gm_init_check();
+    gm_reset();
+    g_gm_specifying = true;
+    g_gm_id.vertex_format = vertex_format;
+    g_gm_id.primitive_type = Lines;
+    g_gm_id.is_indexed = false;
+    g_gm_id.dynamic = true;
+}
+
+Geometry gm_done(void)
+{
+    if (!g_gm_specifying) {
+        fprintf(stderr, ERROR_ALERT "Cannot call gm_done when no geometry is being specified.\n");
+        exit(EXIT_FAILURE);
+    }
+    // Check that all of the relevant attributes have had the same number of values specified.
+    int last_count = -1;
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        if (g_gm_id.vertex_format & (1 << i)) {
+            if (last_count != -1 && last_count != g_gm_attribute_counts[i]) {
+                fprintf(stderr, ERROR_ALERT "Unequal numbers of vertex attributes have been specified in a geometry upload.\n"); 
+                exit(EXIT_FAILURE);
+            }
+            last_count = g_gm_attribute_counts[i];
+        }
+    }
+
+    glGenVertexArrays(1, &g_gm_id.vao_id);
+    glBindVertexArray(g_gm_id.vao_id);
+
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        if (g_gm_id.vertex_format & (1 << i)) {
+            glGenBuffers(1, &g_gm_id.buffer_ids[i]);
+            glBindBuffer(GL_ARRAY_BUFFER, g_gm_id.buffer_ids[i]);
+            glBufferData(GL_ARRAY_BUFFER, g_gm_attribute_positions[i], g_gm_attribute_buffers[i], g_gm_id.dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+            glVertexAttribPointer(i,
+                                  g_attribute_info[i].gl_size,
+                                  g_attribute_info[i].gl_type,
+                                  GL_FALSE, // not normalized
+                                  0, // no stride
+                                  (void *) 0);
+            glEnableVertexAttribArray(i);
+        }
+    }
+
+    if (g_gm_id.is_indexed) {
+        glGenBuffers(1, &g_gm_id.indices_id);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_gm_id.indices_id);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t)*g_gm_index_count, g_gm_index_buffer, g_gm_id.dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+    }
+
+    g_gm_specifying = false;
+
+    //---- have this kept in the struct already. Also, change the name from "ID", to maybe just Geometry.
+    g_gm_id.num_indices = g_gm_index_count;
+    g_gm_id.num_vertices = last_count;
+
+    return g_gm_id;
+}
+
+
+void gm_draw(Geometry geometry, Material *material)
+{
+    MaterialType *mt = resource_data(MaterialType, material->material_type);
+    glUseProgram(mt->program_id);
+    for (int i = 0; i < mt->num_textures; i++) {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, resource_data(Texture, material->textures[i])->texture_id);
+    }
+    synchronize_shader_blocks();
+
+    //---- do this map elsewhere.
+    GLenum gl_primitive_type;
+    switch(geometry.primitive_type) {
+        case Triangles: gl_primitive_type = GL_TRIANGLES; break;
+        case Lines: gl_primitive_type = GL_LINES; break;
+        default:
+            fprintf(stderr, ERROR_ALERT "Have not accounted for the primitive type of a piece of geometry passed into gm_draw.\n");
+            exit(EXIT_FAILURE);
+    }
+
+    glBindVertexArray(geometry.vao_id);
+    if (geometry.is_indexed) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry.indices_id);
+        glDrawElements(gl_primitive_type, geometry.num_indices, GL_UNSIGNED_INT, (void *) 0);
+    } else {
+        glDrawArrays(gl_primitive_type, 0, geometry.num_vertices);
+    }
+}
+
+void gm_free(Geometry geometry)
+{
+    // --- Since this is called for each transient draw, maybe it would be better
+    // --- to just allocate an ID for every attribute type, and free them all at once, to reduce
+    // --- the number of API calls.
+    if (geometry.is_indexed) {
+        glDeleteBuffers(1, &geometry.indices_id);
+    }
+    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+        if (geometry.vertex_format & (1 << i)) {
+            glDeleteBuffers(1, &geometry.buffer_ids[i]);
+        }
+    }
+}
+
+#undef gm_size_error

@@ -14,6 +14,7 @@ layout (location = 3) in vec2 vTexCoord;
 out vOut {
     vec4 fColor;
     vec2 fTexCoord;
+    vec3 fPosition;
 };
 
 void main(void)
@@ -25,4 +26,5 @@ void main(void)
     /* fTexCoord = vec2(vTexCoord.x * cos(time) + vTexCoord.y * sin(time), */
     /*                  -vTexCoord.x * sin(time) + vTexCoord.y * cos(time)); */
     fTexCoord = vTexCoord;
+    fPosition = gl_Position.xyz;
 }

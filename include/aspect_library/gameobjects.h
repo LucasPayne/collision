@@ -39,6 +39,7 @@ ASPECT_PROPERTIES()
 } Transform;
 void Transform_set(Transform *transform, float x, float y, float z, float theta_x, float theta_y, float theta_z);
 Matrix4x4f Transform_matrix(Transform *transform);
+vec3 Transform_global_position(Transform *transform);
 
 /*--------------------------------------------------------------------------------
 A Body is the seeable aspect of a gameobject. This gives information enough
@@ -52,7 +53,7 @@ typedef struct /* Aspect */ Body_s {
 ASPECT_PROPERTIES()
     float scale;
     ResourceHandle material; /* Resource: Material */
-    ResourceHandle mesh; /* Resource: Mesh */
+    ResourceHandle geometry; /* Resource: Geometry */
 } Body;
 void Body_init(Body *body, char *material_path, char *mesh_path);
 

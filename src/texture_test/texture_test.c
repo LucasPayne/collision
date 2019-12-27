@@ -56,6 +56,8 @@ typedef struct ShaderBlock_DirectionalLights_s {
 typedef struct CameraControlData_s {
     float move_speed;
     float rotate_speed;
+    bool frozen;
+    Matrix4x4f frozen_matrix;
 } CameraControlData;
 static void camera_controls_update(Logic *logic)
 {
@@ -109,11 +111,22 @@ typedef struct FloorData_s {
     int mode;
     float rotate_amount;
     float cur_rotate;
+    bool tilt_side;
 } FloorData;
 static void floor_update(Logic *logic)
 {
     Transform *transform = get_sibling_aspect(logic, Transform);
     get_logic_data(data, logic, FloorData);
+
+    Body *body = get_sibling_aspect(logic, Body);
+
+    if (data->tilt_side) {
+        transform->theta_y = 0.3*sin(time() + 0.01*transform->x);
+    }
+    else {
+        transform->theta_y = -0.3*sin(time() + 0.01*transform->x);
+    }
+    body->scale = 20+2.5*(sin(time() + 0.01*transform->x)/2 + 1);
 
     if (data->mode == FLOOR_STATIC) {
         if (frand() < 0.001) {
@@ -148,6 +161,7 @@ void make_floor(int x, int z)
     data->mode = FLOOR_STATIC;
     data->rotate_amount = 0;
     data->cur_rotate = 0;
+    data->tilt_side = x % 2 == 0 ? false : true;
 }
 
 static float ASPECT_RATIO;
@@ -176,7 +190,7 @@ void init_program(void)
 
 
     {
-        EntityID camera_man = new_entity(2);
+        EntityID camera_man = new_entity(4);
         Transform_set(entity_add_aspect(camera_man, Transform), 0,0,0,0,0,0);
         Camera *camera = entity_add_aspect(camera_man, Camera);
 /* void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far); */
@@ -186,6 +200,11 @@ void init_program(void)
         init_get_logic_data(data, logic, CameraControlData, camera_controls_update);
         data->move_speed = 12;
         data->rotate_speed = 5;
+        data->frozen = false;
+
+        Body *body = entity_add_aspect(camera_man, Body);
+        Body_init(body, "Materials/simple1", "Models/cube");
+        body->scale = 5;
     }
 
     for (int i = 0; i < 10; i++) {
@@ -209,17 +228,20 @@ void init_program(void)
             data->rotate_speed = sin(i*0.1);
         }
     }
+#endif
+#if 1
     for (int i = 0; i < 100; i++) {
         EntityID thing = new_entity(3);
         Body *body = entity_add_aspect(thing, Body);
         Body_init(body, "Materials/simple1", "Models/dolphins");
-        body->scale = 0.01;
-        Transform_set(entity_add_aspect(thing, Transform), 25*(2*frand()*frand()-1), 25*(2*frand()*frand()-1), 25*(2*frand()*frand()-1), 0,0,0);
+        body->scale = 0.08;
+        Transform_set(entity_add_aspect(thing, Transform), 300*(2*frand()*frand()-1), 50*(2*frand()*frand()-1), 300*(2*frand()*frand()-1), 0,0,0);
         /* entity_add_aspect(floor, Logic)->update = floor_update; */
     }
 #endif
-
 }
+
+
 void loop(void)
 {
     set_uniform_float(StandardLoopWindow, time, time());
@@ -229,37 +251,54 @@ void loop(void)
     end_for_aspect()
 
     for_aspect(Camera, camera)
+        get_logic_data(data, get_sibling_aspect(camera, Logic), CameraControlData); // here, using this logic-data for application-specific attached functionality.
+
         Transform *camera_transform = get_sibling_aspect(camera, Transform);
         Matrix4x4f view_matrix = Transform_matrix(camera_transform);
         Matrix4x4f vp_matrix = camera->projection_matrix;
-        right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+        if (data->frozen) {
+            // For viewing purpouses, when the camera is frozen it keeps using this matrix. However, the other matrices aren't affected,
+            // so you can view culling from the outside.
+            right_multiply_matrix4x4f(&vp_matrix, &data->frozen_matrix);
+        } else {
+            right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+        }
 
+#if 0
         // Calculate some camera positioning information for further usage in frustum culling.
         // Unit-length camera direction vector
         vec3 n_camera_dir; {
             vec3 v = {0,0,1};
             n_camera_dir = matrix4_vec3_normal(&view_matrix, v);
         }
-        /* camera_transform->x -= n_camera_dir.vals[0] * 3 * dt(); */
-        /* camera_transform->y -= n_camera_dir.vals[1] * 3 * dt(); */
-        /* camera_transform->z -= n_camera_dir.vals[2] * 3 * dt(); */
-
-        printf("%.2f, %.2f, %.2f", view_matrix.vals[0 + 4*2]
+#if 0
+        printf("%.2f, %.2f, %.2f\n", view_matrix.vals[0 + 4*2]
                                    ,view_matrix.vals[1 + 4*2]
                                    ,view_matrix.vals[2 + 4*2]);
-        printf("\n");
-
-        /* camera_transform->z -= 3*dt(); */
-        /* camera_transform->x -= view_matrix.vals[0 + 4*2] * 3 * dt(); */
-        /* camera_transform->y -= view_matrix.vals[1 + 4*2] * 3 * dt(); */
-        /* camera_transform->z -= view_matrix.vals[2 + 4*2] * 3 * dt(); */
+        printf("%.2f, %.2f, %.2f\n", n_camera_dir.vals[0], n_camera_dir.vals[1], n_camera_dir.vals[2]);
+#endif
+#endif
 
         for_aspect(Body, body)
             Transform *transform = get_sibling_aspect(body, Transform);
-            Mesh *mesh = resource_data(Mesh, body->mesh);
+            Geometry *mesh = resource_data(Geometry, body->geometry);
+#if 0
             // Frustum cull
-            float x,y,z,r;
-            x = transform->x; y = transform->y; z = transform->z; r = mesh->bounding_sphere_radius;
+            float r = mesh->bounding_sphere_radius;
+            /* vec3 c; */
+            /* c.vals[0] = camera_transform->x; */
+            /* c.vals[1] = camera_transform->y; */
+            /* c.vals[2] = camera_transform->z; */
+            /* vec3 v = Transform_global_position(transform); */
+            vec4 vp;
+            vp.vals[0] = transform->x;
+            vp.vals[1] = transform->y;
+            vp.vals[2] = transform->z;
+            vp.vals[3] = 1;
+            vec4 vpp = matrix_vec4(&view_matrix, vp);
+            vec3 v = *((vec3*) &vpp);
+
+
             // Let v=(x,y,z) be the position of the sphere and r be its radius. For each frustum plane, take a reference point p on the plane and an inward-pointing normal n.
             // Let p' = p - rn be an outwardly extruded plane reference point.
             // Then, if the dot product of the vector v-p' with the vector n is >= 0, the sphere's center is touching/inside the extruded frustum volume.
@@ -267,9 +306,16 @@ void loop(void)
             // and the intersection test is much simpler.
             // ---
             // Near plane
-            
+            /* vec3 rn = vec3_mul(n_camera_dir, camera->plane_n - r); // reference point on the extruded near plane */
+            /* if (vec3_dot(v */
 
+            vec3 forward = {{0,0,1}};
+            vec3 rn = vec3_mul(forward, camera->plane_n - r);
 
+            if (vec3_dot(v, rn) < 0) {
+                continue;
+            }
+#endif
 
             Material *material = resource_data(Material, body->material);
 
@@ -284,9 +330,56 @@ void loop(void)
 
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
 
-            mesh_material_draw(mesh, material);
+
+            gm_draw(*mesh, material);
+            
+
+            /* printf("%.2f, %.2f, %.2f\n", v.vals[0], v.vals[1], v.vals[2]); */
+            /* getchar(); */
         end_for_aspect()
     end_for_aspect()
+
+    {
+        gm_triangles(VERTEX_FORMAT_3);
+#if 0
+        for (int i = 0; i < 100; i++) {
+            attribute_3f(Position, frand() * 500, frand() * 500, frand() * 500);
+        }
+        for (int i = 0; i < 500; i++) {
+            gm_index((13*i + i*i*i*i*7 + i*i*31) % 100);
+        }
+#else
+        attribute_3f(Position, 500 + 50*cos(time()), 500, 500);
+        attribute_3f(Position, 500 + 50*cos(2*time()), 500, -500);
+        attribute_3f(Position, 500 + 50*cos(3*time()), -500, 500);
+        attribute_3f(Position, 500 + 50*cos(4*time()), -500, -500);
+        attribute_3f(Position, -500, 500, 500);
+        attribute_3f(Position, -500, 500, -500);
+        attribute_3f(Position, -500, -500, 500);
+        attribute_3f(Position, -500, -500, -500);
+        gm_index(0); gm_index(1); gm_index(2); gm_index(1); gm_index(3); gm_index(2);
+        gm_index(3); gm_index(1); gm_index(5); gm_index(7); gm_index(3); gm_index(5);
+        gm_index(5); gm_index(6); gm_index(7); gm_index(5); gm_index(4); gm_index(6);
+        gm_index(4); gm_index(0); gm_index(2); gm_index(4); gm_index(2); gm_index(6);
+        gm_index(6); gm_index(2); gm_index(3); gm_index(6); gm_index(3); gm_index(7);
+        gm_index(4); gm_index(5); gm_index(1); gm_index(4); gm_index(1); gm_index(0);
+#endif
+        Geometry id = gm_done();
+        ResourceHandle mat = new_resource_handle(Material, "Materials/floor");
+        gm_draw(id, resource_data(Material, mat));
+        gm_free(id);
+    }
+
+    {
+        gm_lines(VERTEX_FORMAT_3);
+        attribute_3f(Position, 0, 0, 0);
+        attribute_3f(Position, 5000*sin(time()), 5000*cos(time()), 5000);
+        Geometry id = gm_done();
+        printf("%d\n", id.num_vertices);
+        ResourceHandle mat = new_resource_handle(Material, "Materials/floor");
+        gm_draw(id, resource_data(Material, mat));
+        gm_free(id);
+    }
 }
 void close_program(void)
 {
@@ -303,15 +396,15 @@ static void key_callback(GLFWwindow *window, int key,
     CASE(PRESS, C) {
         // Should probably make a for_resource_type or for_resource.
         for_aspect(Body, body)
-            reload_resource(&resource_data(MaterialType, resource_data(Material, body->material)->material_type)->shaders[Vertex]);
-            reload_resource(&resource_data(MaterialType, resource_data(Material, body->material)->material_type)->shaders[Fragment]);
-            reload_resource(&resource_data(Material, body->material)->material_type);
-            reload_resource(&body->material);
+            /* reload_resource(&resource_data(MaterialType, resource_data(Material, body->material)->material_type)->shaders[Vertex]); */
+            /* reload_resource(&resource_data(MaterialType, resource_data(Material, body->material)->material_type)->shaders[Fragment]); */
+            /* reload_resource(&resource_data(Material, body->material)->material_type); */
+            /* reload_resource(&body->material); */
         end_for_aspect()
     }
     CASE(PRESS, M) {
         for_aspect(Body, body)
-            reload_resource(&body->mesh);
+            /* reload_resource(&body->mesh); */
         end_for_aspect()
     }
 #endif
@@ -325,6 +418,21 @@ static void key_callback(GLFWwindow *window, int key,
         for_aspect(Camera, camera)
             get_logic_data(data, get_sibling_aspect(camera, Logic), CameraControlData);
             data->move_speed = 50;
+        end_for_aspect()
+    }
+
+    // Freeze the camera (to view culling)
+    CASE(PRESS, F) {
+        for_aspect(Camera, camera)
+            get_logic_data(data, get_sibling_aspect(camera, Logic), CameraControlData);
+            Transform *transform = get_sibling_aspect(camera, Transform);
+            if (!data->frozen) {
+                data->frozen = true;
+                data->frozen_matrix = Transform_matrix(transform);
+            }
+            else {
+                data->frozen = false;
+            }
         end_for_aspect()
     }
 #undef CASE

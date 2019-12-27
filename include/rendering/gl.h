@@ -15,7 +15,7 @@ typedef GLint GraphicsUniformID;
 #define gl_shader_type(SHADER_TYPE)\
 	((( SHADER_TYPE ) == Vertex) ? GL_VERTEX_SHADER\
 	:((( SHADER_TYPE ) == Fragment) ? GL_FRAGMENT_SHADER\
-	  :((( SHADER_TYPE ) == Geometry) ? GL_GEOMETRY_SHADER\
+	  :((( SHADER_TYPE ) == Geom) ? GL_GEOMETRY_SHADER\
 	    : 0)))
 
 //----------Define more

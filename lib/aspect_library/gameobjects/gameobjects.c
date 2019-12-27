@@ -46,6 +46,15 @@ Matrix4x4f Transform_matrix(Transform *transform)
     translate_rotate_3d_matrix4x4f(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
     return mat;
 }
+vec3 Transform_global_position(Transform *transform)
+{
+    Matrix4x4f mat = Transform_matrix(transform);
+    vec3 pos;
+    pos.vals[0] = transform->x;
+    pos.vals[1] = transform->y;
+    pos.vals[2] = transform->z;
+    return matrix4_vec3_normal(&mat, pos);
+}
 
 /*================================================================================
     Body
@@ -55,7 +64,7 @@ void Body_init(Body *body, char *material_path, char *mesh_path)
 {
     body->scale = 1;
     body->material = new_resource_handle(Material, material_path);
-    body->mesh = new_resource_handle(Mesh, mesh_path);
+    body->geometry = new_resource_handle(Geometry, mesh_path);
 }
 
 /*================================================================================

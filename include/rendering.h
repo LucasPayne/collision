@@ -47,6 +47,12 @@ enum AttributeTypes {
     ATTRIBUTE_TYPE_UV,
     NUM_ATTRIBUTE_TYPES
 };
+enum AttributeTypes2 { // better names, don't use this capitalization otherwise.
+    Position,
+    Color,
+    Normal,
+    UV,
+};
 // Attribute types are associated to an AttributeInfo structure by their value as an index.
 // This attribute information is stored in a global array.
 #define MAX_ATTRIBUTE_NAME_LENGTH 32
@@ -83,16 +89,23 @@ typedef uint8_t ShaderType;
 enum ShaderTypes {
     Vertex,
     Fragment,
-    Geometry,
+    Geom,
     TesselationControl,
     TesselationEvaluation,
     NUM_SHADER_TYPES
 };
 typedef uint8_t GraphicsProgramType;
 #define GRAPHICS_PROGRAM_VF ((1 << Vertex) | (1 << Fragment))
-#define GRAPHICS_PROGRAM_VGF ((1 << Vertex) | (1 << Geometry) | (1 << Fragment))
+#define GRAPHICS_PROGRAM_VGF ((1 << Vertex) | (1 << Geom) | (1 << Fragment))
 #define GRAPHICS_PROGRAM_VTTF ((1 << Vertex) | (1 << TesselationControl) | (1 << TesselationEvaluation) | (1 << Fragment))
-#define GRAPHICS_PROGRAM_VGTTF ((1 << Vertex) | (1 << Geometry) | (1 << TesselationControl) | (1 << TesselationEvaluation) | (1 << Fragment))
+#define GRAPHICS_PROGRAM_VGTTF ((1 << Vertex) | (1 << Geom) | (1 << TesselationControl) | (1 << TesselationEvaluation) | (1 << Fragment))
+
+typedef uint8_t PrimitiveType;
+enum PrimitiveTypes {
+    Triangles,
+    Lines,
+    //--- and more...
+};
 /*--------------------------------------------------------------------------------
     Shader resources
 --------------------------------------------------------------------------------*/
@@ -166,7 +179,6 @@ typedef struct /* Resource */ MaterialType_s {
     GLuint program_id;
 } MaterialType;
 void *MaterialType_load(char *path);
-/* void Material_reload(ResourceHandle handle); */
 
 /*--------------------------------------------------------------------------------
     Material instances
@@ -179,30 +191,42 @@ typedef struct /* Resource */ Material_RTID {
 void *Material_load(char *path);
 
 /*--------------------------------------------------------------------------------
-  Mesh stuff
+  Geometry stuff
 --------------------------------------------------------------------------------*/
+// MeshData is the application-level data for triangle meshes, intended for standard
+// mesh+material pair rendering.
+// --- Right now a PLY upload looks like this:
+// ---      - Read into some queried format
+// ---      - Format into a MeshData
+// ---      - Pass into geometry specifying stuff
+// ---      - That passes it into vram
+// ---      This is too many copies ...
 typedef struct MeshData_s {
     VertexFormat vertex_format;
     uint32_t num_vertices;
     void *attribute_data[NUM_ATTRIBUTE_TYPES];
+    size_t attribute_data_sizes[NUM_ATTRIBUTE_TYPES];
     uint32_t num_triangles;
     uint32_t *triangles;
 } MeshData;
 
-extern ResourceType Mesh_RTID;
-typedef struct /* Resource */ Mesh_s {
+extern ResourceType Geometry_RTID;
+typedef struct /* Resource */ Geometry_s {
+    GLuint vao_id;
+    bool dynamic;
     VertexFormat vertex_format;
-    uint32_t num_vertices;
-    GraphicsID vertex_array_id;
-    GraphicsID attribute_buffer_ids[NUM_ATTRIBUTE_TYPES];
-    uint32_t num_triangles;
-    GraphicsID triangles_id;
-
-    // Acceleration information
-    float bounding_sphere_radius;
-} Mesh;
-void *Mesh_load(char *path);
-void upload_mesh(Mesh *mesh, MeshData *mesh_data);
+    PrimitiveType primitive_type;
+    bool is_indexed;
+    GLuint buffer_ids[NUM_ATTRIBUTE_TYPES];
+    GLuint indices_id;
+    int num_indices;
+    int num_vertices;
+} Geometry;
+// Like all resources, this structure does not need to be used as a shared resource or loaded with this function.
+// This is for instancing and file-backed mesh rendering.
+// Really need to think more about "virtual resources" and if any of this makes sense.
+void *Geometry_load(char *path);
+Geometry upload_mesh(MeshData *mesh_data);
 
 /*--------------------------------------------------------------------------------
 Shader bookkeeping stuff. Reading the source into application memory
@@ -218,8 +242,7 @@ Loading stuff. Possibly should be outside of this module, but since a mesh loadi
 function explicitly accounts for possible ways to compile a mesh asset, these
 are here.
 --------------------------------------------------------------------------------*/
-void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file);
-
+void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file); 
 
 /*--------------------------------------------------------------------------------
   Images and texturing
@@ -252,6 +275,18 @@ void dict_query_rules_rendering(DictQuerier *q);
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
 void synchronize_shader_blocks(void);
-void mesh_material_draw(Mesh *mesh, Material *material);
+
+#define GM_ATTRIBUTE_BUFFER_SIZE (1024*1024)
+#define GM_INDEX_BUFFER_SIZE (1024*1024)
+
+void attribute_3f(AttributeType attribute_type, float a, float b, float c);
+void attribute_buf(AttributeType attribute_type, void *buf, int count);
+void gm_index(uint32_t index);
+void gm_index_buf(uint32_t *indices, int count);
+void gm_triangles(VertexFormat vertex_format);
+Geometry gm_done(void);
+void gm_draw(Geometry geometry, Material *material);
+void gm_lines(VertexFormat vertex_format);
+
 
 #endif // HEADER_DEFINED_RENDERING

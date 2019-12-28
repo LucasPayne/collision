@@ -307,4 +307,13 @@ void print_vec4(vec4 v)
     printf("[%f, %f, %f, %f]\n", v.vals[0], v.vals[1], v.vals[2], v.vals[3]);
 }
 
+vec4 new_vec4(float x, float y, float z, float w)
+{
+    vec4 v;
+    v.vals[0] = x;
+    v.vals[1] = y;
+    v.vals[2] = z;
+    v.vals[3] = w;
+    return v;
+}
 

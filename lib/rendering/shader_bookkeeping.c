@@ -82,7 +82,7 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
 #undef MEM_SIZE_START
 #undef LINES_MEM_SIZE_START
 }
-bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
+bool load_and_compile_shader(GLuint shader_id, const char *shader_path)
 {
 #define DEBUG 0
     /* notes:
@@ -138,7 +138,7 @@ bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path)
     return true;
 #undef DEBUG
 }
-bool link_shader_program(GraphicsID shader_program_id)
+bool link_shader_program(GLuint shader_program_id)
 {
     /* Links the shader program and handles errors and error logs. */
     glLinkProgram(shader_program_id);

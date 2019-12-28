@@ -3,21 +3,11 @@
 ================================================================================*/
 #ifndef HEADER_DEFINED_RENDERING
 #define HEADER_DEFINED_RENDERING
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <stdint.h>
 /*--------------------------------------------------------------------------------
-Graphics API definitions. This module is still dependent on OpenGL, but
-things such as type names and enum mappings are typedef'd/macro'd. With
-correct typedefs it is less easy to make the mistake of, for example,
-retrieving a uniform location as a GLuint. -1 is used for a failed
-retrieval, and this will not be caught.
-     GraphicsID
-     GraphicsInt
-     GraphicsFloat
-     GraphicsMat4x4f
-     GraphicsUniformID
---------------------------------------------------------------------------------*/
-#include "rendering/gl.h"
-/*--------------------------------------------------------------------------------
+    Resources
 This rendering module is built using the resources system. This is a shared
 object system which gives "resources" identifiers as "paths". Instead of holding
 an object, a resource handle is held to make sure that objects with the same
@@ -34,7 +24,7 @@ Notes on the resource system and its use here:
 #include "resources.h"
 void init_resources_rendering(void);
 /*--------------------------------------------------------------------------------
-Vertex attributes and vertex formats.
+    Vertex attributes and vertex formats.
 Vertex formats are accounted for with bitmasks. The bitmask may be lengthened
 later if needed. This allows quick superset/subset testing for vertex format
 compatability.
@@ -114,7 +104,7 @@ enum PrimitiveTypes {
 extern ResourceType Shader_RTID;
 typedef struct /* Resource */ Shader_s {
     ShaderType shader_type;
-    GraphicsID shader_id;
+    GLuint shader_id;
 } Shader;
 void *Shader_load(char *path);
 bool Shader_reload(ResourceHandle handle);
@@ -168,6 +158,16 @@ void synchronize_shader_blocks(void);
 #define MATERIAL_MAX_SHADER_BLOCKS 64
 #define MATERIAL_MAX_TEXTURES 80
 #define MATERIAL_MAX_TEXTURE_NAME_LENGTH 64
+#define MATERIAL_MAX_PROPERTIES 80
+#define MATERIAL_MAX_PROPERTY_NAME_LENGTH 64
+
+typedef struct MaterialPropertyInfo_s {
+    char name[MATERIAL_MAX_PROPERTY_NAME_LENGTH + 1];
+    GLint location;
+    GLsizei offset;
+    GLenum type;
+} MaterialPropertyInfo;
+
 extern ResourceType MaterialType_RTID;
 typedef struct /* Resource */ MaterialType_s {
     VertexFormat vertex_format;
@@ -175,13 +175,21 @@ typedef struct /* Resource */ MaterialType_s {
     int num_blocks;
     /* ShaderBlockID shader_blocks[MATERIAL_MAX_SHADER_BLOCKS]; */
     uint16_t shader_blocks[MATERIAL_MAX_SHADER_BLOCKS];
+
     int num_textures;
+    // The texture unit to bind to is the index.
     char texture_names[MATERIAL_MAX_TEXTURE_NAME_LENGTH + 1][MATERIAL_MAX_TEXTURES];
+
+    size_t properties_size;
+    int num_properties;
+    MaterialPropertyInfo property_infos[MATERIAL_MAX_PROPERTIES];
 
     GraphicsProgramType program_type;
     GLuint program_id;
 } MaterialType;
 void *MaterialType_load(char *path);
+void print_material_type(MaterialType *material_type);
+
 
 /*--------------------------------------------------------------------------------
     Material instances
@@ -190,7 +198,6 @@ extern ResourceType Material_RTID;
 typedef struct /* Resource */ Material_RTID {
     ResourceHandle material_type; /* Resource: MaterialType */
     ResourceHandle textures[MATERIAL_MAX_TEXTURES]; /* Resource[]: Texture */
-    size_t properties_size;
     void *properties;
 } Material;
 void *Material_load(char *path);
@@ -272,8 +279,8 @@ Shader bookkeeping stuff. Reading the source into application memory
 loading and compilation, and linking, with error handling and log printing.
 --------------------------------------------------------------------------------*/
 void read_shader_source(const char *name, char **lines_out[], size_t *num_lines);
-bool load_and_compile_shader(GraphicsID shader_id, const char *shader_path);
-bool link_shader_program(GraphicsID shader_program_id);
+bool load_and_compile_shader(GLuint shader_id, const char *shader_path);
+bool link_shader_program(GLuint shader_program_id);
 
 /*--------------------------------------------------------------------------------
 Loading stuff. Possibly should be outside of this module, but since a mesh loading
@@ -312,6 +319,19 @@ void dict_query_rules_rendering(DictQuerier *q);
 // Working on currently
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
+Material new_material(char *material_type_path);
+#define gl_shader_type(SHADER_TYPE)\
+	((( SHADER_TYPE ) == Vertex) ? GL_VERTEX_SHADER\
+	:((( SHADER_TYPE ) == Fragment) ? GL_FRAGMENT_SHADER\
+	  :((( SHADER_TYPE ) == Geom) ? GL_GEOMETRY_SHADER\
+	    : 0)))
+
+//----------Define more
+#define gl_type_size(GL_TYPE)\
+	((( GL_TYPE ) == GL_FLOAT) ? sizeof(float)\
+	:((( GL_TYPE ) == GL_UNSIGNED_INT) ? sizeof(uint32_t)\
+	  :((( GL_TYPE ) == GL_INT) ? sizeof(int32_t)\
+	    : 0)))
 
 
 

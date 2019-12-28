@@ -150,7 +150,8 @@ void make_floor(int x, int z)
 {
     EntityID floor = new_entity(2);
     Body *body = entity_add_aspect(floor, Body);
-    Body_init(body, "Materials/floor", "Models/quad");
+    /* Body_init(body, "Materials/floor", "Models/quad"); */
+    Body_init(body, "Materials/green", "Models/quad");
     float placing = 20;
     body->scale = placing;
     Transform_set(entity_add_aspect(floor, Transform), 2*placing*x, -12, 2*placing*z,  M_PI/2,0,0);
@@ -179,16 +180,10 @@ void init_program(void)
     add_shader_block(DirectionalLights);
     add_shader_block(MaterialProperties); //----important
 
-    /* for (int i = 0; i < g_num_shader_blocks; i++) { */
-    /*     ___print_shader_block(i); */
-    /* } */
-
     set_uniform_float(StandardLoopWindow, aspect_ratio, ASPECT_RATIO);
 
     init_entity_model();
     init_aspects_gameobjects();
-
-
 
     {
         EntityID camera_man = new_entity(4);
@@ -203,16 +198,19 @@ void init_program(void)
         data->rotate_speed = 5;
         data->frozen = false;
 
-        Body *body = entity_add_aspect(camera_man, Body);
-        Body_init(body, "Materials/simple1", "Models/cube");
-        body->scale = 5;
+        /* Body *body = entity_add_aspect(camera_man, Body); */
+        /* Body_init(body, "Materials/simple1", "Models/cube"); */
+        /* body->scale = 5; */
     }
 
+    make_floor(0, 0);
+#if 0
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             make_floor(i, j);
         }
     }
+#endif
 
 #if 0
     for (int j = 0; j < 1; j++) {
@@ -230,7 +228,7 @@ void init_program(void)
         }
     }
 #endif
-#if 1
+#if 0
     for (int i = 0; i < 100; i++) {
         EntityID thing = new_entity(3);
         Body *body = entity_add_aspect(thing, Body);
@@ -317,7 +315,7 @@ void loop(void)
                 continue;
             }
 #endif
-
+#if 1
             Material *material = resource_data(Material, body->material);
 
             Matrix4x4f model_matrix = Transform_matrix(transform);
@@ -333,13 +331,14 @@ void loop(void)
 
 
             gm_draw(*mesh, material);
-            
+#endif
 
             /* printf("%.2f, %.2f, %.2f\n", v.vals[0], v.vals[1], v.vals[2]); */
             /* getchar(); */
         end_for_aspect()
     end_for_aspect()
 
+#if 0
     {
         gm_triangles(VERTEX_FORMAT_3);
 #if 0
@@ -383,16 +382,15 @@ void loop(void)
 
 
     ResourceHandle green = new_resource_handle(Material, "Materials/green");
-    ResourceHandle blue = new_resource_handle(Material, "Materials/blue");
-    float size = 200;
+    ResourceHandle red = new_resource_handle(Material, "Materials/red");
 
+    float size = 200;
     float elevation[11][11];
     for (int i = 0; i < 11; i++) {
         for (int j = 0; j < 11; j++) {
             elevation[i][j] = 40 * (sin(5*time() + i) + cos(4.3*time() + j));
         }
     }
-
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             gm_triangles(VERTEX_FORMAT_3);
@@ -403,11 +401,19 @@ void loop(void)
             gm_index(a); gm_index(b); gm_index(c);
             gm_index(a); gm_index(c); gm_index(d);
             Geometry g = gm_done();
-            if ((i + j) % 2 == 0) {
-                gm_draw(g, resource_data(Material, green));
-            } else {
-                gm_draw(g, resource_data(Material, blue));
-            }
+
+             
+
+
+            vec4 color = new_vec4(0.5*(sin(i)+1), 0.5*(cos(j)+1), (sin(j) + cos(i) + 2) / 4, 1);
+            memcpy(resource_data(Material, green)->properties, &color, sizeof(color));
+            gm_draw(g, resource_data(Material, green));
+
+            /* if ((i + j) % 2 == 0) { */
+            /*     gm_draw(g, resource_data(Material, green)); */
+            /* } else { */
+            /*     gm_draw(g, resource_data(Material, blue)); */
+            /* } */
             gm_free(g);
 
             float cx, cy, cz;
@@ -427,7 +433,7 @@ void loop(void)
             gm_free(g);
         }
     }
-
+#endif
 }
 void close_program(void)
 {

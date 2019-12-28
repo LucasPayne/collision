@@ -464,6 +464,75 @@ void *Material_load(char *path)
         material.textures[i] = new_resource_handle(Texture, buf);
     }
 
+    // If there is a MaterialProperties block in this material type, find its properties in the text file.
+    // Using shader introspection (the v4.2 API), query for the entries of the block, then read them out.
+    // See section old-(not old-old)-style uniform and block querying
+    //      https://www.khronos.org/opengl/wiki/Program_Introspection
+    for (int b = 0; b < MATERIAL_MAX_SHADER_BLOCKS; b++) {
+        if (material_type->shader_blocks[b] == ShaderBlockID_MaterialProperties) {
+            // This material type has a material properties block.
+            GLuint mp_block_index = glGetUniformBlockIndex(material_type->program_id, "MaterialProperties");
+            if (mp_block_index == GL_INVALID_INDEX) {
+                fprintf(stderr, ERROR_ALERT "Something went wrong. MaterialProperties block index cannot be found for material type which apparently uses one.\n");
+                exit(EXIT_FAILURE);
+            }
+
+            const int max_num_uniforms = 512;
+            GLint num_uniforms;
+            glGetActiveUniformBlockiv(material_type->program_id, mp_block_index, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &num_uniforms);
+            if (num_uniforms > max_num_uniforms) {
+                fprintf(stderr, ERROR_ALERT "Too many entries defined in a MaterialProperties block. The maximum is set to %d, but this could be changed.\n", max_num_uniforms);
+                exit(EXIT_FAILURE);
+            }
+            GLuint uniform_indices[max_num_uniforms];
+            glGetActiveUniformBlockiv(material_type->program_id, mp_block_index, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, uniform_indices);
+
+            size_t mp_block_size;
+            glGetActiveUniformBlockiv(material_type->program_id, mp_block_index, GL_UNIFORM_BLOCK_DATA_SIZE, (GLint *) &mp_block_size);
+            if (mp_block_size > g_shader_blocks[ShaderBlockID_MaterialProperties].size) {
+                fprintf(stderr, ERROR_ALERT "MaterialProperties block encountered which is too large. The maximum block size is %zu, which can be changed.\n", g_shader_blocks[ShaderBlockID_MaterialProperties].size);
+                exit(EXIT_FAILURE);
+            }
+
+            // Free this on non-fatal failure!
+            void *mp_block = calloc(1, mp_block_size);
+            mem_check(mp_block);
+
+            // A uniform block has an index unrelated to the indices of the uniforms contained inside it for each entry (what is the indexing for arrays and structs?).
+            // Go over all of these and query the text file for its value.
+            for (int i = 0; i < num_uniforms; i++) {
+
+                char mp_token[1024] = "mp_";
+                char *name = mp_token + 3;
+                int name_buf_size = 1024 - 3;
+                size_t length;
+                glGetActiveUniformName(material_type->program_id, uniform_indices[i], name_buf_size, (GLsizei *) &name_length, name);
+                if (length >= name_buf_size) {
+                    fprintf(stderr, ERROR_ALERT "Entry name in uniform block is too long. The maximum name length is %d.\n", name_buf_size - 1);
+                    exit(EXIT_FAILURE);
+                }
+                name[length] = '\0';
+                // Now mp_<entry name> is in the buffer, so use this to query the text file.
+                // To do this, the type needs to be known.
+                // Supported types:
+                //      - vec4
+                //      - float
+                //      - bool
+                GLenum mp_type;
+                glGetActiveUniformsiv(material_type->program_id, 1, &uniform_indices[i], GL_UNIFORM_TYPE, (GLint *) &mp_type);
+                switch(mp_type) {
+                    case GL_FLOAT:
+                        
+                        break;
+                }
+            }
+
+            break;
+        }
+    }
+    material.properties_size = mp_block_size;
+    material.properties = mp_block;
+
     Material *out_material = (Material *) malloc(sizeof(Material));
     mem_check(out_material);
     memcpy(out_material, &material, sizeof(Material));
@@ -778,7 +847,7 @@ Geometry gm_done(void)
 
     g_gm_specifying = false;
 
-    //---- have this kept in the struct already. Also, change the name from "ID", to maybe just Geometry.
+    //---- should have this kept in the struct already. Also, change the name from "ID", to maybe just Geometry.
     g_gm_id.num_indices = g_gm_index_count;
     g_gm_id.num_vertices = last_count;
 

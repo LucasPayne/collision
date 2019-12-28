@@ -19,6 +19,7 @@ PROJECT_LIBS:
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
+#include <stdint.h>
 #include "helper_definitions.h"
 #include "helper_gl.h"
 #include "helper_input.h"
@@ -28,7 +29,6 @@ PROJECT_LIBS:
 #include "entity.h"
 #include "matrix_mathematics.h"
 #include "aspect_library/gameobjects.h"
-
 
 ShaderBlockID ShaderBlockID_StandardLoopWindow;
 typedef struct ShaderBlock_StandardLoopWindow_s {
@@ -177,6 +177,7 @@ void init_program(void)
     add_shader_block(StandardLoopWindow);
     add_shader_block(Standard3D);
     add_shader_block(DirectionalLights);
+    add_shader_block(MaterialProperties);
 
     /* for (int i = 0; i < g_num_shader_blocks; i++) { */
     /*     ___print_shader_block(i); */
@@ -365,7 +366,7 @@ void loop(void)
         gm_index(4); gm_index(5); gm_index(1); gm_index(4); gm_index(1); gm_index(0);
 #endif
         Geometry id = gm_done();
-        ResourceHandle mat = new_resource_handle(Material, "Materials/floor");
+        ResourceHandle mat = new_resource_handle(Material, "Materials/green");
         gm_draw(id, resource_data(Material, mat));
         gm_free(id);
     }
@@ -375,8 +376,7 @@ void loop(void)
         attribute_3f(Position, 0, 0, 0);
         attribute_3f(Position, 5000*sin(time()), 5000*cos(time()), 5000);
         Geometry id = gm_done();
-        printf("%d\n", id.num_vertices);
-        ResourceHandle mat = new_resource_handle(Material, "Materials/floor");
+        ResourceHandle mat = new_resource_handle(Material, "Materials/green");
         gm_draw(id, resource_data(Material, mat));
         gm_free(id);
     }

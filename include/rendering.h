@@ -158,6 +158,7 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name);
 ShaderBlockID get_shader_block_id(char *name);
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val);
 void ___set_uniform_mat4x4(ShaderBlockID id, float *entry_address, float *vals);
+void synchronize_shader_blocks(void);
 
 /*--------------------------------------------------------------------------------
   Material types
@@ -187,8 +188,30 @@ extern ResourceType Material_RTID;
 typedef struct /* Resource */ Material_RTID {
     ResourceHandle material_type; /* Resource: MaterialType */
     ResourceHandle textures[MATERIAL_MAX_TEXTURES]; /* Resource[]: Texture */
+    size_t properties_size;
+    void *properties;
 } Material;
 void *Material_load(char *path);
+
+
+// This is the (currently) only given-from-the-start shader block. This is not meant to be
+// accessed with the macro syntax, but corresponds to a buffer of a given size
+// (MATERIAL_PROPERTIES_MAX_SIZE), and is used whenever you prepare to draw with
+// a material instance. A material instance holds its own data, whether it is skeletoned
+// by a struct so the user can modify the data that way, or if its read from a file, etc.,
+// it does not matter. The data attached to the material is copied into the lower bytes of
+// the application-level buffer for this shader block, and then when synchronize_shader_blocks
+// is called, this is uploaded. So each material using shaders with a MaterialProperties block may have it defined
+// in different ways, possibly reflecting in the application by a padded struct, or having some sort of automated
+// serialization stuff for editing material properties.
+// This means there is one buffer only for holding material properties.
+//  --- Remember that code still has to be run in the application to initialize this shader block.
+ShaderBlockID ShaderBlockID_MaterialProperties;
+#define MATERIAL_PROPERTIES_MAX_SIZE 1024
+typedef struct ShaderBlock_MaterialProperties_s {
+    uint8_t props[MATERIAL_PROPERTIES_MAX_SIZE];
+} ShaderBlock_MaterialProperties;
+
 
 /*--------------------------------------------------------------------------------
   Geometry stuff
@@ -227,6 +250,18 @@ typedef struct /* Resource */ Geometry_s {
 // Really need to think more about "virtual resources" and if any of this makes sense.
 void *Geometry_load(char *path);
 Geometry upload_mesh(MeshData *mesh_data);
+
+#define GM_ATTRIBUTE_BUFFER_SIZE (1024*1024)
+#define GM_INDEX_BUFFER_SIZE (1024*1024)
+
+void attribute_3f(AttributeType attribute_type, float a, float b, float c);
+void attribute_buf(AttributeType attribute_type, void *buf, int count);
+void gm_index(uint32_t index);
+void gm_index_buf(uint32_t *indices, int count);
+void gm_triangles(VertexFormat vertex_format);
+Geometry gm_done(void);
+void gm_draw(Geometry geometry, Material *material);
+void gm_lines(VertexFormat vertex_format);
 
 /*--------------------------------------------------------------------------------
 Shader bookkeeping stuff. Reading the source into application memory
@@ -274,19 +309,8 @@ void dict_query_rules_rendering(DictQuerier *q);
 // Working on currently
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
-void synchronize_shader_blocks(void);
 
-#define GM_ATTRIBUTE_BUFFER_SIZE (1024*1024)
-#define GM_INDEX_BUFFER_SIZE (1024*1024)
 
-void attribute_3f(AttributeType attribute_type, float a, float b, float c);
-void attribute_buf(AttributeType attribute_type, void *buf, int count);
-void gm_index(uint32_t index);
-void gm_index_buf(uint32_t *indices, int count);
-void gm_triangles(VertexFormat vertex_format);
-Geometry gm_done(void);
-void gm_draw(Geometry geometry, Material *material);
-void gm_lines(VertexFormat vertex_format);
 
 
 #endif // HEADER_DEFINED_RENDERING

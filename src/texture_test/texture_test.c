@@ -385,13 +385,21 @@ void loop(void)
     ResourceHandle green = new_resource_handle(Material, "Materials/green");
     ResourceHandle blue = new_resource_handle(Material, "Materials/blue");
     float size = 200;
+
+    float elevation[11][11];
+    for (int i = 0; i < 11; i++) {
+        for (int j = 0; j < 11; j++) {
+            elevation[i][j] = 40 * (sin(5*time() + i) + cos(4.3*time() + j));
+        }
+    }
+
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             gm_triangles(VERTEX_FORMAT_3);
-            uint32_t a = attribute_3f(Position, size*i, size*j, 0);
-            uint32_t b = attribute_3f(Position, size*(i + 1), size*j, 0);
-            uint32_t c = attribute_3f(Position, size*(i + 1), size*(j + 1), 0);
-            uint32_t d = attribute_3f(Position, size*i, size*(j + 1), 0);
+            uint32_t a = attribute_3f(Position, size*i, size*j, elevation[i][j]);
+            uint32_t b = attribute_3f(Position, size*(i + 1), size*j, elevation[i+1][j]);
+            uint32_t c = attribute_3f(Position, size*(i + 1), size*(j + 1), elevation[i+1][j+1]);
+            uint32_t d = attribute_3f(Position, size*i, size*(j + 1), elevation[i][j+1]);
             gm_index(a); gm_index(b); gm_index(c);
             gm_index(a); gm_index(c); gm_index(d);
             Geometry g = gm_done();
@@ -400,6 +408,22 @@ void loop(void)
             } else {
                 gm_draw(g, resource_data(Material, blue));
             }
+            gm_free(g);
+
+            float cx, cy, cz;
+            cx = size*(i + 0.5);
+            cy = size*(j + 0.5);
+            cz = (elevation[i][j] + elevation[i+1][j] + elevation[i][j+1] + elevation[i+1][j+1])/4.0;
+            gm_lines(VERTEX_FORMAT_3 | (1 << ATTRIBUTE_TYPE_INDEX));
+            attribute_3f(Position, cx, cy, cz);
+            attribute_1u(Index, 0);
+            for (int k = 0; k < 10; k++) {
+                attribute_3f(Position, cx + 100*sin(k), cy + 100*cos(k), cz + 5*k);
+                attribute_1u(Index, k+1);
+            }
+            g = gm_done();
+            ResourceHandle res = new_resource_handle(Material, "Materials/dashed_red");
+            gm_draw(g, resource_data(Material, res));
             gm_free(g);
         }
     }

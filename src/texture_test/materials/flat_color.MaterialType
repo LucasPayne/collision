@@ -1,5 +1,5 @@
-vertex_format: 3
-vertex_shader: Shaders/flat_color.vert
+vertex_format: 3I
+vertex_shader: Shaders/3_passthrough.vert
 fragment_shader: Shaders/flat_color.frag
 num_blocks: 2
 block0: Standard3D

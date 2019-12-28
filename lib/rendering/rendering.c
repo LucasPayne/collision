@@ -48,6 +48,7 @@ VertexFormat string_to_VertexFormat(char *string)
             casemap('C', VERTEX_FORMAT_C);
             casemap('N', VERTEX_FORMAT_N);
             casemap('U', VERTEX_FORMAT_U);
+            casemap('I', (1 << ATTRIBUTE_TYPE_INDEX));
             default:
                 return VERTEX_FORMAT_NONE;
         }
@@ -404,6 +405,7 @@ const AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES] = {
     { ATTRIBUTE_TYPE_COLOR, "vColor", GL_FLOAT, 3 },
     { ATTRIBUTE_TYPE_NORMAL, "vNormal", GL_FLOAT, 3},
     { ATTRIBUTE_TYPE_UV, "vTexCoord", GL_FLOAT, 2},
+    { ATTRIBUTE_TYPE_INDEX, "vIndex", GL_UNSIGNED_INT, 1},
 };
 
 Geometry upload_mesh(MeshData *mesh_data)
@@ -833,13 +835,28 @@ static void gm_init(void)
     mem_check(g_gm_index_buffer);
     g_gm_initialized = true;
 }
+
+
+#define attribute_check(SIZE,TYPE)\
+{\
+    if ((g_gm_id.vertex_format & (1 << attribute_type)) == 0) gm_attribute_error();\
+    if (g_attribute_info[attribute_type].gl_size != ( SIZE ) || g_attribute_info[attribute_type].gl_type != ( TYPE )) {\
+        fprintf(stderr, ERROR_ALERT "Type mismatch when specifying attribute value. Make sure that the right attribute_* function is used.\n");\
+        exit(EXIT_FAILURE);\
+    }\
+}
+uint32_t attribute_1u(AttributeType attribute_type, uint32_t u)
+{
+    attribute_check(1, GL_UNSIGNED_INT);
+    size_t pos = g_gm_attribute_positions[attribute_type];
+    if (pos + sizeof(uint32_t) > GM_ATTRIBUTE_BUFFER_SIZE) gm_size_error();
+    memcpy(g_gm_attribute_buffers[attribute_type] + pos, &u, sizeof(uint32_t));
+    // Returns the index, for convenience in defining index lists.
+    return g_gm_attribute_counts[attribute_type] ++;
+}
 uint32_t attribute_3f(AttributeType attribute_type, float a, float b, float c)
 {
-    if ((g_gm_id.vertex_format & (1 << attribute_type)) == 0) gm_attribute_error();
-    if (g_attribute_info[attribute_type].gl_size != 3 || g_attribute_info[attribute_type].gl_type != GL_FLOAT) {
-        fprintf(stderr, ERROR_ALERT "Type mismatch when specifying attribute value. Make sure that the right attribute_* function is used.\n");
-        exit(EXIT_FAILURE);
-    }
+    attribute_check(3, GL_FLOAT);
 
     size_t pos = g_gm_attribute_positions[attribute_type];
     if (pos + 3*sizeof(float) > GM_ATTRIBUTE_BUFFER_SIZE) gm_size_error();
@@ -851,22 +868,12 @@ uint32_t attribute_3f(AttributeType attribute_type, float a, float b, float c)
     // Returns the index, for convenience in defining index lists.
     return g_gm_attribute_counts[attribute_type] ++;
 }
+#undef attribute_check
 void attribute_buf(AttributeType attribute_type, void *buf, int count)
 {
     /* Specify the attribute data from a buffer. This will be faster than streaming through, if you already
      * have the data in the format needed for the attribute.
      */
-
-    //---- specifying by count is easier, so removed this.
-    /* // Check if the size is a multiple of the width of one of these attributes. */
-    /* // --- could probably afford to make it easier to get this width instead of using this expression. */
-    /* size_t width = g_attribute_info[attribute_type].gl_size * gl_type_size(g_attribute_info[attribute_type].gl_type); */
-    /* if (size % width != 0) { */
-    /*     fprintf(stderr, ERROR_ALERT "Attempted to give geometry attribute data from a buffer with size not a multiple of the width of this attribute type. %zu % %zu != 0.\n", size, width); */
-    /*     exit(EXIT_FAILURE); */
-    /* } */
-    /* size_t count = size / width; */
-
     size_t width = g_attribute_info[attribute_type].gl_size * gl_type_size(g_attribute_info[attribute_type].gl_type); // the width of a single one of these attributes.
     size_t pos = g_gm_attribute_positions[attribute_type];
     if ((g_gm_id.vertex_format & (1 << attribute_type)) == 0) gm_attribute_error();
@@ -924,7 +931,7 @@ Geometry gm_done(void)
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
         if (g_gm_id.vertex_format & (1 << i)) {
             if (last_count != -1 && last_count != g_gm_attribute_counts[i]) {
-                fprintf(stderr, ERROR_ALERT "Unequal numbers of vertex attributes have been specified in a geometry upload.\n"); 
+                fprintf(stderr, ERROR_ALERT "Unequal numbers of vertex attributes have been specified in a geometry upload. %d != %d.\n", last_count, g_gm_attribute_counts[i]); 
                 exit(EXIT_FAILURE);
             }
             last_count = g_gm_attribute_counts[i];

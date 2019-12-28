@@ -45,6 +45,7 @@ enum AttributeTypes {
     ATTRIBUTE_TYPE_COLOR,
     ATTRIBUTE_TYPE_NORMAL,
     ATTRIBUTE_TYPE_UV,
+    ATTRIBUTE_TYPE_INDEX,
     NUM_ATTRIBUTE_TYPES
 };
 enum AttributeTypes2 { // better names, don't use this capitalization otherwise.
@@ -52,6 +53,7 @@ enum AttributeTypes2 { // better names, don't use this capitalization otherwise.
     Color,
     Normal,
     UV,
+    Index,
 };
 // Attribute types are associated to an AttributeInfo structure by their value as an index.
 // This attribute information is stored in a global array.
@@ -254,6 +256,7 @@ Geometry upload_mesh(MeshData *mesh_data);
 #define GM_ATTRIBUTE_BUFFER_SIZE (1024*1024)
 #define GM_INDEX_BUFFER_SIZE (1024*1024)
 
+uint32_t attribute_1u(AttributeType attribute_type, uint32_t u);
 uint32_t attribute_3f(AttributeType attribute_type, float a, float b, float c);
 void attribute_buf(AttributeType attribute_type, void *buf, int count);
 void gm_index(uint32_t index);

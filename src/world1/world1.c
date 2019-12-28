@@ -11,7 +11,12 @@ PROJECT_LIBS:
     + entity
     + matrix_mathematics
     + aspect_library/gameobjects
+    + bases/interactive_3D
+//--- Chain dependencies for libraries so linkings don't have to be declared here.
+//    This will probably mean a script will be required instead of pushing the makefile.
 ================================================================================*/
+#include "bases/interactive_3D.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
@@ -29,29 +34,6 @@ PROJECT_LIBS:
 #include "entity.h"
 #include "matrix_mathematics.h"
 #include "aspect_library/gameobjects.h"
-
-ShaderBlockID ShaderBlockID_StandardLoopWindow;
-typedef struct ShaderBlock_StandardLoopWindow_s {
-    // padding bytes would be in here if neccessary.
-    float aspect_ratio;
-    float time;
-} ShaderBlock_StandardLoopWindow;
-
-
-typedef struct mat4x4_s {
-    float vals[16];
-} mat4x4;
-ShaderBlockID ShaderBlockID_Standard3D;
-typedef struct ShaderBlock_Standard3D_s {
-    mat4x4 mvp_matrix;
-} ShaderBlock_Standard3D;
-
-ShaderBlockID ShaderBlockID_DirectionalLights;
-typedef struct ShaderBlock_DirectionalLights_s {
-    float aspect_ratio;
-    float time;
-} ShaderBlock_DirectionalLights;
-
 
 typedef struct CameraControlData_s {
     float move_speed;
@@ -150,19 +132,7 @@ void make_floor(int x, int z)
 {
     EntityID floor = new_entity(2);
     Body *body = entity_add_aspect(floor, Body);
-    /* Body_init(body, "Materials/floor", "Models/quad"); */
-    Body_init(body, "Materials/green", "Models/quad");
-
-    body->geometry = new_resource_handle(Geometry, "Models/quad");
-    Material *mat = oneoff_resource(Material, body->material);
-    mat->material_type = new_resource_handle(MaterialType, "Materials/flat_color");
-    material_set_property_float(mat, "multiplier", 1);
-    material_set_property_vec4(mat, "flat_color", new_vec4(sin(x), cos(z), sin(x + z), 1));
-
-    /* body->material = new_resource_handle(Material, "Materials/green"); */
-
-    /* material_set_property_float(resource_data(Material, body->material), "multiplier", sin(x)); */
-
+    Body_init(body, "Materials/floor", "Models/quad");
     float placing = 20;
     body->scale = placing;
     Transform_set(entity_add_aspect(floor, Transform), 2*placing*x, -12, 2*placing*z,  M_PI/2,0,0);
@@ -214,7 +184,7 @@ void init_program(void)
         /* body->scale = 5; */
     }
 
-#if 1
+#if 0
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             make_floor(i, j);
@@ -325,7 +295,7 @@ void loop(void)
                 continue;
             }
 #endif
-#if 1
+#if 0
             Material *material = resource_data(Material, body->material);
 
             Matrix4x4f model_matrix = Transform_matrix(transform);

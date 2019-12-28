@@ -1,0 +1,4 @@
+material_type: Materials/dashed_line
+mp_line_color: 1, 0, 0, 1
+mp_on_length: 0.5
+mp_off_length: 0.5

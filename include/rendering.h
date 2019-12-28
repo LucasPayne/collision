@@ -6,6 +6,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdint.h>
+
+// note: It may be a convenient dependency to have the matrix types in this module. If arithmetic isn't done with them,
+// then this will just require a header include.
+#include "matrix_mathematics.h"
+
 /*--------------------------------------------------------------------------------
     Resources
 This rendering module is built using the resources system. This is a shared
@@ -196,6 +201,8 @@ void print_material_type(MaterialType *material_type);
 --------------------------------------------------------------------------------*/
 extern ResourceType Material_RTID;
 typedef struct /* Resource */ Material_RTID {
+    // note: a material instance is very big because it holds all the possible textures. Since they just need to be walked from the start, maybe
+    // holds a linked list or a dynamic array.
     ResourceHandle material_type; /* Resource: MaterialType */
     ResourceHandle textures[MATERIAL_MAX_TEXTURES]; /* Resource[]: Texture */
     void *properties;
@@ -319,7 +326,9 @@ void dict_query_rules_rendering(DictQuerier *q);
 // Working on currently
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
-Material new_material(char *material_type_path);
+void material_set_property_float(Material *material, char *property_name, float val);
+void material_set_property_vec4(Material *material, char *property_name, vec4 v);
+
 #define gl_shader_type(SHADER_TYPE)\
 	((( SHADER_TYPE ) == Vertex) ? GL_VERTEX_SHADER\
 	:((( SHADER_TYPE ) == Fragment) ? GL_FRAGMENT_SHADER\

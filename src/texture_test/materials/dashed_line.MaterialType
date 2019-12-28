@@ -1,0 +1,7 @@
+vertex_format: 3
+vertex_shader: Shaders/dashed_line.vert
+fragment_shader: Shaders/dashed_line.frag
+num_blocks: 2
+block0: Standard3D
+block1: MaterialProperties
+num_textures: 0

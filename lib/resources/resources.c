@@ -125,6 +125,12 @@ void *___resource_data(ResourceHandle *handle)
     /*     fprintf(stderr, ERROR_ALERT "Type error when dereferencing resource handle.\n"); */
     /*     exit(EXIT_FAILURE); */
     /* } */
+    if (!handle->path_backed) {
+        // When the resource handle is not backed by a path (for example when the resource is loaded from a file),
+        // then it is a oneoff resource, and the resource data is owned by the handle, storing it where it would have stored the path.
+        return handle->data.resource;
+    }
+    // The resource is path-backed, so relocate it as usual, possibly triggering a resource load.
     relocate_resource_handle(handle);
     if (handle->_id.uuid == 0) {
         fprintf(stderr, ERROR_ALERT "Could not relocate resource handle.\n");
@@ -148,22 +154,58 @@ This function is static because a type-symbol macro expands to it.
 void ___init_resource_handle(ResourceType resource_type, ResourceHandle *resource_handle, char *path)
 {
     // This function can be used to reset a resource handle to something else, so free the stored path if needed.
-    if (resource_handle->_path != NULL) free(resource_handle->_path);
+    if (resource_handle->data.path != NULL) free(resource_handle->data.path);
     resource_handle->_id = null_resource_id();
     resource_handle->_id.type = resource_type;
-    resource_handle->_path = (char *) malloc((strlen(path) + 1) * sizeof(char));
-    mem_check(resource_handle->_path);
-    strcpy(resource_handle->_path, path);
+    resource_handle->data.path = (char *) malloc((strlen(path) + 1) * sizeof(char));
+    mem_check(resource_handle->data.path);
+    strcpy(resource_handle->data.path, path);
 }
 ResourceHandle ___new_resource_handle(ResourceType resource_type, char *path)
 {
+    // path-backed resource
     ResourceHandle resource_handle;
+    resource_handle.path_backed = true;
     resource_handle._id = null_resource_id();
     resource_handle._id.type = resource_type;
-    resource_handle._path = (char *) malloc((strlen(path) + 1) * sizeof(char));
-    mem_check(resource_handle._path);
-    strcpy(resource_handle._path, path);
+    resource_handle.data.path = (char *) malloc((strlen(path) + 1) * sizeof(char));
+    mem_check(resource_handle.data.path);
+    strcpy(resource_handle.data.path, path);
     return resource_handle;
+}
+
+// When a resource is not file-backed or not intended to be shared, it is a oneoff resource. This is still a ResourceHandle
+// so the sharing mechanisms can be available, for example for a Model object which may have its mesh procedurally defined,
+// or backed by a file with a resource path, etc., it would be wanted that the resource system just handles file-backed loading,
+// virtual-resource sharing, and oneoff resource creation, in a way where the application can just use the resource without thinking
+// about what is going to be shared or whether or not it was loaded from a file.
+//
+// There could also be a "virtual resource" which is procedurally/alternatively defined, yet still is intended to be shared. This would
+// use the same GUID-as-resource-paths system, except, for example, prepend the paths by "Virtual/" and make sure they don't clash with the file-backed
+// resources. Then, just initialize the resource before the resource system tries to actually load it from this "Virtual/..." path. Then things with the
+// same "Virtual/..." name will be shared. A oneoff resource is not shareable as it does not have a name.
+// -------------
+// Example usage
+// Geometry *g = oneoff_resource(Geometry, body->geometry);
+// gm_triangles(VERTEX_FORMAT_3);
+// ... set some stuff
+// *g = gm_done();
+//
+// Consider not using a oneoff resource and just creating a Geometry struct, if it is not needed to be stored in something which holds
+// a resource handle, for example when rendering procedural transient geometry. In that case the resourceness of Geometry is irrelevant.
+//
+// whatever uses the "body" object doesn't care if the geometry is loaded from a file,
+// a shared virtual resource, or procedurally generated and not backed by a path, so non-shareable. It just
+// uses the geometry.
+void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle)
+{
+    // Create a oneoff, non-path-backed, non-shareable resource, set the resource handle
+    handle->path_backed = false;
+    handle->_id = null_resource_id();
+    handle->_id.type = resource_type;
+    handle->data.resource = calloc(1, g_resource_type_info[resource_type].size);
+    mem_check(handle->data.resource);
+    return handle->data.resource;
 }
 
 /*
@@ -173,6 +215,8 @@ the convenience of relocating/validating and using an attribute in the same expr
 */
 static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
 {
+    /* This function is only called when accessing resource data for a path-backed resource.
+     */
 #define DEBUG 0
     // If the resource handle's id is null, then a lookup needs to be done first instead of trying the table.
     if (resource_handle->_id.uuid != 0) {
@@ -184,12 +228,13 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
             return resource_handle;
         }
     }
+
     // Try walk the resource tree to see if this path is associated to an active resource ID.
-    if (resource_handle->_path == NULL) {
+    if (resource_handle->data.path == NULL) {
         fprintf(stderr, ERROR_ALERT "Attempted to dereference resource handle which has no resource path.\n");
         exit(EXIT_FAILURE);
     }
-    ResourceID id = lookup_resource(resource_handle->_path);
+    ResourceID id = lookup_resource(resource_handle->data.path);
     if (id.uuid != 0) {
         // Resource is loaded. Update the handle with the ID found from querying.
         resource_handle->_id = id;
@@ -203,9 +248,9 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
     new_entry->uuid = id.uuid;
     new_entry->type = id.type;
     // and, store the path on the heap and give it to the new resource entry.
-    new_entry->path = (char *) malloc((strlen(resource_handle->_path) + 1) * sizeof(char));
+    new_entry->path = (char *) malloc((strlen(resource_handle->data.path) + 1) * sizeof(char));
     mem_check(new_entry->path);
-    strcpy(new_entry->path, resource_handle->_path);
+    strcpy(new_entry->path, resource_handle->data.path);
     // Next, load the resource in whatever way this resource type loads, by calling the load function in its resource-type-info table entry.
     void *resource = g_resource_type_info[new_entry->type].load(new_entry->path);
     if (resource == NULL) {
@@ -214,7 +259,7 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
     }
     new_entry->resource = resource;
     // Finally, add this path to the resource tree, filling the tree enough to store the id at the leaf, for querying.
-    add_resource(id, resource_handle->_path);
+    add_resource(id, resource_handle->data.path);
 
     // Update the resource handle with the new id for the newly loaded resource. Now, it is valid for short-term usage by the caller.
     resource_handle->_id = id;
@@ -226,11 +271,15 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
 bool reload_resource(ResourceHandle *handle)
 {
     // Load the resource again into a separate place (not associated to the resource table).
-    void *reloaded = g_resource_type_info[handle->_id.type].load(handle->_path);
+    if (!handle->path_backed) {
+        fprintf(stderr, ERROR_ALERT "Attempted to reload a non-path-backed resource.\n");
+        exit(EXIT_FAILURE);
+    }
+    void *reloaded = g_resource_type_info[handle->_id.type].load(handle->data.path);
     // If it failed to reload, allow the caller to handle this. Don't do anything.
     if (reloaded == NULL) {
         //------error logging
-        printf(ERROR_ALERT "Failed to reload resource with path \"%s\".\n", handle->_path);
+        printf(ERROR_ALERT "Failed to reload resource with path \"%s\".\n", handle->data.path);
         //----------Edit the resource tree!!!!
         return false;
     }

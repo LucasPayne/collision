@@ -212,7 +212,7 @@ bool Shader_reload(ResourceHandle handle)
 {
     Shader *shader = resource_data(Shader, handle);
     char shader_path_buffer[1024];
-    if (!resource_file_path(handle._path, "", shader_path_buffer, 1024)) return false;
+    if (!resource_file_path(handle.data.path, "", shader_path_buffer, 1024)) return false;
     GLuint test_id = glCreateShader(gl_shader_type(shader->shader_type));
     if (!load_and_compile_shader(test_id, shader_path_buffer)) return false;
     // The compilation was successful on the test ID, so give this to the resource handle.
@@ -418,6 +418,18 @@ void *MaterialType_load(char *path)
      *          properties, such as specular parameters for a Phong-lit material.
      *
      * After loading a material type, it is prepared for material instancing (materials which hold this as its material type.)
+     *
+     * Text-file format:
+     *      vertex_format: <format characters, e.g. 3NU>
+     *      vertex_shader: <resource path>
+     *      fragment_shader: <resource path>
+     *          etc. for other shaders (if supported)
+     *      num_blocks: <int>, the number of shader blocks used
+     *      block{i}: <string>, the name of the shader block
+     *          ... Note: if the material type has properties, some block{i} will be "MaterialProperties".
+     *      num_textures: <int>
+     *      texture{i}: <string>, the name of this texture
+     *          ...
      */
     printf("Loading material type from path %s\n", path);
 
@@ -548,7 +560,6 @@ void *MaterialType_load(char *path)
             info.name[name_length] = '\0';
             glGetActiveUniformsiv(material_type.program_id, 1, &uniform_indices[i], GL_UNIFORM_TYPE, (GLint *) &info.type);
             glGetActiveUniformsiv(material_type.program_id, 1, &uniform_indices[i], GL_UNIFORM_OFFSET, &info.offset);
-
             material_type.property_infos[i] = info;
         }
     } else {
@@ -600,15 +611,26 @@ void print_material_type(MaterialType *mt)
 ResourceType Material_RTID;
 void *Material_load(char *path)
 {
-    /*
+    /* For a material instance, file-backing is just an option. It may be useful to
+     * ignore the fact that it is a shareable resource and just define new materials in-line in code,
+     * but still be able to back a collection of material instance descriptions to be loaded, e.g. for standard flat colours/dashed lines
+     * for a debug-line rendering system.
      *
+     * This is in contrast to the material type, which must be file-backed, since it is a complicated object. All that is needed for a material instance
+     * is the material-type, and textures (their resource paths for file-backed textures only) and properties.
      *
+     * Text-file format:
+     *      material_type: <resource path>
+     *      mp_{name}: <type of this material property>, these entries define the material properties.
+     *          ...
+     *      tx_{name}: <resource path>, the resource path for the file-backed texture to bind to whatever unit the material type binds {name} to.
+     *          ...
      */
     printf("Loading a file-backed material instance from path %s\n", path);
 
 #define load_error(STRING)\
     { fprintf(stderr, "Error while loading Material: " STRING "\n"); return NULL; }
-    // Try to open the .Material dictionary for querying.
+    // Try to open the .Material file for querying.
     FILE *file = resource_file_open(path, ".Material", "r");
     if (file == NULL) load_error("File failed to open.");
     Dictionary *dict = dictionary_read(file);
@@ -620,7 +642,8 @@ void *Material_load(char *path)
     const int buf_size = 1024;
     char buf[buf_size];
     if (!dict_get(dict, "material_type", buf, buf_size)) load_error("No resource path given for the material type (no material_type entry).");
-    Material material = new_material(buf); // buf: the path of the material type
+    Material material = {0};
+    material.material_type = new_resource_handle(MaterialType, buf);
 
     MaterialType *material_type = resource_data(MaterialType, material.material_type);
 
@@ -679,25 +702,46 @@ which has an entry with unsupported type (it cannot be deserialized from the tex
 #undef load_error
 }
 
-
-Material new_material(char *material_type_path)
+static void ___material_set_property(Material *material, char *property_name, void *data, size_t size)
 {
-    /* Create a new material of the given type with no textures and no properties.
-     * These can then be added with material_add_texture and material_set_property.
-     */
-    Material material = {0};
-    material.material_type = new_resource_handle(MaterialType, material_type_path);
-    return material;
+    // note: This type of property-setting is expensive (requiring a string search) but convenient. If material properties are configured
+    //       a lot (e.g. some changing colour over time) and that becomes a problem, consider something like a macro to cast the MaterialProperties block
+    //       to edit it like other blocks, with an actual struct giving the offsets for properties.
+    
+
+    MaterialType *mt = resource_data(MaterialType, material->material_type);
+
+    // Check that this material has properties that can be set.
+    if (mt->properties_size <= 0 || mt->num_properties == 0) {
+        fprintf(stderr, ERROR_ALERT "Attempted to set a property in a material with material-type that has no properties block.\n");
+        exit(EXIT_FAILURE);
+    }
+    // Make sure the properties are initialized. This is so that a material can be created in-line (zero-initialized), then properties edited easily without
+    // having to initialize the properties data explicitly.
+    if (material->properties == NULL) {
+        material->properties = calloc(1, mt->properties_size);
+        mem_check(material->properties);
+    }
+
+    for (int i = 0; i < mt->num_properties; i++) {
+        printf("\"%s\"\n", mt->property_infos[i].name);
+        if (strcmp(mt->property_infos[i].name, property_name) == 0) {
+            // Found the property name.
+            memcpy(material->properties + mt->property_infos[i].offset, data, size);
+            return;
+        }
+    }
+    fprintf(stderr, ERROR_ALERT "Attempted to set non-existent property \"%s\" in material instance.\n", property_name);
+    exit(EXIT_FAILURE);
 }
-//static void ___set_material_property(Material *material, char *property_name, void *data, size_t size)
-//{
-//    MaterialType *mt = resource_data(MaterialType, material->material_type);
-//    //-----do this:---- store the introspected info in the material type
-//}
-//void set_material_property_float(Material *material, char *property_name, float val)
-//{
-//    ___set_material_property(material, property_name, (void *) &val, sizeof(float));
-//}
+void material_set_property_float(Material *material, char *property_name, float val)
+{
+    ___material_set_property(material, property_name, (void *) &val, sizeof(float));
+}
+void material_set_property_vec4(Material *material, char *property_name, vec4 v)
+{
+    ___material_set_property(material, property_name, (void *) &v, sizeof(vec4));
+}
 
 
 

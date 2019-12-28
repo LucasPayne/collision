@@ -56,8 +56,13 @@ reference" to a resource.
 typedef struct ResourceHandle_s {
     // Owner of this handle must not access these directly. However, resource
     // managing functions will need to.
+    bool path_backed;
     ResourceID _id;
-    char *_path;
+    union data_union {
+        // note: since path/resource memory is allocated, resource handles must be destroyed when the owner is destroyed/they are swapped.
+        char *path; // for path-backed resources, for example ones that use the path to load the resource from a file.
+        void *resource; // for non-path-backed resources, ones that hold and own the resource data itself.
+    } data;
 } ResourceHandle;
 
 void *___resource_data(ResourceHandle *handle);
@@ -77,6 +82,11 @@ void ___init_resource_handle(ResourceType resource_type, ResourceHandle *resourc
                             ( PATH ))
 
 bool reload_resource(ResourceHandle *handle);
+
+void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle);
+#define oneoff_resource(RESOURCE_TYPE_NAME,RESOURCE_HANDLE)\
+    ___oneoff_resource(( RESOURCE_TYPE_NAME ## _RTID ),\
+                       &( RESOURCE_HANDLE ));
 
 /*--------------------------------------------------------------------------------
     Resource types and the global resource type information array
@@ -119,6 +129,7 @@ void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, v
                           ( #RESOURCE_TYPE_NAME ),\
                           ( RESOURCE_TYPE_NAME ## _load ),\
                           ( RESOURCE_TYPE_NAME ## _unload ))
+
 
 /*--------------------------------------------------------------------------------
     The "resource tree" and resource-path querying

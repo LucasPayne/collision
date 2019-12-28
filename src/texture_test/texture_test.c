@@ -177,7 +177,7 @@ void init_program(void)
     add_shader_block(StandardLoopWindow);
     add_shader_block(Standard3D);
     add_shader_block(DirectionalLights);
-    add_shader_block(MaterialProperties);
+    add_shader_block(MaterialProperties); //----important
 
     /* for (int i = 0; i < g_num_shader_blocks; i++) { */
     /*     ___print_shader_block(i); */
@@ -380,6 +380,30 @@ void loop(void)
         gm_draw(id, resource_data(Material, mat));
         gm_free(id);
     }
+
+
+    ResourceHandle green = new_resource_handle(Material, "Materials/green");
+    ResourceHandle blue = new_resource_handle(Material, "Materials/blue");
+    float size = 200;
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            gm_triangles(VERTEX_FORMAT_3);
+            uint32_t a = attribute_3f(Position, size*i, size*j, 0);
+            uint32_t b = attribute_3f(Position, size*(i + 1), size*j, 0);
+            uint32_t c = attribute_3f(Position, size*(i + 1), size*(j + 1), 0);
+            uint32_t d = attribute_3f(Position, size*i, size*(j + 1), 0);
+            gm_index(a); gm_index(b); gm_index(c);
+            gm_index(a); gm_index(c); gm_index(d);
+            Geometry g = gm_done();
+            if ((i + j) % 2 == 0) {
+                gm_draw(g, resource_data(Material, green));
+            } else {
+                gm_draw(g, resource_data(Material, blue));
+            }
+            gm_free(g);
+        }
+    }
+
 }
 void close_program(void)
 {
@@ -395,12 +419,17 @@ static void key_callback(GLFWwindow *window, int key,
 #if 1
     CASE(PRESS, C) {
         // Should probably make a for_resource_type or for_resource.
+#if 0
         for_aspect(Body, body)
             /* reload_resource(&resource_data(MaterialType, resource_data(Material, body->material)->material_type)->shaders[Vertex]); */
             /* reload_resource(&resource_data(MaterialType, resource_data(Material, body->material)->material_type)->shaders[Fragment]); */
             /* reload_resource(&resource_data(Material, body->material)->material_type); */
-            /* reload_resource(&body->material); */
+            reload_resource(&body->material);
         end_for_aspect()
+#endif
+        // reloading resources that aren't attached to entities, for now without a for_resource kind of thing
+        ResourceHandle res = new_resource_handle(Material, "Materials/green");
+        reload_resource(&res);
     }
     CASE(PRESS, M) {
         for_aspect(Body, body)

@@ -82,6 +82,8 @@ void fprint_matrix3x3f(FILE *file, Matrix3x3f *matrix);
 void print_matrix4x4f(Matrix4x4f *matrix);
 void print_matrix3x3f(Matrix3x3f *matrix);
 
+void print_vec4(vec4 v);
+
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

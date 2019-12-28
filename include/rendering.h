@@ -254,7 +254,7 @@ Geometry upload_mesh(MeshData *mesh_data);
 #define GM_ATTRIBUTE_BUFFER_SIZE (1024*1024)
 #define GM_INDEX_BUFFER_SIZE (1024*1024)
 
-void attribute_3f(AttributeType attribute_type, float a, float b, float c);
+uint32_t attribute_3f(AttributeType attribute_type, float a, float b, float c);
 void attribute_buf(AttributeType attribute_type, void *buf, int count);
 void gm_index(uint32_t index);
 void gm_index_buf(uint32_t *indices, int count);

@@ -19,6 +19,9 @@ Dependencies:
 #include "rendering.h"
 #include "dictionary.h"
 
+//----only here while the querying/parsing stuff for matrices is here
+#include "matrix_mathematics.h"
+
 int g_num_shader_blocks = 0;
 ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
@@ -53,6 +56,30 @@ VertexFormat string_to_VertexFormat(char *string)
 #undef casemap
 }
 
+
+static bool query_val_int(char *string, void *data)
+{
+    int i;
+    if (sscanf(string, "%d", &i) == EOF) return false;
+    memcpy(data, &i, sizeof(int));
+    return true;
+}
+static bool query_val_bool(char *string, void *data)
+{
+    bool b;
+    if (strcmp(string, "true") == 0) b = true;
+    else if (strcmp(string, "false") == 0) b = false;
+    else return false;
+    memcpy(data, &b, sizeof(bool));
+    return true;
+}
+static bool query_val_float(char *string, void *data)
+{
+    float f;
+    if (sscanf(string, "%f", &f) == EOF) return false;
+    memcpy(data, &f, sizeof(float));
+    return true;
+}
 static bool query_val_unsigned_int(char *string, void *data)
 {
     // move to dictionary's basic types (built in to querier)
@@ -68,12 +95,65 @@ static bool query_val_VertexFormat(char *string, void *data)
     memcpy(data, &vf, sizeof(vf));
     return true;
 }
+static bool query_val_vec4(char *string, void *data)
+{
+    // format: 0, 1, 2, 3
+    // [0]
+    // [1]
+    // [2]
+    // [3]
+    char *p = string;
+    vec4 v;
+    int chars_read;
+    for (int i = 0; i < 4; i++) {
+        if (sscanf(p, (i < 3) ? "%f%n," : "%f%n", &v.vals[i], &chars_read) == EOF) return false;
+        p += chars_read + 1;
+    }
+    memcpy(data, &v, sizeof(vec4));
+    return true;
+}
+static bool query_val_mat4x4(char *string, void *data)
+{
+    // format: 0 1 2 3 ; 4 5 6 7 ; 8 9 10 11 ; 12 13 14 15
+    // [ 0 4 8 12  ]
+    // [ 1 5 9 13  ]
+    // [ 2 6 10 14 ]
+    // [ 3 7 11 15 ]
+    Matrix4x4f matrix;
+    char *p = string;
+#define eat() { while (isspace(*p)) { p++; } }
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            eat();
+            int num_chars;
+            if (sscanf(p, "%f%n", &matrix.vals[4*i + j], &num_chars) == EOF) {
+                return false;
+            }
+            p += num_chars;
+            eat();
+            if (j < 3 && *p++ != ',') {
+                return false;
+            } else if (i < 3 && j == 3 && *p++ != ';') {
+                return false;
+            }
+        }
+    }
+    memcpy(data, &matrix, sizeof(Matrix4x4f));
+    return true;
+}
 void dict_query_rules_rendering(DictQuerier *q)
 {
     dict_query_rule_add(q, "VertexFormat", query_val_VertexFormat);
     
     // move to dictionary's basic types 
+    dict_query_rule_add(q, "int", query_val_int);
     dict_query_rule_add(q, "unsigned int", query_val_unsigned_int);
+    dict_query_rule_add(q, "float", query_val_float);
+    dict_query_rule_add(q, "bool", query_val_bool);
+
+    // move to matrix mathematics' types
+    dict_query_rule_add(q, "mat4x4", query_val_mat4x4);
+    dict_query_rule_add(q, "vec4", query_val_vec4);
 }
 
 /*================================================================================
@@ -420,6 +500,7 @@ void *MaterialType_load(char *path)
         GLuint block_index = glGetUniformBlockIndex(material_type.program_id, buf);
         if (block_index == GL_INVALID_INDEX) {
             // Hopefully the glsl compiler does not optimize away entire std140 uniform blocks.
+            // (It appears that it doesn't.)
             load_error("Could not find uniform block.");
         }
         glUniformBlockBinding(material_type.program_id, block_index, block_id);
@@ -464,10 +545,13 @@ void *Material_load(char *path)
         material.textures[i] = new_resource_handle(Texture, buf);
     }
 
+#if 1
     // If there is a MaterialProperties block in this material type, find its properties in the text file.
     // Using shader introspection (the v4.2 API), query for the entries of the block, then read them out.
     // See section old-(not old-old)-style uniform and block querying
     //      https://www.khronos.org/opengl/wiki/Program_Introspection
+    material.properties_size = 0;
+    material.properties = NULL;
     for (int b = 0; b < MATERIAL_MAX_SHADER_BLOCKS; b++) {
         if (material_type->shader_blocks[b] == ShaderBlockID_MaterialProperties) {
             // This material type has a material properties block.
@@ -487,8 +571,8 @@ void *Material_load(char *path)
             GLuint uniform_indices[max_num_uniforms];
             glGetActiveUniformBlockiv(material_type->program_id, mp_block_index, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, uniform_indices);
 
-            size_t mp_block_size;
-            glGetActiveUniformBlockiv(material_type->program_id, mp_block_index, GL_UNIFORM_BLOCK_DATA_SIZE, (GLint *) &mp_block_size);
+            int mp_block_size;
+            glGetActiveUniformBlockiv(material_type->program_id, mp_block_index, GL_UNIFORM_BLOCK_DATA_SIZE, &mp_block_size);
             if (mp_block_size > g_shader_blocks[ShaderBlockID_MaterialProperties].size) {
                 fprintf(stderr, ERROR_ALERT "MaterialProperties block encountered which is too large. The maximum block size is %zu, which can be changed.\n", g_shader_blocks[ShaderBlockID_MaterialProperties].size);
                 exit(EXIT_FAILURE);
@@ -505,10 +589,10 @@ void *Material_load(char *path)
                 char mp_token[1024] = "mp_";
                 char *name = mp_token + 3;
                 int name_buf_size = 1024 - 3;
-                size_t length;
-                glGetActiveUniformName(material_type->program_id, uniform_indices[i], name_buf_size, (GLsizei *) &name_length, name);
+                int length;
+                glGetActiveUniformName(material_type->program_id, uniform_indices[i], name_buf_size, &length, name);
                 if (length >= name_buf_size) {
-                    fprintf(stderr, ERROR_ALERT "Entry name in uniform block is too long. The maximum name length is %d.\n", name_buf_size - 1);
+                    fprintf(stderr, ERROR_ALERT "Entry name \"%s\" in uniform block is too long. The maximum name length is %d.\n", name, name_buf_size - 1);
                     exit(EXIT_FAILURE);
                 }
                 name[length] = '\0';
@@ -518,20 +602,46 @@ void *Material_load(char *path)
                 //      - vec4
                 //      - float
                 //      - bool
+                // glGetActiveUniform is an older function (I am using the iv version) but
+                //      https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetActiveUniform.xhtml
+                // has a list of the type enums.
                 GLenum mp_type;
                 glGetActiveUniformsiv(material_type->program_id, 1, &uniform_indices[i], GL_UNIFORM_TYPE, (GLint *) &mp_type);
-                switch(mp_type) {
-                    case GL_FLOAT:
-                        
-                        break;
-                }
-            }
+                int mp_offset;
+                glGetActiveUniformsiv(material_type->program_id, 1, &uniform_indices[i], GL_UNIFORM_OFFSET, &mp_offset);
 
+                #define parse(TYPE)\
+                {\
+                    if (!dict_query_get(q, ( TYPE ), mp_token, mp_block + mp_offset)) {\
+                        fprintf(stderr, ERROR_ALERT "Failed to parse entry in dictionary \"%.500s\" as type \"" TYPE "\".\n", mp_token);\
+                        exit(EXIT_FAILURE);\
+                    }\
+                }
+                switch(mp_type) {
+                    case GL_FLOAT: parse("float"); break;
+                    case GL_BOOL: parse("bool"); break;
+                    case GL_FLOAT_VEC4: parse("vec4"); break;
+                    case GL_INT: parse("int"); break;
+                    case GL_UNSIGNED_INT: parse("unsigned int"); break;
+                    default:
+                        fprintf(stderr, ERROR_ALERT "Attempted to parse a MaterialProperties block from a text file for a material type\
+ which has an entry with unsupported type (it cannot be deserialized from the text file).\n");
+                        exit(EXIT_FAILURE);
+                }
+                #undef parse
+            }
+            material.properties_size = mp_block_size;
+            material.properties = mp_block;
             break;
         }
     }
-    material.properties_size = mp_block_size;
-    material.properties = mp_block;
+#endif
+
+    /* if (material.properties != NULL) { */
+    /*     for (int i = 0; i < 5; i++) { */
+    /*         printf("%.2f\n", ((float *) material.properties)[i]); */
+    /*     } */
+    /* } */
 
     Material *out_material = (Material *) malloc(sizeof(Material));
     mem_check(out_material);
@@ -702,7 +812,6 @@ static int g_gm_attribute_counts[NUM_ATTRIBUTE_TYPES];
         gm_init();\
     }\
 }
-    
 
 static void gm_reset(void)
 {
@@ -724,7 +833,7 @@ static void gm_init(void)
     mem_check(g_gm_index_buffer);
     g_gm_initialized = true;
 }
-void attribute_3f(AttributeType attribute_type, float a, float b, float c)
+uint32_t attribute_3f(AttributeType attribute_type, float a, float b, float c)
 {
     if ((g_gm_id.vertex_format & (1 << attribute_type)) == 0) gm_attribute_error();
     if (g_attribute_info[attribute_type].gl_size != 3 || g_attribute_info[attribute_type].gl_type != GL_FLOAT) {
@@ -739,7 +848,8 @@ void attribute_3f(AttributeType attribute_type, float a, float b, float c)
     memcpy(g_gm_attribute_buffers[attribute_type] + pos + 2*sizeof(float), &c, sizeof(float));
     g_gm_attribute_positions[attribute_type] += 3*sizeof(float);
 
-    g_gm_attribute_counts[attribute_type] ++;
+    // Returns the index, for convenience in defining index lists.
+    return g_gm_attribute_counts[attribute_type] ++;
 }
 void attribute_buf(AttributeType attribute_type, void *buf, int count)
 {
@@ -859,9 +969,15 @@ void gm_draw(Geometry geometry, Material *material)
 {
     MaterialType *mt = resource_data(MaterialType, material->material_type);
     glUseProgram(mt->program_id);
+    // Bind the textures
     for (int i = 0; i < mt->num_textures; i++) {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, resource_data(Texture, material->textures[i])->texture_id);
+    }
+    // Prepare the material properties, if there are any.
+    if (material->properties != NULL) {
+        memcpy(g_shader_blocks[ShaderBlockID_MaterialProperties].shader_block, material->properties, material->properties_size);
+        g_shader_blocks[ShaderBlockID_MaterialProperties].dirty = true; //setting this explicitly since this is not using the macro syntax for accessing entries of the block.
     }
     synchronize_shader_blocks();
 

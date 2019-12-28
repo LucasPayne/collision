@@ -301,3 +301,10 @@ vec3 matrix4_vec3_normal(Matrix4x4f *matrix, vec3 v)
     }
     return vp;
 }
+
+void print_vec4(vec4 v)
+{
+    printf("[%f, %f, %f, %f]\n", v.vals[0], v.vals[1], v.vals[2], v.vals[3]);
+}
+
+

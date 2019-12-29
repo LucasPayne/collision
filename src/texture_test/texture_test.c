@@ -352,7 +352,7 @@ void loop(void)
     end_for_aspect()
 
 #if 0
-    {
+    for (int i = 0; i < 10; i++) {
         gm_triangles(VERTEX_FORMAT_3);
 #if 0
         for (int i = 0; i < 100; i++) {
@@ -376,6 +376,12 @@ void loop(void)
         gm_index(4); gm_index(0); gm_index(2); gm_index(4); gm_index(2); gm_index(6);
         gm_index(6); gm_index(2); gm_index(3); gm_index(6); gm_index(3); gm_index(7);
         gm_index(4); gm_index(5); gm_index(1); gm_index(4); gm_index(1); gm_index(0);
+
+        /* Matrix4x4f matrix; */
+        /* identity_matrix4x4f(&matrix); */
+        /* matrix.vals[3*4 + 0] = i * 500; */
+        /* matrix.vals[3*4 + 1] = -i * 500; */
+        /* set_uniform_mat4x4(Standard3D, mvp_matrix.vals, matrix.vals); */
 #endif
         Geometry id = gm_done();
         ResourceHandle mat = new_resource_handle(Material, "Materials/green");
@@ -383,6 +389,7 @@ void loop(void)
         gm_free(id);
     }
 
+#if 0
     {
         gm_lines(VERTEX_FORMAT_3);
         attribute_3f(Position, 0, 0, 0);
@@ -392,8 +399,9 @@ void loop(void)
         gm_draw(id, resource_data(Material, mat));
         gm_free(id);
     }
+#endif
 
-
+#if 0
     ResourceHandle green = new_resource_handle(Material, "Materials/green");
     ResourceHandle red = new_resource_handle(Material, "Materials/red");
 
@@ -415,11 +423,8 @@ void loop(void)
             gm_index(a); gm_index(c); gm_index(d);
             Geometry g = gm_done();
 
-             
-
-
-            vec4 color = new_vec4(0.5*(sin(i)+1), 0.5*(cos(j)+1), (sin(j) + cos(i) + 2) / 4, 1);
-            memcpy(resource_data(Material, green)->properties, &color, sizeof(color));
+            /* vec4 color = new_vec4(0.5*(sin(i)+1), 0.5*(cos(j)+1), (sin(j) + cos(i) + 2) / 4, 1); */
+            /* memcpy(resource_data(Material, green)->properties, &color, sizeof(color)); */
             gm_draw(g, resource_data(Material, green));
 
             /* if ((i + j) % 2 == 0) { */
@@ -446,6 +451,7 @@ void loop(void)
             gm_free(g);
         }
     }
+#endif
 #endif
 }
 void close_program(void)

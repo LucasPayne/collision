@@ -22,6 +22,62 @@ libpng
                     // A typical use of setjmp/longjmp is implementation of an exception mechanism that exploits the ability
                     // of longjmp to reestablish program or thread state, even across multiple levels of function calls.
                     // A less common use of setjmp is to create syntax similar to coroutines.
+/*--------------------------------------------------------------------------------
+  Static declarations
+--------------------------------------------------------------------------------*/
+static bool load_image_png(ImageData *image_data, FILE *file);
+
+ResourceType Texture_RTID;
+/*--------------------------------------------------------------------------------
+  Load a file-backed texture.
+  The searched-for assets are:
+    - .png
+    
+  =notes=
+  Currently the only texture-resource support is for 2D textures with some options in RGB/RGBA/grayscale.
+--------------------------------------------------------------------------------*/
+void *Texture_load(char *path)
+{
+    FILE *file;
+    ImageData image_data;
+    // Try for a PNG file.
+    if ((file = resource_file_open(path, ".png", "rb")) != NULL || (file = resource_file_open(path, ".PNG", "rb")) != NULL) {
+        if (!load_image_png(&image_data, file)) {
+            fprintf(stderr, ERROR_ALERT "Could not successfully read in image data from a PNG file.\n", path);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        fprintf(stderr, ERROR_ALERT "Could not find relevant asset data to build a texture from path \"%s\".\n", path);
+        exit(EXIT_FAILURE);
+    }
+    Texture *texture = (Texture *) calloc(1, sizeof(Texture));
+    mem_check(texture);
+
+    // All texture images are being stored in internal format rgba:8,8,8,8-bit unsigned integers.
+    // A "Texture" resource really is intended to be used as a regular surface mapping texture.
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGBA8, image_data.width, image_data.height);
+    // OpenGLPG8E p279
+    glTexSubImage2D(GL_TEXTURE_2D,
+                    0,    // First mipmap level
+                    0, 0, // x and y offset
+                    image_data.width, image_data.height,
+                    image_data.external_format, image_data.external_type,
+                    image_data.data);
+    // Destroy the image data.
+    //-------------Organize actual destruction/tear-down functions. On-heap (destruction?) versus properties on heap (teardown, terminology?)
+    free(image_data.data);
+
+    // Set the texture defaults.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    texture->texture_id = texture_id;
+    return texture;
+}
 
 
 static bool load_image_png(ImageData *image_data, FILE *file)
@@ -229,47 +285,3 @@ color_type
 #undef DOWNSAMPLE
 }
 
-ResourceType Texture_RTID;
-void *Texture_load(char *path)
-{
-    FILE *file;
-
-    ImageData image_data;
-    // Try for a PNG file.
-    if ((file = resource_file_open(path, ".png", "rb")) != NULL || (file = resource_file_open(path, ".PNG", "rb")) != NULL) {
-        if (!load_image_png(&image_data, file)) {
-            fprintf(stderr, ERROR_ALERT "Could not successfully read in image data from a PNG file.\n", path);
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        fprintf(stderr, ERROR_ALERT "Could not find relevant asset data to build a texture from path \"%s\".\n", path);
-        exit(EXIT_FAILURE);
-    }
-    Texture *texture = (Texture *) calloc(1, sizeof(Texture));
-    mem_check(texture);
-
-    // All texture images are being stored in internal format rgba:8,8,8,8-bit unsigned integers.
-    // A "Texture" resource really is intended to be used as a regular surface mapping texture.
-    GLuint texture_id;
-    glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGBA8, image_data.width, image_data.height);
-    // OpenGLPG8E p279
-    glTexSubImage2D(GL_TEXTURE_2D,
-                    0,    // First mipmap level
-                    0, 0, // x and y offset
-                    image_data.width, image_data.height,
-                    image_data.external_format, image_data.external_type,
-                    image_data.data);
-    // Destroy the image data.
-    //-------------Organize actual destruction/tear-down functions. On-heap (destruction?) versus properties on heap (teardown, terminology?)
-    free(image_data.data);
-
-    // Set the texture defaults.
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    texture->texture_id = texture_id;
-    return texture;
-}

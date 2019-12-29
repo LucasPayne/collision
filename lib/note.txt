@@ -6,4 +6,3 @@ Headers are in /usr/include/glad.
 External libraries:
 GLFW 3
 libpng
-zlib

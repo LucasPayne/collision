@@ -710,4 +710,3 @@ void print_resource_path(void)
         printf("\"%s\"\n", g_resource_path);
     }
 }
-

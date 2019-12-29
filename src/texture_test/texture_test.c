@@ -120,6 +120,9 @@ static void floor_update(Logic *logic)
 
     Body *body = get_sibling_aspect(logic, Body);
 
+    material_set_property_vec4(resource_data(Material, body->material), "flat_color", new_vec4(sin(time() + transform->x), cos(time()*1.3 + transform->z), sin(time()*2.8 + transform->x + transform->z), 1));
+
+
     if (data->tilt_side) {
         transform->theta_y = 0.3*sin(time() + 0.01*transform->x);
     }
@@ -215,8 +218,8 @@ void init_program(void)
     }
 
 #if 1
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
+    for (int i = -50; i < 50; i++) {
+        for (int j = -50; j < 50; j++) {
             make_floor(i, j);
         }
     }

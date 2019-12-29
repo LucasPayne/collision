@@ -707,8 +707,6 @@ static void ___material_set_property(Material *material, char *property_name, vo
     // note: This type of property-setting is expensive (requiring a string search) but convenient. If material properties are configured
     //       a lot (e.g. some changing colour over time) and that becomes a problem, consider something like a macro to cast the MaterialProperties block
     //       to edit it like other blocks, with an actual struct giving the offsets for properties.
-    
-
     MaterialType *mt = resource_data(MaterialType, material->material_type);
 
     // Check that this material has properties that can be set.
@@ -722,9 +720,7 @@ static void ___material_set_property(Material *material, char *property_name, vo
         material->properties = calloc(1, mt->properties_size);
         mem_check(material->properties);
     }
-
     for (int i = 0; i < mt->num_properties; i++) {
-        printf("\"%s\"\n", mt->property_infos[i].name);
         if (strcmp(mt->property_infos[i].name, property_name) == 0) {
             // Found the property name.
             memcpy(material->properties + mt->property_infos[i].offset, data, size);

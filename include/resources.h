@@ -179,7 +179,7 @@ may not be an actual file, but can be used as the base for an asset loading
 routine to add suffixes to find relevant asset files (such as adding a .png, that failing,
 adding a .bmp, etc.)
 --------------------------------------------------------------------------------*/
-bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_buffer_size);
+bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_buffer_size, int start_index);
 FILE *resource_file_open(char *path, char *suffix, char *flags);
 void resource_path_add(char *drive_name, char *path);
 
@@ -192,5 +192,8 @@ void test_resource_tree(void);
 void print_resource_tree(void);
 void print_resource_types(void);
 void print_resource_path(void);
+
+// awful hack for help when opening resources ... "fix" for dropping out of path-search too early
+extern int g_resource_path_count;
 
 #endif // HEADER_DEFINED_RESOURCES

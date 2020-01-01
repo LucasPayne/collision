@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------------
-This code was generated with the gen_shader_blocks utility, for synchronizing
+This code was generated with the gen_shader_blocks tool, for synchronizing
 definitions between glsl and C.
 --------------------------------------------------------------------------------*/
 layout (std140) uniform Standard3D {

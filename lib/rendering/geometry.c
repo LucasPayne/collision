@@ -227,17 +227,26 @@ uint32_t attribute_1u(AttributeType attribute_type, uint32_t u)
     // Returns the index, for convenience in defining index lists.
     return g_gm_attribute_counts[attribute_type] ++;
 }
+uint32_t attribute_2f(AttributeType attribute_type, float a, float b)
+{
+    attribute_check(2, GL_FLOAT);
+    size_t pos = g_gm_attribute_positions[attribute_type];
+    if (pos + 3*sizeof(float) > GM_ATTRIBUTE_BUFFER_SIZE) gm_size_error();
+    memcpy(g_gm_attribute_buffers[attribute_type] + pos, &a, sizeof(float));
+    memcpy(g_gm_attribute_buffers[attribute_type] + pos + sizeof(float), &b, sizeof(float));
+    g_gm_attribute_positions[attribute_type] += 2*sizeof(float);
+    // Returns the index, for convenience in defining index lists.
+    return g_gm_attribute_counts[attribute_type] ++;
+}
 uint32_t attribute_3f(AttributeType attribute_type, float a, float b, float c)
 {
     attribute_check(3, GL_FLOAT);
-
     size_t pos = g_gm_attribute_positions[attribute_type];
     if (pos + 3*sizeof(float) > GM_ATTRIBUTE_BUFFER_SIZE) gm_size_error();
     memcpy(g_gm_attribute_buffers[attribute_type] + pos, &a, sizeof(float));
     memcpy(g_gm_attribute_buffers[attribute_type] + pos + sizeof(float), &b, sizeof(float));
     memcpy(g_gm_attribute_buffers[attribute_type] + pos + 2*sizeof(float), &c, sizeof(float));
     g_gm_attribute_positions[attribute_type] += 3*sizeof(float);
-
     // Returns the index, for convenience in defining index lists.
     return g_gm_attribute_counts[attribute_type] ++;
 }

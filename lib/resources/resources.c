@@ -38,6 +38,7 @@ static ResourceUUID g_last_resource_uuid = 0;
 // Resource paths and search
 static uint32_t g_resource_path_length = 0;
 static char *g_resource_path = NULL;
+int g_resource_path_count = 0;
 static ResourceTree *g_resource_tree = NULL;
 
 /*
@@ -332,6 +333,8 @@ before running the application), it might save the image file or it might not.
 */
 void resource_path_add(char *drive_name, char *path)
 {
+    g_resource_path_count ++;
+
     // Initialize the resource tree if it is not initialized.
     if (g_resource_tree == NULL) {
         g_resource_tree = (ResourceTree *) calloc(1, sizeof(ResourceTree));
@@ -370,15 +373,19 @@ will attempt to open, with a pair in the global path variable of TextureLibrary:
 FILE *resource_file_open(char *path, char *suffix, char *flags)
 {
     char path_buffer[1024];
-    if (!resource_file_path(path, suffix, path_buffer, 1024)) {
-        return NULL;
+    for (int i = 0; i < g_resource_path_count; i++) {
+        if (resource_file_path(path, suffix, path_buffer, 1024, i)) {
+            FILE *file = fopen(path_buffer, flags);
+            if (file != NULL) return file;
+        }
     }
-    FILE *file = fopen(path_buffer, flags);
-    return file;
+    return NULL;
 }
 
-bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_buffer_size)
+bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_buffer_size, int start_index)
 {
+    // --- This is not well thought out, and way too large a function for what it does. The start_index is a hack to
+    // allow resource_file_open to fail constructing a path and continue looking for one.
     /* Returns whether or not the resource file path was successfully constructed. */
     char drive_buffer[64];
     char *drive = path;
@@ -389,6 +396,7 @@ bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_bu
     }
     int drive_length = path - drive;
     char *prefix = g_resource_path;
+    int up_to_path = 0;
     if (prefix == NULL) {
         printf("No resource path.\n");
         return NULL;
@@ -417,16 +425,15 @@ bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_bu
         strcpy(path_buffer + j + 1, path);
         if (strlen(path_buffer) + strlen(suffix) >= path_buffer_size) goto buffer_size_error;
         strcpy(path_buffer + j + 1 + strlen(path), suffix);
-
-        if (strlen(drive_buffer) == drive_length && strncmp(drive_buffer, drive, drive_length) == 0) {
+    
+        if (up_to_path >= start_index && strlen(drive_buffer) == drive_length && strncmp(drive_buffer, drive, drive_length) == 0) {
             // Checking lengths since a strncmp can have equal prefixes yet the drive buffer stores a longer drive name.
             return true;
         }
-
         prefix = strchr(prefix, ':');
         prefix = strchr(prefix + 1, ':');
         if (prefix != NULL) prefix ++;
-
+        up_to_path ++;
     } while (prefix != NULL);
     return false;
 buffer_size_error:

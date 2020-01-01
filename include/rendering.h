@@ -47,7 +47,7 @@ enum AttributeTypes2 { // better names, don't use this capitalization otherwise.
     Position,
     Color,
     Normal,
-    UV,
+    TexCoord,
     Index,
 };
 // Attribute types are associated to an AttributeInfo structure by their value as an index.
@@ -271,6 +271,7 @@ Geometry upload_mesh(MeshData *mesh_data);
 #define GM_INDEX_BUFFER_SIZE (1024*1024)
 
 uint32_t attribute_1u(AttributeType attribute_type, uint32_t u);
+uint32_t attribute_2f(AttributeType attribute_type, float a, float b);
 uint32_t attribute_3f(AttributeType attribute_type, float a, float b, float c);
 void attribute_buf(AttributeType attribute_type, void *buf, int count);
 void gm_index(uint32_t index);

@@ -145,11 +145,11 @@ void make_floor(int x, int z)
     material_set_property_vec4(mat, "flat_color", new_vec4(sin(x), cos(z), sin(x + z), 1));
     float f = frand();
     if (f < 0.3) {
-        material_set_texture_path(mat, "diffuse_map", "Textures/stone_bricks");
+        material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
     } else if (f < 0.6) {
-        material_set_texture_path(mat, "diffuse_map", "Textures/sponge");
+        material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/sponge");
     } else {
-        material_set_texture_path(mat, "diffuse_map", "Textures/grass_block_side");
+        material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/grass_block_side");
     }
 
     /* body->material = new_resource_handle(Material, "Materials/green"); */
@@ -176,10 +176,13 @@ static float ASPECT_RATIO;
 void init_program(void)
 {
     init_resources_rendering();
+    resource_path_add("Textures", "/home/lucas/code/collision/data/textures");
     resource_path_add("Textures", "/home/lucas/code/collision/src/texture_test/textures");
     resource_path_add("Shaders", "/home/lucas/code/collision/src/texture_test/shaders");
+    resource_path_add("Shaders", "/home/lucas/code/collision/data/shaders");
     resource_path_add("Models", "/home/lucas/code/collision/data/meshes");
     resource_path_add("Materials", "/home/lucas/code/collision/src/texture_test/materials");
+    resource_path_add("Materials", "/home/lucas/code/collision/data/materials");
     glsl_include_path_add("/home/lucas/code/collision/glsl/shader_blocks");
 
     add_shader_block(MaterialProperties); // The definition of this block is part of the rendering module.
@@ -379,7 +382,8 @@ void loop(void)
         gm_free(id);
     }
 
-#if 0
+#endif
+#if 1
     {
         gm_lines(VERTEX_FORMAT_3);
         attribute_3f(Position, 0, 0, 0);
@@ -391,7 +395,6 @@ void loop(void)
     }
 #endif
 
-#if 0
     ResourceHandle green = new_resource_handle(Material, "Materials/green");
     ResourceHandle red = new_resource_handle(Material, "Materials/red");
 
@@ -404,18 +407,27 @@ void loop(void)
     }
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            gm_triangles(VERTEX_FORMAT_3);
+            gm_triangles(VERTEX_FORMAT_3U);
             uint32_t a = attribute_3f(Position, size*i, size*j, elevation[i][j]);
             uint32_t b = attribute_3f(Position, size*(i + 1), size*j, elevation[i+1][j]);
             uint32_t c = attribute_3f(Position, size*(i + 1), size*(j + 1), elevation[i+1][j+1]);
             uint32_t d = attribute_3f(Position, size*i, size*(j + 1), elevation[i][j+1]);
+            attribute_2f(TexCoord, 0, 0);
+            attribute_2f(TexCoord, 0, 1);
+            attribute_2f(TexCoord, 1, 1);
+            attribute_2f(TexCoord, 1, 0);
             gm_index(a); gm_index(b); gm_index(c);
             gm_index(a); gm_index(c); gm_index(d);
             Geometry g = gm_done();
 
+            ResourceHandle res;
+            Material *mat = oneoff_resource(Material, res);
+            mat->material_type = new_resource_handle(MaterialType, "Materials/tinted_texture");
+            material_set_property_vec4(mat, "flat_color", new_vec4(0,0,0,1));
+            material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
             /* vec4 color = new_vec4(0.5*(sin(i)+1), 0.5*(cos(j)+1), (sin(j) + cos(i) + 2) / 4, 1); */
             /* memcpy(resource_data(Material, green)->properties, &color, sizeof(color)); */
-            gm_draw(g, resource_data(Material, green));
+            gm_draw(g, mat);
 
             /* if ((i + j) % 2 == 0) { */
             /*     gm_draw(g, resource_data(Material, green)); */
@@ -436,13 +448,10 @@ void loop(void)
                 attribute_1u(Index, k+1);
             }
             g = gm_done();
-            ResourceHandle res = new_resource_handle(Material, "Materials/dashed_red");
-            gm_draw(g, resource_data(Material, res));
+            gm_draw(g, resource_data(Material, green));
             gm_free(g);
         }
     }
-#endif
-#endif
 }
 void close_program(void)
 {

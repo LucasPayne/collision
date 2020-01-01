@@ -97,7 +97,19 @@ void *Shader_load(char *path)
     printf("created id: %d\n", shader_id);
     // Load the shader source from the physical path, and attempt to compile it.
     char shader_path_buffer[1024];
-    if (!resource_file_path(path, "", shader_path_buffer, 1024)) {
+    int i;
+    //////////////////////////////////////////////////////////////////////////////////
+    // Awful hack for looking up a resource.
+    for (i = 0; i < g_resource_path_count; i++) {
+        if (resource_file_path(path, "", shader_path_buffer, 1024, i)) {
+            FILE *fd = fopen(shader_path_buffer, "r");
+            if (fd != NULL) {
+                fclose(fd);
+                break;
+            }
+        }
+    }
+    if (i == g_resource_path_count) {
         fprintf(stderr, "FAILED TO GET SHADER FILE PATH\n");
         exit(EXIT_FAILURE);
         return NULL;
@@ -119,14 +131,16 @@ void *Shader_load(char *path)
 }
 bool Shader_reload(ResourceHandle handle)
 {
-    Shader *shader = resource_data(Shader, handle);
-    char shader_path_buffer[1024];
-    if (!resource_file_path(handle.data.path, "", shader_path_buffer, 1024)) return false;
-    GLuint test_id = glCreateShader(gl_shader_type(shader->shader_type));
-    if (!load_and_compile_shader(test_id, shader_path_buffer)) return false;
-    // The compilation was successful on the test ID, so give this to the resource handle.
-    shader->shader_id = test_id;
-    return true;
+    fprintf(stderr, "unimplemented\n");
+    exit(EXIT_FAILURE);
+    /* Shader *shader = resource_data(Shader, handle); */
+    /* char shader_path_buffer[1024]; */
+    /* if (!resource_file_path(handle.data.path, "", shader_path_buffer, 1024)) return false; */
+    /* GLuint test_id = glCreateShader(gl_shader_type(shader->shader_type)); */
+    /* if (!load_and_compile_shader(test_id, shader_path_buffer)) return false; */
+    /* // The compilation was successful on the test ID, so give this to the resource handle. */
+    /* shader->shader_id = test_id; */
+    /* return true; */
 }
 
 /*--------------------------------------------------------------------------------

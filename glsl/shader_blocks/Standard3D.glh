@@ -2,6 +2,6 @@
 This code was generated with the gen_shader_blocks utility, for synchronizing
 definitions between glsl and C.
 --------------------------------------------------------------------------------*/
-uniform layout(std140) Standard3D {
+layout (std140) uniform Standard3D {
     mat4x4 mvp_matrix;
 };

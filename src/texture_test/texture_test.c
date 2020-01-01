@@ -94,6 +94,7 @@ typedef struct FloorData_s {
     float rotate_amount;
     float cur_rotate;
     bool tilt_side;
+    float base_scale;
 } FloorData;
 static void floor_update(Logic *logic)
 {
@@ -111,7 +112,7 @@ static void floor_update(Logic *logic)
     else {
         transform->theta_y = -0.3*sin(time() + 0.01*transform->x);
     }
-    body->scale = 20+2.5*(sin(time() + 0.01*transform->x)/2 + 1);
+    body->scale = data->base_scale+2.5*(sin(time() + 0.01*transform->x)/2 + 1);
 
     if (data->mode == FLOOR_STATIC) {
         if (frand() < 0.001) {
@@ -133,6 +134,7 @@ static void floor_update(Logic *logic)
 
 void make_floor(int x, int z)
 {
+    if (frand() > exp(-(x*x + z*z)/1800.0)) return;
     EntityID floor = new_entity(2);
     Body *body = entity_add_aspect(floor, Body);
     /* Body_init(body, "Materials/floor", "Models/quad"); */
@@ -154,9 +156,7 @@ void make_floor(int x, int z)
 
     /* material_set_property_float(resource_data(Material, body->material), "multiplier", sin(x)); */
 
-    float placing = 20;
-    body->scale = placing;
-    Transform_set(entity_add_aspect(floor, Transform), 2*placing*x, -12, 2*placing*z,  M_PI/2,0,0);
+    float placing = 20/6.0;
     /* Transform_set(entity_add_aspect(floor, Transform), offx,-12 - 2*i,offz,  M_PI/2,0,0); */
     Logic *logic = entity_add_aspect(floor, Logic);
     init_get_logic_data(data, logic, FloorData, floor_update);
@@ -165,6 +165,10 @@ void make_floor(int x, int z)
     data->rotate_amount = 0;
     data->cur_rotate = 0;
     data->tilt_side = x % 2 == 0 ? false : true;
+
+    data->base_scale = placing;
+    body->scale = placing;
+    Transform_set(entity_add_aspect(floor, Transform), 2*placing*x, -12, 2*placing*z,  M_PI/2,0,0);
 }
 
 static float ASPECT_RATIO;
@@ -176,6 +180,7 @@ void init_program(void)
     resource_path_add("Shaders", "/home/lucas/code/collision/src/texture_test/shaders");
     resource_path_add("Models", "/home/lucas/code/collision/data/meshes");
     resource_path_add("Materials", "/home/lucas/code/collision/src/texture_test/materials");
+    glsl_include_path_add("/home/lucas/code/collision/glsl/shader_blocks");
 
     add_shader_block(MaterialProperties); // The definition of this block is part of the rendering module.
     add_shader_block(StandardLoopWindow);

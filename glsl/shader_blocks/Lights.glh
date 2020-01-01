@@ -20,7 +20,7 @@ struct SpotLight {
     float linear_attenuation;
 };
 
-uniform layout(std140) Lights {
+layout (std140) uniform Lights {
     bool lighting_enabled;
     DirectionalLight directional_lights[32];
     SpotLight spotlights[32];

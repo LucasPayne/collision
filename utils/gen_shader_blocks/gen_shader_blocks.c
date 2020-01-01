@@ -360,7 +360,7 @@ void generate_block_glsl(FILE *file, Block block)
         fprintf(file, "};\n");
     }
     if (block.num_struct_definitions != 0) fprintf(file, "\n");
-    fprintf(file, "uniform layout(std140) %s {\n", symbol(block.name));
+    fprintf(file, "layout (std140) uniform %s {\n", symbol(block.name));
     glsl_generate_entries(file, block.entries, block.num_entries);
     fprintf(file, "};\n");
 }

@@ -18,6 +18,54 @@ This consists of
 #include "rendering.h"
 #include "dictionary.h"
 
+// glsl include-path. glsl header files are searched for in these paths, which must be added to the path at runtime.
+static char *glsl_include_path = NULL;
+void glsl_include_path_add(char *directory)
+{
+    if (glsl_include_path == NULL) {
+        // Start the path up as "/path/to/directory".
+        glsl_include_path = (char *) malloc(sizeof(char) * (strlen(directory) + 1));
+        mem_check(glsl_include_path);
+        strcpy(glsl_include_path, directory);
+        return;
+    }
+    // Update the include path to be "/path/to/directory:/another/path", and so on.
+    glsl_include_path = (char *) realloc(glsl_include_path, sizeof(char) * (strlen(glsl_include_path) + 1 + strlen(directory) + 1));
+    glsl_include_path[strlen(glsl_include_path) - 1] = ':';
+    strcpy(strchr(glsl_include_path, '\0'), directory);
+}
+FILE *glsl_include_path_open(char *name)
+{
+    if (glsl_include_path == NULL || *glsl_include_path == '\0') {
+        fprintf(stderr, ERROR_ALERT "Attempted to open a glsl header file when no glsl include path has been initialized, or the path is empty.\n");
+        exit(EXIT_FAILURE);
+    }
+    const int buf_size = 4096;
+    char buf[buf_size];
+
+    char *p = glsl_include_path;
+    char *sep;
+    do {
+        sep = strchr(p + 1, ':');
+        if (sep == NULL) sep = strchr(glsl_include_path, '\0');
+
+        // Now p to sep is one entry in the glsl include path.
+        if (strlen(name) + (sep - p) > buf_size - 2) { //-2 for the / and null-terminator
+            fprintf(stderr, ERROR_ALERT "Directory in glsl include path is too long.\n");
+            exit(EXIT_FAILURE);
+        }
+        memcpy(buf, p, sep - p);
+        buf[sep - p] = '/';
+        strcpy(buf + (sep - p) + 1, name);
+        // Now buf contains /path/to/directory/header_file_name.glh
+        FILE *fd = fopen(buf, "r");
+        if (fd == NULL) continue;
+        else return fd;
+    } while (*sep != '\0');
+    return NULL;
+}
+
+
 /*--------------------------------------------------------------------------------
   Shader resource
 --------------------------------------------------------------------------------*/
@@ -86,6 +134,8 @@ bool Shader_reload(ResourceHandle handle)
 --------------------------------------------------------------------------------*/
 void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
 {
+    // Read the shader source, and process pre-preprocessing directives, which are
+    //  - generated block inclusions, #block {blockname}.glh (see the gen_shader_blocks utility).
 #define SHADER_SOURCE_LINE_MAX_LENGTH 500
 #define MEM_SIZE_START 1024
 #define LINES_MEM_SIZE_START 128
@@ -106,7 +156,31 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
         fprintf(stderr, "ERROR: Could not allocate memory to start reading shader source %s.\n", name);
         exit(EXIT_FAILURE);
     }
-    while (fgets(line, SHADER_SOURCE_LINE_MAX_LENGTH, fd) != NULL) {
+    // One level of block-inclusion (this is all that is needed).
+    bool in_block = false;
+    FILE *reading_from_file = fd;
+    while (1) {
+        if (fgets(line, SHADER_SOURCE_LINE_MAX_LENGTH, reading_from_file) == NULL) {
+            if (in_block) {
+                // instead of breaking from the while loop, go back to processing the base file.
+                in_block = false;
+                reading_from_file = fd;
+                continue;
+            } else break;
+        }
+        if (strncmp(line, "#block ", 7) == 0) {
+            // Source a block file here.
+            in_block = true;
+            char block_name[1024];
+            strncpy(block_name, strchr(line, ' ') + 1, 1024 - 3);
+            strcpy(strchr(block_name, '\0') - 1, ".glh"); // remove newline and add .glh.
+            reading_from_file = glsl_include_path_open(block_name);
+            if (reading_from_file == NULL) {
+                fprintf(stderr, ERROR_ALERT "glsl pre-preprocessor could not find shader-block file \"%s\" in the glsl include path.\n", block_name);
+                exit(EXIT_FAILURE);
+            }
+            continue;
+        }
         size_t len = strlen(line);
         if (len + mem_used + 1 >= mem_size) {
             while (len + mem_used + 1 >= mem_size) {
@@ -114,12 +188,12 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
             }
             char *prev_location = shader_source;
             shader_source = (char *) realloc(shader_source, mem_size * sizeof(char));
-            // Update position that the lines array points to
+            // Update position that the lines array points to.
             for (int i = 0; i < lines_mem_used; i++) {
                 lines[i] = shader_source + (lines[i] - prev_location);
             }
             if (shader_source == NULL) {
-                fprintf(stderr, "ERROR: Could not allocate memory when reading shader source %s.\n", name);
+                fprintf(stderr, ERROR_ALERT "Could not allocate memory when reading shader source %s.\n", name);
                 exit(EXIT_FAILURE);
             }
         }
@@ -127,7 +201,7 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
             lines_mem_size *= 2;
             lines = (char **) realloc(lines, lines_mem_size * sizeof(char *));
             if (lines == NULL) {
-                fprintf(stderr, "ERROR: Could not allocate memory when reading shader source %s.\n", name);
+                fprintf(stderr, ERROR_ALERT "Could not allocate memory when reading shader source %s.\n", name);
                 exit(EXIT_FAILURE);
             }
         }
@@ -143,6 +217,7 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
         fprintf(stderr, "ERROR: empty shader file %s\n", name);
         exit(EXIT_FAILURE);
     }
+
     // Write return values
     *lines_out = lines;
     *num_lines = lines_mem_used;
@@ -153,7 +228,7 @@ void read_shader_source(const char *name, char **lines_out[], size_t *num_lines)
 }
 bool load_and_compile_shader(GLuint shader_id, const char *shader_path)
 {
-#define DEBUG 0
+#define DEBUG 1
     /* notes:
      * Error handling here should be done in a log system. So, something can still try to compile a shader
      * and fail, and handle that itself, while in testing a log can be checked, without causing a program exit.

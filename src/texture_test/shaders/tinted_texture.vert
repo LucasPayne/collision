@@ -1,8 +1,6 @@
 #version 420
 
-layout (std140) uniform Standard3D {
-    mat4x4 mvp_matrix;
-};
+#block Standard3D
 
 out vOut {
     vec2 fTexCoord;

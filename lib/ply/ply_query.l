@@ -143,14 +143,11 @@ PLYQuery *read_ply_query(char *query_string)
     g_last_ply_query_element = NULL;
 
     printf("Starting lexer ...\n");
-    /* for (int i = 0; i < 500000000; i++) continue; */
 
     printf("query string: %s\n", query_string);
     YY_BUFFER_STATE yy_buffer = yy_scan_bytes(query_string, strlen(query_string) + 1);
     yy_switch_to_buffer(yy_buffer);
     BEGIN ElementPatterns;
-
-    /* for (int i = 0; i < 500000000; i++) continue; */
 
     if (yylex() == ERROR) return NULL;
     printf("lexer complete\n");

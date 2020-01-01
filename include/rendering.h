@@ -144,8 +144,6 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name);
     ___set_uniform_float(( ShaderBlockID_ ## BLOCK_NAME ),\
                          &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
                          ( FLOAT_VALUE ))
-
-//////////////////////////////////////////////////////
 #define set_uniform_mat4x4(BLOCK_NAME,ENTRY,MAT4X4_POINTER)\
     ___set_uniform_mat4x4(( ShaderBlockID_ ## BLOCK_NAME ),\
                          (( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
@@ -328,6 +326,8 @@ void dict_query_rules_rendering(DictQuerier *q);
 //--------------------------------------------------------------------------------
 void material_set_property_float(Material *material, char *property_name, float val);
 void material_set_property_vec4(Material *material, char *property_name, vec4 v);
+void material_set_texture_path(Material *material, char *texture_name, char *texture_resource_path);
+void material_set_texture(Material *material, char *texture_name, ResourceHandle texture_resource_handle);
 
 #define gl_shader_type(SHADER_TYPE)\
 	((( SHADER_TYPE ) == Vertex) ? GL_VERTEX_SHADER\
@@ -341,8 +341,6 @@ void material_set_property_vec4(Material *material, char *property_name, vec4 v)
 	:((( GL_TYPE ) == GL_UNSIGNED_INT) ? sizeof(uint32_t)\
 	  :((( GL_TYPE ) == GL_INT) ? sizeof(int32_t)\
 	    : 0)))
-
-
 
 
 #endif // HEADER_DEFINED_RENDERING

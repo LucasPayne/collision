@@ -113,6 +113,7 @@ The Geometry object does not store vertices or indices, as these are now only in
 The Geometry is ready to be paired with a Material for rendering, with gm_draw(geometry, material).
 !! IMPORTANT: gm_free(geometry) must be used when the geometry is no longer needed. A Geometry owns vram buffers, which
 must be freed. This is especially important with per-frame geometry, as memory leaks to vram will build up fast.
+(and also very important with static geometry, as memory leaks to vram will build up slowly.)
 
 ------ Example, rendering a colored quad.
 gm_triangles(VERTEX_FORMAT_3C);
@@ -313,7 +314,6 @@ Geometry gm_done(void)
 
     g_gm_specifying = false;
 
-    //---- should have this kept in the struct already. Also, change the name from "ID", to maybe just Geometry.
     g_geometry.num_indices = g_gm_index_count;
     g_geometry.num_vertices = last_count;
 

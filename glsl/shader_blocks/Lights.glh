@@ -1,0 +1,27 @@
+/*--------------------------------------------------------------------------------
+This code was generated with the gen_shader_blocks utility, for synchronizing
+definitions between glsl and C.
+--------------------------------------------------------------------------------*/
+#define MAX_NUM_DIRECTIONAL_LIGHTS 32
+#define MAX_NUM_SPOTLIGHTS 32
+
+struct DirectionalLight {
+    vec4 color;
+    vec3 direction;
+    bool is_active;
+};
+struct SpotLight {
+    float cubic_attenuation;
+    vec4 color;
+    float quadratic_attenuation;
+    vec3 position;
+    float pulse_rate;
+    bool is_active;
+    float linear_attenuation;
+};
+
+uniform layout(std140) Lights {
+    bool lighting_enabled;
+    DirectionalLight directional_lights[32];
+    SpotLight spotlights[32];
+};

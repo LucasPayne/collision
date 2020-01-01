@@ -1,0 +1,8 @@
+vertex_format: 3U
+vertex_shader: Shaders/tinted_texture.vert
+fragment_shader: Shaders/tinted_texture.frag
+num_blocks: 2
+block0: Standard3D
+block1: MaterialProperties
+num_textures: 1
+texture0: diffuse_map

@@ -30,28 +30,9 @@ PROJECT_LIBS:
 #include "matrix_mathematics.h"
 #include "aspect_library/gameobjects.h"
 
-ShaderBlockID ShaderBlockID_StandardLoopWindow;
-typedef struct ShaderBlock_StandardLoopWindow_s {
-    // padding bytes would be in here if neccessary.
-    float aspect_ratio;
-    float time;
-} ShaderBlock_StandardLoopWindow;
-
-
-typedef struct mat4x4_s {
-    float vals[16];
-} mat4x4;
-ShaderBlockID ShaderBlockID_Standard3D;
-typedef struct ShaderBlock_Standard3D_s {
-    mat4x4 mvp_matrix;
-} ShaderBlock_Standard3D;
-
-ShaderBlockID ShaderBlockID_DirectionalLights;
-typedef struct ShaderBlock_DirectionalLights_s {
-    float aspect_ratio;
-    float time;
-} ShaderBlock_DirectionalLights;
-
+#include "shader_blocks/Standard3D.h"
+#include "shader_blocks/StandardView.h"
+/* #include "shader_blocks/DirectionalLights.h" */
 
 typedef struct CameraControlData_s {
     float move_speed;
@@ -154,13 +135,19 @@ void make_floor(int x, int z)
     EntityID floor = new_entity(2);
     Body *body = entity_add_aspect(floor, Body);
     /* Body_init(body, "Materials/floor", "Models/quad"); */
-    Body_init(body, "Materials/green", "Models/quad");
 
     body->geometry = new_resource_handle(Geometry, "Models/quad");
     Material *mat = oneoff_resource(Material, body->material);
-    mat->material_type = new_resource_handle(MaterialType, "Materials/flat_color");
-    material_set_property_float(mat, "multiplier", 1);
+    mat->material_type = new_resource_handle(MaterialType, "Materials/tinted_texture");
     material_set_property_vec4(mat, "flat_color", new_vec4(sin(x), cos(z), sin(x + z), 1));
+    float f = frand();
+    if (f < 0.3) {
+        material_set_texture_path(mat, "diffuse_map", "Textures/stone_bricks");
+    } else if (f < 0.6) {
+        material_set_texture_path(mat, "diffuse_map", "Textures/sponge");
+    } else {
+        material_set_texture_path(mat, "diffuse_map", "Textures/grass_block_side");
+    }
 
     /* body->material = new_resource_handle(Material, "Materials/green"); */
 
@@ -189,10 +176,10 @@ void init_program(void)
     resource_path_add("Models", "/home/lucas/code/collision/data/meshes");
     resource_path_add("Materials", "/home/lucas/code/collision/src/texture_test/materials");
 
+    add_shader_block(MaterialProperties); // The definition of this block is part of the rendering module.
     add_shader_block(StandardLoopWindow);
     add_shader_block(Standard3D);
-    add_shader_block(DirectionalLights);
-    add_shader_block(MaterialProperties); //----important
+    /* add_shader_block(DirectionalLights); */
 
     set_uniform_float(StandardLoopWindow, aspect_ratio, ASPECT_RATIO);
 
@@ -269,7 +256,7 @@ void loop(void)
         Matrix4x4f view_matrix = Transform_matrix(camera_transform);
         Matrix4x4f vp_matrix = camera->projection_matrix;
         if (data->frozen) {
-            // For viewing purpouses, when the camera is frozen it keeps using this matrix. However, the other matrices aren't affected,
+            // For viewing purposes, when the camera is frozen it keeps using this matrix. However, the other matrices aren't affected,
             // so you can view culling from the outside.
             right_multiply_matrix4x4f(&vp_matrix, &data->frozen_matrix);
         } else {
@@ -342,7 +329,6 @@ void loop(void)
 
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
 
-
             gm_draw(*mesh, material);
 #endif
 
@@ -372,10 +358,7 @@ void loop(void)
         attribute_3f(Position, -500, -500, -500);
         gm_index(0); gm_index(1); gm_index(2); gm_index(1); gm_index(3); gm_index(2);
         gm_index(3); gm_index(1); gm_index(5); gm_index(7); gm_index(3); gm_index(5);
-        gm_index(5); gm_index(6); gm_index(7); gm_index(5); gm_index(4); gm_index(6);
-        gm_index(4); gm_index(0); gm_index(2); gm_index(4); gm_index(2); gm_index(6);
-        gm_index(6); gm_index(2); gm_index(3); gm_index(6); gm_index(3); gm_index(7);
-        gm_index(4); gm_index(5); gm_index(1); gm_index(4); gm_index(1); gm_index(0);
+        gm_index(5); gm_index(6); gm_index(7); gm_index(5); gm_index(4); gm_index(6); gm_index(4); gm_index(0); gm_index(2); gm_index(4); gm_index(2); gm_index(6); gm_index(6); gm_index(2); gm_index(3); gm_index(6); gm_index(3); gm_index(7); gm_index(4); gm_index(5); gm_index(1); gm_index(4); gm_index(1); gm_index(0);
 
         /* Matrix4x4f matrix; */
         /* identity_matrix4x4f(&matrix); */

@@ -1,7 +1,7 @@
 /*--------------------------------------------------------------------------------
 Shaders component of the rendering module.
 This consists of
-    - The Shader resource, and compiled and shareable shader object of a certain type (Vertex, fragment, etc.)
+    - The Shader resource, a compiled and shareable shader object of a certain type (Vertex, fragment, etc.)
     - Functions to work with GLSL shaders and GL shader-related functions,
       such as passing the source to the graphics driver.
 --------------------------------------------------------------------------------*/
@@ -180,11 +180,6 @@ bool load_and_compile_shader(GLuint shader_id, const char *shader_path)
     GLint compiled;
     glGetShaderiv(shader_id, GL_COMPILE_STATUS, &compiled);
     // Successfully attempted compilation, checking errors ...
-#if 0
-    if (compiled == GL_FALSE) {
-        return false;
-    }
-#else
     if (compiled == GL_FALSE) {
 	// Print out the log TODO: Print this to a logging system.
         printf(ERROR_ALERT "Shader %s failed to compile.\n", shader_path);

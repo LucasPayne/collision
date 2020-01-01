@@ -362,6 +362,25 @@ void material_set_property_vec4(Material *material, char *property_name, vec4 v)
     ___material_set_property(material, property_name, (void *) &v, sizeof(vec4));
 }
 
+void material_set_texture_path(Material *material, char *texture_name, char *texture_resource_path)
+{
+    // Convenience function, because a resource handle need not be backed by a path.
+    material_set_texture(material, texture_name, new_resource_handle(Texture, texture_resource_path));
+}
+void material_set_texture(Material *material, char *texture_name, ResourceHandle texture_resource_handle)
+{
+    MaterialType *mt = resource_data(MaterialType, material->material_type);
+
+    for (int i = 0; i < mt->num_textures; i++) {
+        if (strcmp(mt->texture_names[i], texture_name) == 0) {
+            material->textures[i] = texture_resource_handle;
+            return;
+        }
+    }
+    fprintf(stderr, ERROR_ALERT "Attempted to set a material's texture named \"%s\", which is not a texture required for this material type.\n", texture_name);
+    exit(EXIT_FAILURE);
+}
+
 void synchronize_shader_blocks(void)
 {
     for (int i = 0; i < g_num_shader_blocks; i++) {
@@ -414,7 +433,7 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
     // This flag, if false, allows the checking of every entry to be skipped when synchronizing to the backing buffer.
     new_block->dirty = true;
 
-    // Create a bool array of dirty flags for each entry in the flattened shdaer-block struct
+    // Create a bool array of dirty flags for each entry in the flattened shader-block struct
     // (with the padding, but it shouldn't matter.)
     // IMPORTANT: The synchronizer doesn't know types. So, dirty flags must be set for the whole width of an updated entry.
     new_block->dirty_flags = (bool *) malloc(sizeof(bool) * size);

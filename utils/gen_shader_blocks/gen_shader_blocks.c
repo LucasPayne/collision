@@ -367,7 +367,7 @@ void generate_block_glsl(FILE *file, Block block)
 
 // The generation of the internal entries in the struct for the block and for the other structs is the same,
 // so this function is separated.
-static void C_generate_entries(FILE *file, Entry *entries, int num_entries)
+static void C_generate_entries(FILE *file, Block *block, Entry *entries, int num_entries)
 {
     for (int i = 0; i < num_entries; i++) {
         // ---struct renaming
@@ -384,10 +384,18 @@ static void C_generate_entries(FILE *file, Entry *entries, int num_entries)
             if (pad != 0) fprintf(file, "    char ___std140_pad%d[%zu];\n", i, pad);
         }
         if (entries[i].is_array) {
-            fprintf(file, "    %s %s[%d];", symbol(entries[i].type), symbol(entries[i].the_rest), entries[i].array_length);
+            if (entries[i].is_struct) {
+                fprintf(file, "    struct ShaderBlockStruct_%s_%s %s[%d];", symbol(block->name), symbol(entries[i].type), symbol(entries[i].the_rest), entries[i].array_length);
+            } else {
+                fprintf(file, "    %s %s[%d];", symbol(entries[i].type), symbol(entries[i].the_rest), entries[i].array_length);
+            }
         } else {
-            fprintf(file, "    %s %s;", symbol(entries[i].type), symbol(entries[i].the_rest));
-        }
+            if (entries[i].is_struct) {
+                fprintf(file, "    struct ShaderBlockStruct_%s_%s %s;", symbol(block->name), symbol(entries[i].type), symbol(entries[i].the_rest));
+            } else {
+                fprintf(file, "    %s %s;", symbol(entries[i].type), symbol(entries[i].the_rest));
+            }
+        } 
         fprintf(file, "    //offset: %zu, alignment: %zu, C_type_size: %zu\n", std140_offset, std140_alignment, type_size);
 
     }
@@ -436,15 +444,15 @@ typedef struct ShaderBlock_DirectionalLights_s {
     }
     if (block.num_hash_defines != 0) fprintf(file, "\n");
     for (int i = 0; i < block.num_struct_definitions; i++) {
-        fprintf(file, "typedef struct %s_%s_s { //size: %zu\n", symbol(block.name), symbol(block.struct_definitions[i].name), block.struct_definitions[i].std140_size);
-        C_generate_entries(file, block.struct_definitions[i].entries, block.struct_definitions[i].num_entries);
-        fprintf(file, "} %s_%s;\n", symbol(block.name), symbol(block.struct_definitions[i].name));
+        fprintf(file, "struct ShaderBlockStruct_%s_%s { //size: %zu\n", symbol(block.name), symbol(block.struct_definitions[i].name), block.struct_definitions[i].std140_size);
+        C_generate_entries(file, &block, block.struct_definitions[i].entries, block.struct_definitions[i].num_entries);
+        fprintf(file, "};\n");
     }
     if (block.num_struct_definitions != 0) fprintf(file, "\n");
     fprintf(file, "ShaderBlockID ShaderBlockID_%s;\n", symbol(block.name));
-    fprintf(file, "typedef struct ShaderBlockStruct_%s_s {\n", symbol(block.name));
-    C_generate_entries(file, block.entries, block.num_entries);
-    fprintf(file, "} ShaderBlockStruct_%s;\n", symbol(block.name));
+    fprintf(file, "typedef struct ShaderBlock_%s_s {\n", symbol(block.name));
+    C_generate_entries(file, &block, block.entries, block.num_entries);
+    fprintf(file, "} ShaderBlock_%s;\n", symbol(block.name));
     fprintf(file, "\n#endif // SHADER_BLOCK_HEADER_DEFINED_"); PUT_UPPERCASE_NAME(); fprintf(file, "\n");
 #undef PUT_UPPERCASE_NAME
 }

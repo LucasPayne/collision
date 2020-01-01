@@ -197,7 +197,6 @@ bool load_and_compile_shader(GLuint shader_id, const char *shader_path)
         free(log);
         return false;
     }
-#endif
     // Successfully compiled shader
     return true;
 #undef DEBUG

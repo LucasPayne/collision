@@ -109,7 +109,16 @@ build/lib/%.o:
 # so the make system can use an implicit dependency graph with an "outgoing nodes" function.
 # Example slot name conversion: things/thing -> build/lib/things/thing/thing.o
 #
-%: $(SRC_DIR)/$$@/$$@.c code_generation $$(shell cat $(SRC_DIR)/$$@/$$@.c | cslots PROJECT_LIBS --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
+# CODE GENERATION
+# Generate the "shader block" files. This allows for direct and efficient syntax for accessing shared vram buffers accessible by shaders, in the application,
+# and the neccessity of only one definition.
+# This generates:
+# 	include/shader_blocks/*.h   std140 padded struct definitions and data/variable declarations needed in the application.
+#	glsl/shader_blocks/*.glh
+#
+%: $(SRC_DIR)/$$@/$$@.c $$(shell cat $(SRC_DIR)/$$@/$$@.c | cslots PROJECT_LIBS --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
+	(cd utils/gen_shader_blocks ; make gen_shader_blocks)
+	utils/gen_shader_blocks/gen_shader_blocks glsl/shader_blocks/standard.shader_blocks -c include/shader_blocks -g glsl/shader_blocks
 	mkdir -p $(APPLICATIONS_DIR)
 	$(CC) -o "$(APPLICATIONS_DIR)/$@" $^ $(CFLAGS)
 #================================================================================
@@ -119,14 +128,6 @@ build/lib/%.o:
 .PHONY: code_generation
 code_generation: shader_blocks # add other code generation here
 
-# Generate the "shader block" files. This allows for direct and efficient syntax for accessing shared vram buffers accessible by shaders, in the application,
-# and the neccessity of only one definition.
-# This generates:
-# 	include/shader_blocks/*.h   std140 padded struct definitions and data/variable declarations needed in the application.
-#	glsl/shader_blocks/*.glh
-.PHONY: shader_blocks
-shader_blocks:
-	utils/gen_shader_blocks/gen_shader_blocks glsl/shader_blocks/standard.shader_blocks -c include/shader_blocks -g glsl/shader_blocks
 
 .PHONY: clean
 clean:

@@ -334,6 +334,7 @@ void loop(void)
             right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
 
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
+            set_uniform_float(StandardLoopWindow, TEST_VALUE, camera_transform->theta_x);
 
             gm_draw(*mesh, material);
 #endif

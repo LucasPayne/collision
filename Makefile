@@ -57,6 +57,8 @@ INCLUDE_DIR=include
 SRC_DIR=src
 SCRIPTS_DIR=scripts
 SCHEMATICS_DIR=utils/schematics
+UTILS_DIR=utils
+TOOLS_DIR=tools
 MAKEFILE=Makefile
 
 .SECONDEXPANSION:
@@ -117,8 +119,8 @@ build/lib/%.o:
 #	glsl/shader_blocks/*.glh
 #
 %: $(SRC_DIR)/$$@/$$@.c $$(shell cat $(SRC_DIR)/$$@/$$@.c | cslots PROJECT_LIBS --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
-	(cd utils/gen_shader_blocks ; make gen_shader_blocks)
-	utils/gen_shader_blocks/gen_shader_blocks glsl/shader_blocks/standard.shader_blocks -c include/shader_blocks -g glsl/shader_blocks
+	(cd $(TOOLS_DIR)/gen_shader_blocks ; make gen_shader_blocks)
+	$(TOOLS_DIR)/gen_shader_blocks/gen_shader_blocks glsl/shader_blocks/standard.shader_blocks -c include/shader_blocks -g glsl/shader_blocks
 	mkdir -p $(APPLICATIONS_DIR)
 	$(CC) -o "$(APPLICATIONS_DIR)/$@" $^ $(CFLAGS)
 #================================================================================

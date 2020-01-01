@@ -163,3 +163,4 @@ void init_resources_rendering(void)
     add_resource_type_no_unload(MaterialType);
     add_resource_type_no_unload(Material);
 }
+

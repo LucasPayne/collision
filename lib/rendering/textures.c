@@ -43,7 +43,7 @@ void *Texture_load(char *path)
     // Try for a PNG file.
     if ((file = resource_file_open(path, ".png", "rb")) != NULL || (file = resource_file_open(path, ".PNG", "rb")) != NULL) {
         if (!load_image_png(&image_data, file)) {
-            fprintf(stderr, ERROR_ALERT "Could not successfully read in image data from a PNG file.\n", path);
+            fprintf(stderr, ERROR_ALERT "Could not successfully read in image data from a PNG file.\n");
             exit(EXIT_FAILURE);
         }
     } else {

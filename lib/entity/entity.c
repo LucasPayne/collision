@@ -49,7 +49,7 @@ void init_entity_model(void)
     // and aspect types are tightly associated, and both parts are made at once and encapsulated by a Manager structure.
     // This contains aspect type information and functions for managing this type of aspect.
     g_managers_length = START_NUM_MANAGERS;
-    g_managers = (AspectType *) calloc(g_managers_length, sizeof(Manager));
+    g_managers = (Manager *) calloc(g_managers_length, sizeof(Manager));
     mem_check(g_managers);
     g_num_aspect_types = 0;
 

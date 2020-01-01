@@ -7,6 +7,8 @@ block Standard3D {
 block StandardLoopWindow {
     float aspect_ratio;
     float time;
+// testing
+    float TEST_VALUE;
 };
 
 block Lights {

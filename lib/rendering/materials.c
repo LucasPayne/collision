@@ -412,6 +412,14 @@ void ___print_shader_block(ShaderBlockID id)
     /* } */
 #undef bstring
 }
+void print_shader_blocks(void)
+{
+    printf("Shader blocks\n");
+    printf("=============\n");
+    for (int i = 0; i < g_num_shader_blocks; i++) {
+        ___print_shader_block(i);
+    }
+}
 
 void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
 {

@@ -134,6 +134,8 @@ void ___print_shader_block(ShaderBlockID id);
 extern int g_num_shader_blocks;
 extern ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
+void print_shader_blocks(void);
+
 #define add_shader_block(BLOCK_NAME)\
     ___add_shader_block(&( ShaderBlockID_ ## BLOCK_NAME ),\
                         ( sizeof(ShaderBlock_ ## BLOCK_NAME) ),\
@@ -341,6 +343,9 @@ void material_set_texture(Material *material, char *texture_name, ResourceHandle
 	:((( GL_TYPE ) == GL_UNSIGNED_INT) ? sizeof(uint32_t)\
 	  :((( GL_TYPE ) == GL_INT) ? sizeof(int32_t)\
 	    : 0)))
+
+FILE *glsl_include_path_open(char *name);
+void glsl_include_path_add(char *directory);
 
 
 #endif // HEADER_DEFINED_RENDERING

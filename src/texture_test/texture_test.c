@@ -345,6 +345,69 @@ void loop(void)
             /* printf("%.2f, %.2f, %.2f\n", v.vals[0], v.vals[1], v.vals[2]); */
             /* getchar(); */
         end_for_aspect()
+        // Instantiate the sponge carpet.
+        ResourceHandle green = new_resource_handle(Material, "Materials/green");
+        float size = 30;
+        float elevation[11][11];
+        for (int i = 0; i < 11; i++) {
+            for (int j = 0; j < 11; j++) {
+                elevation[i][j] = 40 * (sin(5*time() + i) + cos(4.3*time() + j));
+            }
+        }
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                gm_triangles(VERTEX_FORMAT_3U);
+                uint32_t a = attribute_3f(Position, size*i, size*j, elevation[i][j]);
+                uint32_t b = attribute_3f(Position, size*(i + 1), size*j, elevation[i+1][j]);
+                uint32_t c = attribute_3f(Position, size*(i + 1), size*(j + 1), elevation[i+1][j+1]);
+                uint32_t d = attribute_3f(Position, size*i, size*(j + 1), elevation[i][j+1]);
+                attribute_2f(TexCoord, 0, 0);
+                attribute_2f(TexCoord, 0, 1);
+                attribute_2f(TexCoord, 1, 1);
+                attribute_2f(TexCoord, 1, 0);
+                gm_index(a); gm_index(b); gm_index(c);
+                gm_index(a); gm_index(c); gm_index(d);
+                Geometry g = gm_done();
+
+                ResourceHandle res;
+                Material *mat = oneoff_resource(Material, res);
+                mat->material_type = new_resource_handle(MaterialType, "Materials/tinted_texture");
+                material_set_property_vec4(mat, "flat_color", new_vec4(0,0,0,1));
+                material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
+                /* material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/sponge"); */
+                /* vec4 color = new_vec4(0.5*(sin(i)+1), 0.5*(cos(j)+1), (sin(j) + cos(i) + 2) / 4, 1); */
+                /* memcpy(resource_data(Material, green)->properties, &color, sizeof(color)); */
+                Matrix4x4f mvp_matrix = vp_matrix;
+                Matrix4x4f model_matrix;
+                translate_rotate_3d_matrix4x4f(&model_matrix, 0,0,0, 0,M_PI/2,0);
+                right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+                set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
+                gm_draw(g, mat);
+                //!!!!!!!!!!!!!!!!!!!!!!!!!1 destroy_resource_handle(res); or something 
+
+                /* if ((i + j) % 2 == 0) { */
+                /*     gm_draw(g, resource_data(Material, green)); */
+                /* } else { */
+                /*     gm_draw(g, resource_data(Material, blue)); */
+                /* } */
+                gm_free(g);
+
+                float cx, cy, cz;
+                cx = size*(i + 0.5);
+                cy = size*(j + 0.5);
+                cz = (elevation[i][j] + elevation[i+1][j] + elevation[i][j+1] + elevation[i+1][j+1])/4.0;
+                gm_lines(VERTEX_FORMAT_3 | (1 << ATTRIBUTE_TYPE_INDEX));
+                attribute_3f(Position, cx, cy, cz);
+                attribute_1u(Index, 0);
+                for (int k = 0; k < 10; k++) {
+                    attribute_3f(Position, cx + 100*sin(k), cy + 100*cos(k), cz + 5*k);
+                    attribute_1u(Index, k+1);
+                }
+                g = gm_done();
+                gm_draw(g, resource_data(Material, green));
+                gm_free(g);
+            }
+        }
     end_for_aspect()
 
 #if 0
@@ -395,63 +458,6 @@ void loop(void)
     }
 #endif
 
-    ResourceHandle green = new_resource_handle(Material, "Materials/green");
-    ResourceHandle red = new_resource_handle(Material, "Materials/red");
-
-    float size = 200;
-    float elevation[11][11];
-    for (int i = 0; i < 11; i++) {
-        for (int j = 0; j < 11; j++) {
-            elevation[i][j] = 40 * (sin(5*time() + i) + cos(4.3*time() + j));
-        }
-    }
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            gm_triangles(VERTEX_FORMAT_3U);
-            uint32_t a = attribute_3f(Position, size*i, size*j, elevation[i][j]);
-            uint32_t b = attribute_3f(Position, size*(i + 1), size*j, elevation[i+1][j]);
-            uint32_t c = attribute_3f(Position, size*(i + 1), size*(j + 1), elevation[i+1][j+1]);
-            uint32_t d = attribute_3f(Position, size*i, size*(j + 1), elevation[i][j+1]);
-            attribute_2f(TexCoord, 0, 0);
-            attribute_2f(TexCoord, 0, 1);
-            attribute_2f(TexCoord, 1, 1);
-            attribute_2f(TexCoord, 1, 0);
-            gm_index(a); gm_index(b); gm_index(c);
-            gm_index(a); gm_index(c); gm_index(d);
-            Geometry g = gm_done();
-
-            ResourceHandle res;
-            Material *mat = oneoff_resource(Material, res);
-            mat->material_type = new_resource_handle(MaterialType, "Materials/tinted_texture");
-            material_set_property_vec4(mat, "flat_color", new_vec4(0,0,0,1));
-            material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
-            /* vec4 color = new_vec4(0.5*(sin(i)+1), 0.5*(cos(j)+1), (sin(j) + cos(i) + 2) / 4, 1); */
-            /* memcpy(resource_data(Material, green)->properties, &color, sizeof(color)); */
-            gm_draw(g, mat);
-
-            /* if ((i + j) % 2 == 0) { */
-            /*     gm_draw(g, resource_data(Material, green)); */
-            /* } else { */
-            /*     gm_draw(g, resource_data(Material, blue)); */
-            /* } */
-            gm_free(g);
-
-            float cx, cy, cz;
-            cx = size*(i + 0.5);
-            cy = size*(j + 0.5);
-            cz = (elevation[i][j] + elevation[i+1][j] + elevation[i][j+1] + elevation[i+1][j+1])/4.0;
-            gm_lines(VERTEX_FORMAT_3 | (1 << ATTRIBUTE_TYPE_INDEX));
-            attribute_3f(Position, cx, cy, cz);
-            attribute_1u(Index, 0);
-            for (int k = 0; k < 10; k++) {
-                attribute_3f(Position, cx + 100*sin(k), cy + 100*cos(k), cz + 5*k);
-                attribute_1u(Index, k+1);
-            }
-            g = gm_done();
-            gm_draw(g, resource_data(Material, green));
-            gm_free(g);
-        }
-    }
 }
 void close_program(void)
 {

@@ -1,0 +1,8 @@
+/*--------------------------------------------------------------------------------
+This code was generated with the gen_shader_blocks utility, for synchronizing
+definitions between glsl and C.
+--------------------------------------------------------------------------------*/
+uniform layout(std140) StandardLoopWindow {
+    float aspect_ratio;
+    float time;
+};

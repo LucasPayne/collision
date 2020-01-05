@@ -1,10 +1,7 @@
-PLY_HEADER=ply_header
-PLY_QUERY=ply_query
-
-ply.o: $(LIB)/$(PLY_HEADER).l $(LIB)/$(PLY_QUERY).l $(LIB)/ply.c
-	flex -o $(PLY_HEADER).c $(LIB)/$(PLY_HEADER).l
-	$(CC) -o $(PLY_HEADER).o -c $(PLY_HEADER).c $(CFLAGS)
-	flex -o $(PLY_QUERY).c $(LIB)/$(PLY_QUERY).l
-	$(CC) -o $(PLY_QUERY).o -c $(PLY_QUERY).c $(CFLAGS)
+ply.o: $(LIB)/ply_header.l $(LIB)/ply_query.l $(LIB)/ply.c
+	flex -o ply_header.c $(LIB)/ply_header.l
+	$(CC) -o ply_header.o -c ply_header.c $(CFLAGS)
+	flex -o ply_query.c $(LIB)/ply_query.l
+	$(CC) -o ply_query.o -c ply_query.c $(CFLAGS)
 	$(CC) -o _ply.o -c $(LIB)/ply.c $(CFLAGS)
-	ar rvs ply.o _ply.o $(PLY_HEADER).o $(PLY_QUERY).o
+	ar rvs ply.o _ply.o ply_header.o ply_query.o

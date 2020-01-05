@@ -16,7 +16,7 @@ This module consists of
 #include <math.h>
 #include "helper_definitions.h"
 #include "resources.h"
-#include "ply.h" //----------Remove this dependency.
+#include "ply.h"
 #include "rendering.h"
 #include "dictionary.h"
 

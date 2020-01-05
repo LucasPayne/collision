@@ -1,0 +1,34 @@
+/*--------------------------------------------------------------------------------
+This code was generated with the gen_shader_blocks utility, for synchronizing
+definitions between glsl and C.
+--------------------------------------------------------------------------------*/
+#define NUM 1000
+#define ANOTHER_NUM 33
+
+struct Stuff {
+    vec3 v4;
+    vec4 v3;
+    vec3 v2;
+    vec3 v;
+    bool o;
+    int b;
+    int a;
+};
+struct OtherStuff {
+    ivec2 fish;
+    mat3x3 topology;
+    mat4x4 mvp_matrix;
+    vec3 cool;
+    float stuff;
+    int i;
+    uint a;
+};
+
+uniform layout(std140) ContrivedStuff {
+    bool ays[1000];
+    Stuff things[1000];
+    vec3 vvvvvv[33];
+    bool cool;
+    vec2 a_vec;
+    vec3 a_vec;
+};

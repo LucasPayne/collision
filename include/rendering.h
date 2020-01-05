@@ -165,7 +165,6 @@ void synchronize_shader_blocks(void);
 #define MATERIAL_MAX_TEXTURE_NAME_LENGTH 64
 #define MATERIAL_MAX_PROPERTIES 80
 #define MATERIAL_MAX_PROPERTY_NAME_LENGTH 64
-
 typedef struct MaterialPropertyInfo_s {
     char name[MATERIAL_MAX_PROPERTY_NAME_LENGTH + 1];
     GLint location;

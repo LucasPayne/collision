@@ -55,6 +55,14 @@ Spider< GameObject (
             );
         );
     );
+) (
+    vec3 test: 5,2,1;
+    body < (
+        wow: 3;
+        material < (
+            tint: 1,1,1,1;
+        );
+    );
 );
 
 < Spider (transform < (position: 0,1,2;););

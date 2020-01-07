@@ -69,7 +69,9 @@
 #include <stdbool.h>
 #include "data_dictionary.h"
 
-#line 73 "parser.yy.c" /* yacc.c:339  */
+EntryNode *g_dict;
+
+#line 75 "parser.yy.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -114,13 +116,13 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 7 "parser.y" /* yacc.c:355  */
+#line 9 "parser.y" /* yacc.c:355  */
 
     int symbol;
     EntryNode *entry_node;
     DictExpression *dict_expression;
 
-#line 124 "parser.yy.c" /* yacc.c:355  */
+#line 126 "parser.yy.c" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -137,7 +139,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 141 "parser.yy.c" /* yacc.c:358  */
+#line 143 "parser.yy.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -434,8 +436,8 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    22,    22,    28,    35,    39,    43,    47,    51,    57,
-      60,    63
+       0,    24,    24,    31,    38,    42,    46,    50,    54,    60,
+      65,    70
 };
 #endif
 
@@ -1213,96 +1215,102 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 22 "parser.y" /* yacc.c:1646  */
+#line 24 "parser.y" /* yacc.c:1646  */
     {
         (yyvsp[-1].entry_node)->next = (yyvsp[0].entry_node);
         // This pair is now the head of the linked list.
         (yyval.entry_node) = (yyvsp[-1].entry_node);
+        g_dict = (yyval.entry_node); // is there a better way to do this? After yyparse(), this will be the top-level dictionary, so it is a way to return the AST.
         printf("Dict: Pair Dict\n");
     }
-#line 1224 "parser.yy.c" /* yacc.c:1646  */
+#line 1227 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 3:
-#line 28 "parser.y" /* yacc.c:1646  */
+#line 31 "parser.y" /* yacc.c:1646  */
     {
         (yyval.entry_node) = NULL;
         printf("Dict:\n");
     }
-#line 1233 "parser.yy.c" /* yacc.c:1646  */
+#line 1236 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 4:
-#line 35 "parser.y" /* yacc.c:1646  */
+#line 38 "parser.y" /* yacc.c:1646  */
     {
         (yyval.entry_node) = new_entry_node((yyvsp[-1].symbol), (yyvsp[-2].symbol), -1);
         printf("Pair: IDENTIFIER=\"%s\" IDENTIFIER=\"%s\";\n", symbol((yyvsp[-2].symbol)), symbol((yyvsp[-1].symbol)));
     }
-#line 1242 "parser.yy.c" /* yacc.c:1646  */
+#line 1245 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 5:
-#line 39 "parser.y" /* yacc.c:1646  */
+#line 42 "parser.y" /* yacc.c:1646  */
     {
         (yyval.entry_node) = new_entry_node((yyvsp[-3].symbol), (yyvsp[-4].symbol), (yyvsp[-1].symbol));
         printf("Pair: IDENTIFIER=\"%s\" IDENTIFIER=\"%s\": VALUE_TEXT=\"%s\";\n", symbol((yyvsp[-4].symbol)), symbol((yyvsp[-3].symbol)), symbol((yyvsp[-1].symbol)));
     }
-#line 1251 "parser.yy.c" /* yacc.c:1646  */
+#line 1254 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 43 "parser.y" /* yacc.c:1646  */
+#line 46 "parser.y" /* yacc.c:1646  */
     {
         (yyval.entry_node) = new_entry_node((yyvsp[-3].symbol), -1, (yyvsp[-1].symbol));
         printf("Pair: IDENTIFIER=\"%s\": VALUE_TEXT=\"%s\";\n", symbol((yyvsp[-3].symbol)), symbol((yyvsp[-1].symbol)));
     }
-#line 1260 "parser.yy.c" /* yacc.c:1646  */
+#line 1263 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 47 "parser.y" /* yacc.c:1646  */
+#line 50 "parser.y" /* yacc.c:1646  */
     {
         (yyval.entry_node) = new_dict_node((yyvsp[-3].symbol), (yyvsp[-1].dict_expression));
         printf("Pair: IDENTIFIER=\"%s\" < DictExpression;\n", symbol((yyvsp[-3].symbol)));
     }
-#line 1269 "parser.yy.c" /* yacc.c:1646  */
+#line 1272 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 51 "parser.y" /* yacc.c:1646  */
+#line 54 "parser.y" /* yacc.c:1646  */
     {
         (yyval.entry_node) = new_dict_node(-1, (yyvsp[-1].dict_expression));
         printf("Pair: < DictExpression;\n");
     }
-#line 1278 "parser.yy.c" /* yacc.c:1646  */
+#line 1281 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 9:
-#line 57 "parser.y" /* yacc.c:1646  */
+#line 60 "parser.y" /* yacc.c:1646  */
     {
+        (yyval.dict_expression) = new_literal_dict_expression((yyvsp[-2].entry_node));
+        (yyval.dict_expression)->next = (yyvsp[0].dict_expression);
         printf("DictExpression: (Dict) DictExpression\n");
     }
-#line 1286 "parser.yy.c" /* yacc.c:1646  */
+#line 1291 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 60 "parser.y" /* yacc.c:1646  */
+#line 65 "parser.y" /* yacc.c:1646  */
     {
+        (yyval.dict_expression) = new_named_dict_expression((yyvsp[-1].symbol));
+        (yyval.dict_expression)->next = (yyvsp[0].dict_expression);
         printf("DictExpression: IDENTIFIER=\"%s\" DictExpression\n", symbol((yyvsp[-1].symbol)));
     }
-#line 1294 "parser.yy.c" /* yacc.c:1646  */
+#line 1301 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 63 "parser.y" /* yacc.c:1646  */
+#line 70 "parser.y" /* yacc.c:1646  */
     {
+        (yyval.dict_expression) = NULL;
         printf("DictExpression:\n");
     }
-#line 1302 "parser.yy.c" /* yacc.c:1646  */
+#line 1310 "parser.yy.c" /* yacc.c:1646  */
     break;
 
 
-#line 1306 "parser.yy.c" /* yacc.c:1646  */
+#line 1314 "parser.yy.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1530,6 +1538,6 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 67 "parser.y" /* yacc.c:1906  */
+#line 75 "parser.y" /* yacc.c:1906  */
 
 

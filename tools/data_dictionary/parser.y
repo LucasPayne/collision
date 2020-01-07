@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "data_dictionary.h"
+
+EntryNode *g_dict;
 %}
 %union {
     int symbol;
@@ -23,6 +25,7 @@ Dict:
         $1->next = $2;
         // This pair is now the head of the linked list.
         $$ = $1;
+        g_dict = $$; // is there a better way to do this? After yyparse(), this will be the top-level dictionary, so it is a way to return the AST.
         printf("Dict: Pair Dict\n");
     }
     | /* epsilon */ {
@@ -55,12 +58,17 @@ Pair:
 
 DictExpression:
     '(' Dict ')' DictExpression {
+        $$ = new_literal_dict_expression($2);
+        $$->next = $4;
         printf("DictExpression: (Dict) DictExpression\n");
     }
     | IDENTIFIER DictExpression {
+        $$ = new_named_dict_expression($1);
+        $$->next = $2;
         printf("DictExpression: IDENTIFIER=\"%s\" DictExpression\n", symbol($1));
     }
     | /* epsilon */ {
+        $$ = NULL;
         printf("DictExpression:\n");
     }
 

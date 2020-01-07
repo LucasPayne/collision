@@ -44,18 +44,22 @@ typedef struct DictionaryTableCell_s {
 typedef struct Dictionary_s {
     // Be careful when allocating memory for this "variable-size struct".
     int table_size;
+    struct Dictionary_s *parent_dictionary; // for scoping.
     DictionaryTableCell *table;
     DictionaryTableCell ___table;
 } Dictionary;
 
 Dictionary *new_dictionary(void);
-Dictionary *open_dictionary(DictExpression *expression);
+Dictionary *resolve_dictionary_expression(Dictionary *dict, DictExpression *expression);
 uint32_t crc32(char *string);
 bool mask_dictionary_to_table(Dictionary *dict_table, EntryNode *dict);
 
 // Lookup in dictionary tables.
+DictExpression *lookup_dict_expression(Dictionary *dict, char *name);
 Dictionary *lookup_dict(Dictionary *dict, char *name);
 bool lookup_value(Dictionary *dict, char *name);
+
+DictExpression *scoped_dictionary_expression(Dictionary *dict, char *name);
 
 
 

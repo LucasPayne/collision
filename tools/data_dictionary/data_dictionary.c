@@ -137,78 +137,56 @@ void yyerror(char *errmsg)
     exit(EXIT_FAILURE);
 }
 
-// void dict_table_mask(DictionaryTable *table, Dictionary *dict)
-// {
-//     EntryNode *entry = (EntryNode *) dict;
-//     while (entry != NULL) {
-//         uint32_t hash = crc32(symbol(entry->name));
-//         table->entries[hash % table->entries_size];
-// 
-//         entry = entry->next;
-//     }
-// }
-// 
-// Dictionary *resolve_dict_expression(DictExpression *expression)
-// {
-//     /* From left to right, successively mask the dictionary.
-//      * If a new value-entry is added which does not have a type, the resolution fails.
-//      * If a value-entry has the same name but a different type (or different kind, dict/value) as a previous entry, the resolution fails.
-//      */
-//     DictionaryTable *dict_table = new_dictionary_table();
-//     while (expression != NULL) {
-//         Dictionary *masking_dict;
-//         if (expression->is_name) {
-//             masking_dict = get_dict_from_name(expression->name);
-//             if (masking_dict == NULL) {
-//                 printf("Error in dictionary expression: \"%s\" is not the name of a dictionary.\n", symbol(expression->name));
-//                 return NULL;
-//             }
-//         } else {
-//             masking_dict = expression->dict;
-//         }
-//         dict_table_mask(dict_table, masking_dict);
-//         expression = expression->next;
-//     }
-//     return NULL;
-// }
-// 
-// Dictionary *dict_get_dict(Dictionary *dict, char *name)
-// {
-//     EntryNode *entry = (EntryNode *) dict;
-//     while (entry != NULL) {
-//         if (entry->is_dict && strcmp(name, symbol(entry->name)) == 0) {
-//             printf("found\n");
-//             return resolve_dict_expression(entry->dict_expression);
-//         }
-//         entry = entry->next;
-//     }
-//     printf("not found\n");
-//     return NULL;
-// }
-
 Dictionary *new_dictionary(void)
 {
-    const int start_size = 28; // size must be >= 1.
-    // Be careful allocating for the the "variable-size struct". See Dictionary struct definition.
+    const int start_size = 28; // size must be >= 1. ---Currently, if the table is not big enough, probing will cause an infinite loop.
+    // Be careful allocating for this "variable-sized struct". See Dictionary struct definition.
     Dictionary *dict = (Dictionary *) calloc(1, sizeof(Dictionary) + sizeof(DictionaryTableCell)*(start_size - 1));
     ast_mem_check(dict); //use mem_check when this is a project library.
     dict->table_size = start_size;
-    dict->table = &dict->___table; // The pointer entry is then just a nicety.
-                                   //---- This could be done just by ensuring the allocated memory is contiguous with the metadata struct...
+    dict->table = &dict->___table; //---- This could be done just by ensuring the allocated memory is contiguous with the metadata struct...
     for (int i = 0; i < dict->table_size; i++) {
         dict->table[i].name = -1; // a -1 name symbol-index denotes an empty cell.
     }
     return dict;
 }
-Dictionary *open_dictionary(DictExpression *expression)
+
+DictExpression *scoped_dictionary_expression(Dictionary *dict, char *name)
 {
-    // The DictExpression pointer is the start of the linked-list IR dictionary as a dict-expression, which when "opened", creates a new table and successively
-    // masks each operand into the table.
-    Dictionary *dict_table = new_dictionary();
+    /* Scoping of dictionary names (as they appear in dictionary-expressions) works by having each dictionary hold a pointer
+     * to the dictionary it was queried from. When a name appears in a dict-expression of this dictionary, it first searches for a dictionary of that name
+     * in itself, then in its parent, then, ..., etc.
+     */
+    Dictionary *searching_dict = dict;
+    while (searching_dict != NULL) {
+        DictExpression *found = lookup_dict_expression(searching_dict, name);
+        if (found != NULL) return found;
+        searching_dict = searching_dict->parent_dictionary;
+    }
+    printf("Could not find dictionary with name \"%s\" in the current scope.\n", name);
+    return NULL;
+}
+
+static Dictionary *___resolve_dictionary_expression(Dictionary *dict_table, Dictionary *dict, DictExpression *expression)
+{
+    // dict: The dictionary the expression is an entry in. This is used for scoping names in the expression.
+    //
+    // This is the recurred part of the expression resolution. Named operands expand and resolve their named operands and so on, logically leaving
+    // the evaluated table as the table evaluated from the expression fully expanded to just a concatenation ( ... ) ( ... ) ( ... ) ... ,
+    // although here it is done progressively instead of expanding the expression first.
     while (expression != NULL) {
         if (expression->is_name) {
-            // look for dictionary in the table.
+            // A name references an expression in the current scope. This expands into the expression.
+            // For example,
+            // ( ... ) Name ( ... ) ===> ( ... ) [expanded Name: ( ... ) AnotherName ( ... ) ( ... )] ( ... )
+            DictExpression *expanding_expression = scoped_dictionary_expression(dict, symbol(expression->name));
+            // Recur.
+            ___resolve_dictionary_expression(dict_table, dict, expanding_expression); // Same dict_table (table that is being filled).
+                            //------------------------Does dict have to be changed to where the expression was found? Then scoped_dictionary_expression must return this,
+                            //                        so that the expanded expression can evaluate with the correct scope.
         } else {
+            // Mask a literal dictionary into the table.
+            // note: For an expression to be correctly formed it must terminate to literal dictionaries. If it doesn't, currently infinite loops may be entered.
             if (!mask_dictionary_to_table(dict_table, expression->dict)) {
                 fprintf(stderr, "ERROR: Something went wrong when masking a dictionary.\n");
                 exit(EXIT_FAILURE);
@@ -218,6 +196,14 @@ Dictionary *open_dictionary(DictExpression *expression)
     }
     return dict_table;
 }
+Dictionary *resolve_dictionary_expression(Dictionary *dict, DictExpression *expression)
+{
+    Dictionary *dict_table = new_dictionary();
+    ___resolve_dictionary_expression(dict_table, dict, expression);
+    return dict_table;
+}
+
+
 /*--------------------------------------------------------------------------------
 Hash tree A's entries into the table (storing all info about each value-entry and dict-entry).
 One by one, hash B's entries into the same table.
@@ -284,7 +270,7 @@ bool mask_dictionary_to_table(Dictionary *dict_table, EntryNode *dict)
                         while (end->next != NULL) end = end->next;
                         end->next = entry->dict_expression;
                     }
-                    // Break out of the loop, but first set this flag, to signify that a succesful dict-entry mask has taken place.
+                    // Break out of the loop, but first set this flag, to signify that a successful dict-entry mask has taken place.
                     appended_expression = true;
                     break;
                 } else {
@@ -355,31 +341,48 @@ void print_dict_table(Dictionary *dict_table)
 
 
 
-// Lookup a dictionary in a dictionary.
-Dictionary *lookup_dict(Dictionary *dict, char *name)
+// Lookup a dictionary-expression in a dictionary.
+DictExpression *lookup_dict_expression(Dictionary *dict, char *name)
 {
-    printf("Looking up dictionary \"%s\" ...\n", name);
+    // Get a dict-expression from a dictionary. This is to be used by lookup_dict, which resolves this expression into a table,
+    // and for the semantics of dict-expressions, e.g. looking up dictionary names and concatenating their expressions.
+    //
+    // note: Should not print errors here, since this is allowed to fail when the scope stack is being searched.
+    /* printf("Looking up dictionary expression \"%s\" ...\n", name); */
     uint32_t hash = crc32(name);
     int index = hash % dict->table_size;
     while (dict->table[index].name != -1) {
         if (strcmp(name, symbol(dict->table[index].name)) == 0) {
             if (!dict->table[index].is_dict) {
-                printf("ERROR lookup_dict: Attempted to extract value-entry \"%s\" from dictionary as a dictionary.\n", name);
+                /* printf("ERROR lookup_dict: Attempted to extract value-entry \"%s\" from dictionary as a dictionary.\n", name); */
                 return NULL;
             }
-            // Dictionary-entry found with the given name, open it as a table and return the table.
-            return open_dictionary(dict->table[index].contents.dict.dict_expression);
+            return dict->table[index].contents.dict.dict_expression;
         }
         //note: Make sure this mirrors the hashing and indexing done when the table is created.
         index = (index + 1) % dict->table_size;
     }
-    printf("ERROR lookup_dict: Entry \"%s\" not found in dictionary.\n", name);
+    /* printf("ERROR lookup_dict_expression: Entry \"%s\" not found in dictionary.\n", name); */
     return NULL;
+
+}
+// Lookup a dictionary in a dictionary (lookup the dictionary-expression and resolve it into a table).
+Dictionary *lookup_dict(Dictionary *dict, char *name)
+{
+    /* printf("Looking up dictionary \"%s\" ...\n", name); */
+    DictExpression *expression = lookup_dict_expression(dict, name);
+    if (expression == NULL) return NULL;
+    Dictionary *found_dict = resolve_dictionary_expression(dict, expression);
+    // Give it a pointer to the queried dictionary, for scoping purposes. This means that queried-for dictionaries
+    // form a tree of dictionary tables.
+    found_dict->parent_dictionary = dict;
+    return found_dict;
 }
 
+// Lookup a value in a dictionary.
 bool lookup_value(Dictionary *dict, char *name)
 {
-    printf("Looking up value \"%s\" ...\n", name);
+    /* printf("Looking up value \"%s\" ...\n", name); */
     uint32_t hash = crc32(name);
     int index = hash % dict->table_size;
     while (dict->table[index].name != -1) {
@@ -389,7 +392,6 @@ bool lookup_value(Dictionary *dict, char *name)
                 return false;
             }
             // Dictionary-entry found with the given name, open it as a table and return the table.
-            return open_dictionary(dict->table[index].contents.dict.dict_expression);
             printf("Found value for %s: %s\n", name, symbol(dict->table[index].contents.value.value_text));
             return true;
         }
@@ -412,7 +414,7 @@ int main(void)
     top_expression.is_name = false;
     top_expression.dict = g_dict; // g_dict has been left by the parser as the top-level dictionary IR.
 
-    Dictionary *dict = open_dictionary(&top_expression);
+    Dictionary *dict = resolve_dictionary_expression(NULL, &top_expression);
     print_dict_table(dict);
 
     Dictionary *subdict = lookup_dict(dict, "Spider");
@@ -421,12 +423,12 @@ int main(void)
         Dictionary *subsubdict = lookup_dict(subdict, "transform");
         print_dict_table(subsubdict);
     }
-    {
-        Dictionary *subsubdict = lookup_dict(subdict, "body");
-        print_dict_table(subsubdict);
-        Dictionary *subsubsubdict = lookup_dict(subsubdict, "material");
-        print_dict_table(subsubsubdict);
-    }
+    /* { */
+    /*     Dictionary *subsubdict = lookup_dict(subdict, "body"); */
+    /*     print_dict_table(subsubdict); */
+    /*     Dictionary *subsubsubdict = lookup_dict(subsubdict, "material"); */
+    /*     print_dict_table(subsubsubdict); */
+    /* } */
 }
 
 

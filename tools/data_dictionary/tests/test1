@@ -13,6 +13,7 @@ Texture< (
 Material< (
     string vertex_shader;
     string fragment_shader;
+    bool i_am_material_derived: true;
 );
 tinted_bumped_textured< Material (
     vertex_shader: Shaders/3U_passthrough.frag;
@@ -43,7 +44,7 @@ Spider< GameObject (
         geometry< (
             path: Models/spider;
         );
-        material < tinted_bumped_texture (
+        material < tinted_bumped_textured (
             tint: 0.12, 0.12, 0.12, 1;
             diffuse_map< (
                 type: png;
@@ -60,7 +61,8 @@ Spider< GameObject (
     body < (
         wow: 3;
         material < (
-            tint: 1,1,1,1;
+            // tint: 1,1,1,1;
+            // i_am_material_derived: oops;
         );
     );
 );

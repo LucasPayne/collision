@@ -280,7 +280,8 @@ bool mask_dictionary_to_table(Dictionary *dict_table, EntryNode *dict)
                     //                      A typed value is written into a typed-value with a different type.
                     if (other_entry->contents.value.type == -1 && entry->type != -1) mask_error("Attempted to overwrite a non-typed value with a typed value.");
                     if (entry->type != -1 && other_entry->contents.value.type != -1 && strcmp(symbol(entry->type), symbol(other_entry->contents.value.type)) != 0) {
-                        mask_error("Attempted to overwrite a typed value with a typed value of a different type.");
+                        printf("Error: Attempted to overwrite a typed value with a typed value of a different type. %s <-/- %s.\n", symbol(other_entry->contents.value.type), symbol(entry->type));
+                        return false;
                     }
                     // Break out of the loop. The value will be overwritten at the cell at this index in the same way that
                     // a new value is added at an empty cell.
@@ -296,10 +297,12 @@ bool mask_dictionary_to_table(Dictionary *dict_table, EntryNode *dict)
             dict_table->table[index].contents.dict.dict_expression = entry->dict_expression;
         }
         if (!entry->is_dict) {
+            // note: The type is not being overwritten, as it was type-checked before, and doing this would either be redundant or remove the type.
+            // However, if the cell is empty, do initialize the type.
+            if (dict_table->table[index].name == -1 && entry->type != -1) dict_table->table[index].contents.value.type = entry->type;
             // add a new value-entry, or overwrite a previous one.
             dict_table->table[index].name = entry->name;
             dict_table->table[index].is_dict = false;
-            dict_table->table[index].contents.value.type = entry->type;
             dict_table->table[index].contents.value.value_text = entry->value_text;
         }
         entry = entry->next;
@@ -423,12 +426,12 @@ int main(void)
         Dictionary *subsubdict = lookup_dict(subdict, "transform");
         print_dict_table(subsubdict);
     }
-    /* { */
-    /*     Dictionary *subsubdict = lookup_dict(subdict, "body"); */
-    /*     print_dict_table(subsubdict); */
-    /*     Dictionary *subsubsubdict = lookup_dict(subsubdict, "material"); */
-    /*     print_dict_table(subsubsubdict); */
-    /* } */
+    {
+        Dictionary *subsubdict = lookup_dict(subdict, "body");
+        print_dict_table(subsubdict);
+        Dictionary *subsubsubdict = lookup_dict(subsubdict, "material");
+        print_dict_table(subsubsubdict);
+    }
 }
 
 

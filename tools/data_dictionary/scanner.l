@@ -7,8 +7,13 @@
 #define trace_lex 0
 %}
 %x ValueText
+%x CommentOneLine
 
 %%
+
+"//" { BEGIN CommentOneLine; }
+<CommentOneLine>. { /* */ }
+<CommentOneLine>"\n" { BEGIN INITIAL; }
 
 [/_A-Za-z0-9]+ {
     if (trace_lex) printf("IDENTIFIER: %s\n", yytext);

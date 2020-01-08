@@ -4,6 +4,17 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+// mem_check defined here before integrated into regular modules.
+#define mem_check(POINTER)\
+    if (( POINTER ) == NULL) {\
+        fprintf(stderr, "malloc failed.\n");\
+        exit(EXIT_FAILURE);\
+    }
+
+// Implemented in lexer file.
+extern void push_file(FILE *file);
+extern void pop_file(void);
+
 // AST
 struct DictExpression_s;
 struct EntryNode_s;

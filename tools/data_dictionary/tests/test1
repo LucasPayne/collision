@@ -1,4 +1,23 @@
 
+
+#include(tests/conf);
+
+// texture_test stuff
+FloorData < (
+    float rotate_speed: 10;
+    int mode;
+    float rotate_amount;
+    float cur_rotate;
+    bool tilt_side;
+    float base_scale: 1;
+);
+floor1 < FloorData (
+    mode: 1;
+    rotate_amount: 3.14159;
+    cur_rotate: 10.5;
+    tilt_side: false;
+);
+
 Geometry< (
     string path;
     bool procedural: false;
@@ -61,7 +80,7 @@ Spider< GameObject (
     body < (
         wow: 3;
         material < (
-            // tint: 1,1,1,1;
+            tint: 1,1,1,1;
             // i_am_material_derived: oops;
         );
     );
@@ -72,4 +91,54 @@ Spider< GameObject (
 < Spider (
     body<(scale: 2;);
     transform< (position: 1,2,2;);
+);
+
+// GEA example
+Vehicle < GameObject (
+    transform < Transform;
+    body < Body (
+        scale: 3;
+    );
+    int num_wheels: 1;
+    float turn_radius: 10;
+    float top_speed: 50;
+);
+Car < Vehicle (
+    top_speed: 120;
+    body < (
+        geometry < ( path: Models/car; );
+        material < tinted_bumped_textured (
+            tint: 0.23,0,0.11,1;
+            diffuse_map < (
+                type: psd;
+                path: Images/vehicles/car/tex.psd;
+            );
+            bump_map < (
+                type: png;
+                path: Images/vehicles/car/bm.png;
+            );
+        );
+    );
+    num_wheels: 4;
+);
+
+// GDC '08 talk, Naughty Dog
+// (not sure about the usefulness of defining a Point not as
+// a base-type. Could allow 3 entries to imply a fourth 1, and make
+// point a base type, so: point pos: 0,0,0; This is just an example here though.)
+Point < (
+    float x;
+    float y;
+    float z;
+    float w: 1;
+);
+origin < Point ( x: 0; y: 0; z: 0; );
+
+Locator < (
+    trans < Point;
+    rot: vec4;
+);
+player_start < Locator (
+    trans < origin;
+    rot: 0,2,3,4;
 );

@@ -355,8 +355,8 @@ static void yynoreturn yy_fatal_error ( const char* msg  );
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
-#define YY_NUM_RULES 12
-#define YY_END_OF_BUFFER 13
+#define YY_NUM_RULES 14
+#define YY_END_OF_BUFFER 15
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -364,11 +364,12 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static const flex_int16_t yy_accept[24] =
+static const flex_int16_t yy_accept[38] =
     {   0,
-        0,    0,    0,    0,    0,    0,   13,   12,   10,    7,
-        8,    4,    4,    9,    5,    6,   11,    2,    3,    1,
-        4,   11,    0
+        0,    0,    0,    0,    0,    0,    0,    0,   15,   14,
+       12,    4,    9,   10,    6,    6,   11,    7,    8,   13,
+        2,    3,   14,    1,    6,   13,    0,    0,    0,    0,
+        0,    0,    0,    0,    0,    5,    0
     } ;
 
 static const YY_CHAR yy_ec[256] =
@@ -376,17 +377,17 @@ static const YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    4,    1,    1,    1,    1,    1,    1,    1,    5,
-        6,    1,    1,    1,    1,    1,    7,    8,    8,    8,
-        8,    8,    8,    8,    8,    8,    8,    9,   10,   11,
-        1,    1,    1,    1,    8,    8,    8,    8,    8,    8,
-        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-        1,    1,    1,    1,    8,    1,    8,    8,    8,    8,
+        1,    4,    1,    1,    5,    1,    1,    1,    1,    6,
+        7,    1,    1,    1,    1,    1,    8,    9,    9,    9,
+        9,    9,    9,    9,    9,    9,    9,   10,   11,   12,
+        1,    1,    1,    1,    9,    9,    9,    9,    9,    9,
+        9,    9,    9,    9,    9,    9,    9,    9,    9,    9,
+        9,    9,    9,    9,    9,    9,    9,    9,    9,    9,
+        1,    1,    1,    1,    9,    1,    9,    9,   13,   14,
 
-        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-        8,    8,    1,    1,    1,    1,    1,    1,    1,    1,
+       15,    9,    9,    9,   16,    9,    9,   17,    9,   18,
+        9,    9,    9,    9,    9,    9,   19,    9,    9,    9,
+        9,    9,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
@@ -403,40 +404,50 @@ static const YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static const YY_CHAR yy_meta[12] =
+static const YY_CHAR yy_meta[20] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    2,
-        1
+        1,    1,    1,    1,    1,    1,    1,    2,    2,    1,
+        3,    1,    2,    2,    2,    2,    2,    2,    2
     } ;
 
-static const flex_int16_t yy_base[27] =
+static const flex_int16_t yy_base[43] =
     {   0,
-        0,    0,   20,   19,   19,   18,   20,   25,   25,   25,
-       25,    5,   12,   25,   25,   25,    0,   25,   25,    0,
-        0,    0,   25,   13,   15,   17
+        0,    0,   42,   41,   41,   40,   26,   25,   40,   47,
+       47,   47,   47,   47,   31,    0,   47,   47,   47,    0,
+       47,   47,   20,    0,    0,    0,   24,   19,   16,   20,
+       18,   26,    0,   24,   19,   47,   47,   19,   22,   27,
+       25,   26
     } ;
 
-static const flex_int16_t yy_def[27] =
+static const flex_int16_t yy_def[43] =
     {   0,
-       23,    1,   24,   24,   25,   25,   23,   23,   23,   23,
-       23,   23,   12,   23,   23,   23,   26,   23,   23,   13,
-       13,   26,    0,   23,   23,   23
+       37,    1,   38,   38,   39,   39,   38,   38,   37,   37,
+       37,   37,   37,   37,   40,   40,   37,   37,   37,   41,
+       37,   37,   37,   40,   40,   41,   37,   37,   37,   37,
+       37,   37,   42,   42,   37,   37,    0,   37,   37,   37,
+       37,   37
     } ;
 
-static const flex_int16_t yy_nxt[37] =
+static const flex_int16_t yy_nxt[67] =
     {   0,
-        8,    9,    9,    9,   10,   11,   12,   13,   14,   15,
-       16,   20,   21,    8,    8,   18,   18,   22,   21,   23,
-       19,   19,   17,   17,    7,   23,   23,   23,   23,   23,
-       23,   23,   23,   23,   23,   23
+       10,   11,   11,   11,   12,   13,   14,   15,   16,   17,
+       18,   19,   16,   16,   16,   16,   16,   16,   16,   10,
+       10,   10,   21,   21,   21,   26,   26,   34,   25,   36,
+       35,   33,   32,   31,   30,   29,   28,   27,   24,   37,
+       23,   23,   22,   22,   20,   20,    9,   37,   37,   37,
+       37,   37,   37,   37,   37,   37,   37,   37,   37,   37,
+       37,   37,   37,   37,   37,   37
     } ;
 
-static const flex_int16_t yy_chk[37] =
+static const flex_int16_t yy_chk[67] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,   12,   12,   24,   24,   25,   25,   26,   13,    7,
-        6,    5,    4,    3,   23,   23,   23,   23,   23,   23,
-       23,   23,   23,   23,   23,   23
+        1,    1,    1,    1,    1,    1,    1,    1,    1,   38,
+       38,   38,   39,   39,   39,   41,   41,   42,   40,   35,
+       34,   32,   31,   30,   29,   28,   27,   23,   15,    9,
+        8,    7,    6,    5,    4,    3,   37,   37,   37,   37,
+       37,   37,   37,   37,   37,   37,   37,   37,   37,   37,
+       37,   37,   37,   37,   37,   37
     } ;
 
 static yy_state_type yy_last_accepting_state;
@@ -459,14 +470,41 @@ char *yytext;
 #include "tokens.yy.h"
 #include <stdbool.h>
 
-#define trace_lex 0
-#line 464 "scanner.yy.c"
+#define trace_lex 1
 
-#line 466 "scanner.yy.c"
+#define watch_lex 1
+#if watch_lex == 1
+#define RETURN(TOKEN)\
+{\
+    puts(#TOKEN);\
+    getchar();\
+    return ( TOKEN );\
+}
+#else
+#define RETURN(TOKEN)\
+{\
+    return ( TOKEN );\
+}
+#endif
+// Lexing
+// The file stack, for #include(...) directives.
+// flex and bison, page 28
+struct FileStackEntry {
+    FILE *file;
+    struct FileStackEntry *prev;
+    YY_BUFFER_STATE buffer_state; //page 26 for details on YY_BUFFER_STATE and flex's
+                                  //defaults for getting a stream to lex from, with yyin.
+};
+struct FileStackEntry *g_file_stack_top = NULL;
+
+#line 501 "scanner.yy.c"
+
+#line 503 "scanner.yy.c"
 
 #define INITIAL 0
 #define ValueText 1
 #define CommentOneLine 2
+#define Directive 3
 
 #ifndef YY_NO_UNISTD_H
 /* Special case for "unistd.h", since it is non-ANSI. We include it way
@@ -681,10 +719,10 @@ YY_DECL
 		}
 
 	{
-#line 12 "scanner.l"
+#line 41 "scanner.l"
 
 
-#line 688 "scanner.yy.c"
+#line 726 "scanner.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -711,13 +749,13 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 24 )
+				if ( yy_current_state >= 38 )
 					yy_c = yy_meta[yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
 			++yy_cp;
 			}
-		while ( yy_base[yy_current_state] != 25 );
+		while ( yy_base[yy_current_state] != 47 );
 
 yy_find_action:
 		yy_act = yy_accept[yy_current_state];
@@ -743,76 +781,119 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 14 "scanner.l"
+#line 43 "scanner.l"
 { BEGIN CommentOneLine; }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 15 "scanner.l"
+#line 44 "scanner.l"
 { /* */ }
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 16 "scanner.l"
+#line 45 "scanner.l"
 { BEGIN INITIAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 18 "scanner.l"
+#line 47 "scanner.l"
 {
-    if (trace_lex) printf("IDENTIFIER: %s\n", yytext);
-    yylval.symbol = new_symbol(yytext); return IDENTIFIER;
+    if (trace_lex) printf("Reading #-directive...\n");
+    BEGIN Directive;
 }
 	YY_BREAK
 case 5:
-#line 23 "scanner.l"
-case 6:
-#line 24 "scanner.l"
-case 7:
-#line 25 "scanner.l"
-case 8:
 YY_RULE_SETUP
-#line 25 "scanner.l"
-{ if (trace_lex) printf("symbol: %c\n", yytext[0]); return yytext[0]; }
+#line 51 "scanner.l"
+{
+    char *start = strchr(yytext, '(') + 1;
+    char *end = strchr(yytext, ')');
+    const int buf_size = 4096;
+    if (end - start >= buf_size - 3) {
+        fprintf(stderr, "ERROR: Name in #include(...) is too long.\n");
+        exit(EXIT_FAILURE);
+    }
+    char buf[buf_size];
+    strncpy(buf, start, end - start);
+    strcpy(buf + (end - start), ".dd");
+    buf[(end - start) + 3] = '\0';
+    FILE *file = fopen(buf, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Attempted to include unknown data-definition file \"%s\".\n", buf);
+        exit(EXIT_FAILURE);
+    }
+    push_file(file);
+    if (trace_lex) printf("Started including data-definition file \"%s\".\n", buf);
+    BEGIN INITIAL;
+}
 	YY_BREAK
-case 9:
+case 6:
 YY_RULE_SETUP
-#line 27 "scanner.l"
+#line 73 "scanner.l"
+{
+    if (trace_lex) printf("IDENTIFIER: %s\n", yytext);
+    yylval.symbol = new_symbol(yytext); RETURN(IDENTIFIER);
+}
+	YY_BREAK
+case 7:
+#line 78 "scanner.l"
+case 8:
+#line 79 "scanner.l"
+case 9:
+#line 80 "scanner.l"
+case 10:
+YY_RULE_SETUP
+#line 80 "scanner.l"
+{ if (trace_lex) printf("symbol: %c\n", yytext[0]); RETURN(yytext[0]); }
+	YY_BREAK
+case 11:
+YY_RULE_SETUP
+#line 82 "scanner.l"
 {
     if (trace_lex) printf("symbol: :\n");
     if (trace_lex) printf("getting value text\n");
     BEGIN ValueText;
-    return ':';
+    RETURN(':');
 }
 	YY_BREAK
-case 10:
-/* rule 10 can match eol */
+case 12:
+/* rule 12 can match eol */
 YY_RULE_SETUP
-#line 33 "scanner.l"
+#line 88 "scanner.l"
 { /* eat whitespace */ }
 	YY_BREAK
-case 11:
-/* rule 11 can match eol */
+case YY_STATE_EOF(INITIAL):
+case YY_STATE_EOF(ValueText):
+case YY_STATE_EOF(CommentOneLine):
+case YY_STATE_EOF(Directive):
+#line 90 "scanner.l"
+{
+    // Complete lexing if at the bottom of the file stack, or pop a file and continue lexing where the previous open file was left of.
+    pop_file();
+    if (g_file_stack_top == NULL) {
+        if (trace_lex) printf("Lexing completed.\n");
+        yyterminate();
+    }
+}
+	YY_BREAK
+case 13:
+/* rule 13 can match eol */
 YY_RULE_SETUP
-#line 35 "scanner.l"
+#line 99 "scanner.l"
 {
     if (trace_lex) printf("VALUE_TEXT: \"%s\":\n", yytext);
     yylval.symbol = new_symbol(yytext + 1);
     BEGIN INITIAL;
-    return VALUE_TEXT;
+    RETURN(VALUE_TEXT);
 }
 	YY_BREAK
-case 12:
+case 14:
 YY_RULE_SETUP
-#line 42 "scanner.l"
+#line 106 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 812 "scanner.yy.c"
-case YY_STATE_EOF(INITIAL):
-case YY_STATE_EOF(ValueText):
-case YY_STATE_EOF(CommentOneLine):
-	yyterminate();
+#line 897 "scanner.yy.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1107,7 +1188,7 @@ static int yy_get_next_buffer (void)
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 24 )
+			if ( yy_current_state >= 38 )
 				yy_c = yy_meta[yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
@@ -1135,11 +1216,11 @@ static int yy_get_next_buffer (void)
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 24 )
+		if ( yy_current_state >= 38 )
 			yy_c = yy_meta[yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
-	yy_is_jam = (yy_current_state == 23);
+	yy_is_jam = (yy_current_state == 37);
 
 		return yy_is_jam ? 0 : yy_current_state;
 }
@@ -1815,6 +1896,33 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 42 "scanner.l"
+#line 106 "scanner.l"
 
+
+// #include(...) directives.
+void push_file(FILE *file)
+{
+    struct FileStackEntry *new = (struct FileStackEntry *) malloc(sizeof(struct FileStackEntry));
+    mem_check(new);
+    new->file = file;
+    new->prev = g_file_stack_top;
+    new->buffer_state = yy_create_buffer(new->file, YY_BUF_SIZE);
+    yy_switch_to_buffer(new->buffer_state);
+    g_file_stack_top = new;
+}
+void pop_file(void)
+{
+    if (g_file_stack_top == NULL) {
+        fprintf(stderr, "ERROR: Attempted to pop from empty file-stack.\n");
+        exit(EXIT_FAILURE);
+    }
+    struct FileStackEntry *to_free = g_file_stack_top;
+    g_file_stack_top = g_file_stack_top->prev;
+    fclose(to_free->file);
+    yy_delete_buffer(to_free->buffer_state);
+    free(to_free);
+
+    // If the stack is still non-empty, then switch to the previous buffer.
+    if (g_file_stack_top != NULL) yy_switch_to_buffer(g_file_stack_top->buffer_state);
+}
 

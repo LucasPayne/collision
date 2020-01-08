@@ -167,7 +167,7 @@ DictExpression *scoped_dictionary_expression(Dictionary *dict, char *name)
     return NULL;
 }
 
-static Dictionary *___resolve_dictionary_expression(Dictionary *dict_table, Dictionary *dict, DictExpression *expression)
+static void ___resolve_dictionary_expression(Dictionary *dict_table, Dictionary *dict, DictExpression *expression)
 {
     // dict: The dictionary the expression is an entry in. This is used for scoping names in the expression.
     //
@@ -194,7 +194,6 @@ static Dictionary *___resolve_dictionary_expression(Dictionary *dict_table, Dict
         }
         expression = expression->next;
     }
-    return dict_table;
 }
 Dictionary *resolve_dictionary_expression(Dictionary *dict, DictExpression *expression)
 {
@@ -406,9 +405,11 @@ bool lookup_value(Dictionary *dict, char *name)
 }
 
 
+
 int main(void)
 {
-    yyin = fopen("tests/test1", "r");
+    FILE *file = fopen("tests/test2", "r");
+    push_file(file);
     yyparse();
     print_ast(g_dict);
 
@@ -420,18 +421,39 @@ int main(void)
     Dictionary *dict = resolve_dictionary_expression(NULL, &top_expression);
     print_dict_table(dict);
 
-    Dictionary *subdict = lookup_dict(dict, "Spider");
-    print_dict_table(subdict);
-    {
-        Dictionary *subsubdict = lookup_dict(subdict, "transform");
-        print_dict_table(subsubdict);
-    }
-    {
-        Dictionary *subsubdict = lookup_dict(subdict, "body");
-        print_dict_table(subsubdict);
-        Dictionary *subsubsubdict = lookup_dict(subsubdict, "material");
-        print_dict_table(subsubsubdict);
-    }
+    /* { */
+    /*     Dictionary *subdict = lookup_dict(dict, "player_start"); */
+    /*     print_dict_table(subdict); */
+
+    /*     Dictionary *subsubdict = lookup_dict(subdict, "trans"); */
+    /*     print_dict_table(subsubdict); */
+    /* } */
+
+    /* { */
+    /*     Dictionary *subdict = lookup_dict(dict, "FloorData"); */
+    /*     print_dict_table(subdict); */
+    /* } */
+
+    /* { */
+    /*     Dictionary *subdict = lookup_dict(dict, "floor1"); */
+    /*     print_dict_table(subdict); */
+    /* } */
+
+    /* Dictionary *subdict = lookup_dict(dict, "Spider"); */
+    /* print_dict_table(subdict); */
+
+    /* { */
+    /*     Dictionary *subsubdict = lookup_dict(subdict, "transform"); */
+    /*     print_dict_table(subsubdict); */
+    /* } */
+    /* { */
+    /*     Dictionary *subsubdict = lookup_dict(subdict, "body"); */
+    /*     print_dict_table(subsubdict); */
+    /*     Dictionary *subsubsubdict = lookup_dict(subsubdict, "material"); */
+    /*     print_dict_table(subsubsubdict); */
+    /*     Dictionary *subsubsubsubdict = lookup_dict(subsubsubdict, "diffuse_map"); */
+    /*     print_dict_table(subsubsubsubdict); */
+    /* } */
 }
 
 

@@ -22,5 +22,29 @@ int main(void)
     DD *dd = dd_fopen("data.dd");
     dd_check(dd);
     dd_print_table(dd);
+
+    DD *appconf = dd_open(dd, "ApplicationConfiguration");
+    dd_check(appconf);
+    dd_print_table(appconf);
+
+    bool core_profile;
+    if (dd_get(appconf, "core_profile", "bool", &core_profile)) {
+        if (core_profile) printf("Is core profile.\n");
+        else printf("Is not core profile.\n");
+    }
+
+    float clear_color[4];
+    if (dd_get(appconf, "clear_color", "vec4", &clear_color)) {
+        for (int i = 0; i < 4; i++) printf("%.2f\n", clear_color[i]);
+    }
+/*
+    DD *scene = dd_open(dd, "Scene");
+    DD **spiders;
+    int num = dd_scan(scene, &spiders, "Spider");
+    for (int i = 0; i < num; i++) {
+        dd_print_table(spiders[i]);
+    }
+*/
+
 }
 

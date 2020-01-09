@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include "helper_definitions.h"
 #include "data_dictionary_implementation.h"
 
 //- Symbol table -----------------------------------------------------------------
@@ -173,6 +175,54 @@ DictExpression *scoped_dictionary_expression(DataDictionary *dict, char *name)
     /* return NULL; */
 }
 
+
+// Recursive function and "header" function for evaluating the types of a dictionary. This is done by expanding the expression and building up
+// the symbol-numbers of the names of each named dictionary that appears in the expression.
+static int ___compute_dictionary_expression_types(DataDictionary *dd, int types[], int index, const int max_num_types, DictExpression *expression)
+{
+    if (index >= max_num_types) {
+        fprintf(stderr, ERROR_ALERT "Too many dictionary types. The maximum number can be increased. It is currently set to %d.\n", max_num_types);
+        exit(EXIT_FAILURE);
+    }
+    while (expression != NULL) {
+        if (expression->is_name) {
+            printf("%s ", symbol(expression->name));
+            // add this operand's name as a type.
+            types[index] = expression->name;
+            DictExpression *expanding_expression = scoped_dictionary_expression(dd, symbol(expression->name));
+            // Recur.
+            index = ___compute_dictionary_expression_types(dd, types, index + 1, max_num_types, expanding_expression);
+        } else {
+            printf("LITERAL ");
+        }
+        expression = expression->next;
+    }
+    return index;
+}
+static void compute_dictionary_expression_types(DataDictionary *dd, DictionaryTableCell *cell)
+{
+    if (cell->contents.dict.types != NULL) {
+        fprintf(stderr, ERROR_ALERT "Something went wrong. Attempted to compute dictionary expression types for dictionary which already has types.\n");
+        exit(EXIT_FAILURE);
+    }
+    printf("Computing types for %s...\n", symbol(cell->name));
+
+    const int max_num_types = 1024;
+    int types[max_num_types];
+    int num_types = ___compute_dictionary_expression_types(dd, types, 0, max_num_types, cell->contents.dict.dict_expression) + 1;
+
+    printf("\nGot %d types.\n", num_types);
+    for (int i = 0; i < num_types; i++) {
+        printf("%d: %s\n", i, symbol(types[i]));
+    }
+    getchar();
+
+    cell->contents.dict.num_types = num_types;
+    cell->contents.dict.types = (int *) calloc(1, sizeof(int) * num_types);
+    mem_check(cell->contents.dict.types);
+    memcpy(cell->contents.dict.types, types, sizeof(int) * num_types);
+}
+
 static void ___resolve_dictionary_expression(DataDictionary *dict_table, DataDictionary *dict, DictExpression *expression)
 {
     // dict: The dictionary the expression is an entry in. This is used for scoping names in the expression.
@@ -201,11 +251,21 @@ static void ___resolve_dictionary_expression(DataDictionary *dict_table, DataDic
         expression = expression->next;
     }
 }
-DataDictionary *resolve_dictionary_expression(DataDictionary *dict, DictExpression *expression)
+DataDictionary *resolve_dictionary_expression(DataDictionary *parent_dd, DictExpression *expression)
 {
-    DataDictionary *dict_table = new_data_dictionary();
-    ___resolve_dictionary_expression(dict_table, dict, expression);
-    return dict_table;
+    DataDictionary *dd = new_data_dictionary();
+    ___resolve_dictionary_expression(dd, parent_dd, expression);
+    
+    // This must be done after a data dictionary is created.
+    // For each subdictionary in this dictionary, expand its dictionary-expression and collate the names of named
+    // dictionaries, as the dictionary "types".
+    // This prepares this data-dictionary for querying by type.
+    for (int i = 0; i < dd->table_size; i++) {
+        if (dd->table[i].is_dict) {
+            compute_dictionary_expression_types(dd, &dd->table[i]);
+        }
+    }
+    return dd;
 }
 
 
@@ -225,7 +285,6 @@ dict-entries:
     If an entry with the same name is there, concatenate B_i's dict-expression onto one in the table.
     Otherwise, add this as a new dict-entry.
 --------------------------------------------------------------------------------*/
-
 uint32_t crc32(char *string)
 {
     // This is not crc32 ...
@@ -240,7 +299,6 @@ uint32_t crc32(char *string)
     }
     return hash;
 }
-
 bool mask_dictionary_to_table(DataDictionary *dict_table, EntryNode *dict)
 {
     // A EntryNode is the IR, linked-list representation of a dictionary. This is what it is kept as in memory until
@@ -266,14 +324,37 @@ bool mask_dictionary_to_table(DataDictionary *dict_table, EntryNode *dict)
                 if (entry->is_dict) {
                     if (!other_entry->is_dict) mask_error("Attempted to override a value-entry with a dictionary-entry.");
                     if (other_entry->contents.dict.dict_expression == NULL) {
-                        // Old entry has an empty expression. Just give it the new expression.
-                        other_entry->contents.dict.dict_expression = entry->dict_expression;
+                        //   Old entry has an empty expression. Just copy it the new expression.
+                        // Copy the head of the linked list.
+                        other_entry->contents.dict.dict_expression = (DictExpression *) calloc(1, sizeof(DictExpression));
+                        mem_check(other_entry->contents.dict.dict_expression);
+                        DictExpression *new_expression = other_entry->contents.dict.dict_expression;
+                        memcpy(new_expression, entry->dict_expression, sizeof(DictExpression));
+                        // Now follow the linked list and copy each entry.
+                        while (new_expression->next != NULL) {
+                            DictExpression *next_copy = (DictExpression *) calloc(1, sizeof(DictExpression));
+                            mem_check(next_copy);
+                            memcpy(next_copy, new_expression->next, sizeof(DictExpression));
+                            new_expression->next = next_copy;
+                            new_expression = next_copy;
+                        }
                     } else {
                         // Concatenate their expressions.
-                        // First, go to the end, then set its next-pointer to the start of the appended expression.
+                        // First, go to the end, then copy the expression.
                         DictExpression *end = other_entry->contents.dict.dict_expression;
                         while (end->next != NULL) end = end->next;
-                        end->next = entry->dict_expression;
+                        // First copy the head of the linked list.
+                        end->next = (DictExpression *) calloc(1, sizeof(DictExpression));
+                        mem_check(end->next);
+                        memcpy(end->next, entry->dict_expression, sizeof(DictExpression));
+                        // Now follow the linked list and copy each entry.
+                        while (end->next != NULL) {
+                            DictExpression *next_copy = (DictExpression *) calloc(1, sizeof(DictExpression));
+                            mem_check(next_copy);
+                            memcpy(next_copy, end->next, sizeof(DictExpression));
+                            end->next = next_copy;
+                            end = next_copy;
+                        }
                     }
                     // Break out of the loop, but first set this flag, to signify that a successful dict-entry mask has taken place.
                     appended_expression = true;
@@ -341,28 +422,28 @@ DictExpression *lookup_dict_expression(DataDictionary *dict, char *name)
     return NULL;
 
 }
-// Lookup a value in a dictionary.
-bool lookup_value(DataDictionary *dict, char *name)
-{
-    /* printf("Looking up value \"%s\" ...\n", name); */
-    uint32_t hash = crc32(name);
-    int index = hash % dict->table_size;
-    while (dict->table[index].name != -1) {
-        if (strcmp(name, symbol(dict->table[index].name)) == 0) {
-            if (dict->table[index].is_dict) {
-                printf("ERROR lookup_value: Attempted to extract dictionary-entry \"%s\" from dictionary as a value.\n", name);
-                return false;
-            }
-            // Dictionary-entry found with the given name, open it as a table and return the table.
-            printf("Found value for %s: %s\n", name, symbol(dict->table[index].contents.value.value_text));
-            return true;
-        }
-        //note: Make sure this mirrors the hashing and indexing done when the table is created.
-        index = (index + 1) % dict->table_size;
-    }
-    printf("ERROR lookup_value: Entry \"%s\" not found in dictionary.\n", name);
-    return false;
-}
+// // Lookup a value in a dictionary.
+// bool lookup_value(DataDictionary *dict, char *name)
+// {
+//     /* printf("Looking up value \"%s\" ...\n", name); */
+//     uint32_t hash = crc32(name);
+//     int index = hash % dict->table_size;
+//     while (dict->table[index].name != -1) {
+//         if (strcmp(name, symbol(dict->table[index].name)) == 0) {
+//             if (dict->table[index].is_dict) {
+//                 printf("ERROR lookup_value: Attempted to extract dictionary-entry \"%s\" from dictionary as a value.\n", name);
+//                 return false;
+//             }
+//             // Dictionary-entry found with the given name, open it as a table and return the table.
+//             printf("Found value for %s: %s\n", name, symbol(dict->table[index].contents.value.value_text));
+//             return true;
+//         }
+//         //note: Make sure this mirrors the hashing and indexing done when the table is created.
+//         index = (index + 1) % dict->table_size;
+//     }
+//     printf("ERROR lookup_value: Entry \"%s\" not found in dictionary.\n", name);
+//     return false;
+// }
 
 #if 0
 int main(void)

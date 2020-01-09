@@ -7,6 +7,32 @@ Conf < (
     vec4 clear_color: 0,0,0,1;
 );
 
+Aspect < (
+    bool enabled: true;
+);
+Transform < Aspect (
+    vec3 position: 0,0,0;
+    vec3 rotation: 0,0,0;
+);
+
+GameObject < (
+    bool active: true;
+);
+Spider < GameObject (
+    transform < Transform;
+    int num_legs: 8;
+);
+
+free_spider < Spider (
+    transform < (
+        position: 0,0,100;
+    );
+);
+
+Scene < (
+    #include(scene);
+);
+
 // Source a configuration.
 ApplicationConfiguration < Conf (
     #include(conf);

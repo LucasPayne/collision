@@ -113,6 +113,8 @@ typedef struct DictionaryTableCell_s {
         } value;
         struct {
             DictExpression *dict_expression;
+            int num_types;
+            int *types; //dynamic array, consisting of all names of named dictionaries in expanded dict-expression.
         } dict;
     } contents;
     bool is_dict;
@@ -135,6 +137,11 @@ void dd_print_table(DataDictionary *dict_table);
 // Open a subdictionary.
 DataDictionary *dd_open(DataDictionary *dict, char *name);
 // Query for a value.
-bool dd_get(DataDictionary *dict, char *name);
+bool dd_get(DataDictionary *dict, char *name, char *type, void *data);
+
+
+// Type readers.
+typedef bool (*DDTypeReader)(const char *, void *);
+DDTypeReader dd_get_reader(const char *type);
 
 #endif // HEADER_DEFINED_DATA_DICTIONARY

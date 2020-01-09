@@ -1,6 +1,0 @@
-
-blimp < GameObject (
-    float bigness: 20;
-    #include(tests/more_blimp);
-);
-

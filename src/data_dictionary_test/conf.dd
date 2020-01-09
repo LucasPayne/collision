@@ -1,6 +1,5 @@
 
-window_name: Testing some stuff!
+window_name: Testing some stuff!;
 gl_version: 4,2;
 core_profile: true;
-clear_color: 1,1,1,1;
-
+// clear_color: 1,1,1,1;

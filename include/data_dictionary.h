@@ -134,6 +134,9 @@ DataDictionary *dd_fopen(char *path);
 //The actual printing should probably not show the hash-table data structure.
 void dd_print_table(DataDictionary *dict_table);
 
+// The proper printing utility for users.
+void dd_print(DataDictionary *dd);
+
 // Open a subdictionary.
 DataDictionary *dd_open(DataDictionary *dict, char *name);
 // Query for a value.

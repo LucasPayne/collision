@@ -37,3 +37,18 @@ Scene < (
 ApplicationConfiguration < Conf (
     #include(conf);
 );
+
+// Testing dictionary type evaluation.
+D < (
+    bool e2: false;
+);
+B < D (
+    bool e1: true;
+);
+C < (
+    bool e3: true;
+);
+A < B C (
+    // Should be of types [B, D, C].
+    bool e4: false;
+);

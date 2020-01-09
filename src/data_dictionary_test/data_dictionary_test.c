@@ -43,11 +43,12 @@ int main(void)
 
     DD *scene = dd_open(dd, "Scene");
     dd_print_table(scene);
-    /* DD **spiders; */
-    /* int num = dd_scan(scene, &spiders, "Spider"); */
-    /* for (int i = 0; i < num; i++) { */
-    /*     dd_print_table(spiders[i]); */
-    /* } */
+
+    DD **spiders;
+    int num = dd_scan(scene, &spiders, "Spider");
+    for (int i = 0; i < num; i++) {
+        dd_print_table(spiders[i]);
+    }
 
 }
 

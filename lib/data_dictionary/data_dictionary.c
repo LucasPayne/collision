@@ -2,9 +2,9 @@
 note: It is not neccessary to have a separate C source file for the interface,
 just a separate header. But this may be nicer for editing the module.
 --------------------------------------------------------------------------------*/
-
 #include <stdio.h>
 #include <stdlib.h>
+#include "helper_definitions.h"
 #include "data_dictionary.h"
 #include "data_dictionary_implementation.h"
 
@@ -111,7 +111,7 @@ void dd_print_table(DataDictionary *dict_table)
 #define DD_TYPE_READER(TYPE) bool dd_type_reader_ ## TYPE(const char *text, void *data)
 
 DD_TYPE_READER(bool) {
-    if (strcmp(text, "true")  == 0) { *((bool *) data) = true;  return true;  }
+    if (strcmp(text, "true")  == 0) { *((bool *) data) = true;  return true; }
     if (strcmp(text, "false") == 0) { *((bool *) data) = false; return true; }
     return false;
 }
@@ -129,7 +129,6 @@ DD_TYPE_READER(vec4) {
     // [1]
     // [2]
     // [3]
-    
     char *p = text;
     float v[4];
     int chars_read;
@@ -177,9 +176,42 @@ int dd_scan(DataDictionary *dd, DataDictionary ***scanned, const char *type_stri
     // which match a type string.
     // A dictionary has a list of types, one for each named dictionary it derives from (in its expanded dictionary-expression).
     // Returns the number of dictionaries scanned, and -1 if there was an error.
+    // Currently, type_string is interpreted only as a single type.
 
-    return -1;
+    const int max_num_scanned = 1024;
+    int count = 0;
+    int to_open[max_num_scanned];
+
+    for (int i = 0; i < dd->table_size; i++) {
+        if (dd->table[i].is_dict) {
+            // Try to match the type.
+            for (int j = 0; j < dd->table[i].contents.dict.num_types; j++) {
+                if (strcmp(type_string, symbol(dd->table[i].contents.dict.types[j])) == 0) {
+                    if (count >= max_num_scanned) {
+                        fprintf(stderr, ERROR_ALERT "dd_scan: Encountered too many dictionaries. The maximum is set to %d, and this can be increased.\n", max_num_scanned);
+                        exit(EXIT_FAILURE);
+                    }
+                    to_open[count ++] = i;
+                    break;
+                }
+            }
+        }
+    }
+    DataDictionary **opened_dds = (DataDictionary **) calloc(1, sizeof(DataDictionary *) * count);
+    mem_check(opened_dds);
+    for (int i = 0; i < count; i++) {
+        // Go through the scanned indices, and open each dictionary by resolving the expression at that index.
+        DictExpression *expression = dd->table[to_open[i]].contents.dict.dict_expression;
+        opened_dds[i] = resolve_dictionary_expression(dd, expression);
+        opened_dds[i]->parent_dictionary = dd;
+    }
+    *scanned = opened_dds;
+    return count;
 }
 
 
+void dd_print(DataDictionary *dd)
+{
+
+}
 

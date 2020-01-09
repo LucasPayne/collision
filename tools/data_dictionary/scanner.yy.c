@@ -472,7 +472,7 @@ char *yytext;
 
 #define trace_lex 1
 
-#define watch_lex 1
+#define watch_lex 0
 #if watch_lex == 1
 #define RETURN(TOKEN)\
 {\

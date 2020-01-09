@@ -1,0 +1,10 @@
+
+int a: 1;
+thing < (
+    int b: 3;
+    nice < (
+        vec4 v: 0,0,0,0;
+    );
+);
+vec2 vector: 3,3;
+

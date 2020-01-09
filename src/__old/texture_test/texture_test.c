@@ -11,6 +11,7 @@ PROJECT_LIBS:
     + entity
     + matrix_mathematics
     + aspect_library/gameobjects
+    + data_dictionary
 ================================================================================*/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -29,6 +30,7 @@ PROJECT_LIBS:
 #include "entity.h"
 #include "matrix_mathematics.h"
 #include "aspect_library/gameobjects.h"
+#include "data_dictionary.h"
 
 typedef Matrix4x4f mat4x4;
 #include "shader_blocks/Standard3D.h"
@@ -143,6 +145,7 @@ void make_floor(int x, int z)
     Material *mat = oneoff_resource(Material, body->material);
     mat->material_type = new_resource_handle(MaterialType, "Materials/tinted_texture");
     material_set_property_vec4(mat, "flat_color", new_vec4(sin(x), cos(z), sin(x + z), 1));
+    printf("done!\n"); exit(EXIT_SUCCESS); ////////////
     float f = frand();
     if (f < 0.3) {
         material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
@@ -194,6 +197,7 @@ void init_program(void)
 
     init_entity_model();
     init_aspects_gameobjects();
+
 
     {
         EntityID camera_man = new_entity(4);
@@ -247,6 +251,10 @@ void init_program(void)
         /* entity_add_aspect(floor, Logic)->update = floor_update; */
     }
 #endif
+
+    //testing data-dictionaries
+    DataDictionary *dd = dd_open("data.dd");
+
 }
 
 

@@ -1,8 +1,13 @@
+/*--------------------------------------------------------------------------------
+    bugs and problems:
+        The IR is being changed when expressions are concatenated. If the IR form is still used,
+        copy it when it is being appended to an expression.
+--------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "data_dictionary.h"
+#include "data_dictionary_implementation.h"
 
 //- Symbol table -----------------------------------------------------------------
 // Taken from the gen_shader_blocks code.
@@ -131,17 +136,17 @@ void print_dict_expression(DictExpression *expression)
     _print_dict_expression(expression, 0);
 }
 
-void yyerror(char *errmsg)
+void dd_yyerror(char *errmsg)
 {
     fprintf(stderr, "Parsing error: %s\n", errmsg);
     exit(EXIT_FAILURE);
 }
 
-Dictionary *new_dictionary(void)
+DataDictionary *new_data_dictionary(void)
 {
     const int start_size = 28; // size must be >= 1. ---Currently, if the table is not big enough, probing will cause an infinite loop.
     // Be careful allocating for this "variable-sized struct". See Dictionary struct definition.
-    Dictionary *dict = (Dictionary *) calloc(1, sizeof(Dictionary) + sizeof(DictionaryTableCell)*(start_size - 1));
+    DataDictionary *dict = (DataDictionary *) calloc(1, sizeof(DataDictionary) + sizeof(DictionaryTableCell)*(start_size - 1));
     ast_mem_check(dict); //use mem_check when this is a project library.
     dict->table_size = start_size;
     dict->table = &dict->___table; //---- This could be done just by ensuring the allocated memory is contiguous with the metadata struct...
@@ -151,23 +156,24 @@ Dictionary *new_dictionary(void)
     return dict;
 }
 
-DictExpression *scoped_dictionary_expression(Dictionary *dict, char *name)
+DictExpression *scoped_dictionary_expression(DataDictionary *dict, char *name)
 {
     /* Scoping of dictionary names (as they appear in dictionary-expressions) works by having each dictionary hold a pointer
      * to the dictionary it was queried from. When a name appears in a dict-expression of this dictionary, it first searches for a dictionary of that name
      * in itself, then in its parent, then, ..., etc.
      */
-    Dictionary *searching_dict = dict;
+    DataDictionary *searching_dict = dict;
     while (searching_dict != NULL) {
         DictExpression *found = lookup_dict_expression(searching_dict, name);
         if (found != NULL) return found;
         searching_dict = searching_dict->parent_dictionary;
     }
     printf("Could not find dictionary with name \"%s\" in the current scope.\n", name);
-    return NULL;
+    exit(EXIT_FAILURE);
+    /* return NULL; */
 }
 
-static void ___resolve_dictionary_expression(Dictionary *dict_table, Dictionary *dict, DictExpression *expression)
+static void ___resolve_dictionary_expression(DataDictionary *dict_table, DataDictionary *dict, DictExpression *expression)
 {
     // dict: The dictionary the expression is an entry in. This is used for scoping names in the expression.
     //
@@ -195,9 +201,9 @@ static void ___resolve_dictionary_expression(Dictionary *dict_table, Dictionary 
         expression = expression->next;
     }
 }
-Dictionary *resolve_dictionary_expression(Dictionary *dict, DictExpression *expression)
+DataDictionary *resolve_dictionary_expression(DataDictionary *dict, DictExpression *expression)
 {
-    Dictionary *dict_table = new_dictionary();
+    DataDictionary *dict_table = new_data_dictionary();
     ___resolve_dictionary_expression(dict_table, dict, expression);
     return dict_table;
 }
@@ -235,7 +241,7 @@ uint32_t crc32(char *string)
     return hash;
 }
 
-bool mask_dictionary_to_table(Dictionary *dict_table, EntryNode *dict)
+bool mask_dictionary_to_table(DataDictionary *dict_table, EntryNode *dict)
 {
     // A EntryNode is the IR, linked-list representation of a dictionary. This is what it is kept as in memory until
     // a dictionary is needed as part of a dict-expression (or when the file is read, the root dictionary is treated as a 1-operand dict-expression),
@@ -310,7 +316,7 @@ bool mask_dictionary_to_table(Dictionary *dict_table, EntryNode *dict)
     #undef mask_error
 }
 
-void print_dict_table(Dictionary *dict_table)
+void print_dict_table(DataDictionary *dict_table)
 {
     printf("---dictionary table-------------------------------------------------------------\n");
     for (int i = 0; i < dict_table->table_size; i++) {
@@ -341,10 +347,8 @@ void print_dict_table(Dictionary *dict_table)
     }
 }
 
-
-
 // Lookup a dictionary-expression in a dictionary.
-DictExpression *lookup_dict_expression(Dictionary *dict, char *name)
+DictExpression *lookup_dict_expression(DataDictionary *dict, char *name)
 {
     // Get a dict-expression from a dictionary. This is to be used by lookup_dict, which resolves this expression into a table,
     // and for the semantics of dict-expressions, e.g. looking up dictionary names and concatenating their expressions.
@@ -369,12 +373,12 @@ DictExpression *lookup_dict_expression(Dictionary *dict, char *name)
 
 }
 // Lookup a dictionary in a dictionary (lookup the dictionary-expression and resolve it into a table).
-Dictionary *lookup_dict(Dictionary *dict, char *name)
+DataDictionary *lookup_dict(DataDictionary *dict, char *name)
 {
     /* printf("Looking up dictionary \"%s\" ...\n", name); */
     DictExpression *expression = lookup_dict_expression(dict, name);
     if (expression == NULL) return NULL;
-    Dictionary *found_dict = resolve_dictionary_expression(dict, expression);
+    DataDictionary *found_dict = resolve_dictionary_expression(dict, expression);
     // Give it a pointer to the queried dictionary, for scoping purposes. This means that queried-for dictionaries
     // form a tree of dictionary tables.
     found_dict->parent_dictionary = dict;
@@ -382,7 +386,7 @@ Dictionary *lookup_dict(Dictionary *dict, char *name)
 }
 
 // Lookup a value in a dictionary.
-bool lookup_value(Dictionary *dict, char *name)
+bool lookup_value(DataDictionary *dict, char *name)
 {
     /* printf("Looking up value \"%s\" ...\n", name); */
     uint32_t hash = crc32(name);
@@ -404,13 +408,12 @@ bool lookup_value(Dictionary *dict, char *name)
     return false;
 }
 
-
-
+#if 0
 int main(void)
 {
     FILE *file = fopen("tests/test2", "r");
-    push_file(file);
-    yyparse();
+    dd_push_file(file);
+    dd_yyparse();
     print_ast(g_dict);
 
     // Formulate the top-level dictionary as a 1-operand dict-expression, then open it.
@@ -418,43 +421,53 @@ int main(void)
     top_expression.is_name = false;
     top_expression.dict = g_dict; // g_dict has been left by the parser as the top-level dictionary IR.
 
-    Dictionary *dict = resolve_dictionary_expression(NULL, &top_expression);
+    DataDictionary *dict = resolve_dictionary_expression(NULL, &top_expression);
     print_dict_table(dict);
+    {
+        DataDictionary *subdict = lookup_dict(dict, "blimp");
+        print_dict_table(subdict);
+    }
+    {
+        DataDictionary *subdict = lookup_dict(dict, "small_blimp");
+        print_dict_table(subdict);
+    }
+    {
+        DataDictionary *subdict = lookup_dict(dict, "ApplicationConfig");
+        print_dict_table(subdict);
+    }
 
     /* { */
-    /*     Dictionary *subdict = lookup_dict(dict, "player_start"); */
+    /*     DataDictionary *subdict = lookup_dict(dict, "player_start"); */
     /*     print_dict_table(subdict); */
 
-    /*     Dictionary *subsubdict = lookup_dict(subdict, "trans"); */
+    /*     DataDictionary *subsubdict = lookup_dict(subdict, "trans"); */
     /*     print_dict_table(subsubdict); */
     /* } */
 
     /* { */
-    /*     Dictionary *subdict = lookup_dict(dict, "FloorData"); */
+    /*     DataDictionary *subdict = lookup_dict(dict, "FloorData"); */
     /*     print_dict_table(subdict); */
     /* } */
 
     /* { */
-    /*     Dictionary *subdict = lookup_dict(dict, "floor1"); */
+    /*     DataDictionary *subdict = lookup_dict(dict, "floor1"); */
     /*     print_dict_table(subdict); */
     /* } */
 
-    /* Dictionary *subdict = lookup_dict(dict, "Spider"); */
+    /* DataDictionary *subdict = lookup_dict(dict, "Spider"); */
     /* print_dict_table(subdict); */
 
     /* { */
-    /*     Dictionary *subsubdict = lookup_dict(subdict, "transform"); */
+    /*     DataDictionary *subsubdict = lookup_dict(subdict, "transform"); */
     /*     print_dict_table(subsubdict); */
     /* } */
     /* { */
-    /*     Dictionary *subsubdict = lookup_dict(subdict, "body"); */
+    /*     DataDictionary *subsubdict = lookup_dict(subdict, "body"); */
     /*     print_dict_table(subsubdict); */
-    /*     Dictionary *subsubsubdict = lookup_dict(subsubdict, "material"); */
+    /*     DataDictionary *subsubsubdict = lookup_dict(subsubdict, "material"); */
     /*     print_dict_table(subsubsubdict); */
-    /*     Dictionary *subsubsubsubdict = lookup_dict(subsubsubdict, "diffuse_map"); */
+    /*     DataDictionary *subsubsubsubdict = lookup_dict(subsubsubdict, "diffuse_map"); */
     /*     print_dict_table(subsubsubsubdict); */
     /* } */
 }
-
-
-
+#endif 

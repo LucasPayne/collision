@@ -279,6 +279,7 @@ void gm_triangles(VertexFormat vertex_format);
 Geometry gm_done(void);
 void gm_draw(Geometry geometry, Material *material);
 void gm_lines(VertexFormat vertex_format);
+void gm_free(Geometry geometry);
 
 /*--------------------------------------------------------------------------------
 Shader bookkeeping stuff. Reading the source into application memory

@@ -330,6 +330,7 @@ static void ___material_set_property(Material *material, char *property_name, vo
     // note: This type of property-setting is expensive (requiring a string search) but convenient. If material properties are configured
     //       a lot (e.g. some changing colour over time) and that becomes a problem, consider something like a macro to cast the MaterialProperties block
     //       to edit it like other blocks, with an actual struct giving the offsets for properties.
+
     MaterialType *mt = resource_data(MaterialType, material->material_type);
 
     // Check that this material has properties that can be set.

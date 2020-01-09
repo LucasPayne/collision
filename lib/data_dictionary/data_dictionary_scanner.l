@@ -1,12 +1,17 @@
 %option noyywrap nodefault
+%option prefix="dd_yy"
+
 %{
-#include "data_dictionary.h"
+#include "data_dictionary_implementation.h"
 #include "tokens.yy.h"
 #include <stdbool.h>
 
+// The parser is generated with bison flag "-p ...", redefining so definitions the lexer uses from the bison's generated header file.
+#define yylval dd_yylval
+
 #define trace_lex 1
 
-#define watch_lex 1
+#define watch_lex 0
 #if watch_lex == 1
 #define RETURN(TOKEN)\
 {\
@@ -65,7 +70,7 @@ NAME    [/_A-Za-z0-9]+
         fprintf(stderr, "Attempted to include unknown data-definition file \"%s\".\n", buf);
         exit(EXIT_FAILURE);
     }
-    push_file(file);
+    dd_push_file(file);
     if (trace_lex) printf("Started including data-definition file \"%s\".\n", buf);
     BEGIN INITIAL;
 }
@@ -89,7 +94,7 @@ NAME    [/_A-Za-z0-9]+
 
 <<EOF>> {
     // Complete lexing if at the bottom of the file stack, or pop a file and continue lexing where the previous open file was left of.
-    pop_file();
+    dd_pop_file();
     if (g_file_stack_top == NULL) {
         if (trace_lex) printf("Lexing completed.\n");
         yyterminate();
@@ -106,7 +111,7 @@ NAME    [/_A-Za-z0-9]+
 %%
 
 // #include(...) directives.
-void push_file(FILE *file)
+void dd_push_file(FILE *file)
 {
     struct FileStackEntry *new = (struct FileStackEntry *) malloc(sizeof(struct FileStackEntry));
     mem_check(new);
@@ -116,7 +121,7 @@ void push_file(FILE *file)
     yy_switch_to_buffer(new->buffer_state);
     g_file_stack_top = new;
 }
-void pop_file(void)
+void dd_pop_file(void)
 {
     if (g_file_stack_top == NULL) {
         fprintf(stderr, "ERROR: Attempted to pop from empty file-stack.\n");

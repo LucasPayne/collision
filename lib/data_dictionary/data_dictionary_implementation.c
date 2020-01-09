@@ -164,6 +164,7 @@ DictExpression *scoped_dictionary_expression(DataDictionary *dict, char *name)
      * to the dictionary it was queried from. When a name appears in a dict-expression of this dictionary, it first searches for a dictionary of that name
      * in itself, then in its parent, then, ..., etc.
      */
+    printf("Searching for \"%s\"\n", name);
     DataDictionary *searching_dict = dict;
     while (searching_dict != NULL) {
         DictExpression *found = lookup_dict_expression(searching_dict, name);
@@ -215,7 +216,7 @@ static void compute_dictionary_expression_types(DataDictionary *dd, DictionaryTa
     for (int i = 0; i < num_types; i++) {
         printf("%d: %s\n", i, symbol(types[i]));
     }
-    getchar();
+    /* getchar(); */
 
     cell->contents.dict.num_types = num_types;
     cell->contents.dict.types = (int *) calloc(1, sizeof(int) * num_types);
@@ -254,6 +255,7 @@ static void ___resolve_dictionary_expression(DataDictionary *dict_table, DataDic
 DataDictionary *resolve_dictionary_expression(DataDictionary *parent_dd, DictExpression *expression)
 {
     DataDictionary *dd = new_data_dictionary();
+    dd->parent_dictionary = parent_dd; //give it the parent, so the data-dictionaries form a tree, and scoping can be done.
     ___resolve_dictionary_expression(dd, parent_dd, expression);
     
     // This must be done after a data dictionary is created.

@@ -37,14 +37,17 @@ int main(void)
     if (dd_get(appconf, "clear_color", "vec4", &clear_color)) {
         for (int i = 0; i < 4; i++) printf("%.2f\n", clear_color[i]);
     }
-/*
+
+    DD *spider = dd_open(dd, "Spider");
+    dd_print_table(spider);
+
     DD *scene = dd_open(dd, "Scene");
-    DD **spiders;
-    int num = dd_scan(scene, &spiders, "Spider");
-    for (int i = 0; i < num; i++) {
-        dd_print_table(spiders[i]);
-    }
-*/
+    dd_print_table(scene);
+    /* DD **spiders; */
+    /* int num = dd_scan(scene, &spiders, "Spider"); */
+    /* for (int i = 0; i < num; i++) { */
+    /*     dd_print_table(spiders[i]); */
+    /* } */
 
 }
 

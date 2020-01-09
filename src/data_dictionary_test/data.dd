@@ -1,0 +1,13 @@
+
+// Conf type declares the entries and types for configuring an interactive graphics application.
+Conf < (
+    string window_name: Window;
+    ivec2 gl_version;
+    bool core_profile;
+    vec4 clear_color: 0,0,0,1;
+);
+
+// Source a configuration.
+ApplicationConfiguration < Conf (
+    #include(conf);
+);

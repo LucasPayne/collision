@@ -25,11 +25,7 @@ DataDictionary *resolve_dictionary_expression(DataDictionary *dict, DictExpressi
 uint32_t crc32(char *string);
 bool mask_dictionary_to_table(DataDictionary *dict_table, EntryNode *dict);
 
-// Lookup in dictionary tables.
 DictExpression *lookup_dict_expression(DataDictionary *dict, char *name);
-DataDictionary *lookup_dict(DataDictionary *dict, char *name);
-bool lookup_value(DataDictionary *dict, char *name);
-
 DictExpression *scoped_dictionary_expression(DataDictionary *dict, char *name);
 
 EntryNode *new_entry_node(int name_symbol, int type_symbol, int value_text_symbol);

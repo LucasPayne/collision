@@ -316,37 +316,6 @@ bool mask_dictionary_to_table(DataDictionary *dict_table, EntryNode *dict)
     #undef mask_error
 }
 
-void print_dict_table(DataDictionary *dict_table)
-{
-    printf("---dictionary table-------------------------------------------------------------\n");
-    for (int i = 0; i < dict_table->table_size; i++) {
-        DictionaryTableCell *cell = &dict_table->table[i];
-        printf("%d: ", i);
-        if (cell->name == -1) {
-            // empty cell.
-            printf("___\n");
-            continue;
-        }
-        if (cell->is_dict) {
-            printf("DICT %s-> ", symbol(cell->name));
-            DictExpression *operand = cell->contents.dict.dict_expression;
-            int count = 0;
-            while (operand != NULL) {
-                if (count++ > 0) printf("+ ");
-                if (operand->is_name) printf("%s ", symbol(operand->name));
-                else {
-                    printf("DICT-LITERAL ");
-                }
-                operand = operand->next;
-            }
-            printf("\n");
-        } else {
-            printf("%s %s: %s\n", cell->contents.value.type == -1 ? "NOTYPE" : symbol(cell->contents.value.type), symbol(cell->name),
-                                  cell->contents.value.value_text == -1 ? "NOVALUE" : symbol(cell->contents.value.value_text));
-        }
-    }
-}
-
 // Lookup a dictionary-expression in a dictionary.
 DictExpression *lookup_dict_expression(DataDictionary *dict, char *name)
 {
@@ -372,19 +341,6 @@ DictExpression *lookup_dict_expression(DataDictionary *dict, char *name)
     return NULL;
 
 }
-// Lookup a dictionary in a dictionary (lookup the dictionary-expression and resolve it into a table).
-DataDictionary *lookup_dict(DataDictionary *dict, char *name)
-{
-    /* printf("Looking up dictionary \"%s\" ...\n", name); */
-    DictExpression *expression = lookup_dict_expression(dict, name);
-    if (expression == NULL) return NULL;
-    DataDictionary *found_dict = resolve_dictionary_expression(dict, expression);
-    // Give it a pointer to the queried dictionary, for scoping purposes. This means that queried-for dictionaries
-    // form a tree of dictionary tables.
-    found_dict->parent_dictionary = dict;
-    return found_dict;
-}
-
 // Lookup a value in a dictionary.
 bool lookup_value(DataDictionary *dict, char *name)
 {

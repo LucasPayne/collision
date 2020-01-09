@@ -125,6 +125,16 @@ typedef struct DataDictionary_s {
     DictionaryTableCell ___table;
 } DataDictionary;
 
-DataDictionary *dd_open(char *path);
+// Open a dictionary from an actual path, e.g. a .dd file.
+DataDictionary *dd_fopen(char *path);
+
+//--- Possibly shouldn't have this here. But it is useful for debugging.
+//The actual printing should probably not show the hash-table data structure.
+void dd_print_table(DataDictionary *dict_table);
+
+// Open a subdictionary.
+DataDictionary *dd_open(DataDictionary *dict, char *name);
+// Query for a value.
+bool dd_get(DataDictionary *dict, char *name);
 
 #endif // HEADER_DEFINED_DATA_DICTIONARY

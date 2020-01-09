@@ -210,7 +210,7 @@ static void compute_dictionary_expression_types(DataDictionary *dd, DictionaryTa
 
     const int max_num_types = 1024;
     int types[max_num_types];
-    int num_types = ___compute_dictionary_expression_types(dd, types, 0, max_num_types, cell->contents.dict.dict_expression) + 1;
+    int num_types = ___compute_dictionary_expression_types(dd, types, 0, max_num_types, cell->contents.dict.dict_expression);
 
     printf("\nGot %d types.\n", num_types);
     for (int i = 0; i < num_types; i++) {

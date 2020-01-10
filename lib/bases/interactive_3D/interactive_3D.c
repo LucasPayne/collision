@@ -15,7 +15,7 @@ base_libs:
     - aspect_library/gameobjects
     + iterator
     - resources
-    - rendering
+    + rendering
     - ply
 --------------------------------------------------------------------------------*/
 #include <glad/glad.h>
@@ -31,11 +31,16 @@ base_libs:
 #include "helper_input.h"
 #include "data_dictionary.h"
 /* #include "ply.h" */
-/* #include "rendering.h" */
-/* #include "resources.h" */
+#include "rendering.h"
+#include "resources.h"
 #include "entity.h"
 #include "matrix_mathematics.h"
 #include "aspect_library/gameobjects.h"
+
+typedef Matrix4x4f mat4x4;
+#include "shader_blocks/Standard3D.h"
+#include "shader_blocks/StandardLoopWindow.h"
+#include "shader_blocks/Lights.h"
 
 #define BASE_DIRECTORY "/home/lucas/code/collision/lib/bases/interactive_3D/"
 
@@ -49,6 +54,21 @@ extern void close_program(void);
 #define config_error(str)\
     { fprintf(stderr, ERROR_ALERT "Application configuration error: non-existent or malformed \"" str "\" entry.\n");\
       exit(EXIT_FAILURE); }
+
+static void init_base(void)
+{
+    /* Non-window initialization. */
+    // Create the basic shader blocks.
+    add_shader_block(MaterialProperties); // The definition of this block is part of the rendering module.
+    add_shader_block(StandardLoopWindow);
+    add_shader_block(Standard3D);
+    // add_shader_block(Lights);
+    
+    // Initialize the entity and aspect system, and load type data for aspects
+    // forming the "GameObject" library.
+    /* init_entity_model(); */
+    /* init_aspects_gameobjects(); */
+}
 
 int main(void)
 {
@@ -86,9 +106,10 @@ int main(void)
     if (!dd_get(app_config, "clear_color", "vec4", clear_color)) config_error("clear_color");
     glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
 
+    init_base();
+
     init_program();
     double last_time = time;
-#if 1
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -119,7 +140,6 @@ int main(void)
         glFlush();
         glfwSwapBuffers(window);
     }
-#endif
     // Cleanup
     close_program();
     glfwDestroyWindow(window);

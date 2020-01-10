@@ -122,7 +122,15 @@ DD_TYPE_READER(int) {
     *((int *) data) = val;
     return true;
 }
-
+// This string needs to be freed by the retriever.
+DD_TYPE_READER(string) {
+    int len = strlen(text);
+    char *str = (char *) malloc(sizeof(char) * (len + 1));
+    strcpy(str, text);
+    str[len] = '\0';
+    *((char **) data) = str;
+    return true;
+}
 
 static bool read_comma_separated_C_type(const char *text, void *data, const char *fmt, const size_t size, const int count)
 {
@@ -155,6 +163,7 @@ const struct { DDTypeReader reader; const char *type_name; } dd_type_readers[] =
     type(int),
     type(vec4),
     type(ivec2),
+    type(string),
     { NULL, NULL }
 };
 #undef type

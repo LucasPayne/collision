@@ -315,14 +315,6 @@ typedef struct /* Resource */ Texture_s {
 } Texture;
 void *Texture_load(char *path);
 
-
-/*--------------------------------------------------------------------------------
-  Text file configuration, dictionaries integration
---------------------------------------------------------------------------------*/
-#include "dictionary.h"
-void dict_query_rules_rendering(DictQuerier *q);
-
-
 //--------------------------------------------------------------------------------
 // Working on currently
 //--------------------------------------------------------------------------------

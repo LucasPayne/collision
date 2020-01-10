@@ -198,7 +198,6 @@ void init_program(void)
     init_entity_model();
     init_aspects_gameobjects();
 
-
     {
         EntityID camera_man = new_entity(4);
         Transform_set(entity_add_aspect(camera_man, Transform), 0,0,0,0,0,0);

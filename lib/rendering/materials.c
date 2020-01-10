@@ -54,34 +54,28 @@ Text-file format:
 --------------------------------------------------------------------------------*/
 void *MaterialType_load(char *path)
 {
-    printf("Loading material type from path %s\n", path);
-
-    //----- Important: Some error conditions leave memory leaks. Seriously think about how to avoid this.
 #define load_error(STRING)\
     { fprintf(stderr, "Error while loading MaterialType: " STRING "\n"); return NULL; }
-    // Try to open the .MaterialType dictionary for querying.
-    FILE *file = resource_file_open(path, ".MaterialType", "r");
-    if (file == NULL) load_error("File failed to open.");
-    Dictionary *dict = dictionary_read(file);
-    if (dict == NULL) load_error("Failed to create dictionary for file.");
-    DictQuerier *q = dict_new_querier(dict);
-    if (q == NULL) load_error("Could not create querier.");
-    dict_query_rules_rendering(q);
-    // Now query for the basic MaterialType values.
-    MaterialType material_type = {0};
-    if (!dict_query_get(q, "VertexFormat", "vertex_format", &material_type.vertex_format)) load_error("Non-existent/invalid vertex_format entry.");
-    if (!dict_query_get(q, "unsigned int", "num_blocks", &material_type.num_blocks)) load_error("Non-existent/invalid num_blocks entry.");
-    if (!dict_query_get(q, "unsigned int", "num_textures", &material_type.num_textures)) load_error("Non-existent/invalid num_textures entry.");
+    DD *dd = dd_open(g_resource_dictionary, path);
+    if (dd == NULL) load_error("Could not open dictionary.\n");
+
+    MaterialType mt = {0};
+    char *vertex_format_string;
+    if (!dd_get(dd, "vertex_format", "string", vertex_format_string)) load_error("No vertex_format.");
+    mt.vertex_format = string_to_VertexFormat(vertex_format_string);
+    if (mt.vertex_format == VERTEX_FORMAT_NONE) load_error("Bad vertex format.");
+    if (!dd_get(dd, "num_blocks", "uint", &mt.num_blocks)) load_error("No num_blocks.");
     if (material_type.num_blocks > MATERIAL_MAX_SHADER_BLOCKS) load_error("Too many shader blocks declared in num_blocks.");
+    if (!dd_get(dd, "num_textures", "uint", &mt.num_textures)) load_error("No num_blocks.");
     if (material_type.num_textures > MATERIAL_MAX_TEXTURES) load_error("Too many textures declared in num_textures.");
 
     // Attempt to find/load the Shader resources, and then link them.
-    const int buf_size = 1024;
-    char buf[buf_size];
+    char *vertex_shader;
+    if (!dd_get(dd, "vertex_shader", "string", vertex_shader)) load_error("No vertex_shader.");
+    char *fragment_shader;
+    if (!dd_get(dd, "fragment_shader", "string", fragment_shader)) load_error("No fragment_shader.");
     material_type.program_type = GRAPHICS_PROGRAM_VF; // Only handling vertex+fragment programs currently.
-    if (!dict_get(dict, "vertex_shader", buf, buf_size)) load_error("No vertex_shader entry.");
     material_type.shaders[Vertex] = new_resource_handle(Shader, buf);
-    if (!dict_get(dict, "fragment_shader", buf, buf_size)) load_error("No fragment_shader entry."); //!!!! Destroy the above resource handle.
     material_type.shaders[Fragment] = new_resource_handle(Shader, buf);
 
     material_type.program_id = glCreateProgram();
@@ -100,11 +94,12 @@ void *MaterialType_load(char *path)
     for (int i = 0; i < material_type.num_textures; i++) {
         char texture_token[32];
         sprintf(texture_token, "texture%d", i);
-        if (!dict_get(dict, texture_token, buf, buf_size)) load_error("Not all declared textures have been given.");
-        if (strlen(buf) > MATERIAL_MAX_TEXTURE_NAME_LENGTH) load_error("Texture name too long.");
-        strncpy(material_type.texture_names[i], buf, MATERIAL_MAX_TEXTURE_NAME_LENGTH);
+        char *texture;
+        if (!dd_get(dd, texture_token, "string", texture)) load_error("Not all declared textures have been given.");
+        if (strlen(texture) >= MATERIAL_MAX_TEXTURE_NAME_LENGTH) load_error("Texture name too long.");
+        strncpy(material_type.texture_names[i], texture, MATERIAL_MAX_TEXTURE_NAME_LENGTH);
         // Bind this texture in the program to the binding point.
-        GLint texture_location = glGetUniformLocation(material_type.program_id, buf);
+        GLint texture_location = glGetUniformLocation(material_type.program_id, texture);
         if (texture_location < 0) {
             // ----Since a sampler in glsl is a loose uniform variable, maybe it could be optimized out. -1 being passed to texture functions
             // fails silently, so it might be fine to not give a load error here.
@@ -123,8 +118,9 @@ void *MaterialType_load(char *path)
     for (int i = 0; i < material_type.num_blocks; i++) {
         char block_token[32];
         sprintf(block_token, "block%d", i);
-        if (!dict_get(dict, block_token, buf, buf_size)) load_error("Not all declared shader blocks have been given.");
-        ShaderBlockID block_id = get_shader_block_id(buf);
+        char *block;
+        if (!dd_get(dd, block_token, "string", block)) load_error("Not all declared shader blocks have been given.");
+        ShaderBlockID block_id = get_shader_block_id(block);
         if (block_id < 0) load_error("Unsupported shader block.");
         material_type.shader_blocks[i] = block_id;
         // Bind the block to the linked program.
@@ -189,8 +185,8 @@ void *MaterialType_load(char *path)
         material_type.properties_size = 0;
         material_type.num_properties = 0;
     }
-    printf("Finished loading material type from path %s\n", path);
-    print_material_type(&material_type);
+    /* printf("Finished loading material type from path %s\n", path); */
+    /* print_material_type(&material_type); */
     
     // Successfully filled the MaterialType.
     MaterialType *out_material_type = (MaterialType *) calloc(1, sizeof(MaterialType));
@@ -232,20 +228,7 @@ void print_material_type(MaterialType *mt)
 
 ResourceType Material_RTID;
 /*--------------------------------------------------------------------------------
-For a material instance, file-backing is just an option. It may be useful to
-ignore the fact that it is a shareable resource and just define new materials in-line in code,
-but still be able to back a collection of material instance descriptions to be loaded, e.g. for standard flat colours/dashed lines
-for a debug-line rendering system.
-
-This is in contrast to the material type, which must be file-backed, since it is a complicated object. All that is needed for a material instance
-is the material type, and textures (their resource paths for file-backed textures only) and properties.
-
-Text-file format:
-     material_type: <resource path>
-     mp_{name}: <type of this material property>, these entries define the material properties.
-         ...
-     tx_{name}: <resource path>, the resource path for the file-backed texture to bind to whatever unit the material type binds {name} to.
-         ...
+  Material instances
 --------------------------------------------------------------------------------*/
 void *Material_load(char *path)
 {

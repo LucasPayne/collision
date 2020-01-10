@@ -9,6 +9,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 /*--------------------------------------------------------------------------------
+File-backed resources described their source/assets with a "manifest", using the data
+dictionary system. A path such as "Textures/minecraft/dirt" resolves to opening a global
+resource dictionary, and following subdictionaries "Textures" and "minecraft", then subdictionary
+"dirt", which is expected to be of a certain type, say a Texture dictionary. This is checked by the load function
+for a Texture resource, which then extracts the Texture entries to load a resource, for example reading that the image is a png
+and is sourced from a certain file.
+--------------------------------------------------------------------------------*/
+#include "data_dictionary.h"
+static DataDictionary *g_resource_dictionary;
+
+/*--------------------------------------------------------------------------------
     Resource IDs
 --------------------------------------------------------------------------------
 A resource ID is held by a resource handle. This gives an index into the resource
@@ -31,6 +42,9 @@ array of ResourceTableEntry structs. These don't contain resource IDs, but
 a magic number ("uuid") for validating instant resource lookups, a type
 for type-checking, a path to facilitate reloading and querying, and
 a pointer to the actual resource, wherever it is.
+
+This is a hash table so that resources can be cached, so that subsequent queries for
+a resource with the same path retrieve the cached resource.
 --------------------------------------------------------------------------------*/
 #define RESOURCE_TABLE_START_SIZE 1024
 typedef struct ResourceTableEntry_s {
@@ -58,7 +72,7 @@ typedef struct ResourceHandle_s {
     // managing functions will need to.
     bool path_backed;
     ResourceID _id;
-    union data_union {
+    union {
         // note: since path/resource memory is allocated, resource handles must be destroyed when the owner is destroyed/they are swapped.
         char *path; // for path-backed resources, for example ones that use the path to load the resource from a file.
         void *resource; // for non-path-backed resources, ones that hold and own the resource data itself.
@@ -129,38 +143,6 @@ void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, v
                           ( #RESOURCE_TYPE_NAME ),\
                           ( RESOURCE_TYPE_NAME ## _load ),\
                           ( RESOURCE_TYPE_NAME ## _unload ))
-
-
-/*--------------------------------------------------------------------------------
-    The "resource tree" and resource-path querying
---------------------------------------------------------------------------------
-Resources' "real" globally unique identifier is the "path" they are created with.
-These paths can be used to query whether or not a resource is loaded. This is
-(currently, it does not seem too good) done by maintaining a tree which the
-query follows by the path's entries, e.g. "Shaders/texturing/test.frag" follows the tree
-as (root) --> Shaders --> texturing --> test.frag.
-
-If this gets to a leaf, then the leaf contains the resource type ID, including the index
-into the global resource table. So, this is used so that resource handle "dereferences"
-synchronize to the correct ID if the resource is already loaded, and subsequent dereferences
-will use that ID.
-
-If the path can't be followed, then the resource isn't loaded. Resources are added
-to the tree by filling out the tree just enough to store the resource ID at the leaf.
---------------------------------------------------------------------------------*/
-#define MAX_RESOURCE_BRANCH_NAME_LENGTH 32
-typedef struct ResourceTree_s {
-    char name[MAX_RESOURCE_BRANCH_NAME_LENGTH + 1];
-    struct ResourceTree_s *next;
-    bool is_leaf;
-    union contents_union {
-        struct ResourceTree_s *first_child;
-        ResourceID resource_id;
-    } contents;
-} ResourceTree;
-
-ResourceID add_resource(ResourceID id, char *path);
-ResourceID lookup_resource(char *path);
 
 /*--------------------------------------------------------------------------------
     The "resource path variable" and drives

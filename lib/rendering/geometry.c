@@ -15,7 +15,6 @@ This module is not for geometric math, only the "Geometry" resource.
 #include "helper_definitions.h"
 #include "resources.h"
 #include "rendering.h"
-#include "dictionary.h"
 
 /*--------------------------------------------------------------------------------
 Information about available vertex attributes.
@@ -43,46 +42,40 @@ Loading file-backed Geometry:
 --------------------------------------------------------------------------------*/
 void *Geometry_load(char *path)
 {
-    #define load_error(STRING)\
-    {\
-        fprintf(stderr, ERROR_ALERT "Error loading goemetry: %s\n", ( STRING ));\
-        exit(EXIT_FAILURE);\
-    }
-    FILE *file = resource_file_open(path, ".Mesh", "r");
-    if (file == NULL) load_error("could not find a .Mesh file");
-    Dictionary *dict = dictionary_read(file);
-    if (dict == NULL) load_error("dictionary can't be made");
-    const int buf_size = 512;
-    char buf[buf_size];
-    if (!dict_get(dict, "vertex_format", buf, buf_size)) load_error("vertex_format cannot be found");
-    VertexFormat vertex_format = string_to_VertexFormat(buf);
-    if (vertex_format == VERTEX_FORMAT_NONE) load_error("vertex_format is invalid");
-    if ((vertex_format & VERTEX_FORMAT_3) == 0) load_error("vertex_format must contain a position attribute (symbol: 3).");
-    if (!dict_get(dict, "filetype", buf, buf_size)) load_error("filetype cannot be found");
+    #define load_error(STRING) { fprintf(stderr, ERROR_ALERT "Error loading geometry: %s\n", ( STRING )); exit(EXIT_FAILURE); }
+    #define manifest_error(str) load_error("Geometry manifest file has missing or malformed " str " entry.\n")
 
-    MeshData mesh_data = {0};
+    DataDictionary *dd = dd_open(g_resource_dictionary, path);
+    if (dd == NULL) load_error("Could not open dictionary for geometry.");
+    char *vertex_format_string;
+    if (!dd_get(dd, "vertex_format", "string", vertex_format)) manifest_error("vertex_format_string");
+    VertexFormat format = string_to_VertexFormat(vertex_format_string);
+    if (format == VERTEX_FORMAT_NONE) load_error("Invalid vertex format given.");
+    char *type;
+    if (!dd_get(dd, "type", "string", vertex_format)) manifest_error("type"); //- if not doing a fatal error, remember to free the queried strings.
+
     Geometry geometry;
-    if (strncmp(buf, "ply", buf_size) == 0) {
-        // Loading the mesh from a PLY file.
-        FILE *ply_file = resource_file_open(path, ".ply", "r");
-        if (ply_file == NULL) load_error("cannot open resource PLY file");
+    if (strcmp(type, "ply") == 0) {
+        // Load geometry from a PLY file.
+        char *ply_path;
+        if (!dd_get(dd, "path", "string", ply_path)) manifest_error("path");
+        FILE *ply_file = resource_file_open(ply_path, "", "r");
+        if (ply_file == NULL) load_error("Cannot open resource PLY file.");
         load_mesh_ply(&mesh_data, vertex_format, ply_file);
         geometry = upload_mesh(&mesh_data);
-    } else {
-        // Invalid mesh filetype or it is not supported.
-        load_error("invalid mesh filetype");
-    }
-    // DESTROY THE MESH DATA !!!!
-    for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
-        if (mesh_data.attribute_data[i] != NULL) free(mesh_data.attribute_data[i]);
-    }
-    if (mesh_data.triangles != NULL) free(mesh_data.triangles);
+        // Destroy the mesh data.
+        for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
+            if (mesh_data.attribute_data[i] != NULL) free(mesh_data.attribute_data[i]);
+        }
+        if (mesh_data.triangles != NULL) free(mesh_data.triangles);
+    } else load_error("Invalid geometry-loading type given.");
 
     Geometry *geometry_out = (Geometry *) calloc(1, sizeof(Geometry));
     mem_check(geometry_out);
     memcpy(geometry_out, &geometry, sizeof(Geometry));
     return geometry_out;
     #undef load_error
+    #undef manifest_error
 }
 
 /*---Usage details----------------------------------------------------------------

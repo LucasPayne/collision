@@ -142,9 +142,15 @@ DataDictionary *dd_open(DataDictionary *dict, char *name);
 // Query for a value.
 bool dd_get(DataDictionary *dict, char *name, char *type, void *data);
 
+// Scan for dictionaries matching a type string in a given dictionary. Similar to C library's scandir.
+int dd_scan(DataDictionary *dd, DataDictionary ***scanned, const char *type_string);
+
 
 // Type readers.
 typedef bool (*DDTypeReader)(const char *, void *);
 DDTypeReader dd_get_reader(const char *type);
+
+// Typedef acronym.
+typedef DataDictionary DD;
 
 #endif // HEADER_DEFINED_DATA_DICTIONARY

@@ -64,12 +64,12 @@
 /* Copy the first part of user declarations.  */
 #line 1 "parser.y" /* yacc.c:339  */
 
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include "gen_shader_blocks.h"
+#include <stdlib.h>
+#include <stdbool.h>
+#include "data_dictionary.h"
 
-#define tracing_parse 0
+EntryNode *g_dict;
 
 #line 75 "parser.yy.c" /* yacc.c:339  */
 
@@ -106,15 +106,8 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    BLOCK = 258,
-    STRUCT = 259,
-    LEFTBRACE = 260,
-    RIGHTBRACE = 261,
-    LEFTBRACKET = 262,
-    RIGHTBRACKET = 263,
-    SEMICOLON = 264,
-    IDENTIFIER = 265,
-    HASHDEFINE = 266
+    IDENTIFIER = 258,
+    VALUE_TEXT = 259
   };
 #endif
 
@@ -125,12 +118,11 @@ union YYSTYPE
 {
 #line 9 "parser.y" /* yacc.c:355  */
 
-    // storing the token information for a "#define MAX_NUMBER_LIGHTS 32" as the MAX_NUMBER_LIGHTS token and the value 32.
-    HashDefinition hash_definition;
     int symbol;
-    Entry entry;
+    EntryNode *entry_node;
+    DictExpression *dict_expression;
 
-#line 134 "parser.yy.c" /* yacc.c:355  */
+#line 126 "parser.yy.c" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -147,7 +139,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 151 "parser.yy.c" /* yacc.c:358  */
+#line 143 "parser.yy.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -387,23 +379,23 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  2
+#define YYFINAL  11
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   26
+#define YYLAST   22
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  12
+#define YYNTOKENS  10
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  10
+#define YYNNTS  4
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  16
+#define YYNRULES  11
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  32
+#define YYNSTATES  26
 
 /* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
    by yylex, with out-of-bounds checking.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   266
+#define YYMAXUTOK   259
 
 #define YYTRANSLATE(YYX)                                                \
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -416,6 +408,9 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       8,     9,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     6,     5,
+       7,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -434,19 +429,15 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9,    10,    11
+       2,     2,     2,     2,     2,     2,     1,     2,     3,     4
 };
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    29,    29,    29,    31,    31,    40,    40,    42,    45,
-      46,    51,    59,    83,    83,    90,    90
+       0,    24,    24,    31,    38,    42,    46,    50,    54,    60,
+      65,    70
 };
 #endif
 
@@ -455,10 +446,8 @@ static const yytype_uint8 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "BLOCK", "STRUCT", "LEFTBRACE",
-  "RIGHTBRACE", "LEFTBRACKET", "RIGHTBRACKET", "SEMICOLON", "IDENTIFIER",
-  "HASHDEFINE", "$accept", "file", "block", "$@1", "block_entries",
-  "block_entry", "entry", "struct", "$@2", "struct_entries", YY_NULLPTR
+  "$end", "error", "$undefined", "IDENTIFIER", "VALUE_TEXT", "';'", "':'",
+  "'<'", "'('", "')'", "$accept", "Dict", "Pair", "DictExpression", YY_NULLPTR
 };
 #endif
 
@@ -467,17 +456,16 @@ static const char *const yytname[] =
    (internal) symbol number NUM (which must be that of a token).  */
 static const yytype_uint16 yytoknum[] =
 {
-       0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
-     265,   266
+       0,   256,   257,   258,   259,    59,    58,    60,    40,    41
 };
 # endif
 
-#define YYPACT_NINF -23
+#define YYPACT_NINF -8
 
 #define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-23)))
+  (!!((Yystate) == (-8)))
 
-#define YYTABLE_NINF -14
+#define YYTABLE_NINF -1
 
 #define yytable_value_is_error(Yytable_value) \
   0
@@ -486,10 +474,9 @@ static const yytype_uint16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-     -23,     5,   -23,   -23,     6,    -2,     7,    -4,     0,   -23,
-       8,    -4,   -23,   -23,     9,    -6,     2,   -23,    10,    11,
-     -23,   -23,    12,    14,    13,    15,    13,    19,   -23,   -23,
-      17,   -23
+       3,     5,    -1,    15,     3,     8,     1,    -1,    -1,     3,
+      -2,    -8,    -8,    -8,    13,    14,    16,    -8,     9,    -8,
+      17,    -8,    -8,    -1,    -8,    -8
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -497,63 +484,61 @@ static const yytype_int8 yypact[] =
      means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       2,     4,     1,     3,     0,     0,     0,     6,     0,    10,
-       0,     6,     8,     9,     0,     0,     0,     7,     0,     0,
-      11,     5,     0,     0,    15,     0,    15,     0,    12,    16,
-       0,    14
+       3,     0,    11,     0,     3,     0,     0,    11,    11,     3,
+       0,     1,     2,     4,     0,     0,     0,    10,     0,     8,
+       0,     6,     7,    11,     5,     9
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -23,   -23,   -23,   -23,     4,   -23,   -22,   -23,   -23,   -10
+      -8,     0,    -8,    -7
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     1,     3,     4,    10,    11,    12,    13,    14,    27
+      -1,     3,     4,    10
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
      positive, shift that token.  If negative, reduce the rule whose
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
-static const yytype_int8 yytable[] =
+static const yytype_uint8 yytable[] =
 {
-     -13,    19,    26,    20,    26,     2,     8,     9,     6,     5,
-      15,    21,     7,    18,    16,    17,    29,    24,     0,     0,
-      22,    23,    25,     8,    28,    30,    31
+      16,    17,     8,    19,    12,    15,     1,     9,     5,    18,
+       2,     6,     7,    13,    14,    11,    25,    20,    23,    21,
+       0,    22,    24
 };
 
 static const yytype_int8 yycheck[] =
 {
-       4,     7,    24,     9,    26,     0,    10,    11,    10,     3,
-      10,     9,     5,     4,     6,    11,    26,     5,    -1,    -1,
-      10,    10,     8,    10,     9,     6,     9
+       7,     8,     3,     5,     4,     4,     3,     8,     3,     9,
+       7,     6,     7,     5,     6,     0,    23,     4,     9,     5,
+      -1,     5,     5
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,    13,     0,    14,    15,     3,    10,     5,    10,    11,
-      16,    17,    18,    19,    20,    10,     6,    16,     4,     7,
-       9,     9,    10,    10,     5,     8,    18,    21,     9,    21,
-       6,     9
+       0,     3,     7,    11,    12,     3,     6,     7,     3,     8,
+      13,     0,    11,     5,     6,     4,    13,    13,    11,     5,
+       4,     5,     5,     9,     5,    13
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    12,    13,    13,    15,    14,    16,    16,    17,    17,
-      17,    18,    18,    20,    19,    21,    21
+       0,    10,    11,    11,    12,    12,    12,    12,    12,    13,
+      13,    13
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
-       0,     2,     0,     2,     0,     7,     0,     2,     1,     1,
-       1,     3,     6,     0,     7,     0,     2
+       0,     2,     2,     0,     3,     5,     4,     4,     3,     4,
+       2,     0
 };
 
 
@@ -1229,113 +1214,103 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-        case 4:
+        case 2:
+#line 24 "parser.y" /* yacc.c:1646  */
+    {
+        (yyvsp[-1].entry_node)->next = (yyvsp[0].entry_node);
+        // This pair is now the head of the linked list.
+        (yyval.entry_node) = (yyvsp[-1].entry_node);
+        g_dict = (yyval.entry_node); // is there a better way to do this? After yyparse(), this will be the top-level dictionary, so it is a way to return the AST.
+        printf("Dict: Pair Dict\n");
+    }
+#line 1227 "parser.yy.c" /* yacc.c:1646  */
+    break;
+
+  case 3:
 #line 31 "parser.y" /* yacc.c:1646  */
     {
-    // pre-expansion code with an embedded action (flex & bison p143 (163))
-    if (tracing_parse) printf("Creating a new block.\n");
-    new_block();
-}
-#line 1240 "parser.yy.c" /* yacc.c:1646  */
+        (yyval.entry_node) = NULL;
+        printf("Dict:\n");
+    }
+#line 1236 "parser.yy.c" /* yacc.c:1646  */
+    break;
+
+  case 4:
+#line 38 "parser.y" /* yacc.c:1646  */
+    {
+        (yyval.entry_node) = new_entry_node((yyvsp[-1].symbol), (yyvsp[-2].symbol), -1);
+        printf("Pair: IDENTIFIER=\"%s\" IDENTIFIER=\"%s\";\n", symbol((yyvsp[-2].symbol)), symbol((yyvsp[-1].symbol)));
+    }
+#line 1245 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 5:
-#line 35 "parser.y" /* yacc.c:1646  */
+#line 42 "parser.y" /* yacc.c:1646  */
     {
-    if (tracing_parse) printf("block created: %s\n", symbol((yyvsp[-4].symbol)));
-    finish_block((yyvsp[-4].symbol));
-    return 0; // success, return for the processing one block.
-}
-#line 1250 "parser.yy.c" /* yacc.c:1646  */
+        (yyval.entry_node) = new_entry_node((yyvsp[-3].symbol), (yyvsp[-4].symbol), (yyvsp[-1].symbol));
+        printf("Pair: IDENTIFIER=\"%s\" IDENTIFIER=\"%s\": VALUE_TEXT=\"%s\";\n", symbol((yyvsp[-4].symbol)), symbol((yyvsp[-3].symbol)), symbol((yyvsp[-1].symbol)));
+    }
+#line 1254 "parser.yy.c" /* yacc.c:1646  */
+    break;
+
+  case 6:
+#line 46 "parser.y" /* yacc.c:1646  */
+    {
+        (yyval.entry_node) = new_entry_node((yyvsp[-3].symbol), -1, (yyvsp[-1].symbol));
+        printf("Pair: IDENTIFIER=\"%s\": VALUE_TEXT=\"%s\";\n", symbol((yyvsp[-3].symbol)), symbol((yyvsp[-1].symbol)));
+    }
+#line 1263 "parser.yy.c" /* yacc.c:1646  */
+    break;
+
+  case 7:
+#line 50 "parser.y" /* yacc.c:1646  */
+    {
+        (yyval.entry_node) = new_dict_node((yyvsp[-3].symbol), (yyvsp[-1].dict_expression));
+        printf("Pair: IDENTIFIER=\"%s\" < DictExpression;\n", symbol((yyvsp[-3].symbol)));
+    }
+#line 1272 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 42 "parser.y" /* yacc.c:1646  */
+#line 54 "parser.y" /* yacc.c:1646  */
     {
-        block_add_entry((yyvsp[0].entry));
+        (yyval.entry_node) = new_dict_node(-1, (yyvsp[-1].dict_expression));
+        printf("Pair: < DictExpression;\n");
     }
-#line 1258 "parser.yy.c" /* yacc.c:1646  */
+#line 1281 "parser.yy.c" /* yacc.c:1646  */
+    break;
+
+  case 9:
+#line 60 "parser.y" /* yacc.c:1646  */
+    {
+        (yyval.dict_expression) = new_literal_dict_expression((yyvsp[-2].entry_node));
+        (yyval.dict_expression)->next = (yyvsp[0].dict_expression);
+        printf("DictExpression: (Dict) DictExpression\n");
+    }
+#line 1291 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 46 "parser.y" /* yacc.c:1646  */
+#line 65 "parser.y" /* yacc.c:1646  */
     {
-        if (tracing_parse) printf("block hash_define: %s, value: %d\n", symbol((yyvsp[0].hash_definition).identifier), (yyvsp[0].hash_definition).value);
-        block_add_hash_define((yyvsp[0].hash_definition));
+        (yyval.dict_expression) = new_named_dict_expression((yyvsp[-1].symbol));
+        (yyval.dict_expression)->next = (yyvsp[0].dict_expression);
+        printf("DictExpression: IDENTIFIER=\"%s\" DictExpression\n", symbol((yyvsp[-1].symbol)));
     }
-#line 1267 "parser.yy.c" /* yacc.c:1646  */
+#line 1301 "parser.yy.c" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 51 "parser.y" /* yacc.c:1646  */
+#line 70 "parser.y" /* yacc.c:1646  */
     {
-    // Singleton entry.
-    if (tracing_parse) printf("entry: type: %s, name: %s\n", symbol((yyvsp[-2].symbol)), symbol((yyvsp[-1].symbol)));
-    Entry entry = new_entry((yyvsp[-2].symbol), (yyvsp[-1].symbol));
-    entry.is_array = false;
-    (yyval.entry) = entry;
-    if (tracing_parse) printf("type_size: %zu\n", (yyval.entry).type_size);
-}
-#line 1280 "parser.yy.c" /* yacc.c:1646  */
-    break;
-
-  case 12:
-#line 59 "parser.y" /* yacc.c:1646  */
-    {
-    // Array entry with non-literal (macro e.g. NUM_LIGHTS) length.
-    char *length_token = symbol((yyvsp[-2].symbol));
-    Entry entry = new_entry((yyvsp[-5].symbol), (yyvsp[-4].symbol));
-    entry.is_array = true;
-    int i;
-    int length;
-    for (i = 0; i < g_block.num_hash_defines; i++) {
-        if (strcmp(length_token, symbol(g_block.hash_defines[i].identifier)) == 0) {
-            // #define NUM_LIGHTS 32;
-            // ...
-            // Light lights[NUM_LIGHTS]; -> array entry, type: Light, name: lights, length: 32.
-            length = g_block.hash_defines[i].value;
-            break;
-        }
+        (yyval.dict_expression) = NULL;
+        printf("DictExpression:\n");
     }
-    if (i == g_block.num_hash_defines) {
-        if (tracing_parse) fprintf(stderr, "ERROR: Array length specified as token \"%s\", which has not been defined above this occurence in the block.\n", length_token);
-        exit(EXIT_FAILURE);
-    }
-    entry.array_length = length;
-    (yyval.entry) = entry;
-    if (tracing_parse) printf("type_size: %zu\n", (yyval.entry).type_size);
-}
-#line 1309 "parser.yy.c" /* yacc.c:1646  */
-    break;
-
-  case 13:
-#line 83 "parser.y" /* yacc.c:1646  */
-    {
-    if (tracing_parse) printf("Creating a new struct.\n");
-    new_struct();
-}
-#line 1318 "parser.yy.c" /* yacc.c:1646  */
-    break;
-
-  case 14:
-#line 86 "parser.y" /* yacc.c:1646  */
-    {
-    if (tracing_parse) printf("struct definition: %s\n", symbol((yyvsp[-4].symbol)));
-    block_add_struct((yyvsp[-4].symbol));
-}
-#line 1327 "parser.yy.c" /* yacc.c:1646  */
-    break;
-
-  case 16:
-#line 90 "parser.y" /* yacc.c:1646  */
-    {
-    struct_add_entry((yyvsp[-1].entry));
-}
-#line 1335 "parser.yy.c" /* yacc.c:1646  */
+#line 1310 "parser.yy.c" /* yacc.c:1646  */
     break;
 
 
-#line 1339 "parser.yy.c" /* yacc.c:1646  */
+#line 1314 "parser.yy.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1563,34 +1538,6 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 94 "parser.y" /* yacc.c:1906  */
-
-/*
-typedef struct Entry_s {
-    int type; //in symbol table, e.g. "vec4", or a defined struct.
-    int the_rest; //in symbol table, e.g. "stuff[NUM_STUFF]".
-} Entry;
-typedef struct StructDefinition_s {
-    int name; //in symbol table
-    Entry entries[MAX_ENTRIES];
-} StructDefinition;
-typedef struct Block_s {
-    int name; //in symbol table
-    int hash_defines[MAX_HASH_DEFINES]; // lookups into the "symbol" table
-    StructDefinition *struct_definition[MAX_STRUCT_DEFINITIONS];
-    Entry entries[MAX_ENTRIES];
-} Block;
+#line 75 "parser.y" /* yacc.c:1906  */
 
 
-FILE ::= BLOCK*
-BLOCK ::= block IDENTIFIER { (ENTRY | STRUCT | DEFINITION)* };
-IDENTIFIER ::= //a valid glsl identifier.
-ENTRY ::= TYPE IDENTIFIER;
-TYPE ::= //a valid glsl type or [struct that has been defined above in the file].
-STRUCT ::= struct IDENTIFIER IDENTIFIER { ENTRY* }; //first identifier is for the block to attach to (does not need to be already defined), second is for the struct name.
-DEFINITION ::= //a valid C #define definition.
-
-    | STRUCT IDENTIFIER IDENTIFIER SEMICOLON {
-        if (tracing_parse) printf("struct entry: type: %s, name: %s\n", symbol($2), symbol($3));
-    };
-*/

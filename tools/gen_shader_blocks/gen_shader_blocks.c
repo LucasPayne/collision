@@ -242,18 +242,18 @@ An array of scalars or vectors
             #undef is
         }
         /* printf("type %s size %zu\n", symbol(entries[i].type), size); */
-        printf("%s\n", symbol(entries[i].type));
-        printf("---offset: %zu\n", offset);
-        printf("---up to alignment: %zu\n", alignment);
+        /* printf("%s\n", symbol(entries[i].type)); */
+        /* printf("---offset: %zu\n", offset); */
+        /* printf("---up to alignment: %zu\n", alignment); */
         offset = up(offset, alignment);
         entries[i].type_size = C_type_size;
         entries[i].std140_size = size;
         entries[i].std140_offset = offset;
         entries[i].std140_alignment = alignment;
-        printf("------offset: %zu\n", offset);
-        printf("------plus size: %zu\n", size);
+        /* printf("------offset: %zu\n", offset); */
+        /* printf("------plus size: %zu\n", size); */
         offset += size;
-        printf("----------offset: %zu\n", offset);
+        /* printf("----------offset: %zu\n", offset); */
     }
     return offset; //the offset is placed after the end, so is the size.
 #undef up
@@ -435,7 +435,7 @@ typedef struct ShaderBlock_DirectionalLights_s {
 } ShaderBlock_DirectionalLights;
 --------------------------------------------------------------------------------*/
 #define PUT_UPPERCASE_NAME() for (int i = 0; i < strlen(symbol(block.name)); i++) fputc(toupper(symbol(block.name)[i]), file);
-    printf("Generating C block ...\n");
+    /* printf("Generating C block ...\n"); */
     fputs(GENERATED_CODE_COMMENT, file);
     fprintf(file, "#ifndef SHADER_BLOCK_HEADER_DEFINED_"); PUT_UPPERCASE_NAME(); fprintf(file, "\n");
     fprintf(file, "#define SHADER_BLOCK_HEADER_DEFINED_"); PUT_UPPERCASE_NAME(); fprintf(file, "\n");

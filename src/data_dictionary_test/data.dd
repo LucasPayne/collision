@@ -52,3 +52,10 @@ A < B C (
     // Should be of types [B, D, C].
     bool e4: false;
 );
+
+
+Dude < GameObject (
+    float nice: 10.5;
+);
+
+

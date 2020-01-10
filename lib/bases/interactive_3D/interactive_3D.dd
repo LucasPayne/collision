@@ -1,0 +1,13 @@
+
+
+ApplicationConfiguration < (
+    ivec2 gl_version;
+    bool core_profile;
+    vec4 clear_color: 0,0,0,1;
+);
+app_config < ApplicationConfiguration (
+    #include(conf);
+);
+
+
+

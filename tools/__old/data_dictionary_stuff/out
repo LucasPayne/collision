@@ -1,0 +1,261 @@
+Pair: IDENTIFIER="string" IDENTIFIER="path";
+Pair: IDENTIFIER="bool" IDENTIFIER="procedural": VALUE_TEXT="false";
+Pair: IDENTIFIER="string" IDENTIFIER="procedure";
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="Geometry" < DictExpression;
+Pair: IDENTIFIER="string" IDENTIFIER="type": VALUE_TEXT="png";
+Pair: IDENTIFIER="string" IDENTIFIER="path": VALUE_TEXT="Textures/no_texture.png";
+Pair: IDENTIFIER="bool" IDENTIFIER="invert_x": VALUE_TEXT="false";
+Pair: IDENTIFIER="bool" IDENTIFIER="invert_y": VALUE_TEXT="false";
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="Texture" < DictExpression;
+Pair: IDENTIFIER="string" IDENTIFIER="vertex_shader";
+Pair: IDENTIFIER="string" IDENTIFIER="fragment_shader";
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="Material" < DictExpression;
+Pair: IDENTIFIER="vertex_shader": VALUE_TEXT="Shaders/3U_passthrough.frag";
+Pair: IDENTIFIER="fragment_shader": VALUE_TEXT="Shaders/tinted_bumped_textured.vert";
+Pair: IDENTIFIER="vec4" IDENTIFIER="tint": VALUE_TEXT="0,0,0,1";
+DictExpression:
+DictExpression: IDENTIFIER="Texture" DictExpression
+Pair: IDENTIFIER="diffuse_map" < DictExpression;
+DictExpression:
+DictExpression: IDENTIFIER="Texture" DictExpression
+Pair: IDENTIFIER="bump_map" < DictExpression;
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+DictExpression: IDENTIFIER="Material" DictExpression
+Pair: IDENTIFIER="tinted_bumped_textured" < DictExpression;
+Pair: IDENTIFIER="bool" IDENTIFIER="enabled": VALUE_TEXT="true";
+Dict:
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="Aspect" < DictExpression;
+Pair: IDENTIFIER="vec3" IDENTIFIER="position": VALUE_TEXT="0,0,0";
+Pair: IDENTIFIER="vec3" IDENTIFIER="rotation": VALUE_TEXT="0,0,0";
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+DictExpression: IDENTIFIER="Aspect" DictExpression
+Pair: IDENTIFIER="Transform" < DictExpression;
+Pair: IDENTIFIER="float" IDENTIFIER="scale": VALUE_TEXT="1";
+DictExpression:
+DictExpression: IDENTIFIER="Geometry" DictExpression
+Pair: IDENTIFIER="geometry" < DictExpression;
+DictExpression:
+DictExpression: IDENTIFIER="Material" DictExpression
+Pair: IDENTIFIER="material" < DictExpression;
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+DictExpression: IDENTIFIER="Aspect" DictExpression
+Pair: IDENTIFIER="Body" < DictExpression;
+Pair: IDENTIFIER="bool" IDENTIFIER="some_global": VALUE_TEXT="false";
+Pair: IDENTIFIER="bool" IDENTIFIER="active": VALUE_TEXT="true";
+Dict:
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="GameObject" < DictExpression;
+DictExpression:
+DictExpression: IDENTIFIER="Transform" DictExpression
+Pair: IDENTIFIER="transform" < DictExpression;
+Pair: IDENTIFIER="path": VALUE_TEXT="Models/spider";
+Dict:
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="geometry" < DictExpression;
+Pair: IDENTIFIER="tint": VALUE_TEXT="0.12, 0.12, 0.12, 1";
+Pair: IDENTIFIER="type": VALUE_TEXT="png";
+Pair: IDENTIFIER="path": VALUE_TEXT="Textures/spider.png";
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="diffuse_map" < DictExpression;
+Pair: IDENTIFIER="type": VALUE_TEXT="png";
+Pair: IDENTIFIER="path": VALUE_TEXT="Textures/spider_bump.png";
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="bump_map" < DictExpression;
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+DictExpression: IDENTIFIER="tinted_bumped_texture" DictExpression
+Pair: IDENTIFIER="material" < DictExpression;
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+DictExpression: IDENTIFIER="Body" DictExpression
+Pair: IDENTIFIER="body" < DictExpression;
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+DictExpression: IDENTIFIER="GameObject" DictExpression
+Pair: IDENTIFIER="Spider" < DictExpression;
+Pair: IDENTIFIER="position": VALUE_TEXT="0,1,2";
+Dict:
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="transform" < DictExpression;
+Dict:
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+DictExpression: IDENTIFIER="Spider" DictExpression
+Pair: < DictExpression;
+Pair: IDENTIFIER="scale": VALUE_TEXT="2";
+Dict:
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="body" < DictExpression;
+Pair: IDENTIFIER="position": VALUE_TEXT="1,2,2";
+Dict:
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+Pair: IDENTIFIER="transform" < DictExpression;
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+DictExpression:
+DictExpression: (Dict) DictExpression
+DictExpression: IDENTIFIER="Spider" DictExpression
+Pair: < DictExpression;
+Dict:
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Dict: Pair Dict
+Geometry-> [Kind: Dict]
+  + dictionary-literal
+    path-> [Kind: Entry, Type: string, Value: NONE]
+    procedural-> [Kind: Entry, Type: bool, Value: false]
+    procedure-> [Kind: Entry, Type: string, Value: NONE]
+Texture-> [Kind: Dict]
+  + dictionary-literal
+    type-> [Kind: Entry, Type: string, Value: png]
+    path-> [Kind: Entry, Type: string, Value: Textures/no_texture.png]
+    invert_x-> [Kind: Entry, Type: bool, Value: false]
+    invert_y-> [Kind: Entry, Type: bool, Value: false]
+Material-> [Kind: Dict]
+  + dictionary-literal
+    vertex_shader-> [Kind: Entry, Type: string, Value: NONE]
+    fragment_shader-> [Kind: Entry, Type: string, Value: NONE]
+tinted_bumped_textured-> [Kind: Dict]
+  + Material
+  + dictionary-literal
+    vertex_shader-> [Kind: Entry, Type: NONE, Value: Shaders/3U_passthrough.frag]
+    fragment_shader-> [Kind: Entry, Type: NONE, Value: Shaders/tinted_bumped_textured.vert]
+    tint-> [Kind: Entry, Type: vec4, Value: 0,0,0,1]
+    diffuse_map-> [Kind: Dict]
+      + Texture
+    bump_map-> [Kind: Dict]
+      + Texture
+Aspect-> [Kind: Dict]
+  + dictionary-literal
+    enabled-> [Kind: Entry, Type: bool, Value: true]
+Transform-> [Kind: Dict]
+  + Aspect
+  + dictionary-literal
+    position-> [Kind: Entry, Type: vec3, Value: 0,0,0]
+    rotation-> [Kind: Entry, Type: vec3, Value: 0,0,0]
+Body-> [Kind: Dict]
+  + Aspect
+  + dictionary-literal
+    scale-> [Kind: Entry, Type: float, Value: 1]
+    geometry-> [Kind: Dict]
+      + Geometry
+    material-> [Kind: Dict]
+      + Material
+some_global-> [Kind: Entry, Type: bool, Value: false]
+GameObject-> [Kind: Dict]
+  + dictionary-literal
+    active-> [Kind: Entry, Type: bool, Value: true]
+Spider-> [Kind: Dict]
+  + GameObject
+  + dictionary-literal
+    transform-> [Kind: Dict]
+      + Transform
+    body-> [Kind: Dict]
+      + Body
+      + dictionary-literal
+        geometry-> [Kind: Dict]
+          + dictionary-literal
+            path-> [Kind: Entry, Type: NONE, Value: Models/spider]
+        material-> [Kind: Dict]
+          + tinted_bumped_texture
+          + dictionary-literal
+            tint-> [Kind: Entry, Type: NONE, Value: 0.12, 0.12, 0.12, 1]
+            diffuse_map-> [Kind: Dict]
+              + dictionary-literal
+                type-> [Kind: Entry, Type: NONE, Value: png]
+                path-> [Kind: Entry, Type: NONE, Value: Textures/spider.png]
+            bump_map-> [Kind: Dict]
+              + dictionary-literal
+                type-> [Kind: Entry, Type: NONE, Value: png]
+                path-> [Kind: Entry, Type: NONE, Value: Textures/spider_bump.png]
+-> [Kind: Dict]
+  + Spider
+  + dictionary-literal
+    transform-> [Kind: Dict]
+      + dictionary-literal
+        position-> [Kind: Entry, Type: NONE, Value: 0,1,2]
+-> [Kind: Dict]
+  + Spider
+  + dictionary-literal
+    body-> [Kind: Dict]
+      + dictionary-literal
+        scale-> [Kind: Entry, Type: NONE, Value: 2]
+    transform-> [Kind: Dict]
+      + dictionary-literal
+        position-> [Kind: Entry, Type: NONE, Value: 1,2,2]

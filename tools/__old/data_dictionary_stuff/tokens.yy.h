@@ -45,15 +45,8 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    BLOCK = 258,
-    STRUCT = 259,
-    LEFTBRACE = 260,
-    RIGHTBRACE = 261,
-    LEFTBRACKET = 262,
-    RIGHTBRACKET = 263,
-    SEMICOLON = 264,
-    IDENTIFIER = 265,
-    HASHDEFINE = 266
+    IDENTIFIER = 258,
+    VALUE_TEXT = 259
   };
 #endif
 
@@ -64,12 +57,11 @@ union YYSTYPE
 {
 #line 9 "parser.y" /* yacc.c:1909  */
 
-    // storing the token information for a "#define MAX_NUMBER_LIGHTS 32" as the MAX_NUMBER_LIGHTS token and the value 32.
-    HashDefinition hash_definition;
     int symbol;
-    Entry entry;
+    EntryNode *entry_node;
+    DictExpression *dict_expression;
 
-#line 73 "tokens.yy.h" /* yacc.c:1909  */
+#line 65 "tokens.yy.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

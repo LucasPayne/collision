@@ -9,7 +9,7 @@
 // The parser is generated with bison flag "-p ...", redefining so definitions the lexer uses from the bison's generated header file.
 #define yylval dd_yylval
 
-#define trace_lex 1
+#define trace_lex 0
 
 #define watch_lex 0
 #if watch_lex == 1

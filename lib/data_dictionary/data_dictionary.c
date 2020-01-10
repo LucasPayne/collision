@@ -183,7 +183,7 @@ int dd_scan(DataDictionary *dd, DataDictionary ***scanned, const char *type_stri
     int to_open[max_num_scanned];
 
     for (int i = 0; i < dd->table_size; i++) {
-        if (dd->table[i].is_dict) {
+        if (dd->table[i].name != -1 && dd->table[i].is_dict) {
             // Try to match the type.
             for (int j = 0; j < dd->table[i].contents.dict.num_types; j++) {
                 if (strcmp(type_string, symbol(dd->table[i].contents.dict.types[j])) == 0) {
@@ -212,6 +212,35 @@ int dd_scan(DataDictionary *dd, DataDictionary ***scanned, const char *type_stri
 
 void dd_print(DataDictionary *dd)
 {
-
+    printf("---dictionary-------------------------------------------------------------------\n");
+    for (int i = 0; i < dd->table_size; i++) {
+        DictionaryTableCell *cell = &dd->table[i];
+        if (cell->name == -1) {
+            continue;
+        }
+        if (cell->is_dict) {
+            printf("%s < ", symbol(cell->name));
+            DictExpression *operand = cell->contents.dict.dict_expression;
+            int count = 0;
+            while (operand != NULL) {
+                if (count++ > 0) printf("+ ");
+                if (operand->is_name) printf("%s ", symbol(operand->name));
+                else {
+                    printf("LITERAL ");
+                }
+                operand = operand->next;
+            }
+            printf("[types: ");
+            for (int i = 0; i < cell->contents.dict.num_types; i++) {
+                if (i > 0) printf(", ");
+                printf("%s", symbol(cell->contents.dict.types[i]));
+            }
+            printf("]\n");
+        } else {
+            printf("%s %s: %s\n", cell->contents.value.type == -1 ? "NOTYPE" : symbol(cell->contents.value.type), symbol(cell->name),
+                                  cell->contents.value.value_text == -1 ? "NOVALUE" : symbol(cell->contents.value.value_text));
+        }
+    }
+    printf("--------------------------------------------------------------------------------\n");
 }
 

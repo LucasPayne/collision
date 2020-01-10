@@ -15,17 +15,16 @@ PROJECT_LIBS:
         exit(EXIT_FAILURE);\
     }\
 }
-typedef DataDictionary DD;
 
 int main(void)
 {
     DD *dd = dd_fopen("data.dd");
     dd_check(dd);
-    dd_print_table(dd);
+    dd_print(dd);
 
     DD *appconf = dd_open(dd, "ApplicationConfiguration");
     dd_check(appconf);
-    dd_print_table(appconf);
+    dd_print(appconf);
 
     bool core_profile;
     if (dd_get(appconf, "core_profile", "bool", &core_profile)) {
@@ -39,15 +38,30 @@ int main(void)
     }
 
     DD *spider = dd_open(dd, "Spider");
-    dd_print_table(spider);
+    dd_print(spider);
 
     DD *scene = dd_open(dd, "Scene");
-    dd_print_table(scene);
+    dd_print(scene);
 
+    printf("SCANNING SPIDERS\n");
     DD **spiders;
     int num = dd_scan(scene, &spiders, "Spider");
     for (int i = 0; i < num; i++) {
-        dd_print_table(spiders[i]);
+        dd_print(spiders[i]);
+    }
+
+    printf("SCANNING DUDES\n");
+    DD **dudes;
+    num = dd_scan(scene, &dudes, "Dude");
+    for (int i = 0; i < num; i++) {
+        dd_print(dudes[i]);
+    }
+
+    printf("SCANNING GAMEOBJECTS\n");
+    DD **gameobjects;
+    num = dd_scan(scene, &gameobjects, "GameObject");
+    for (int i = 0; i < num; i++) {
+        dd_print(gameobjects[i]);
     }
 
 }

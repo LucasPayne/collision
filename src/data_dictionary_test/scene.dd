@@ -1,0 +1,24 @@
+thing1 < ();
+
+greg < Spider (
+    transform < (
+        position: 2,3,4;
+    );
+);
+
+spid < Spider (
+    transform < (
+        position: 30,30,1;
+        rotation: 0,1.57,0;
+    );
+    num_legs: 7;
+);
+
+thing2 < (
+    bool a: false;
+);
+
+dude1 < Dude ();
+dude2 < Dude ();
+dude3 < Dude ();
+dude4 < Dude (nice: 40;);

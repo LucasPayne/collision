@@ -103,6 +103,13 @@ build/lib/%.o:
 	)
 #================================================================================
 
+# interactive_3D.o: $(LIB_DIR)/interactive_3D/interactive_3D.c $$(shell cat $(LIB_DIR)/interactive_3D/interactive_3D.c | cslots PROJECT_LIBS --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
+# $(BUILD_DIR)/$(LIB_DIR)/bases/interactive_3D/interactive_3D.o: $(LIB_DIR)/bases/interactive_3D/interactive_3D.c
+build/lib/bases/interactive_3D/interactive_3D.o: lib/bases/interactive_3D/interactive_3D.c $$(shell cat lib/bases/interactive_3D/interactive_3D.c | cslots base_libs --pattern 'build/lib/{n}/{h}.o')
+	$(CC) -o _interactive_3D.o -c $< $(CFLAGS)
+	mkdir -p build/lib/bases/interactive_3D
+	ld -relocatable -o $@ _interactive_3D.o $(filter-out $<,$^)
+
 #================================================================================
 # Application making
 #--------------------------------------------------------------------------------
@@ -140,3 +147,4 @@ clean:
 #--------------------------------------------------------------------------------
 # .PHONY: t1
 # t1:
+

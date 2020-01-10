@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "gen_shader_blocks.h"
+
+#define tracing_parse 0
 %}
 %union {
     // storing the token information for a "#define MAX_NUMBER_LIGHTS 32" as the MAX_NUMBER_LIGHTS token and the value 32.
@@ -28,10 +30,10 @@ file: /* nothing */ | file block
     ;
 block: {
     // pre-expansion code with an embedded action (flex & bison p143 (163))
-    printf("Creating a new block.\n");
+    if (tracing_parse) printf("Creating a new block.\n");
     new_block();
 } BLOCK IDENTIFIER LEFTBRACE block_entries RIGHTBRACE SEMICOLON {
-    printf("block created: %s\n", symbol($3));
+    if (tracing_parse) printf("block created: %s\n", symbol($3));
     finish_block($3);
     return 0; // success, return for the processing one block.
 };
@@ -42,17 +44,17 @@ block_entry:
     }
     | struct
     | HASHDEFINE {
-        printf("block hash_define: %s, value: %d\n", symbol($1.identifier), $1.value);
+        if (tracing_parse) printf("block hash_define: %s, value: %d\n", symbol($1.identifier), $1.value);
         block_add_hash_define($1);
     };
 
 entry: IDENTIFIER IDENTIFIER SEMICOLON {
     // Singleton entry.
-    printf("entry: type: %s, name: %s\n", symbol($1), symbol($2));
+    if (tracing_parse) printf("entry: type: %s, name: %s\n", symbol($1), symbol($2));
     Entry entry = new_entry($1, $2);
     entry.is_array = false;
     $$ = entry;
-    printf("type_size: %zu\n", $$.type_size);
+    if (tracing_parse) printf("type_size: %zu\n", $$.type_size);
 }
 | IDENTIFIER IDENTIFIER LEFTBRACKET IDENTIFIER RIGHTBRACKET SEMICOLON {
     // Array entry with non-literal (macro e.g. NUM_LIGHTS) length.
@@ -71,18 +73,18 @@ entry: IDENTIFIER IDENTIFIER SEMICOLON {
         }
     }
     if (i == g_block.num_hash_defines) {
-        fprintf(stderr, "ERROR: Array length specified as token \"%s\", which has not been defined above this occurence in the block.\n", length_token);
+        if (tracing_parse) fprintf(stderr, "ERROR: Array length specified as token \"%s\", which has not been defined above this occurence in the block.\n", length_token);
         exit(EXIT_FAILURE);
     }
     entry.array_length = length;
     $$ = entry;
-    printf("type_size: %zu\n", $$.type_size);
+    if (tracing_parse) printf("type_size: %zu\n", $$.type_size);
 }
 struct: {
-    printf("Creating a new struct.\n");
+    if (tracing_parse) printf("Creating a new struct.\n");
     new_struct();
 } STRUCT IDENTIFIER LEFTBRACE struct_entries RIGHTBRACE SEMICOLON {
-    printf("struct definition: %s\n", symbol($3));
+    if (tracing_parse) printf("struct definition: %s\n", symbol($3));
     block_add_struct($3);
 };
 struct_entries: /* epsilon */ | entry struct_entries {
@@ -116,6 +118,6 @@ STRUCT ::= struct IDENTIFIER IDENTIFIER { ENTRY* }; //first identifier is for th
 DEFINITION ::= //a valid C #define definition.
 
     | STRUCT IDENTIFIER IDENTIFIER SEMICOLON {
-        printf("struct entry: type: %s, name: %s\n", symbol($2), symbol($3));
+        if (tracing_parse) printf("struct entry: type: %s, name: %s\n", symbol($2), symbol($3));
     };
 */

@@ -164,7 +164,7 @@ DictExpression *scoped_dictionary_expression(DataDictionary *dict, char *name)
      * to the dictionary it was queried from. When a name appears in a dict-expression of this dictionary, it first searches for a dictionary of that name
      * in itself, then in its parent, then, ..., etc.
      */
-    printf("Searching for \"%s\"\n", name);
+    /* printf("Searching for \"%s\"\n", name); */
     DataDictionary *searching_dict = dict;
     while (searching_dict != NULL) {
         DictExpression *found = lookup_dict_expression(searching_dict, name);
@@ -187,14 +187,11 @@ static int ___compute_dictionary_expression_types(DataDictionary *dd, int types[
     }
     while (expression != NULL) {
         if (expression->is_name) {
-            printf("%s ", symbol(expression->name));
             // add this operand's name as a type.
             types[index] = expression->name;
             DictExpression *expanding_expression = scoped_dictionary_expression(dd, symbol(expression->name));
             // Recur.
             index = ___compute_dictionary_expression_types(dd, types, index + 1, max_num_types, expanding_expression);
-        } else {
-            printf("LITERAL ");
         }
         expression = expression->next;
     }
@@ -206,17 +203,9 @@ static void compute_dictionary_expression_types(DataDictionary *dd, DictionaryTa
         fprintf(stderr, ERROR_ALERT "Something went wrong. Attempted to compute dictionary expression types for dictionary which already has types.\n");
         exit(EXIT_FAILURE);
     }
-    printf("Computing types for %s...\n", symbol(cell->name));
-
     const int max_num_types = 1024;
     int types[max_num_types];
     int num_types = ___compute_dictionary_expression_types(dd, types, 0, max_num_types, cell->contents.dict.dict_expression);
-
-    printf("\nGot %d types.\n", num_types);
-    for (int i = 0; i < num_types; i++) {
-        printf("%d: %s\n", i, symbol(types[i]));
-    }
-    /* getchar(); */
 
     cell->contents.dict.num_types = num_types;
     cell->contents.dict.types = (int *) calloc(1, sizeof(int) * num_types);

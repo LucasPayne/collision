@@ -17,8 +17,8 @@ GLFWwindow *gl_core_standard_window(char *name, void (*init_function)(void), voi
 //================================================================================
 // Time and loop
 //================================================================================
-double time(void);
-double dt(void);
+/* double time(void); */
+/* double dt(void); */
 void loop_time(GLFWwindow *window, void (*inner_func)(void), GLbitfield clear_mask);
 
 //================================================================================

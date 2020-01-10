@@ -122,22 +122,31 @@ DD_TYPE_READER(int) {
     *((int *) data) = val;
     return true;
 }
-DD_TYPE_READER(vec4) {
-    // 4 floats, 16 bytes.
-    // format: 0, 1, 2, 3
-    // [0]
-    // [1]
-    // [2]
-    // [3]
+
+
+static bool read_comma_separated_C_type(const char *text, void *data, const char *fmt, const size_t size, const int count)
+{
     char *p = text;
-    float v[4];
+    uint8_t v_data[count * size];
     int chars_read;
-    for (int i = 0; i < 4; i++) {
-        if (sscanf(p, (i < 3) ? "%f%n," : "%f%n", &v[i], &chars_read) == EOF) return false;
+
+    char fmt_n_comma[8];
+    char fmt_n[8];
+    sprintf(fmt_n_comma, "%%%s%%n,", fmt);
+    sprintf(fmt_n, "%%%s%%n", fmt);
+    for (int i = 0; i < count; i++) {
+        if (sscanf(p, (i < 3) ? fmt_n_comma : fmt_n, &v_data[i*size], &chars_read) == EOF) return false;
         p += chars_read + 1;
     }
-    memcpy(data, &v, sizeof(float)*4);
+    memcpy(data, v_data, count * size);
     return true;
+}
+
+DD_TYPE_READER(vec4) {
+    return read_comma_separated_C_type(text, data, "f", sizeof(float), 4);
+}
+DD_TYPE_READER(ivec2) {
+    return read_comma_separated_C_type(text, data, "d", sizeof(int), 2);
 }
 
 #define type(TYPE) { dd_type_reader_ ## TYPE, #TYPE }
@@ -145,6 +154,7 @@ const struct { DDTypeReader reader; const char *type_name; } dd_type_readers[] =
     type(bool),
     type(int),
     type(vec4),
+    type(ivec2),
     { NULL, NULL }
 };
 #undef type

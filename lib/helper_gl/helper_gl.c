@@ -9,56 +9,56 @@
 #include "helper_definitions.h"
 #include "helper_gl.h"
 
-static double TIME = 0.0;
-static double DT = 0.0;
-double time(void)
-{
-    return TIME;
-}
-double dt(void)
-{
-    return DT;
-}
-
-// Its loop time
-void loop_time(GLFWwindow *window, void (*inner_func)(void), GLbitfield clear_mask)
-{
-    double last_time = TIME;
-    while (!glfwWindowShouldClose(window))
-    {
-        glfwPollEvents();
-
-        last_time = TIME;
-        TIME = glfwGetTime();
-        DT = TIME - last_time;
-
-        /* Clearing: window clear to black, viewport clear to the clear colour.
-         * (restore clear colour after window clear)
-         */
-        GLfloat clear_color[4];
-        glGetFloatv(GL_COLOR_CLEAR_VALUE, clear_color);
-        glClearColor(0.0, 0.0, 0.0, 1.0);
-        glDisable(GL_SCISSOR_TEST);
-        glClear(clear_mask);
-
-        GLint viewport[4];
-        glGetIntegerv(GL_VIEWPORT, viewport);
-        glEnable(GL_SCISSOR_TEST);
-        glScissor(viewport[0], viewport[1], viewport[2], viewport[3]);
-        glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
-        glClear(clear_mask);
-
-        if (inner_func != NULL) {
-            inner_func();
-        }
-
-        glFlush();
-        glfwSwapBuffers(window);
-    }
-    // Cleanup
-    glfwDestroyWindow(window);
-    glfwTerminate();
-}
+// static double TIME = 0.0;
+// static double DT = 0.0;
+// double time(void)
+// {
+//     return TIME;
+// }
+// double dt(void)
+// {
+//     return DT;
+// }
+// 
+// // Its loop time
+// void loop_time(GLFWwindow *window, void (*inner_func)(void), GLbitfield clear_mask)
+// {
+//     double last_time = TIME;
+//     while (!glfwWindowShouldClose(window))
+//     {
+//         glfwPollEvents();
+// 
+//         last_time = TIME;
+//         TIME = glfwGetTime();
+//         DT = TIME - last_time;
+// 
+//         /* Clearing: window clear to black, viewport clear to the clear colour.
+//          * (restore clear colour after window clear)
+//          */
+//         GLfloat clear_color[4];
+//         glGetFloatv(GL_COLOR_CLEAR_VALUE, clear_color);
+//         glClearColor(0.0, 0.0, 0.0, 1.0);
+//         glDisable(GL_SCISSOR_TEST);
+//         glClear(clear_mask);
+// 
+//         GLint viewport[4];
+//         glGetIntegerv(GL_VIEWPORT, viewport);
+//         glEnable(GL_SCISSOR_TEST);
+//         glScissor(viewport[0], viewport[1], viewport[2], viewport[3]);
+//         glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
+//         glClear(clear_mask);
+// 
+//         if (inner_func != NULL) {
+//             inner_func();
+//         }
+// 
+//         glFlush();
+//         glfwSwapBuffers(window);
+//     }
+//     // Cleanup
+//     glfwDestroyWindow(window);
+//     glfwTerminate();
+// }
 
 void force_aspect_ratio(GLFWwindow *window, GLsizei width, GLsizei height, double wanted_aspect_ratio)
 {

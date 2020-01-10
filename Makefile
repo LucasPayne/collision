@@ -103,8 +103,7 @@ build/lib/%.o:
 	)
 #================================================================================
 
-# interactive_3D.o: $(LIB_DIR)/interactive_3D/interactive_3D.c $$(shell cat $(LIB_DIR)/interactive_3D/interactive_3D.c | cslots PROJECT_LIBS --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
-# $(BUILD_DIR)/$(LIB_DIR)/bases/interactive_3D/interactive_3D.o: $(LIB_DIR)/bases/interactive_3D/interactive_3D.c
+# Building the bases of applications is a special case, as they have their own library dependencies.
 build/lib/bases/interactive_3D/interactive_3D.o: lib/bases/interactive_3D/interactive_3D.c $$(shell cat lib/bases/interactive_3D/interactive_3D.c | cslots base_libs --pattern 'build/lib/{n}/{h}.o')
 	$(CC) -o _interactive_3D.o -c $< $(CFLAGS)
 	mkdir -p build/lib/bases/interactive_3D
@@ -125,7 +124,7 @@ build/lib/bases/interactive_3D/interactive_3D.o: lib/bases/interactive_3D/intera
 # 	include/shader_blocks/*.h   std140 padded struct definitions and data/variable declarations needed in the application.
 #	glsl/shader_blocks/*.glh
 #
-%: $(SRC_DIR)/$$@/$$@.c $$(shell cat $(SRC_DIR)/$$@/$$@.c | cslots PROJECT_LIBS --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
+%: $(SRC_DIR)/$$@/$$@.c $$(shell cat $(SRC_DIR)/$$@/$$@.c | cslots project_libs --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
 	(cd $(TOOLS_DIR)/gen_shader_blocks ; make gen_shader_blocks)
 	$(TOOLS_DIR)/gen_shader_blocks/gen_shader_blocks glsl/shader_blocks/standard.shader_blocks -c include/shader_blocks -g glsl/shader_blocks
 	mkdir -p $(APPLICATIONS_DIR)

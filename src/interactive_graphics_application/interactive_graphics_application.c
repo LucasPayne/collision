@@ -1,13 +1,20 @@
 /*--------------------------------------------------------------------------------
-BASE:
-    + interactive_3D
-PROJECT_LIBS:
+project_libs:
     + bases/interactive_3D
 --------------------------------------------------------------------------------*/
 #include <stdio.h>
 
-void init_program(void)
+extern void init_program(void)
 {
     printf("i'm in\n");
 }
 
+extern void loop_program(void)
+{
+
+}
+
+extern void close_program(void)
+{
+    printf("i'm out\n");
+}

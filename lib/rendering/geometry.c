@@ -48,19 +48,20 @@ void *Geometry_load(char *path)
     DataDictionary *dd = dd_open(g_resource_dictionary, path);
     if (dd == NULL) load_error("Could not open dictionary for geometry.");
     char *vertex_format_string;
-    if (!dd_get(dd, "vertex_format", "string", vertex_format)) manifest_error("vertex_format_string");
-    VertexFormat format = string_to_VertexFormat(vertex_format_string);
-    if (format == VERTEX_FORMAT_NONE) load_error("Invalid vertex format given.");
+    if (!dd_get(dd, "vertex_format", "string", &vertex_format_string)) manifest_error("vertex_format_string");
+    VertexFormat vertex_format = string_to_VertexFormat(vertex_format_string);
+    if (vertex_format == VERTEX_FORMAT_NONE) load_error("Invalid vertex format given.");
     char *type;
-    if (!dd_get(dd, "type", "string", vertex_format)) manifest_error("type"); //- if not doing a fatal error, remember to free the queried strings.
+    if (!dd_get(dd, "type", "string", &type)) manifest_error("type"); //- if not doing a fatal error, remember to free the queried strings.
 
     Geometry geometry;
     if (strcmp(type, "ply") == 0) {
         // Load geometry from a PLY file.
         char *ply_path;
-        if (!dd_get(dd, "path", "string", ply_path)) manifest_error("path");
+        if (!dd_get(dd, "path", "string", &ply_path)) manifest_error("path");
         FILE *ply_file = resource_file_open(ply_path, "", "r");
         if (ply_file == NULL) load_error("Cannot open resource PLY file.");
+        MeshData mesh_data = {0};
         load_mesh_ply(&mesh_data, vertex_format, ply_file);
         geometry = upload_mesh(&mesh_data);
         // Destroy the mesh data.

@@ -7,7 +7,7 @@
 
 EntryNode *g_dict;
 
-#define tracing_parse 0
+#define tracing_parse 1
 
 %}
 %union {

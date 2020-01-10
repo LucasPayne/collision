@@ -16,7 +16,6 @@ This consists of
 #include "helper_definitions.h"
 #include "resources.h"
 #include "rendering.h"
-#include "dictionary.h"
 
 // glsl include-path. glsl header files are searched for in these paths, which must be added to the path at runtime.
 static char *glsl_include_path = NULL;

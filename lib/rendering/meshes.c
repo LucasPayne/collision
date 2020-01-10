@@ -18,7 +18,6 @@ This module consists of
 #include "resources.h"
 #include "ply.h"
 #include "rendering.h"
-#include "dictionary.h"
 
 void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file)
 {

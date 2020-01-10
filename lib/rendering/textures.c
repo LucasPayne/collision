@@ -9,7 +9,6 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include "helper_definitions.h"
-#include "dictionary.h"
 #include "resources.h"
 #include "rendering.h"
 /*--------------------------------------------------------------------------------

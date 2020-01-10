@@ -17,7 +17,8 @@ for a Texture resource, which then extracts the Texture entries to load a resour
 and is sourced from a certain file.
 --------------------------------------------------------------------------------*/
 #include "data_dictionary.h"
-static DataDictionary *g_resource_dictionary;
+// The global resource dictionary is a data-dictionary intended to be set by the application and used when searching for resources.
+extern DataDictionary *g_resource_dictionary;
 
 /*--------------------------------------------------------------------------------
     Resource IDs

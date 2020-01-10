@@ -8,6 +8,11 @@
 #include <stdbool.h>
 #include "helper_definitions.h"
 #include "resources.h"
+#include "data_dictionary.h"
+
+// The global resource dictionary is a data-dictionary intended to be set by the application and used when searching for resources.
+DataDictionary *g_resource_dictionary = NULL;
+
 //--------------------------------------------------------------------------------
 // Static function declarations
 //--------------------------------------------------------------------------------
@@ -30,7 +35,6 @@ static ResourceUUID g_last_resource_uuid = 0;
 static uint32_t g_resource_path_length = 0;
 static char *g_resource_path = NULL;
 int g_resource_path_count = 0;
-static ResourceTree *g_resource_tree = NULL;
 
 /*
 Resource types are built up at runtime. This is so an application can include a call to a function for modules
@@ -226,6 +230,9 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
         fprintf(stderr, ERROR_ALERT "Attempted to dereference resource handle which has no resource path.\n");
         exit(EXIT_FAILURE);
     }
+    //////////////////////////////////////////////////////////////////////////////////
+    // redoing caching with new dd stuff, so no caching for now
+#if 0
     ResourceID id = lookup_resource(resource_handle->data.path);
     if (id.uuid != 0) {
         // Resource is loaded. Update the handle with the ID found from querying.
@@ -233,9 +240,10 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
         if (DEBUG) printf("Resource found by a lookup!\n");
         return resource_handle;
     }
+#endif
     // The resource isn't loaded. Trigger a load.
     // First, create a new entry in the resource table with a new ID.
-    id = create_resource_id(resource_handle->_id.type);
+    ResourceID id = create_resource_id(resource_handle->_id.type);
     ResourceTableEntry *new_entry = &g_resource_table[id.table_index];
     new_entry->uuid = id.uuid;
     new_entry->type = id.type;
@@ -250,8 +258,9 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
         exit(EXIT_FAILURE);
     }
     new_entry->resource = resource;
+    //////////////////////////////////////////////////////////////////////////////////
     // Finally, add this path to the resource tree, filling the tree enough to store the id at the leaf, for querying.
-    add_resource(id, resource_handle->data.path);
+    /* add_resource(id, resource_handle->data.path); */
 
     // Update the resource handle with the new id for the newly loaded resource. Now, it is valid for short-term usage by the caller.
     resource_handle->_id = id;
@@ -325,12 +334,6 @@ before running the application), it might save the image file or it might not.
 void resource_path_add(char *drive_name, char *path)
 {
     g_resource_path_count ++;
-
-    // Initialize the resource tree if it is not initialized.
-    if (g_resource_tree == NULL) {
-        g_resource_tree = (ResourceTree *) calloc(1, sizeof(ResourceTree));
-        mem_check(g_resource_tree);
-    }
 
     // Append ":drive_name:path" to the resource path variable, and initialize/relocate if neccessary.
     size_t len = strlen(path) + 1 + strlen(drive_name);
@@ -445,17 +448,6 @@ static ResourceID null_resource_id(void)
 //--------------------------------------------------------------------------------
 // Testing
 //--------------------------------------------------------------------------------
-static void test_lookup_resource(char *path)
-{
-    ResourceID id = lookup_resource(path);
-    if (id.uuid == 0) {
-        printf("\"%s\" could not be found.\n", path);
-    } else {
-        printf("\"%s\" was found!\n", path);
-        printf("uuid: %ld\n", id.uuid);
-    }
-}
-
 void print_resource_types(void)
 {
     printf("Resource types:\n");

@@ -20,7 +20,6 @@
 #include "helper_definitions.h"
 #include "resources.h"
 #include "rendering.h"
-#include "dictionary.h"
 
 int g_num_shader_blocks = 0;
 ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
@@ -54,52 +53,51 @@ Text-file format:
 --------------------------------------------------------------------------------*/
 void *MaterialType_load(char *path)
 {
+    MaterialType mt = {0};
 #define load_error(STRING)\
     { fprintf(stderr, "Error while loading MaterialType: " STRING "\n"); return NULL; }
     DD *dd = dd_open(g_resource_dictionary, path);
     if (dd == NULL) load_error("Could not open dictionary.\n");
-
-    MaterialType mt = {0};
     char *vertex_format_string;
-    if (!dd_get(dd, "vertex_format", "string", vertex_format_string)) load_error("No vertex_format.");
+    if (!dd_get(dd, "vertex_format", "string", &vertex_format_string)) load_error("No vertex_format.");
     mt.vertex_format = string_to_VertexFormat(vertex_format_string);
     if (mt.vertex_format == VERTEX_FORMAT_NONE) load_error("Bad vertex format.");
     if (!dd_get(dd, "num_blocks", "uint", &mt.num_blocks)) load_error("No num_blocks.");
-    if (material_type.num_blocks > MATERIAL_MAX_SHADER_BLOCKS) load_error("Too many shader blocks declared in num_blocks.");
+    if (mt.num_blocks > MATERIAL_MAX_SHADER_BLOCKS) load_error("Too many shader blocks declared in num_blocks.");
     if (!dd_get(dd, "num_textures", "uint", &mt.num_textures)) load_error("No num_blocks.");
-    if (material_type.num_textures > MATERIAL_MAX_TEXTURES) load_error("Too many textures declared in num_textures.");
+    if (mt.num_textures > MATERIAL_MAX_TEXTURES) load_error("Too many textures declared in num_textures.");
 
     // Attempt to find/load the Shader resources, and then link them.
     char *vertex_shader;
-    if (!dd_get(dd, "vertex_shader", "string", vertex_shader)) load_error("No vertex_shader.");
+    if (!dd_get(dd, "vertex_shader", "string", &vertex_shader)) load_error("No vertex_shader.");
     char *fragment_shader;
-    if (!dd_get(dd, "fragment_shader", "string", fragment_shader)) load_error("No fragment_shader.");
-    material_type.program_type = GRAPHICS_PROGRAM_VF; // Only handling vertex+fragment programs currently.
-    material_type.shaders[Vertex] = new_resource_handle(Shader, buf);
-    material_type.shaders[Fragment] = new_resource_handle(Shader, buf);
+    if (!dd_get(dd, "fragment_shader", "string", &fragment_shader)) load_error("No fragment_shader.");
+    mt.program_type = GRAPHICS_PROGRAM_VF; // Only handling vertex+fragment programs currently.
+    mt.shaders[Vertex] = new_resource_handle(Shader, vertex_shader);
+    mt.shaders[Fragment] = new_resource_handle(Shader, fragment_shader);
 
-    material_type.program_id = glCreateProgram();
+    mt.program_id = glCreateProgram();
     // Attach the shaders. If they aren't loaded resources, then this loads and tries to compile them.
-    glAttachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Vertex])->shader_id);
-    glAttachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Fragment])->shader_id);
+    glAttachShader(mt.program_id, resource_data(Shader, mt.shaders[Vertex])->shader_id);
+    glAttachShader(mt.program_id, resource_data(Shader, mt.shaders[Fragment])->shader_id);
     // Link the program, and do error-checking.
-    link_shader_program(material_type.program_id);
+    link_shader_program(mt.program_id);
     // Detach the shaders so they can be deleted if needed.
-    glDetachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Vertex])->shader_id);
-    glDetachShader(material_type.program_id, resource_data(Shader, material_type.shaders[Fragment])->shader_id);
+    glDetachShader(mt.program_id, resource_data(Shader, mt.shaders[Vertex])->shader_id);
+    glDetachShader(mt.program_id, resource_data(Shader, mt.shaders[Fragment])->shader_id);
 
     // A file-backed material instance of this material-type defines its textures from their names given in this material type text-file. Collate these
     // names, and attach texture{i}'s declared texture name to texture unit GL_TEXTURE{i}.
-    glUseProgram(material_type.program_id); // use the program so sampler uniforms can be uploaded.
-    for (int i = 0; i < material_type.num_textures; i++) {
+    glUseProgram(mt.program_id); // use the program so sampler uniforms can be uploaded.
+    for (int i = 0; i < mt.num_textures; i++) {
         char texture_token[32];
         sprintf(texture_token, "texture%d", i);
         char *texture;
-        if (!dd_get(dd, texture_token, "string", texture)) load_error("Not all declared textures have been given.");
+        if (!dd_get(dd, texture_token, "string", &texture)) load_error("Not all declared textures have been given.");
         if (strlen(texture) >= MATERIAL_MAX_TEXTURE_NAME_LENGTH) load_error("Texture name too long.");
-        strncpy(material_type.texture_names[i], texture, MATERIAL_MAX_TEXTURE_NAME_LENGTH);
+        strncpy(mt.texture_names[i], texture, MATERIAL_MAX_TEXTURE_NAME_LENGTH);
         // Bind this texture in the program to the binding point.
-        GLint texture_location = glGetUniformLocation(material_type.program_id, texture);
+        GLint texture_location = glGetUniformLocation(mt.program_id, texture);
         if (texture_location < 0) {
             // ----Since a sampler in glsl is a loose uniform variable, maybe it could be optimized out. -1 being passed to texture functions
             // fails silently, so it might be fine to not give a load error here.
@@ -115,22 +113,22 @@ void *MaterialType_load(char *path)
     //      ----
     //      Actually, it may be needed so that draw calls can trigger synchronization of relevant shader-blocks.
     //      All of them could be checked anyway, though, which may be easier.
-    for (int i = 0; i < material_type.num_blocks; i++) {
+    for (int i = 0; i < mt.num_blocks; i++) {
         char block_token[32];
         sprintf(block_token, "block%d", i);
         char *block;
-        if (!dd_get(dd, block_token, "string", block)) load_error("Not all declared shader blocks have been given.");
+        if (!dd_get(dd, block_token, "string", &block)) load_error("Not all declared shader blocks have been given.");
         ShaderBlockID block_id = get_shader_block_id(block);
         if (block_id < 0) load_error("Unsupported shader block.");
-        material_type.shader_blocks[i] = block_id;
+        mt.shader_blocks[i] = block_id;
         // Bind the block to the linked program.
-        GLuint block_index = glGetUniformBlockIndex(material_type.program_id, buf);
+        GLuint block_index = glGetUniformBlockIndex(mt.program_id, block);
         if (block_index == GL_INVALID_INDEX) {
             // Hopefully the glsl compiler does not optimize away entire std140 uniform blocks.
             // (It appears that it doesn't.)
             load_error("Could not find uniform block.");
         }
-        glUniformBlockBinding(material_type.program_id, block_index, block_id);
+        glUniformBlockBinding(mt.program_id, block_index, block_id);
         // The block id is both index into the global block info array, and the binding point.
         glBindBufferBase(GL_UNIFORM_BUFFER, block_id, g_shader_blocks[block_id].vram_buffer_id);
     }
@@ -139,51 +137,51 @@ void *MaterialType_load(char *path)
     // of this material type.
     // Collect material-properties information and store this in the info struct array of the material type.
     bool has_property_block = false;
-    for (int i = 0; i < material_type.num_blocks; i++) {
-        if (material_type.shader_blocks[i] == ShaderBlockID_MaterialProperties) {
+    for (int i = 0; i < mt.num_blocks; i++) {
+        if (mt.shader_blocks[i] == ShaderBlockID_MaterialProperties) {
             has_property_block = true;
             break;
         }
     }
     if (has_property_block) {
-        GLuint mp_block_index = glGetUniformBlockIndex(material_type.program_id, "MaterialProperties");
+        GLuint mp_block_index = glGetUniformBlockIndex(mt.program_id, "MaterialProperties");
         if (mp_block_index == GL_INVALID_INDEX) {
             fprintf(stderr, ERROR_ALERT "Something went wrong. MaterialProperties block index cannot be found for material type which apparently uses one.\n");
             exit(EXIT_FAILURE);
         }
         const int max_num_properties = 512;
-        glGetActiveUniformBlockiv(material_type.program_id, mp_block_index, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &material_type.num_properties);
-        if (material_type.num_properties > max_num_properties) {
+        glGetActiveUniformBlockiv(mt.program_id, mp_block_index, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &mt.num_properties);
+        if (mt.num_properties > max_num_properties) {
             fprintf(stderr, ERROR_ALERT "Too many entries defined in a MaterialProperties block. The maximum is set to %d, but this can be changed.\n", max_num_properties);
             exit(EXIT_FAILURE);
         }
         GLuint uniform_indices[max_num_properties];
-        glGetActiveUniformBlockiv(material_type.program_id, mp_block_index, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, uniform_indices);
+        glGetActiveUniformBlockiv(mt.program_id, mp_block_index, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, uniform_indices);
 
-        glGetActiveUniformBlockiv(material_type.program_id, mp_block_index, GL_UNIFORM_BLOCK_DATA_SIZE, &material_type.properties_size);
-        if (material_type.properties_size > g_shader_blocks[ShaderBlockID_MaterialProperties].size) {
+        glGetActiveUniformBlockiv(mt.program_id, mp_block_index, GL_UNIFORM_BLOCK_DATA_SIZE, &mt.properties_size);
+        if (mt.properties_size > g_shader_blocks[ShaderBlockID_MaterialProperties].size) {
             fprintf(stderr, ERROR_ALERT "MaterialProperties block encountered which is too large. The maximum block size is %zu, which can be changed.\n", g_shader_blocks[ShaderBlockID_MaterialProperties].size);
             exit(EXIT_FAILURE);
         }
 
         // Collect information about the entries of the MaterialProperties uniform block.
-        for (int i = 0; i < material_type.num_properties; i++) {
+        for (int i = 0; i < mt.num_properties; i++) {
             MaterialPropertyInfo info = {0};
             info.location = uniform_indices[i];
             int name_length;
-            glGetActiveUniformName(material_type.program_id, uniform_indices[i], MATERIAL_MAX_PROPERTY_NAME_LENGTH + 1, &name_length, info.name); //+1?
+            glGetActiveUniformName(mt.program_id, uniform_indices[i], MATERIAL_MAX_PROPERTY_NAME_LENGTH + 1, &name_length, info.name); //+1?
             if (name_length > MATERIAL_MAX_PROPERTY_NAME_LENGTH) {
                 fprintf(stderr, ERROR_ALERT "Entry name \"%s\" in MaterialProperties uniform block is too long. The maximum name length is %d.\n", info.name, MATERIAL_MAX_PROPERTY_NAME_LENGTH);
                 exit(EXIT_FAILURE);
             }
             info.name[name_length] = '\0';
-            glGetActiveUniformsiv(material_type.program_id, 1, &uniform_indices[i], GL_UNIFORM_TYPE, (GLint *) &info.type);
-            glGetActiveUniformsiv(material_type.program_id, 1, &uniform_indices[i], GL_UNIFORM_OFFSET, &info.offset);
-            material_type.property_infos[i] = info;
+            glGetActiveUniformsiv(mt.program_id, 1, &uniform_indices[i], GL_UNIFORM_TYPE, (GLint *) &info.type);
+            glGetActiveUniformsiv(mt.program_id, 1, &uniform_indices[i], GL_UNIFORM_OFFSET, &info.offset);
+            mt.property_infos[i] = info;
         }
     } else {
-        material_type.properties_size = 0;
-        material_type.num_properties = 0;
+        mt.properties_size = 0;
+        mt.num_properties = 0;
     }
     /* printf("Finished loading material type from path %s\n", path); */
     /* print_material_type(&material_type); */
@@ -191,7 +189,7 @@ void *MaterialType_load(char *path)
     // Successfully filled the MaterialType.
     MaterialType *out_material_type = (MaterialType *) calloc(1, sizeof(MaterialType));
     mem_check(out_material_type);
-    memcpy(out_material_type, &material_type, sizeof(MaterialType));
+    memcpy(out_material_type, &mt, sizeof(MaterialType));
     return out_material_type;
 #undef load_error
 }
@@ -232,68 +230,46 @@ ResourceType Material_RTID;
 --------------------------------------------------------------------------------*/
 void *Material_load(char *path)
 {
-    printf("Loading a file-backed material instance from path %s\n", path);
-
+    Material material = {0};
 #define load_error(STRING)\
     { fprintf(stderr, "Error while loading Material: " STRING "\n"); return NULL; }
-    // Try to open the .Material file for querying.
-    FILE *file = resource_file_open(path, ".Material", "r");
-    if (file == NULL) load_error("File failed to open.");
-    Dictionary *dict = dictionary_read(file);
-    if (dict == NULL) load_error("Failed to create dictionary for file.");
-    DictQuerier *q = dict_new_querier(dict);
-    if (q == NULL) load_error("Could not create querier.");
-    dict_query_rules_rendering(q);
-
-    const int buf_size = 1024;
-    char buf[buf_size];
-    if (!dict_get(dict, "material_type", buf, buf_size)) load_error("No resource path given for the material type (no material_type entry).");
-    Material material = {0};
-    material.material_type = new_resource_handle(MaterialType, buf);
-
-    MaterialType *material_type = resource_data(MaterialType, material.material_type);
+    DD *dd = dd_open(g_resource_dictionary, path);
+    char *material_type_path;
+    if (!dd_get(dd, "type", "string", &material_type_path)) load_error("No type.");
+    material.material_type = new_resource_handle(MaterialType, material_type_path);
+    MaterialType *mt = resource_data(MaterialType, material.material_type);
 
     // Create the texture resource handles for each texture of this material type.
-    for (int i = 0; i < material_type->num_textures; i++) {
-        char texture_token[MATERIAL_MAX_TEXTURE_NAME_LENGTH + 3 + 1]; // to handle texture names up to the maximum length
-        sprintf(texture_token, "tx_%s", material_type->texture_names[i]);
-        if (!dict_get(dict, texture_token, buf, buf_size)) load_error("Missing texture that is required for declared material type.");
-        material.textures[i] = new_resource_handle(Texture, buf);
+    for (int i = 0; i < mt->num_textures; i++) {
+        const int n = 2048;
+        char texture_path[n];
+        snprintf(texture_path, n, "%s/%s", path, mt->texture_names[i]); // Create the path to this subdictionary.
+        material.textures[i] = new_resource_handle(Texture, texture_path);
     }
     
-    // If there is a MaterialProperties block in this material's type, find its properties in the text file.
-    if (material_type->num_properties > 0 && material_type->properties_size > 0) {
-        // This material type has a MaterialProperties block.
-        // Allocate memory for the properties
-        material.properties = calloc(1, material_type->properties_size);
+    // If there is a MaterialProperties block in this material's type, find its properties in the dd.
+    if (mt->num_properties > 0 && mt->properties_size > 0) {
+        // Allocate memory for the properties.
+        material.properties = calloc(1, mt->properties_size);
         mem_check(material.properties);
-        for (int i = 0; i < material_type->num_properties; i++) {
-            MaterialPropertyInfo *info = &material_type->property_infos[i];
-            // Query for the token "mp_<material property name>" for each material property, and look up the property info
-            // so this token as a key into the dictionary can have its value parsed as the correct type into the correct offset
-            // location in the properties data block in the material.
-            char mp_token[3 + MATERIAL_MAX_PROPERTY_NAME_LENGTH + 1] = "mp_";
-            strcpy(mp_token + 3, info->name);
-            #define parse(TYPE)\
-            {\
-                printf("getting of type %s\n", ( TYPE ));\
-                if (!dict_query_get(q, ( TYPE ), mp_token, material.properties + info->offset)) {\
-                    fprintf(stderr, ERROR_ALERT "Failed to parse entry in dictionary \"%.500s\" as type \"" TYPE "\".\n", mp_token);\
-                    exit(EXIT_FAILURE);\
-                }\
-            }
+        DD *properties = dd_open(dd, "properties");
+        if (properties == NULL) load_error("No properties.");
+        for (int i = 0; i < mt->num_properties; i++) {
+            MaterialPropertyInfo *info = &mt->property_infos[i];
+            // Convert the gl type into a type deserializable from dd files.
+            char *type;
+            #define set(gl_type,str) case gl_type: type = ( str ); break
             switch(info->type) {
-                case GL_FLOAT: parse("float"); break;
-                case GL_BOOL: parse("bool"); break;
-                case GL_FLOAT_VEC4: parse("vec4"); break;
-                case GL_INT: parse("int"); break;
-                case GL_UNSIGNED_INT: parse("unsigned int"); break;
+                set(GL_FLOAT, "float");
+                set(GL_BOOL, "bool");
+                set(GL_FLOAT_VEC4, "vec4");
+                set(GL_INT, "int");
+                set(GL_UNSIGNED_INT, "uint");
                 default:
-                    fprintf(stderr, ERROR_ALERT "Attempted to parse a MaterialProperties block from a text file for a material type\
-which has an entry with unsupported type (it cannot be deserialized from the text file).\n");
-                    exit(EXIT_FAILURE);
+                    load_error("Unsupported material property type.");
             }
-            #undef parse
+            #undef set
+            if (!dd_get(properties, info->name, type, material.properties + info->offset)) load_error("Failed to read material proeprty.");
         }
     } else {
         // If there is no material properties block, the size is zero. So, do not allocate memory for properties.

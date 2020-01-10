@@ -27,13 +27,13 @@ MaterialType < (
 );
 // Material instances.
 Material < (
-    type < MaterialType;
+    string type: MaterialType;
     // Queried for Texture.
 );
 
 Texture < (
     string type; // Types: png
-    string path: // Principle path of the asset.
+    string path; // Principle path of the asset.
     // Could have generic build-directives here, like image resizing and grayscale.
 );
 
@@ -63,6 +63,12 @@ ApplicationConfiguration < (
 app_config < ApplicationConfiguration (
     #include(conf);
 );
+
+// Application resources.
+Resources < (
+    #include(resources);
+);
+// Could source project-wide resources here as another operand (so the collections, Textures etc., are collected) if that is convenient.
 
 // Append the application data.dd file.
 #include(data);

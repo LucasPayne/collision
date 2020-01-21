@@ -18,6 +18,7 @@ typedef bool (*AspectReader)(DataDictionary *, void *);
 new_reader(Transform) {
     vec3 position;
     if (!dd_get(aspect_dd, "position", "vec3", &position)) return false;
+    printf("got position: %f %f %f\n", position.vals[0], position.vals[1], position.vals[2]);
     vec3 rotation; // euler angles
     if (!dd_get(aspect_dd, "rotation", "vec3", &rotation)) return false;
     Transform *transform = (Transform *) data;
@@ -33,8 +34,8 @@ new_reader(Body) {
     float scale;
     if (!dd_get(aspect_dd, "scale", "float", &scale)) return false;
     Body *body = (Body *) data;
-
-//----dummy for now
+    
+    //----dummy for now
     Material *mat = oneoff_resource(Material, body->material);
     mat->material_type = new_resource_handle(MaterialType, "Materials/red");
     body->geometry = new_resource_handle(Geometry, "Models/quad");
@@ -62,6 +63,9 @@ void open_scene(DD *dict, char *path)
     int num_gameobjects = dd_scan(scene_dictionary, &gameobject_dictionaries, "GameObject");
     printf("num_gameobjects: %d\n", num_gameobjects);
     for (int i = 0; i < num_gameobjects; i++) {
+        bool testing_value;
+        if (dd_get(gameobject_dictionaries[i], "testing_value", "bool", &testing_value)) printf("testing_value: %s\n", testing_value ? "true":"false");
+
         printf("GameObject %d:\n", i);
 
         // Defined aspect readers determine what dictionary types are looked for, and how they are read into aspect data to be attached to the entity.
@@ -73,11 +77,13 @@ void open_scene(DD *dict, char *path)
                 AspectType aspect_type = *aspect_readers[j].aspect_type_id_ptr;
                 AspectID aspect = _entity_add_aspect(entity, aspect_type);
                 void *data = get_aspect_data(aspect);
+                printf("Reading aspect ...\n");
 	        if (!aspect_readers[j].read_aspect(aspect_dictionaries[k], data)) {
                     fprintf(stderr, ERROR_ALERT "Failed to read \"%s\" aspect in an entity-describing dictionary.\n", aspect_readers[j].aspect_name);
                     exit(EXIT_FAILURE);
                 }
                 printf("Succeeded in reading a \"%s\" aspect.\n", aspect_readers[j].aspect_name);
+                if (aspect_type == Transform_TYPE_ID) { printf("%f %f %f\n", ((Transform *) data)->x, ((Transform *) data)->y, ((Transform *) data)->z); }
             }
 
             ////////////////////////////////////////////////////////////////////////////////

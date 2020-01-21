@@ -317,3 +317,12 @@ vec4 new_vec4(float x, float y, float z, float w)
     return v;
 }
 
+vec3 new_vec3(float x, float y, float z)
+{
+    vec3 v;
+    v.vals[0] = x;
+    v.vals[1] = y;
+    v.vals[2] = z;
+    return v;
+}
+

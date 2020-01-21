@@ -32,3 +32,12 @@ timetest < MaterialType (
     num_blocks: 1;
     string block0: StandardLoopWindow;
 );
+
+flat_color < MaterialType (
+    vertex_format: 3;
+    vertex_shader: Shaders/passthrough.vert;
+    fragment_shader: Shaders/flat_color.frag;
+    num_blocks: 2;
+    string block0: Standard3D;
+    string block1: MaterialProperties;
+);

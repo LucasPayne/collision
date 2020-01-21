@@ -37,6 +37,8 @@ extern void input_event(int key, int action, int mods)
 #define CASE(ACTION,KEY)\
     if (action == ( GLFW_ ## ACTION ) && key == ( GLFW_KEY_ ## KEY ))
     // CASE(PRESS, K) printf("pressed k\n");
+
+    CASE(PRESS, O) open_scene(g_data, "Scenes/scene2");
 }
 
 // Entity-attached input handlers.
@@ -83,13 +85,42 @@ extern void init_program(void)
 }
 
 
+vec4 str_to_color_key(char *color)
+{
+    #define col(STR,R,G,B,A) if (strcmp(color, ( STR )) == 0) return new_vec4((R),(G),(B),(A));
+    col("g", 0,0,1,1);
+    col("r", 1,0,0,1);
+    col("y", 1,0,1,1);
+    col("b", 0,0,1,1);
+    col("k", 0,0,0,1);
+    col("w", 1,1,1,1);
+    col("gr", 0.4,0.4,0.4,1);
+    fprintf(stderr, ERROR_ALERT "Unsupported color \"%s\".\n", color);
+    exit(EXIT_FAILURE);
+    #undef col
+}
+
+void paint_line(vec3 a, vec3 b, char *color)
+{
+    gm_lines(VERTEX_FORMAT_3);
+    attribute_3f(Position, a.vals[0],a.vals[1],a.vals[2]);
+    attribute_3f(Position, b.vals[0],b.vals[1],b.vals[2]);
+    Geometry g = gm_done();
+    ResourceHandle res;
+    Material *mat = oneoff_resource(Material, res);
+    mat->material_type = new_resource_handle(MaterialType, "Materials/flat_color");
+    material_set_property_vec4(mat, "flat_color", str_to_color_key(color));
+    gm_draw(g, mat);
+    gm_free(g);
+}
+
 extern void loop_program(void)
 {
-    // for_aspect(Camera, camera)
-    //     Transform *t = get_sibling_aspect(camera, Transform);
-    //     t->theta_y = sin(time);
-    //     t->y = sin(time);
-    // end_for_aspect()
+    // for (int i = 0; i < 10; i++) {
+    //     float theta = 6 * i * 2*M_PI / 10;
+    //     float thetap = 6 * (i + 1) * 2*M_PI / 10;
+    //     paint_line(new_vec3(sin(theta), cos(theta), i*0.1), new_vec3(sin(thetap), cos(thetap), i*0.1), "g");
+    // }
 }
 
 

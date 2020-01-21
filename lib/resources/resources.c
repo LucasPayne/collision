@@ -1,5 +1,10 @@
 /*--------------------------------------------------------------------------------
     Resources, resource management, and resource loading module.
+
+notes:
+   Switched to chaining hash table. The uuid is now a cyclic-redundancy-check 32 bit int.
+   Jason Gregory says that no clash was found at naughty dog during development. It probably will not happen.
+
 --------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,20 +26,22 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
 static ResourceID null_resource_id(void);
 
 //--------------------------------------------------------------------------------
-// Resource types
+// Resource types.
 static int g_num_resource_types = 0;
 ResourceTypeInfo *g_resource_type_info = NULL;
 
-// Resource table and ID allocation
+// Resource table and ID allocation.
+// This also acts as a cache.
 static bool g_initialized_resource_table;
 static uint32_t g_resource_table_size = 0;
 ResourceTableEntry *g_resource_table;
 static ResourceUUID g_last_resource_uuid = 0;
 
-// Resource paths and search
+// Asset/source paths and search.
 static uint32_t g_resource_path_length = 0;
 static char *g_resource_path = NULL;
 int g_resource_path_count = 0;
+
 
 /*
 Resource types are built up at runtime. This is so an application can include a call to a function for modules
@@ -77,33 +84,33 @@ This gives a new resource ID which should be used instantly after creation. When
 other functions (probably just the one that uses this) can create the new resource entry at the given table index
 and with the allocated uuid.
 */
-static ResourceID create_resource_id(ResourceType type)
-{
-    if (!g_initialized_resource_table) {
-        g_resource_table_size = RESOURCE_TABLE_START_SIZE;
-        g_resource_table = (ResourceTableEntry *) calloc(1, sizeof(ResourceTableEntry) * g_resource_table_size);
-        mem_check(g_resource_table);
-        g_initialized_resource_table = true;
-    }
-    int i = 0;
-    while (1) {
-        for (; i < g_resource_table_size; i++) {
-            if (g_resource_table[i].uuid == 0) {
-                ResourceID new_id;
-                new_id.table_index = i;
-                new_id.uuid = ++g_last_resource_uuid;
-                new_id.type = type;
-                return new_id;
-            }
-        }
-        uint32_t previous_size = g_resource_table_size;
-        g_resource_table_size += RESOURCE_TABLE_START_SIZE; // grow the resource table linearly.
-        g_resource_table = (ResourceTableEntry *) realloc(g_resource_table, sizeof(ResourceTableEntry) * g_resource_table_size);
-        mem_check(g_resource_table);
-        // Null initialize the new available resource table entries.
-        memset(g_resource_table + previous_size, 0, sizeof(ResourceTableEntry) * (g_resource_table_size - previous_size));
-    }
-}
+// static ResourceID create_resource_id(ResourceType type)
+// {
+//     if (!g_initialized_resource_table) {
+//         g_resource_table_size = RESOURCE_TABLE_START_SIZE;
+//         g_resource_table = (ResourceTableEntry *) calloc(1, sizeof(ResourceTableEntry) * g_resource_table_size);
+//         mem_check(g_resource_table);
+//         g_initialized_resource_table = true;
+//     }
+//     int i = 0;
+//     while (1) {
+//         // for (; i < g_resource_table_size; i++) {
+//         //     if (g_resource_table[i].uuid == 0) {
+//         //         ResourceID new_id;
+//         //         new_id.table_index = i;
+//         //         new_id.uuid = ++g_last_resource_uuid;
+//         //         new_id.type = type;
+//         //         return new_id;
+//         //     }
+//         // }
+//         // uint32_t previous_size = g_resource_table_size;
+//         // g_resource_table_size += RESOURCE_TABLE_START_SIZE; // grow the resource table linearly.
+//         // g_resource_table = (ResourceTableEntry *) realloc(g_resource_table, sizeof(ResourceTableEntry) * g_resource_table_size);
+//         // mem_check(g_resource_table);
+//         // // Null initialize the new available resource table entries.
+//         // memset(g_resource_table + previous_size, 0, sizeof(ResourceTableEntry) * (g_resource_table_size - previous_size));
+//     }
+// }
 
 /*
 This function is non-static because a macro expands to it. This gets the pointed to, raw resource
@@ -217,50 +224,74 @@ static ResourceHandle *relocate_resource_handle(ResourceHandle *resource_handle)
     // If the resource handle's id is null, then a lookup needs to be done first instead of trying the table.
     if (resource_handle->_id.uuid != 0) {
         // Table lookup the resource. The null uuid is 0, so an empty entry cannot be matched.
-        if (g_resource_table[resource_handle->_id.table_index].uuid == resource_handle->_id.uuid) {
-            // The point of this. Resource loading and unloading should be very rare compared to references to the resource,
-            // so that should be a constant fast lookup, yet still trigger a resource load if needed, unknown to the caller.
-            if (DEBUG) printf("Handle dereferenced straight to the resource table.\n");
-            return resource_handle;
+        // Check the uuids of all entries in a chain in the hash table.
+	ResourceTableEntry *checking_entry = &g_resource_table[resource_handle->_id.table_index];
+        while (checking_entry != NULL) {
+            checking_entry = checking_entry->next;
+            if (strcmp(checking_entry->path, resource_handle->data.path) == 0) { //slow, see below.
+            // if (checking_entry->uuid == resource_handle->_id.uuid) { //-----much faster. uncomment when crc32 is implemented.
+                // The point of this. Resource loading and unloading should be very rare compared to references to the resource,
+                // so that should be a constant (-except chaining) fast lookup, yet still trigger a resource load if needed, unknown to the caller.
+                if (DEBUG) printf("Handle dereferenced straight to the resource table.\n");
+                return resource_handle;
+            }
         }
     }
 
-    // Try walk the resource tree to see if this path is associated to an active resource ID.
     if (resource_handle->data.path == NULL) {
         fprintf(stderr, ERROR_ALERT "Attempted to dereference resource handle which has no resource path.\n");
         exit(EXIT_FAILURE);
     }
-    //////////////////////////////////////////////////////////////////////////////////
-    // redoing caching with new dd stuff, so no caching for now
-#if 0
-    ResourceID id = lookup_resource(resource_handle->data.path);
-    if (id.uuid != 0) {
-        // Resource is loaded. Update the handle with the ID found from querying.
-        resource_handle->_id = id;
-        if (DEBUG) printf("Resource found by a lookup!\n");
-        return resource_handle;
-    }
-#endif
     // The resource isn't loaded. Trigger a load.
     // First, create a new entry in the resource table with a new ID.
-    ResourceID id = create_resource_id(resource_handle->_id.type);
-    ResourceTableEntry *new_entry = &g_resource_table[id.table_index];
-    new_entry->uuid = id.uuid;
-    new_entry->type = id.type;
-    // and, store the path on the heap and give it to the new resource entry.
-    new_entry->path = (char *) malloc((strlen(resource_handle->data.path) + 1) * sizeof(char));
-    mem_check(new_entry->path);
-    strcpy(new_entry->path, resource_handle->data.path);
-    // Next, load the resource in whatever way this resource type loads, by calling the load function in its resource-type-info table entry.
-    void *resource = g_resource_type_info[new_entry->type].load(new_entry->path);
-    if (resource == NULL) {
-        fprintf(stderr, ERROR_ALERT "Failed to load resource from path \"%s\".\n", new_entry->path);
-        exit(EXIT_FAILURE);
+    if (!g_initialized_resource_table) {
+        g_resource_table_size = RESOURCE_TABLE_START_SIZE;
+        g_resource_table = (ResourceTableEntry *) calloc(1, sizeof(ResourceTableEntry) * g_resource_table_size);
+        mem_check(g_resource_table);
+        g_initialized_resource_table = true;
     }
-    new_entry->resource = resource;
-    //////////////////////////////////////////////////////////////////////////////////
-    // Finally, add this path to the resource tree, filling the tree enough to store the id at the leaf, for querying.
-    /* add_resource(id, resource_handle->data.path); */
+    ResourceID id;
+    id.uuid = hash_crc32(resource_handle->data.path);
+    id.type = resource_handle->_id.type;
+    id.table_index = id.uuid % g_resource_table_size;
+
+    // Insert the entry into the chaining hash table.
+    ResourceTableEntry *new_entry = &g_resource_table[id.table_index];
+    bool already_cached = false;
+    if (new_entry->uuid != 0) { //initial cell is occupied, chain into the table.
+        while (1) {
+            if (new_entry->uuid == 0) break; // found the end of the chain.
+            if (new_entry->uuid == id.uuid) {
+                // the resource is already cached.
+                already_cached = true;
+                break;
+            }
+            new_entry = new_entry->next;
+        }
+        if (!already_cached) {
+            new_entry->next = (ResourceTableEntry *) calloc(1, sizeof(ResourceTableEntry));
+            mem_check(new_entry->next);
+            new_entry = new_entry->next;
+        }
+    }
+    if (already_cached) {
+        // nothing needs to be relocated.
+    } else {
+        // Create a new entry.
+        new_entry->uuid = id.uuid;
+        new_entry->type = id.type;
+        // and, store the path on the heap and give it to the new resource entry.
+        new_entry->path = (char *) malloc((strlen(resource_handle->data.path) + 1) * sizeof(char));
+        mem_check(new_entry->path);
+        strcpy(new_entry->path, resource_handle->data.path);
+        // Next, load the resource in whatever way this resource type loads, by calling the load function in its resource-type-info table entry.
+        void *resource = g_resource_type_info[new_entry->type].load(new_entry->path);
+        if (resource == NULL) {
+            fprintf(stderr, ERROR_ALERT "Failed to load resource from path \"%s\".\n", new_entry->path);
+            exit(EXIT_FAILURE);
+        }
+        new_entry->resource = resource;
+    }
 
     // Update the resource handle with the new id for the newly loaded resource. Now, it is valid for short-term usage by the caller.
     resource_handle->_id = id;

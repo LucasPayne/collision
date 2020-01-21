@@ -21,6 +21,7 @@ The application must provide:
 
 base_libs:
     + glad
+    + helper_definitions
     + helper_gl
     + helper_input
     + glsl_utilities

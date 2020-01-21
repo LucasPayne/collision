@@ -11,7 +11,6 @@
 // geometry < Models/quad.
 
 dirt < GameObject (
-    transform < Transform;
     body < Body (
         scale: 1;
         geometry < Resources/Models/quad;
@@ -19,17 +18,24 @@ dirt < GameObject (
     );
 );
 scene1 < Scene (
-    1 < dirt (
-        transform < ( position: 0,0,-10; );
-    );
-    2 < dirt (
-        transform < ( position: 0,0,-5; );
-    );
-    3 < dirt (
-        transform < ( position: 0,0,-2; );
+    1 < dirt ( transform < Transform ( position: 0,0,-10; ); bool testing_value: true;);
+    2 < dirt ( transform < Transform ( position: 0,0,-5; ););
+    3 < dirt ( transform < Transform ( position: 0,0,-3; ););
+    4 < dirt ( transform < Transform ( position: -5,0,-7; ););
+    5 < dirt ( transform < Transform ( position: -5,0,-7; ););
+    6 < dirt ( transform < Transform ( position: -3,0,-3; ););
+    7 < dirt ( transform < Transform ( position: -1,0,-2; ););
+);
+scene2 < Scene (
+    1 < GameObject (
+        transform < Transform ( position: -2, -2, -6; );
+        body < Body (
+            scale: 100;
+            // geometry < Resources/Models/icosohedron;
+            // material < Resources/Materials/red;
+        );
     );
 );
-
 
 
 

@@ -85,6 +85,7 @@ void print_matrix3x3f(Matrix3x3f *matrix);
 void print_vec4(vec4 v);
 
 vec4 new_vec4(float x, float y, float z, float w);
+vec3 new_vec3(float x, float y, float z);
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

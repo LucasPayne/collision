@@ -53,6 +53,7 @@ typedef struct ResourceTableEntry_s {
     ResourceType type;
     char *path;
     void *resource;
+    struct ResourceTableEntry_s *next; //This struct is an entry in a chaining hash table.
 } ResourceTableEntry;
 extern ResourceTableEntry *g_resource_table;
 

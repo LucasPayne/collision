@@ -5,6 +5,7 @@
 #define HEADER_DEFINED_HELPER_DEFINITIONS
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 // Quick double-precision random number [0, 1). From K&R.
 #define frand() ((double) rand() / (RAND_MAX+1.0))
@@ -69,5 +70,6 @@
 /*     exit(EXIT_FAILURE); */
 /* } */
 
+uint32_t hash_crc32(char *string);
 
 #endif // HEADER_DEFINED_HELPER_DEFINITIONS

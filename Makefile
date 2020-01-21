@@ -108,6 +108,10 @@ build/lib/bases/interactive_3D/interactive_3D.o: lib/bases/interactive_3D/intera
 	$(CC) -o _interactive_3D.o -c $< $(CFLAGS)
 	mkdir -p build/lib/bases/interactive_3D
 	ld -relocatable -o $@ _interactive_3D.o $(filter-out $<,$^)
+build/lib/bases/gl_debug/gl_debug.o: lib/bases/gl_debug/gl_debug.c $$(shell cat lib/bases/gl_debug/gl_debug.c | cslots base_libs --pattern 'build/lib/{n}/{h}.o')
+	$(CC) -o _gl_debug.o -c $< $(CFLAGS)
+	mkdir -p build/lib/bases/gl_debug
+	ld -relocatable -o $@ _gl_debug.o $(filter-out $<,$^)
 
 #================================================================================
 # Application making

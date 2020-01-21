@@ -16,11 +16,14 @@ The application must provide:
     void init_program(void);
     void loop_program(void);
     void close_program(void);
+    void input_event(int key, int action, int mods);
+    
 
 base_libs:
     + glad
     + helper_gl
     + helper_input
+    + glsl_utilities
     + data_dictionary
     + matrix_mathematics
     + entity
@@ -30,8 +33,11 @@ base_libs:
     + rendering
     + ply
 --------------------------------------------------------------------------------*/
-#define BASE_DIRECTORY "/home/lucas/code/collision/lib/bases/interactive_3D/"
+#define BASE_DIRECTORY "/home/lucas/collision/lib/bases/interactive_3D/"
+#define PROJECT_DIRECTORY "/home/lucas/collision/"
 #include "bases/interactive_3D.h"
+
+float ASPECT_RATIO;
 
 float time = 0;
 float dt = 0;
@@ -39,10 +45,25 @@ float dt = 0;
 extern void init_program(void);
 extern void loop_program(void);
 extern void close_program(void);
+extern void input_event(int key, int action, int mods);
 
 #define config_error(str)\
     { fprintf(stderr, ERROR_ALERT "Application configuration error: non-existent or malformed \"" str "\" entry.\n");\
       exit(EXIT_FAILURE); }
+
+static void reshape(GLFWwindow* window, int width, int height)
+{
+    force_aspect_ratio(window, width, height, ASPECT_RATIO);
+}
+static void key_callback(GLFWwindow *window, int key,
+                int scancode, int action,
+                int mods)
+{
+    key_callback_quit(window, key, scancode, action, mods);
+    key_callback_arrows_down(window, key, scancode, action, mods);
+
+    input_event(key, action, mods);
+}
 
 static void init_base(void)
 {
@@ -58,6 +79,10 @@ static void init_base(void)
     // forming the "GameObject" library.
     init_entity_model();
     init_aspects_gameobjects();
+
+    init_resources_rendering();
+
+    glsl_include_path_add(PROJECT_DIRECTORY "glsl/shader_blocks");
 }
 
 static void render(void)
@@ -84,7 +109,6 @@ static void render(void)
             right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
 
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
-            set_uniform_float(StandardLoopWindow, TEST_VALUE, camera_transform->theta_x);
 
             gm_draw(*mesh, material);
         end_for_aspect()
@@ -148,6 +172,10 @@ int main(void)
     float clear_color[4];
     if (!dd_get(app_config, "clear_color", "vec4", clear_color)) config_error("clear_color");
     glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
+    glfwSetFramebufferSizeCallback(window, reshape);
+    glfwSetKeyCallback(window, key_callback);
+
+    if (!dd_get(app_config, "aspect_ratio", "float", &ASPECT_RATIO)) config_error("aspect_ratio");
 
     init_base();
 
@@ -165,18 +193,18 @@ int main(void)
          * (restore clear colour after window clear)
          */
         glClear(GL_COLOR_BUFFER_BIT);
-        /* GLfloat clear_color[4]; */
-        /* glGetFloatv(GL_COLOR_CLEAR_VALUE, clear_color); */
-        /* glClearColor(0.0, 0.0, 0.0, 1.0); */
-        /* glDisable(GL_SCISSOR_TEST); */
-        /* glClear(GL_COLOR_BUFFER_BIT); // config: clear mask */
+        GLfloat clear_color[4];
+        glGetFloatv(GL_COLOR_CLEAR_VALUE, clear_color);
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glDisable(GL_SCISSOR_TEST);
+        glClear(GL_COLOR_BUFFER_BIT); //----config: clear mask
 
-        /* GLint viewport[4]; */
-        /* glGetIntegerv(GL_VIEWPORT, viewport); */
-        /* glEnable(GL_SCISSOR_TEST); */
-        /* glScissor(viewport[0], viewport[1], viewport[2], viewport[3]); */
-        /* glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]); */
-        /* glClear(GL_COLOR_BUFFER_BIT); // config: clear mask */
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(viewport[0], viewport[1], viewport[2], viewport[3]);
+        glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
+        glClear(GL_COLOR_BUFFER_BIT); //----config: clear mask
 
         loop_base();
 

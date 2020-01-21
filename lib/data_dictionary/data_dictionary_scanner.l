@@ -109,6 +109,7 @@ NAME    [/_A-Za-z0-9]+
 }
 
 %%
+#include "helper_definitions.h"
 
 // #include(...) directives.
 void dd_push_file(FILE *file)

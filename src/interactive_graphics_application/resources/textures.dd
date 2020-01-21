@@ -1,0 +1,14 @@
+
+
+PNGTexture < Texture ( type: png; );
+
+
+archimedes < PNGTexture (
+    path: Images/archimedes.png;
+);
+
+minecraft < (
+    dirt < PNGTexture ( path: Images/minecraft/dirt.png; );
+    ladder < PNGTexture ( path: Images/minecraft/ladder.png; );
+    stone_bricks < PNGTexture ( path: Images/minecraft/stone_bricks.png; );
+);

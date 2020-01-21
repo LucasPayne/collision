@@ -37,18 +37,28 @@ ResourceType Texture_RTID;
 --------------------------------------------------------------------------------*/
 void *Texture_load(char *path)
 {
-    FILE *file;
-    ImageData image_data;
-    // Try for a PNG file.
-    if ((file = resource_file_open(path, ".png", "rb")) != NULL || (file = resource_file_open(path, ".PNG", "rb")) != NULL) {
-        if (!load_image_png(&image_data, file)) {
-            fprintf(stderr, ERROR_ALERT "Could not successfully read in image data from a PNG file.\n");
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        fprintf(stderr, ERROR_ALERT "Could not find relevant asset data to build a texture from path \"%s\".\n", path);
+    #define load_error(str) { fprintf(stderr, "Texture load error: " str "\n"); exit(EXIT_FAILURE); }
+
+    DD *dd = dd_open(g_resource_dictionary, path);
+    if (dd == NULL) {
+        fprintf(ERROR_ALERT "Could not find texture \"%s\".\n", path);
         exit(EXIT_FAILURE);
     }
+    ImageData image_data;
+    // Try for a PNG file.
+    char *type;
+    char *filename;
+    if (!dd_get(dd, "type", "string", &type)) load_error("No type.");
+    if (!dd_get(dd, "path", "string", &filename)) load_error("No file.");
+    if (strcmp(type, "png") == 0) {
+        FILE *file = resource_file_open(filename, "", "rb");
+        if (file == NULL) load_error("Could not open png file.");
+        if (!load_image_png(&image_data, file)) load_error("Failed to decode png.");
+    }
+
+    // free(type);
+    // free(filename);
+
     Texture *texture = (Texture *) calloc(1, sizeof(Texture));
     mem_check(texture);
 

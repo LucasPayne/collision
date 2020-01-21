@@ -1,0 +1,12 @@
+
+PlyModel < Geometry ( type: ply; );
+
+quad < PlyModel (
+    vertex_format: 3U;
+    path: Meshes/quad.ply;
+);
+icosohedron < PlyModel (
+    vertex_format: 3;
+    path: Meshes/icosohedron.ply;
+);
+

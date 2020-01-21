@@ -9,20 +9,13 @@
 #include <stdint.h>
 #include "data_dictionary.h" // include the module-user interface.
 
-// mem_check defined here before integrated into regular modules.
-#define mem_check(POINTER)\
-    if (( POINTER ) == NULL) {\
-        fprintf(stderr, "malloc failed.\n");\
-        exit(EXIT_FAILURE);\
-    }
-
 // Implemented in lexer file.
 extern void dd_push_file(FILE *file);
 extern void dd_pop_file(void);
 
 DataDictionary *new_data_dictionary(void);
 DataDictionary *resolve_dictionary_expression(DataDictionary *dict, DictExpression *expression);
-uint32_t crc32(char *string);
+uint32_t hash_crc32(char *string);
 bool mask_dictionary_to_table(DataDictionary *dict_table, EntryNode *dict);
 
 DictExpression *lookup_dict_expression(DataDictionary *dict, char *name);

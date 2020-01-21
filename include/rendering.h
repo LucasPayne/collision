@@ -7,6 +7,9 @@
 #include <GLFW/glfw3.h>
 #include <stdint.h>
 
+// glsl utilities such as shader compilation and linking are separated, so they can be tested without the rendering module's dependencies.
+#include "glsl_utilities.h"
+
 // note: It may be a convenient dependency to have the matrix types in this module. If arithmetic isn't done with them,
 // then this will just require a header include.
 #include "matrix_mathematics.h"
@@ -282,15 +285,6 @@ void gm_lines(VertexFormat vertex_format);
 void gm_free(Geometry geometry);
 
 /*--------------------------------------------------------------------------------
-Shader bookkeeping stuff. Reading the source into application memory
-(OpenGL requires this since it needs to send all the source to the driver to be compiled),
-loading and compilation, and linking, with error handling and log printing.
---------------------------------------------------------------------------------*/
-void read_shader_source(const char *name, char **lines_out[], size_t *num_lines);
-bool load_and_compile_shader(GLuint shader_id, const char *shader_path);
-bool link_shader_program(GLuint shader_program_id);
-
-/*--------------------------------------------------------------------------------
 Loading stuff. Possibly should be outside of this module, but since a mesh loading
 function explicitly accounts for possible ways to compile a mesh asset, these
 are here.
@@ -336,9 +330,6 @@ void material_set_texture(Material *material, char *texture_name, ResourceHandle
 	:((( GL_TYPE ) == GL_UNSIGNED_INT) ? sizeof(uint32_t)\
 	  :((( GL_TYPE ) == GL_INT) ? sizeof(int32_t)\
 	    : 0)))
-
-FILE *glsl_include_path_open(char *name);
-void glsl_include_path_add(char *directory);
 
 
 #endif // HEADER_DEFINED_RENDERING

@@ -44,7 +44,6 @@ void *Geometry_load(char *path)
 {
     #define load_error(STRING) { fprintf(stderr, ERROR_ALERT "Error loading geometry: %s\n", ( STRING )); exit(EXIT_FAILURE); }
     #define manifest_error(str) load_error("Geometry manifest file has missing or malformed " str " entry.\n")
-
     DataDictionary *dd = dd_open(g_resource_dictionary, path);
     if (dd == NULL) load_error("Could not open dictionary for geometry.");
     char *vertex_format_string;

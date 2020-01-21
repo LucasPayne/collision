@@ -24,8 +24,9 @@ typedef Matrix4x4f mat4x4;
 #include "shader_blocks/StandardLoopWindow.h"
 #include "shader_blocks/Lights.h"
 
-
 extern float time;
 extern float dt;
+
+extern float ASPECT_RATIO;
 
 #endif // HEADER_DEFINED_INTERACTIVE_3D

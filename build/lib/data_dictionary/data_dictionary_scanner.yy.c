@@ -2160,6 +2160,7 @@ void yyfree (void * ptr )
 
 #line 111 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 
+#include "helper_definitions.h"
 
 // #include(...) directives.
 void dd_push_file(FILE *file)

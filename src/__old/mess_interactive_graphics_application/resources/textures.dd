@@ -1,0 +1,10 @@
+
+
+PNGTexture < Texture ( type: png; );
+
+
+archimedes < PNGTexture (
+    path: Images/archimedes.png;
+);
+
+

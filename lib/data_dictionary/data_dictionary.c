@@ -30,8 +30,9 @@ DataDictionary *dd_fopen(char *path)
     return dict;
 }
 
-DataDictionary *dd_open(DataDictionary *dict, char *name)
+static DataDictionary *___dd_open(DataDictionary *dict, char *name)
 {
+    // Non-recursive opening.
     DictExpression *expression = lookup_dict_expression(dict, name);
     if (expression == NULL) return NULL;
     DataDictionary *found_dict = resolve_dictionary_expression(dict, expression);
@@ -40,11 +41,41 @@ DataDictionary *dd_open(DataDictionary *dict, char *name)
     found_dict->parent_dictionary = dict;
     return found_dict;
 }
+DataDictionary *dd_open(DataDictionary *dict, char *path)
+{
+    // Recursive opening. Follow the /-separated path.
+
+    char *p = path;
+    DataDictionary *cur_dict = dict;
+
+    const int n = 4096;
+    char buf[n];
+    while (1) {
+        char *sep = strchr(p, '/');
+        bool finish = false;
+        if (sep == NULL) { // Last entry in the path.
+            finish = true;
+            sep = strchr(p, '\0');
+        }
+        if (sep - p >= n) {
+            fprintf(stderr, "Entry in data-dictionary path queried is too long.\n");
+            exit(EXIT_FAILURE);
+        }
+        strncpy(buf, p, sep - p);
+        buf[sep - p] = '\0';
+        cur_dict = ___dd_open(cur_dict, buf);
+        if (cur_dict == NULL) return NULL;
+
+        if (finish) break;
+        p = sep + 1;
+    }
+}
+
 
 // Lookup a value in a dictionary.
 bool dd_get(DataDictionary *dict, char *name, char *type, void *data)
 {
-    uint32_t hash = crc32(name);
+    uint32_t hash = hash_crc32(name);
     int index = hash % dict->table_size;
     while (dict->table[index].name != -1) {
         if (strcmp(name, symbol(dict->table[index].name)) == 0) {
@@ -122,6 +153,19 @@ DD_TYPE_READER(int) {
     *((int *) data) = val;
     return true;
 }
+DD_TYPE_READER(uint) {
+    unsigned int val;
+    if (sscanf(text, "%u", &val) == EOF) return false;
+    *((unsigned int *) data) = val;
+    return true;
+}
+DD_TYPE_READER(float) {
+    float val;
+    if (sscanf(text, "%f", &val) == EOF) return false;
+    *((float *) data) = val;
+    return true;
+}
+
 // This string needs to be freed by the retriever.
 DD_TYPE_READER(string) {
     int len = strlen(text);
@@ -161,6 +205,8 @@ DD_TYPE_READER(ivec2) {
 const struct { DDTypeReader reader; const char *type_name; } dd_type_readers[] = {
     type(bool),
     type(int),
+    type(float),
+    type(uint),
     type(vec4),
     type(ivec2),
     type(string),
@@ -179,15 +225,6 @@ DDTypeReader dd_get_reader(const char *type)
     }
     return NULL;
 }
-
-
-
-    /* DD *scene = dd_open(dd, "Scene"); */
-    /* DD **spiders; */
-    /* int num = dd_scan(scene, &spiders, "Spider"); */
-    /* for (int i = 0; i < num; i++) { */
-    /*     dd_print_table(spiders[i]); */
-    /* } */
 
 int dd_scan(DataDictionary *dd, DataDictionary ***scanned, const char *type_string)
 {

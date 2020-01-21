@@ -79,7 +79,7 @@
 
 EntryNode *g_dict;
 
-#define tracing_parse 1
+#define tracing_parse 0
 
 
 #line 86 "data_dictionary_parser.yy.c" /* yacc.c:339  */

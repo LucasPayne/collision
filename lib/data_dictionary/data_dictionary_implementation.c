@@ -276,7 +276,7 @@ dict-entries:
     If an entry with the same name is there, concatenate B_i's dict-expression onto one in the table.
     Otherwise, add this as a new dict-entry.
 --------------------------------------------------------------------------------*/
-uint32_t crc32(char *string)
+uint32_t hash_crc32(char *string)
 {
     // This is not crc32 ...
     uint32_t hash = 0;
@@ -303,7 +303,7 @@ bool mask_dictionary_to_table(DataDictionary *dict_table, EntryNode *dict)
     EntryNode *entry = dict;
     // Successively add entries to the table.
     while (entry != NULL) {
-        uint32_t hash = crc32(symbol(entry->name));
+        uint32_t hash = hash_crc32(symbol(entry->name));
         int index = hash % dict_table->table_size;
         bool appended_expression = false; // This is set to true in the loop if the dict-entry has masked by appending its expression onto the other expression.
                                           // At the end of the loop, if this is false, a new dict-entry is created at the index instead.
@@ -396,7 +396,7 @@ DictExpression *lookup_dict_expression(DataDictionary *dict, char *name)
     //
     // note: Should not print errors here, since this is allowed to fail when the scope stack is being searched.
     /* printf("Looking up dictionary expression \"%s\" ...\n", name); */
-    uint32_t hash = crc32(name);
+    uint32_t hash = hash_crc32(name);
     int index = hash % dict->table_size;
     while (dict->table[index].name != -1) {
         if (strcmp(name, symbol(dict->table[index].name)) == 0) {
@@ -413,89 +413,3 @@ DictExpression *lookup_dict_expression(DataDictionary *dict, char *name)
     return NULL;
 
 }
-// // Lookup a value in a dictionary.
-// bool lookup_value(DataDictionary *dict, char *name)
-// {
-//     /* printf("Looking up value \"%s\" ...\n", name); */
-//     uint32_t hash = crc32(name);
-//     int index = hash % dict->table_size;
-//     while (dict->table[index].name != -1) {
-//         if (strcmp(name, symbol(dict->table[index].name)) == 0) {
-//             if (dict->table[index].is_dict) {
-//                 printf("ERROR lookup_value: Attempted to extract dictionary-entry \"%s\" from dictionary as a value.\n", name);
-//                 return false;
-//             }
-//             // Dictionary-entry found with the given name, open it as a table and return the table.
-//             printf("Found value for %s: %s\n", name, symbol(dict->table[index].contents.value.value_text));
-//             return true;
-//         }
-//         //note: Make sure this mirrors the hashing and indexing done when the table is created.
-//         index = (index + 1) % dict->table_size;
-//     }
-//     printf("ERROR lookup_value: Entry \"%s\" not found in dictionary.\n", name);
-//     return false;
-// }
-
-#if 0
-int main(void)
-{
-    FILE *file = fopen("tests/test2", "r");
-    dd_push_file(file);
-    dd_yyparse();
-    print_ast(g_dict);
-
-    // Formulate the top-level dictionary as a 1-operand dict-expression, then open it.
-    DictExpression top_expression = { 0 };
-    top_expression.is_name = false;
-    top_expression.dict = g_dict; // g_dict has been left by the parser as the top-level dictionary IR.
-
-    DataDictionary *dict = resolve_dictionary_expression(NULL, &top_expression);
-    print_dict_table(dict);
-    {
-        DataDictionary *subdict = lookup_dict(dict, "blimp");
-        print_dict_table(subdict);
-    }
-    {
-        DataDictionary *subdict = lookup_dict(dict, "small_blimp");
-        print_dict_table(subdict);
-    }
-    {
-        DataDictionary *subdict = lookup_dict(dict, "ApplicationConfig");
-        print_dict_table(subdict);
-    }
-
-    /* { */
-    /*     DataDictionary *subdict = lookup_dict(dict, "player_start"); */
-    /*     print_dict_table(subdict); */
-
-    /*     DataDictionary *subsubdict = lookup_dict(subdict, "trans"); */
-    /*     print_dict_table(subsubdict); */
-    /* } */
-
-    /* { */
-    /*     DataDictionary *subdict = lookup_dict(dict, "FloorData"); */
-    /*     print_dict_table(subdict); */
-    /* } */
-
-    /* { */
-    /*     DataDictionary *subdict = lookup_dict(dict, "floor1"); */
-    /*     print_dict_table(subdict); */
-    /* } */
-
-    /* DataDictionary *subdict = lookup_dict(dict, "Spider"); */
-    /* print_dict_table(subdict); */
-
-    /* { */
-    /*     DataDictionary *subsubdict = lookup_dict(subdict, "transform"); */
-    /*     print_dict_table(subsubdict); */
-    /* } */
-    /* { */
-    /*     DataDictionary *subsubdict = lookup_dict(subdict, "body"); */
-    /*     print_dict_table(subsubdict); */
-    /*     DataDictionary *subsubsubdict = lookup_dict(subsubdict, "material"); */
-    /*     print_dict_table(subsubsubdict); */
-    /*     DataDictionary *subsubsubsubdict = lookup_dict(subsubsubdict, "diffuse_map"); */
-    /*     print_dict_table(subsubsubsubdict); */
-    /* } */
-}
-#endif 

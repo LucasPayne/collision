@@ -51,7 +51,7 @@ extern void input_event(int key, int action, int mods);
     { fprintf(stderr, ERROR_ALERT "Application configuration error: non-existent or malformed \"" str "\" entry.\n");\
       exit(EXIT_FAILURE); }
 
-static void reshape(GLFWwindow* window, int width, int height)
+static void reshape(GLFWwindow *window, int width, int height)
 {
     force_aspect_ratio(window, width, height, ASPECT_RATIO);
 }
@@ -61,6 +61,14 @@ static void key_callback(GLFWwindow *window, int key,
 {
     key_callback_quit(window, key, scancode, action, mods);
     key_callback_arrows_down(window, key, scancode, action, mods);
+
+    // Send input events to Input aspects (listeners and handlers).
+    for_aspect(Input, inp)
+        if (inp->listening) {
+            printf("sent\n");
+            inp->callback(inp, key, action, mods);
+        }
+    end_for_aspect()
 
     input_event(key, action, mods);
 }

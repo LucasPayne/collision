@@ -99,6 +99,19 @@ ASPECT_PROPERTIES()
 
     /* mem_check(( LOGIC_ASPECT_POINTER )->data);\ */
 
+/*--------------------------------------------------------------------------------
+    An Input aspect allows the entity to listen for input events (if something in the application
+    sends those events through to the Input aspects).
+--------------------------------------------------------------------------------*/
+struct Input_s;
+typedef void (*InputCallback)(struct Input_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
+extern AspectType Input_TYPE_ID;
+typedef struct /* Aspect */ Input_s {
+ASPECT_PROPERTIES()
+    bool listening;
+    InputCallback callback;
+} Input;
+void Input_init(Input *inp, InputCallback callback, bool listening);
 
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/

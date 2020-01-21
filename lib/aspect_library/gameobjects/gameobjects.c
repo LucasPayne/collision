@@ -1,9 +1,13 @@
 /*--------------------------------------------------------------------------------
 "Gameobject" aspects.
-Transform : 3D position, orientation, stored with Euler angles.
-Body: Viewable mesh aspect.
-Logic: Per-frame update logic.
-Camera: 
+
+Transform
+    3D position, orientation, stored with Euler angles.
+Body
+    Viewable mesh aspect.
+Logic
+    Per-frame update logic.
+Camera
 
 Currently, this is not really a "library". A useful "game object" system above
 the entity and resource systems should probably only be made by editing this a lot
@@ -13,6 +17,7 @@ and then deciding what aspects are useful, then making it a proper library.
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "rendering.h"
 #include "matrix_mathematics.h"
 #include "resources.h"
@@ -24,6 +29,7 @@ void init_aspects_gameobjects(void)
     new_default_manager(Transform, NULL);
     new_default_manager(Body, NULL);
     new_default_manager(Logic, NULL);
+    new_default_manager(Input, NULL);
     new_default_manager(Camera, NULL);
 }
 
@@ -71,6 +77,16 @@ void Body_init(Body *body, char *material_path, char *mesh_path)
     Logic
 ================================================================================*/
 AspectType Logic_TYPE_ID;
+
+/*================================================================================
+    Input
+================================================================================*/
+AspectType Input_TYPE_ID;
+void Input_init(Input *inp, InputCallback callback, bool listening)
+{
+    inp->callback = callback;
+    inp->listening = listening;
+}
 
 /*================================================================================
     Camera

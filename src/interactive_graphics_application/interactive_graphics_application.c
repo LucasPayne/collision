@@ -19,24 +19,30 @@ extern void input_event(int key, int action, int mods)
 {
 #define CASE(ACTION,KEY)\
     if (action == ( GLFW_ ## ACTION ) && key == ( GLFW_KEY_ ## KEY ))
-
     CASE(PRESS, K) printf("pressed k\n");
-
-#undef CASE
 }
+
+// Entity-attached input handlers.
+#define InputListener(NAME) void NAME (Input *inp, int key, int action, int mods)
+InputListener(input_controls_1)
+{
+    Transform *t = get_sibling_aspect(inp, Transform);
+    CASE(PRESS, I) t->x -= 1;
+} 
+#undef CASE
 
 extern void init_program(void)
 {
-    resource_path_add("Meshes", "/home/lucas/collision/src/interactive_graphics_application/resources/meshes");
-    resource_path_add("Images", "/home/lucas/collision/src/interactive_graphics_application/resources/images");
-    resource_path_add("Shaders", "/home/lucas/collision/src/interactive_graphics_application/resources/shaders");
+    resource_path_add("Meshes", "resources/meshes");
+    resource_path_add("Images", "resources/images");
+    resource_path_add("Shaders", "resources/shaders");
 
     EntityID camera_man = new_entity(4);
     Transform_set(entity_add_aspect(camera_man, Transform), 0,0,0,0,0,0);
     Camera *camera = entity_add_aspect(camera_man, Camera);
     Camera_init(camera, ASPECT_RATIO, 1, 0.9, 10);
+    Input_init(entity_add_aspect(camera_man, Input), input_controls_1, true);
 
-#if 1
     // Textured thing
     { 
         EntityID thing = new_entity(3);
@@ -49,11 +55,6 @@ extern void init_program(void)
         material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/dirt");
         body->geometry = new_resource_handle(Geometry, "Models/quad");
     }
-#endif
-
-    // make_thing(0,0,-5);
-    // make_thing(-6,0,-5);
-    // make_thing(6,0,5);
 }
 
 

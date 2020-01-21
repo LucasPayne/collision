@@ -49,6 +49,7 @@ Transform < Aspect (
     vec3 rotation: 0,0,0;
 );
 Body < Aspect (
+    float scale;
     geometry < Geometry;
     material < Material;
 );
@@ -71,5 +72,7 @@ Resources < (
 );
 // Could source project-wide resources here as another operand (so the collections, Textures etc., are collected) if that is convenient.
 
-// Append the application data.dd file.
-#include(data);
+// Source the application data.dd file. This is everything else the application writer wants to store.
+Data < (
+    #include(data);
+);

@@ -18,8 +18,8 @@ DataDictionary *resolve_dictionary_expression(DataDictionary *dict, DictExpressi
 uint32_t hash_crc32(char *string);
 bool mask_dictionary_to_table(DataDictionary *dict_table, EntryNode *dict);
 
-DictExpression *lookup_dict_expression(DataDictionary *dict, char *name);
-DictExpression *scoped_dictionary_expression(DataDictionary *dict, char *name);
+DictExpression *lookup_dict_expression(DataDictionary *dict, char *path, DataDictionary **new_parent_dict);
+DictExpression *scoped_dictionary_expression(DataDictionary *dict, char *name, DataDictionary **new_parent_dict);
 
 EntryNode *new_entry_node(int name_symbol, int type_symbol, int value_text_symbol);
 EntryNode *new_dict_node(int name_symbol, DictExpression *dict_expression);

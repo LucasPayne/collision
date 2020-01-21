@@ -28,5 +28,6 @@ extern float time;
 extern float dt;
 
 extern float ASPECT_RATIO;
+extern DataDictionary *g_data;
 
 #endif // HEADER_DEFINED_INTERACTIVE_3D

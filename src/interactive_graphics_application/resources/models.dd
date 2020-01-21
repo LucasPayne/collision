@@ -1,11 +1,13 @@
 
-PlyModel < Geometry ( type: ply; );
+// PlyModel < Geometry ( type: ply; );
 
-quad < PlyModel (
+quad < Geometry (
+    type: ply;
     vertex_format: 3U;
     path: Meshes/quad.ply;
 );
-icosohedron < PlyModel (
+icosohedron < Geometry (
+    type: ply;
     vertex_format: 3;
     path: Meshes/icosohedron.ply;
 );

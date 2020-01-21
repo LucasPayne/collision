@@ -1,0 +1,12 @@
+
+//---Should separate the module-related data dictionary schemas, so that bases and applications include them.
+
+Scene < (
+
+);
+
+Scenes < (
+    #include(scenes/scenes);
+);
+
+

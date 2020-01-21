@@ -37,6 +37,7 @@ base_libs:
 #define PROJECT_DIRECTORY "/home/lucas/collision/"
 #include "bases/interactive_3D.h"
 
+DataDictionary *g_data; // Global data dictionary for the application.
 float ASPECT_RATIO;
 
 float time = 0;
@@ -65,7 +66,6 @@ static void key_callback(GLFWwindow *window, int key,
     // Send input events to Input aspects (listeners and handlers).
     for_aspect(Input, inp)
         if (inp->listening) {
-            printf("sent\n");
             inp->callback(inp, key, action, mods);
         }
     end_for_aspect()
@@ -149,6 +149,11 @@ int main(void)
     DD *app_config = dd_open(base_config, "app_config");
     if (app_config == NULL) {
         fprintf(stderr, ERROR_ALERT "Missing app_config.\n");
+        exit(EXIT_FAILURE);
+    }
+    g_data = dd_open(base_config, "Data");
+    if (g_data == NULL) {
+        fprintf(stderr, ERROR_ALERT "Could not open data dictionary.\n");
         exit(EXIT_FAILURE);
     }
 

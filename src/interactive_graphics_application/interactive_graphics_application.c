@@ -1,8 +1,25 @@
 /*--------------------------------------------------------------------------------
 project_libs:
     + bases/interactive_3D
+    + scenes
 --------------------------------------------------------------------------------*/
 #include "bases/interactive_3D.h"
+#include "scenes.h"
+
+static void camera_controls(Logic *logic)
+{
+    Transform *t = get_sibling_aspect(logic, Transform);
+    float rotate_speed = 3;
+    if (alt_arrow_key_down(Right)) t->theta_y += rotate_speed * dt;
+    if (alt_arrow_key_down(Left)) t->theta_y -= rotate_speed * dt;
+    if (alt_arrow_key_down(Up)) t->theta_x -= rotate_speed * dt;
+    if (alt_arrow_key_down(Down)) t->theta_x += rotate_speed * dt;
+    float speed = 10;
+    if (arrow_key_down(Right)) t->x -= speed * dt;
+    if (arrow_key_down(Left)) t->x += speed * dt;
+    if (arrow_key_down(Up)) t->z += speed * dt;
+    if (arrow_key_down(Down)) t->z -= speed * dt;
+}
 
 void make_thing(float x, float y, float z)
 {
@@ -19,12 +36,12 @@ extern void input_event(int key, int action, int mods)
 {
 #define CASE(ACTION,KEY)\
     if (action == ( GLFW_ ## ACTION ) && key == ( GLFW_KEY_ ## KEY ))
-    CASE(PRESS, K) printf("pressed k\n");
+    // CASE(PRESS, K) printf("pressed k\n");
 }
 
 // Entity-attached input handlers.
 #define InputListener(NAME) void NAME (Input *inp, int key, int action, int mods)
-InputListener(input_controls_1)
+InputListener(input_test_1)
 {
     Transform *t = get_sibling_aspect(inp, Transform);
     CASE(PRESS, I) t->x -= 1;
@@ -41,9 +58,13 @@ extern void init_program(void)
     Transform_set(entity_add_aspect(camera_man, Transform), 0,0,0,0,0,0);
     Camera *camera = entity_add_aspect(camera_man, Camera);
     Camera_init(camera, ASPECT_RATIO, 1, 0.9, 10);
-    Input_init(entity_add_aspect(camera_man, Input), input_controls_1, true);
+    Logic *logic = entity_add_aspect(camera_man, Logic);
+    logic->update = camera_controls;
+
+#define init_get_logic_data(DATA_LVALUE,LOGIC_ASPECT_POINTER,DATA_STRUCT,UPDATE_FUNCTION)\
 
     // Textured thing
+#if 0
     { 
         EntityID thing = new_entity(3);
         Transform_set(entity_add_aspect(thing, Transform), 0,0,-10,0,0,0);
@@ -55,16 +76,20 @@ extern void init_program(void)
         material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/dirt");
         body->geometry = new_resource_handle(Geometry, "Models/quad");
     }
+#endif
+    
+    open_scene(g_data, "Scenes/scene1");
+
 }
 
 
 extern void loop_program(void)
 {
-    for_aspect(Camera, camera)
-        Transform *t = get_sibling_aspect(camera, Transform);
-        t->theta_y = sin(time);
-        t->y = sin(time);
-    end_for_aspect()
+    // for_aspect(Camera, camera)
+    //     Transform *t = get_sibling_aspect(camera, Transform);
+    //     t->theta_y = sin(time);
+    //     t->y = sin(time);
+    // end_for_aspect()
 }
 
 

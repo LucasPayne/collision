@@ -33,7 +33,7 @@ DataDictionary *dd_fopen(char *path)
 static DataDictionary *___dd_open(DataDictionary *dict, char *name)
 {
     // Non-recursive opening.
-    DictExpression *expression = lookup_dict_expression(dict, name);
+    DictExpression *expression = lookup_dict_expression(dict, name, NULL);
     if (expression == NULL) return NULL;
     DataDictionary *found_dict = resolve_dictionary_expression(dict, expression);
     // Give it a pointer to the queried dictionary, for scoping purposes. This means that queried-for dictionaries
@@ -43,33 +43,42 @@ static DataDictionary *___dd_open(DataDictionary *dict, char *name)
 }
 DataDictionary *dd_open(DataDictionary *dict, char *path)
 {
-    // Recursive opening. Follow the /-separated path.
+    // Recursive opening. Follow the /-separated path. Each scope is checked, starting with the deepest.
+    DD *scope_dict = dict;
+    printf("Opening %s\n", path);
 
-    char *p = path;
-    DataDictionary *cur_dict = dict;
-
-    const int n = 4096;
-    char buf[n];
-    while (1) {
-        char *sep = strchr(p, '/');
-        bool finish = false;
-        if (sep == NULL) { // Last entry in the path.
-            finish = true;
-            sep = strchr(p, '\0');
+    int c = 0;
+    while (scope_dict != NULL) {
+        char *p = path;
+        DataDictionary *cur_dict = scope_dict;
+        const int n = 4096;
+        char buf[n];
+        while (1) {
+            char *sep = strchr(p, '/');
+            bool finish = false;
+            if (sep == NULL) { // Last entry in the path.
+                finish = true;
+                sep = strchr(p, '\0');
+            }
+            if (sep - p >= n) {
+                fprintf(stderr, "Entry in data-dictionary path queried is too long.\n");
+                exit(EXIT_FAILURE);
+            }
+            strncpy(buf, p, sep - p);
+            buf[sep - p] = '\0';
+            cur_dict = ___dd_open(cur_dict, buf);
+            if (cur_dict != NULL && finish) {
+                return cur_dict;
+            }
+            if (cur_dict == NULL || finish) break; // continue searching up a scope.
+            p = sep + 1;
         }
-        if (sep - p >= n) {
-            fprintf(stderr, "Entry in data-dictionary path queried is too long.\n");
-            exit(EXIT_FAILURE);
-        }
-        strncpy(buf, p, sep - p);
-        buf[sep - p] = '\0';
-        cur_dict = ___dd_open(cur_dict, buf);
-        if (cur_dict == NULL) return NULL;
-
-        if (finish) break;
-        p = sep + 1;
+        scope_dict = scope_dict->parent_dictionary;
+        ///////not closing dictionaries.
     }
-}
+    // Failed to find in any scope.
+    return NULL;
+}    
 
 
 // Lookup a value in a dictionary.
@@ -194,12 +203,12 @@ static bool read_comma_separated_C_type(const char *text, void *data, const char
     return true;
 }
 
-DD_TYPE_READER(vec4) {
-    return read_comma_separated_C_type(text, data, "f", sizeof(float), 4);
-}
-DD_TYPE_READER(ivec2) {
-    return read_comma_separated_C_type(text, data, "d", sizeof(int), 2);
-}
+DD_TYPE_READER(vec2) { return read_comma_separated_C_type(text, data, "f", sizeof(float), 2); }
+DD_TYPE_READER(vec3) { return read_comma_separated_C_type(text, data, "f", sizeof(float), 3); }
+DD_TYPE_READER(vec4) { return read_comma_separated_C_type(text, data, "f", sizeof(float), 4); }
+DD_TYPE_READER(ivec2) { return read_comma_separated_C_type(text, data, "d", sizeof(int), 2); }
+DD_TYPE_READER(ivec3) { return read_comma_separated_C_type(text, data, "d", sizeof(int), 3); }
+DD_TYPE_READER(ivec4) { return read_comma_separated_C_type(text, data, "d", sizeof(int), 4); }
 
 #define type(TYPE) { dd_type_reader_ ## TYPE, #TYPE }
 const struct { DDTypeReader reader; const char *type_name; } dd_type_readers[] = {
@@ -207,8 +216,12 @@ const struct { DDTypeReader reader; const char *type_name; } dd_type_readers[] =
     type(int),
     type(float),
     type(uint),
+    type(vec2),
+    type(vec3),
     type(vec4),
     type(ivec2),
+    type(ivec3),
+    type(ivec4),
     type(string),
     { NULL, NULL }
 };

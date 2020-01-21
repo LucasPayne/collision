@@ -158,16 +158,20 @@ DataDictionary *new_data_dictionary(void)
     return dict;
 }
 
-DictExpression *scoped_dictionary_expression(DataDictionary *dict, char *name)
+DictExpression *scoped_dictionary_expression(DataDictionary *dict, char *name, DataDictionary **new_parent_dict)
 {
     /* Scoping of dictionary names (as they appear in dictionary-expressions) works by having each dictionary hold a pointer
      * to the dictionary it was queried from. When a name appears in a dict-expression of this dictionary, it first searches for a dictionary of that name
      * in itself, then in its parent, then, ..., etc.
+     *
+     * If NULL is not passed as the last argument, this also gives the parent dictionary of the found expression, for scoping purpouses.
      */
     /* printf("Searching for \"%s\"\n", name); */
+    // printf("\"%s\" appeared in expression, searching for ...\n", name);
+
     DataDictionary *searching_dict = dict;
     while (searching_dict != NULL) {
-        DictExpression *found = lookup_dict_expression(searching_dict, name);
+        DictExpression *found = lookup_dict_expression(searching_dict, name, new_parent_dict);
         if (found != NULL) return found;
         searching_dict = searching_dict->parent_dictionary;
     }
@@ -189,7 +193,7 @@ static int ___compute_dictionary_expression_types(DataDictionary *dd, int types[
         if (expression->is_name) {
             // add this operand's name as a type.
             types[index] = expression->name;
-            DictExpression *expanding_expression = scoped_dictionary_expression(dd, symbol(expression->name));
+            DictExpression *expanding_expression = scoped_dictionary_expression(dd, symbol(expression->name), NULL); //??
             // Recur.
             index = ___compute_dictionary_expression_types(dd, types, index + 1, max_num_types, expanding_expression);
         }
@@ -225,9 +229,11 @@ static void ___resolve_dictionary_expression(DataDictionary *dict_table, DataDic
             // A name references an expression in the current scope. This expands into the expression.
             // For example,
             // ( ... ) Name ( ... ) ===> ( ... ) [expanded Name: ( ... ) AnotherName ( ... ) ( ... )] ( ... )
-            DictExpression *expanding_expression = scoped_dictionary_expression(dict, symbol(expression->name));
+            DataDictionary *new_scope_dict;
+            DictExpression *expanding_expression = scoped_dictionary_expression(dict, symbol(expression->name), &new_scope_dict);
             // Recur.
-            ___resolve_dictionary_expression(dict_table, dict, expanding_expression); // Same dict_table (table that is being filled).
+            ___resolve_dictionary_expression(dict_table, new_scope_dict, expanding_expression); // Same dict_table (table that is being filled).
+            // ___resolve_dictionary_expression(dict_table, dict, expanding_expression); // Same dict_table (table that is being filled).
                             //------------------------Does dict have to be changed to where the expression was found? Then scoped_dictionary_expression must return this,
                             //                        so that the expanded expression can evaluate with the correct scope.
         } else {
@@ -389,13 +395,9 @@ bool mask_dictionary_to_table(DataDictionary *dict_table, EntryNode *dict)
 }
 
 // Lookup a dictionary-expression in a dictionary.
-DictExpression *lookup_dict_expression(DataDictionary *dict, char *name)
+
+static DictExpression *___lookup_dict_expression(DataDictionary *dict, char *name)
 {
-    // Get a dict-expression from a dictionary. This is to be used by lookup_dict, which resolves this expression into a table,
-    // and for the semantics of dict-expressions, e.g. looking up dictionary names and concatenating their expressions.
-    //
-    // note: Should not print errors here, since this is allowed to fail when the scope stack is being searched.
-    /* printf("Looking up dictionary expression \"%s\" ...\n", name); */
     uint32_t hash = hash_crc32(name);
     int index = hash % dict->table_size;
     while (dict->table[index].name != -1) {
@@ -411,5 +413,55 @@ DictExpression *lookup_dict_expression(DataDictionary *dict, char *name)
     }
     /* printf("ERROR lookup_dict_expression: Entry \"%s\" not found in dictionary.\n", name); */
     return NULL;
+}
 
+DictExpression *lookup_dict_expression(DataDictionary *dict, char *path, DataDictionary **new_parent_dict)
+{
+    //------
+    //note:
+    //    This is the same as the recursive open of a dictionary, through a path, except here the expression for the dictionary is returned instead of an opened dictionary.
+    //    The scoped version of this is "scoped_dict_expression", which should be used.
+    // Get a dict-expression from a dictionary. This is to be used by lookup_dict, which resolves this expression into a table,
+    // and for the semantics of dict-expressions, e.g. looking up dictionary names and concatenating their expressions.
+    //
+    // note: Should not print errors here, since this is allowed to fail when the scope stack is being searched.
+    /* printf("Looking up dictionary expression \"%s\" ...\n", name); */
+    
+    // To get the dict-expression instead of the dictionary, open the dictionary which contains the final dictionary, then get the expression
+    // from the table.
+    
+    //////////////////////////////////////////
+    // Giving the parent dictionary for scoping. This is because dict-expressions resolve, progressively expanding, scoping from the leaf to root,
+    // and also following /-separated paths of dictionary openings. The whole scoping thing is confusing, and the implementation should be much better.
+    //////////////////////////////////////////
+    
+    DD *parent_dict;
+    const int buf_size = 4096;
+    char head[buf_size];
+    char tail[buf_size];
+    char *last_sep = strrchr(path, '/');
+    if (last_sep == NULL) {
+        // No need to open more dictionaries.
+        head[0] = '\0';
+        strncpy(tail, path, buf_size);
+        parent_dict = dict;
+    } else {
+        // Open the wanted expression's parent dictionary.
+        strncpy(head, path, last_sep - path);
+						    ////////not checking path sizes
+        head[last_sep - path] = '\0';
+        strncpy(tail, last_sep + 1, buf_size);
+        parent_dict = dd_open(dict, head);
+    }
+    if (parent_dict == NULL) {
+        fprintf(stderr, ERROR_ALERT "Could not look up dictionary expression.\n");
+        exit(EXIT_FAILURE);
+    }
+    DictExpression *expression = ___lookup_dict_expression(parent_dict, tail);
+    if (new_parent_dict != NULL && expression != NULL) {
+        // printf("Updating parent dictionary, for purpouses of scoping.\n");
+        /////////////////////////////////////////////////////////////////////
+         *new_parent_dict = parent_dict;
+    }
+    return expression;
 }

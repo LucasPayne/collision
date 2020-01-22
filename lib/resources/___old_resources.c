@@ -42,7 +42,6 @@ static uint32_t g_resource_path_length = 0;
 static char *g_resource_path = NULL;
 int g_resource_path_count = 0;
 
-
 /*
 Resource types are built up at runtime. This is so an application can include a call to a function for modules
 which have different resource types to initialize these. Arbitrary resource types can then be introduced even at runtime. 

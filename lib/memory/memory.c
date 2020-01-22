@@ -44,7 +44,7 @@ void mem_init(size_t size)
     g_memory_initialized = true;
 }
 MemAllocator g_mem_allocators[MEM_MAX_NUM_ALLOCATORS] = { 0 };
-int mem_create_allocator(size_t size)
+MemAllocator mem_create_allocator(size_t size)
 {
     mem_func_debug();
     static int num_allocators = 0;
@@ -65,5 +65,5 @@ int mem_create_allocator(size_t size)
         exit(EXIT_FAILURE);
     }
     num_allocators ++;
-    return num_allocators - 1; // Return the index of the new memory allocator block.
+    return new_allocator;
 }

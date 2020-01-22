@@ -4,6 +4,7 @@ just a separate header. But this may be nicer for editing the module.
 --------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "helper_definitions.h"
 #include "data_dictionary.h"
 #include "data_dictionary_implementation.h"

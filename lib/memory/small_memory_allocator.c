@@ -118,7 +118,6 @@ void *sma_alloc(size_t size)
         if (((size << s) & (1 << (sizeof(size_t)-1))) != 0) break;
     }
     int p = sizeof(size_t) - s;
-    printf("powers mask: %d\n", sma_pool_powers_mask);
     while (p < 32) {
         printf("%d\n", sma_pool_powers_mask & (1 << p));
         if ((sma_pool_powers_mask & (1 << p)) == 0) p++;
@@ -128,7 +127,10 @@ void *sma_alloc(size_t size)
     // p is now the power of the sma pool being used for allocation.
     // ------------------------------------------------------------------
     // Allocate the free cell and update the free list.
-    FreeList *free_list = sma_pools[p].location + sma_pools[p].free_list;
+    // =bug note=
+    //    There was a bug here with the allocator only shifting by one byte instead of the cell sizes. This clobbered the previous entry.
+    //    Note to self: be careful when writing custom memory allocators.
+    FreeList *free_list = (FreeList *) (sma_pools[p].location + (sma_pools[p].free_list << sma_pools[p].power));
     sma_pools[p].free_list = free_list->next;
     free_list->prev = -1;
     trace("Allocated succesfully.");

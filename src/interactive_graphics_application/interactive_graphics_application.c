@@ -79,7 +79,7 @@ extern void init_program(void)
     }
 #endif
     
-    open_scene(g_data, "Scenes/scene2");
+    open_scene(g_data, "Scenes/scene1");
     // ResourceHandle r1 = new_resource_handle(Geometry, "Models/quad");
     // resource_data(Geometry, r1);
     // ResourceHandle r2 = new_resource_handle(Geometry, "Models/quad");

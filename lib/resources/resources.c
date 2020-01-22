@@ -105,21 +105,21 @@ void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle)
 void *___resource_data(ResourceHandle *handle)
 {
     if (!handle->path_backed) return handle->data.resource;
-    printf("Getting resource data from path %s...\n", handle->data.path);
-    printf("Handle:\n\tuuid: %u\n\ttype: %d\n", handle->_id.uuid, handle->_id.type);
+    // printf("Getting resource data from path %s...\n", handle->data.path);
+    // printf("Handle:\n\tuuid: %u\n\ttype: %d\n", handle->_id.uuid, handle->_id.type);
 
     // note: Really this is "checking_entry" while the loop is running.
     ResourceTableEntry *new_entry = &g_resource_table[handle->_id.uuid % RESOURCE_TABLE_SIZE];
                                                     // At the end of search, if the resource wasn't found cached, this will be left as a pointer to fill with the new loaded entry.
                                                     // This complication is here since a new entry can be added either straight in the table, or at the end of one of the chains.
 
-    #if 0 // force reload  
+    #if 1 // set to 0  to force reload (and probably crash).
     if (new_entry->uuid != 0) {
         while (1) {
             if (new_entry->uuid == handle->_id.uuid) {
                 // The point of this. Resource loading and unloading should be very rare compared to references to the resource,
                 // so that should be a constant (-except chaining) fast lookup, yet still trigger a resource load if needed, unknown to the caller.
-                printf("Resource found cached.\n");
+                // printf("Resource found cached.\n");
                 return new_entry->resource;
             }
             if (new_entry->next == NULL) {
@@ -132,7 +132,7 @@ void *___resource_data(ResourceHandle *handle)
         }
     }
     #endif
-    printf("Resource not cached, loading ...\n");
+    // printf("Resource not cached, loading ...\n");
     // The resource is not cached. Load it and cache it.
     ResourceTypeInfo *resource_type = &g_resource_type_info[handle->_id.type];
     void *resource = sma_alloc(resource_type->size); // Allocate it a block of an appropriate size using the small memory allocator.

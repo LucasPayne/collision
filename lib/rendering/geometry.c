@@ -323,6 +323,8 @@ Geometry gm_done(void)
 // Rendering a Geometry+Material pair.
 void gm_draw(Geometry geometry, Material *material)
 {
+    // printf("Drawing %d\n", geometry.primitive_type);getchar();
+
     MaterialType *mt = resource_data(MaterialType, material->material_type);
     glUseProgram(mt->program_id);
     // Bind the textures

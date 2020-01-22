@@ -87,9 +87,9 @@ ResourceHandle ___new_resource_handle(ResourceType resource_type, char *path)
     resource_handle._id = null_resource_id();
     resource_handle._id.type = resource_type;
     resource_handle.data.path = (char *) malloc((strlen(path) + 1) * sizeof(char));
-    resource_handle._id.uuid = hash_crc32(resource_handle.data.path); // hopefully universally unique.
     mem_check(resource_handle.data.path);
     strcpy(resource_handle.data.path, path);
+    resource_handle._id.uuid = hash_crc32(resource_handle.data.path); // hopefully universally unique.
     return resource_handle;
 }
 void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle)
@@ -104,29 +104,34 @@ void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle)
 }
 void *___resource_data(ResourceHandle *handle)
 {
-
     if (!handle->path_backed) return handle->data.resource;
-    printf("Getting resource data from path ...\n", handle->data.path);
+    printf("Getting resource data from path %s...\n", handle->data.path);
+    printf("Handle:\n\tuuid: %u\n\ttype: %d\n", handle->_id.uuid, handle->_id.type);
 
-    ResourceTableEntry *checking_entry = &g_resource_table[handle->_id.uuid % RESOURCE_TABLE_SIZE];
-    ResourceTableEntry *new_entry = checking_entry; // At the end of search, if the resource wasn't found cached, this will be left as a pointer to fill with the new loaded entry.
+    // note: Really this is "checking_entry" while the loop is running.
+    ResourceTableEntry *new_entry = &g_resource_table[handle->_id.uuid % RESOURCE_TABLE_SIZE];
+                                                    // At the end of search, if the resource wasn't found cached, this will be left as a pointer to fill with the new loaded entry.
                                                     // This complication is here since a new entry can be added either straight in the table, or at the end of one of the chains.
-    if (checking_entry->uuid != 0) {
+
+    #if 0 // force reload  
+    if (new_entry->uuid != 0) {
         while (1) {
-            if (checking_entry->uuid == handle->_id.uuid) {
+            if (new_entry->uuid == handle->_id.uuid) {
                 // The point of this. Resource loading and unloading should be very rare compared to references to the resource,
                 // so that should be a constant (-except chaining) fast lookup, yet still trigger a resource load if needed, unknown to the caller.
-                return checking_entry->resource;
+                printf("Resource found cached.\n");
+                return new_entry->resource;
             }
-            if (checking_entry->next == NULL) {
+            if (new_entry->next == NULL) {
                 // The end of the chain was reached, and no cached resource was found. Allocate a new entry and attach it to the end of the chain.
-                checking_entry->next = (ResourceTableEntry *) sma_alloc(sizeof(ResourceTableEntry)); // Using the small memory allocator here as well, to store the chains of the hash table.
-                new_entry = checking_entry->next;
+                new_entry->next = (ResourceTableEntry *) sma_alloc(sizeof(ResourceTableEntry)); // Using the small memory allocator here as well, to store the chains of the hash table.
+                new_entry = new_entry->next;
                 break;
             }
-            checking_entry = checking_entry->next;
+            new_entry = new_entry->next;
         }
     }
+    #endif
     printf("Resource not cached, loading ...\n");
     // The resource is not cached. Load it and cache it.
     ResourceTypeInfo *resource_type = &g_resource_type_info[handle->_id.type];

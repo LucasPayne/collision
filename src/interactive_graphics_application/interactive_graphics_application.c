@@ -36,9 +36,8 @@ extern void input_event(int key, int action, int mods)
 {
 #define CASE(ACTION,KEY)\
     if (action == ( GLFW_ ## ACTION ) && key == ( GLFW_KEY_ ## KEY ))
-    // CASE(PRESS, K) printf("pressed k\n");
-
     CASE(PRESS, O) open_scene(g_data, "Scenes/scene2");
+    CASE(PRESS, L) printf("Pressed L\n");
 }
 
 // Entity-attached input handlers.
@@ -80,7 +79,11 @@ extern void init_program(void)
     }
 #endif
     
-    open_scene(g_data, "Scenes/scene1");
+    open_scene(g_data, "Scenes/scene2");
+    // ResourceHandle r1 = new_resource_handle(Geometry, "Models/quad");
+    // resource_data(Geometry, r1);
+    // ResourceHandle r2 = new_resource_handle(Geometry, "Models/quad");
+    // resource_data(Geometry, r2);
 
 }
 

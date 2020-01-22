@@ -35,7 +35,7 @@ ResourceType Texture_RTID;
   =notes=
   Currently the only texture-resource support is for 2D textures with some options in RGB/RGBA/grayscale.
 --------------------------------------------------------------------------------*/
-void *Texture_load(char *path)
+void *Texture_load(void *resource, char *path)
 {
     #define load_error(str) { fprintf(stderr, "Texture load error: " str "\n"); exit(EXIT_FAILURE); }
 
@@ -59,8 +59,7 @@ void *Texture_load(char *path)
     // free(type);
     // free(filename);
 
-    Texture *texture = (Texture *) calloc(1, sizeof(Texture));
-    mem_check(texture);
+    Texture *texture = (Texture *) resource;
 
     // All texture images are being stored in internal format rgba:8,8,8,8-bit unsigned integers.
     // A "Texture" resource really is intended to be used as a regular surface mapping texture.
@@ -85,7 +84,6 @@ void *Texture_load(char *path)
     glBindTexture(GL_TEXTURE_2D, 0);
 
     texture->texture_id = texture_id;
-    return texture;
 }
 
 

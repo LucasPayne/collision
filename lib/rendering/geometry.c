@@ -40,7 +40,7 @@ Loading file-backed Geometry:
   - Triangle mesh described in a .Mesh file
       - PLY, stanford triangle format
 --------------------------------------------------------------------------------*/
-void *Geometry_load(char *path)
+void Geometry_load(void *resource, char *path)
 {
     #define load_error(STRING) { fprintf(stderr, ERROR_ALERT "Error loading geometry: %s\n", ( STRING )); exit(EXIT_FAILURE); }
     #define manifest_error(str) load_error("Geometry manifest file has missing or malformed " str " entry.\n")
@@ -70,10 +70,8 @@ void *Geometry_load(char *path)
         if (mesh_data.triangles != NULL) free(mesh_data.triangles);
     } else load_error("Invalid geometry-loading type given.");
 
-    Geometry *geometry_out = (Geometry *) calloc(1, sizeof(Geometry));
-    mem_check(geometry_out);
+    Geometry *geometry_out = (Geometry *) resource;
     memcpy(geometry_out, &geometry, sizeof(Geometry));
-    return geometry_out;
     #undef load_error
     #undef manifest_error
 }

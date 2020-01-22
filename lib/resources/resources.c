@@ -17,8 +17,24 @@ DataDictionary *g_resource_dictionary = NULL;
 #define RESOURCE_TABLE_SIZE 1024
 ResourceTableEntry g_resource_table[RESOURCE_TABLE_SIZE];
 
+// Static helper functions
+// -----------------------
+static ResourceID null_resource_id(void)
+{
+    ResourceID id;
+    id.uuid = 0;
+    id.type = 0;
+    id.table_index = 0;
+    return id;
+}
+
+/*================================================================================
+    Resource system and memory initialization.
+================================================================================*/
 void init_resource_system(void)
 {
+    // Initialize the small memory allocator, where the resource data will be allocated.
+    // Could initialize the small memory allocator elsewhere if, for example, the entity system would want to use it.
     static const uint8_t sma_pool_powers = { // Edit this to change the available pool sizes.
         3, //8
         4, //16
@@ -28,9 +44,9 @@ void init_resource_system(void)
     };
     static const int num_sma_pool_powers = sizeof(sma_pool_powers)/sizeof(uint8_t);
     init_small_memory_allocator(sma_pool_powers, num_sma_pool_powers);
+
+    // Initialize the resource cache.
 }
-
-
 
 /*================================================================================
     Resource types.
@@ -73,3 +89,65 @@ void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, v
     new_info->unload = unload;
     strncpy(new_info->name, name, MAX_RESOURCE_TYPE_NAME_LENGTH);
 }
+
+/*================================================================================
+    Resource handles, loading, and caching.
+================================================================================*/
+
+ResourceHandle ___new_resource_handle(ResourceType resource_type, char *path)
+{
+    // path-backed resource
+    ResourceHandle resource_handle;
+    resource_handle.path_backed = true;
+    resource_handle._id = null_resource_id();
+    resource_handle._id.type = resource_type;
+    handle->_id.uuid = hash_crc32(handle->data.path); // hopefully universally unique.
+    resource_handle.data.path = (char *) malloc((strlen(path) + 1) * sizeof(char));
+    mem_check(resource_handle.data.path);
+    strcpy(resource_handle.data.path, path);
+    return resource_handle;
+}
+void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle)
+{
+    // Create a oneoff, non-path-backed, non-shareable resource, set the resource handle
+    handle->path_backed = false;
+    handle->_id = null_resource_id();
+    handle->_id.type = resource_type;
+    handle->data.resource = calloc(1, g_resource_type_info[resource_type].size);
+    mem_check(handle->data.resource);
+    return handle->data.resource;
+}
+void *___resource_data(ResourceHandle *handle)
+{
+    if (!handle->path_backed) return handle->data.resource;
+
+    ResourceTableEntry *checking_entry = &g_resource_table[resource_handle->_id.uuid % RESOURCE_TABLE_SIZE];
+    ResourceTableEntry *new_entry = checking_entry; // At the end of search, if the resource wasn't found cached, this will be left as a pointer to fill with the new loaded entry.
+                                                    // This complication is here since a new entry can be added either straight in the table, or at the end of one of the chains.
+    if (checking_entry->uuid != 0) {
+        while (1) {
+            if (checking_entry->uuid == resource_handle->_id.uuid) {
+                // The point of this. Resource loading and unloading should be very rare compared to references to the resource,
+                // so that should be a constant (-except chaining) fast lookup, yet still trigger a resource load if needed, unknown to the caller.
+                return checking_entry->resource;
+            }
+            if (checking_entry->next == NULL) {
+                // The end of the chain was reached, and no cached resource was found. Allocate a new entry and attach it to the end of the chain.
+                checking_entry->next = (ResourceTableEntry *) sma_alloc(sizeof(ResourceTableEntry)); // Using the small memory allocator here as well, to store the chains of the hash table.
+                new_entry = checking_entry->next;
+                break;
+            }
+            checking_entry = checking_entry->next;
+        }
+    }
+    // The resource is not cached. Load it and cache it.
+    ResourceTypeInfo *resource_type = &g_resource_type_info[handle->_id.type];
+    void *resource = sma_alloc(resource_type->size); // Allocate it a block of an appropriate size using the small memory allocator.
+    resource_type->load(resource, handle->data.path); // Use the relevant load function to fill the new resource data.
+    new_entry->uuid = handle->_id.uuid;
+    new_entry->type = handle->_id.type;
+    new_entry->resource = resource;
+    new_entry->next = NULL;
+    return resource;
+}
+

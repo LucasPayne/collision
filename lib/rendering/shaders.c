@@ -21,7 +21,7 @@ This consists of
   Shader resource
 --------------------------------------------------------------------------------*/
 ResourceType Shader_RTID;
-void *Shader_load(char *path)
+void Shader_load(void *resource, char *path)
 {
     /* printf("loading shader from path \"%s\" ...\n", path); */
     /* getchar(); */
@@ -73,12 +73,9 @@ void *Shader_load(char *path)
     }
     // The shader has been compiled and associated to the created shader ID.
     // Create the Shader resource and return it.
-    Shader *shader = (Shader *) calloc(1, sizeof(Shader));
-    mem_check(shader);
+    Shader *shader = (Shader *) resource;
     shader->shader_type = shader_type;
-    /* printf("Setting shader_id: %u\n", shader_id); */
     shader->shader_id = shader_id;
-    return (void *) shader;
 }
 bool Shader_reload(ResourceHandle handle)
 {

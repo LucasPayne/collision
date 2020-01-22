@@ -51,7 +51,7 @@ Text-file format:
      texture{i}: <string>, the name of this texture
          ...
 --------------------------------------------------------------------------------*/
-void *MaterialType_load(char *path)
+void MaterialType_load(void *resource, char *path)
 {
     MaterialType mt = {0};
 #define load_error(STRING)\
@@ -187,10 +187,8 @@ void *MaterialType_load(char *path)
     /* print_material_type(&material_type); */
     
     // Successfully filled the MaterialType.
-    MaterialType *out_material_type = (MaterialType *) calloc(1, sizeof(MaterialType));
-    mem_check(out_material_type);
+    MaterialType *out_material_type = (MaterialType *) resource;
     memcpy(out_material_type, &mt, sizeof(MaterialType));
-    return out_material_type;
 #undef load_error
 }
 
@@ -228,7 +226,7 @@ ResourceType Material_RTID;
 /*--------------------------------------------------------------------------------
   Material instances
 --------------------------------------------------------------------------------*/
-void *Material_load(char *path)
+void Material_load(void *resource, char *path)
 {
     Material material = {0};
 #define load_error(STRING)\
@@ -277,10 +275,8 @@ void *Material_load(char *path)
     }
     printf("Finished loading file-backed material instance from path %s\n", path);
 
-    Material *out_material = (Material *) malloc(sizeof(Material));
-    mem_check(out_material);
+    Material *out_material = (Material *) resource;
     memcpy(out_material, &material, sizeof(Material));
-    return out_material;
 #undef load_error
 }
 

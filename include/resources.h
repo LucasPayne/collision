@@ -27,10 +27,9 @@ A resource ID is held by a resource handle. This gives an index into the resourc
 table for instant lookup, if it is there, a magic number ("uuid") for validation,
 and a resource type for type-checking, if it needs to be done.
 --------------------------------------------------------------------------------*/
-typedef uint64_t ResourceUUID;
+typedef uint32_t ResourceUUID;
 typedef uint32_t ResourceType;
 typedef struct ResourceID_s {
-    uint32_t table_index;
     ResourceUUID uuid;
     ResourceType type;
 } ResourceID;
@@ -124,7 +123,7 @@ typedef struct ResourceTypeInfo_s {
     ResourceType type; // Its type is being used as its index in the global resource type info array.
     size_t size;
     char name[MAX_RESOURCE_TYPE_NAME_LENGTH + 1];
-    void *(*load) (char *path);
+    void (*load) (void *resource, char *path);
     void (*unload) (void *resource);
 } ResourceTypeInfo;
 extern ResourceTypeInfo *g_resource_type_info;

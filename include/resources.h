@@ -23,9 +23,9 @@ extern DataDictionary *g_resource_dictionary;
 /*--------------------------------------------------------------------------------
     Resource IDs
 --------------------------------------------------------------------------------
-A resource ID is held by a resource handle. This gives an index into the resource
-table for instant lookup, if it is there, a magic number ("uuid") for validation,
-and a resource type for type-checking, if it needs to be done.
+A resource ID is held by a resource handle.
+It contains a magic number ("uuid") for validation,
+and a resource type for type-checking.
 --------------------------------------------------------------------------------*/
 typedef uint32_t ResourceUUID;
 typedef uint32_t ResourceType;
@@ -37,20 +37,15 @@ typedef struct ResourceID_s {
 /*--------------------------------------------------------------------------------
     The global resource table 
 --------------------------------------------------------------------------------
-Active resource information is stored in a global resource table, a dynamic
-array of ResourceTableEntry structs. These don't contain resource IDs, but
-a magic number ("uuid") for validating instant resource lookups, a type
-for type-checking, a path to facilitate reloading and querying, and
-a pointer to the actual resource, wherever it is.
-
-This is a hash table so that resources can be cached, so that subsequent queries for
-a resource with the same path retrieve the cached resource.
+Active resource information is stored in a global resource table (implemented as a chaining hash table).
+The entries contain a magic number ("uuid") for validating resource lookups,
+a type for type-checking, and a pointer to the actual resource.
 --------------------------------------------------------------------------------*/
 #define RESOURCE_TABLE_START_SIZE 1024
 typedef struct ResourceTableEntry_s {
     ResourceUUID uuid;
     ResourceType type;
-    char *path;
+    // char *path;
     void *resource;
     struct ResourceTableEntry_s *next; //This struct is an entry in a chaining hash table.
 } ResourceTableEntry;
@@ -63,16 +58,12 @@ The point of the resource system is to facilitate object sharing and automatic
 loading and management. So, instead of holding a direct structure or a raw pointer,
 something that wants to use a resource holds a ResourceHandle. A collection
 of macros allows the user to "dereference" this resource handle, which behind
-the scenes may instantly get the resource from the global table, query
-the path to see if it is already loaded, or actually trigger a resource load,
-and update the identifier contained in the handle. It is a sort of "smart
-reference" to a resource.
+the scenes may get the cached resource from the global table,
+or actually trigger a resource load.
 --------------------------------------------------------------------------------*/
 typedef struct ResourceHandle_s {
-    // Owner of this handle must not access these directly. However, resource
-    // managing functions will need to.
     bool path_backed;
-    ResourceID _id;
+    ResourceID _id; //---should remove underscore.
     union {
         // note: since path/resource memory is allocated, resource handles must be destroyed when the owner is destroyed/they are swapped.
         char *path; // for path-backed resources, for example ones that use the path to load the resource from a file.
@@ -82,7 +73,6 @@ typedef struct ResourceHandle_s {
 
 void *___resource_data(ResourceHandle *handle);
 ResourceHandle ___new_resource_handle(ResourceType resource_type, char *path);
-void ___init_resource_handle(ResourceType resource_type, ResourceHandle *resource_handle, char *path);
 
 #define resource_data(STRUCTURE_NAME,HANDLE)\
     ( (STRUCTURE_NAME *) ___resource_data( &( HANDLE ) ) )
@@ -90,13 +80,6 @@ void ___init_resource_handle(ResourceType resource_type, ResourceHandle *resourc
 #define new_resource_handle(RESOURCE_TYPE_NAME,PATH)\
     ___new_resource_handle(( RESOURCE_TYPE_NAME ## _RTID),\
                            ( PATH ))
-////// Should be "update", because this should _not_ be used to create a new resource handle, rather replace it.
-#define init_resource_handle(RESOURCE_TYPE_NAME,RESOURCE_HANDLE,PATH)\
-    ___init_resource_handle(( RESOURCE_TYPE_NAME ## _RTID),\
-                            &( RESOURCE_HANDLE ),\
-                            ( PATH ))
-
-bool reload_resource(ResourceHandle *handle);
 
 void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle);
 #define oneoff_resource(RESOURCE_TYPE_NAME,RESOURCE_HANDLE)\
@@ -112,22 +95,26 @@ expands to type information that will be put in the resource type info array.
 The type ID is the index into this array.
 
 The reason resource types work is that whenever a resource structure is declared,
-in whatever module/application, it must be declared along with a global ResourceType "Thing_RTID",
+in whatever module/application, it must be declared along with a global ResourceType "{Resource name}_RTID",
 RTID standing for resource type ID.  The add_resource_type macro expands to pass a
 pointer to this global value to the routine which adds the new type. Now, macros can
 use symbolic type names, because they expand to pass backend functions the global
-Thing_RTID value, which is an index into the type info array.
+{Resource name}_RTID value, which is an index into the type info array.
 --------------------------------------------------------------------------------*/
 #define MAX_RESOURCE_TYPE_NAME_LENGTH 32
+
+typedef void (*ResourceLoadFunction)(void *, char *); // void *resource, char *path
+typedef void (*ResourceUnloadFunction)(void *); // void *resource
+
 typedef struct ResourceTypeInfo_s {
     ResourceType type; // Its type is being used as its index in the global resource type info array.
     size_t size;
     char name[MAX_RESOURCE_TYPE_NAME_LENGTH + 1];
-    void (*load) (void *resource, char *path);
-    void (*unload) (void *resource);
+    ResourceLoadFunction load;
+    ResourceUnloadFunction unload;
 } ResourceTypeInfo;
 extern ResourceTypeInfo *g_resource_type_info;
-void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(char *), void (*unload)(void *resource));
+void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, ResourceLoadFunction load, ResourceUnloadFunction unload);
 
 // The resource's unload function does not free the allocated base resource structure. So,
 // a resource may not need to do any more unloading such as freeing allocated memory.

@@ -12,7 +12,8 @@
 #include "memory.h"
 
 // The global resource dictionary is a data-dictionary intended to be set by the application and used when searching for resources.
-// This dictionary is the "root", and each resource has a GUID, naturally its path from the root, with no /-prefix.
+// note: This is up to the load function for a resource. For example, a resource path may be interpreted as a physical path mapped as an asset/source file.
+//        ---unsure if this is a good idea. Maybe rather everything should be in a .dd file, which would be less annoying with .dd generation.
 DataDictionary *g_resource_dictionary = NULL;
 #define RESOURCE_TABLE_SIZE 1024
 ResourceTableEntry g_resource_table[RESOURCE_TABLE_SIZE];
@@ -63,7 +64,7 @@ This function is non-static because a macro expands to it. Then
 expands to type metadata and passes in a global ResourceType pointer to Texture_RTID, gives it a size, the name of the structure,
 and load function Texture_load. This allocates it an ID so further usage of macros which use the symbol Texture use this ID.
 --------------------------------------------------------------------------------*/
-void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, void *(*load)(char *), void (*unload)(void *resource))
+void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, ResourceLoadFunction load, ResourceUnloadFunction unload)
 {
     if (strlen(name) > MAX_RESOURCE_TYPE_NAME_LENGTH) {
         fprintf(stderr, ERROR_ALERT "Resource type name \"%s\" is too long. The maximum resource type name length is set to %d.\n", name, MAX_RESOURCE_TYPE_NAME_LENGTH);
@@ -151,3 +152,148 @@ void *___resource_data(ResourceHandle *handle)
     return resource;
 }
 
+
+/*================================================================================
+    Asset/source paths.
+--- Completely redo this, make cleaner.
+--- Change names to reflect these being assets and source paths for resources/manifests to reference,
+    not to do with the data-dictionary resource paths.
+================================================================================*/
+/*
+The resource path variable is created at runtime. This holds pairs, "drives" and their bound paths.
+A resource path starts with a drive, probably capitalized. This can be bound to multiple actual directories
+through the resource path variable. The resource path is resolved to find stuff for resource load/build.
+Example:
+     Project:/path/to/project:Application:/path/to/application:TextureLibrary:/path/to/texture/library:Project:alternate/project/directory
+
+Now a resource path is stored on a resource handle,
+     "TextureLibrary/dolphin"
+This resolves to
+      /path/to/texture/library/dolphin.
+This may or may not be an actual file. It is not intended to be. The load behaviour of a resource type determines what is done with this path.
+For example, a texture resource may be able to preconditioned, may have a ~manifest~ file describing what type of image file it is conditioned from,
+have build directives and properties in the description file, etc.
+
+The build/load process for a texture might be setup with
+/path/to/texture/library/dolphin.Texture
+                         dolphin.Texture.image
+                         dolphin.png,            or, this idea being more useful, could be some sort of DCC format which needs a lot of preconditioning, like a psd.
+
+dolphin.Texture:
+    // A dolphin
+    type: png
+    source: dolphin.png
+dolphin.Texture.image:
+    Binary file. This is in a format very close to what the texture data actually is in application memory before vram upload.
+
+The load function might check
+    /path/to/texture/library/dolphin ---> /path/to/texture/library/dolphin.Texture.image,
+and if it is there, maybe some validation, and this is loaded directly, possibly with some pointer swizzling, into memory
+to be post-load conditioned, that is, uploaded to vram to a texture handle, which is the actual resource.
+
+The conditioning/asset-compilation routine might be called as a backup if the "image" is not there, or it might fail (so the asset needs to be conditioned
+before running the application), it might save the image file or it might not.
+*/
+void resource_path_add(char *drive_name, char *path)
+{
+    g_resource_path_count ++;
+
+    // Append ":drive_name:path" to the resource path variable, and initialize/relocate if neccessary.
+    size_t len = strlen(path) + 1 + strlen(drive_name);
+    if (g_resource_path == NULL) {
+        g_resource_path_length = len + 1;
+        g_resource_path = (char *) malloc(g_resource_path_length * sizeof(char));
+        mem_check(g_resource_path);
+        strcpy(g_resource_path, drive_name);
+        g_resource_path[strlen(drive_name)] = ':';
+        strcpy(g_resource_path + strlen(drive_name) + 1, path);
+        return;
+    }
+    uint32_t old_length = g_resource_path_length;
+    g_resource_path_length += len + 1;
+    g_resource_path = (char *) realloc(g_resource_path, g_resource_path_length * sizeof(char));
+    mem_check(g_resource_path);
+    g_resource_path[old_length - 1] = ':';
+    strcpy(g_resource_path + old_length, drive_name);
+    g_resource_path[old_length + strlen(drive_name)] = ':';
+    strcpy(g_resource_path + old_length + strlen(drive_name) + 1, path);
+}
+/*
+To use a resource path, suffixes are added to open related files.
+Example:
+    FILE *file = resource_file_open("TextureLibrary/dolphin", ".Texture", "rb");
+will attempt to open, with a pair in the global path variable of TextureLibrary:/path/to/texture/library,
+    "/path/to/texture/library/dolphin.Texture".
+
+.Texture.image can be opened, manifest files read, build files like .png read, etc.
+*/
+FILE *resource_file_open(char *path, char *suffix, char *flags)
+{
+    char path_buffer[1024];
+    for (int i = 0; i < g_resource_path_count; i++) {
+        if (resource_file_path(path, suffix, path_buffer, 1024, i)) {
+            FILE *file = fopen(path_buffer, flags);
+            if (file != NULL) return file;
+        }
+    }
+    return NULL;
+}
+
+bool resource_file_path(char *path, char *suffix, char *path_buffer, int path_buffer_size, int start_index)
+{
+    // --- This is not well thought out, and way too large a function for what it does. The start_index is a hack to
+    // allow resource_file_open to fail constructing a path and continue looking for one.
+    /* Returns whether or not the resource file path was successfully constructed. */
+    char drive_buffer[64];
+    char *drive = path;
+    path = strchr(path, '/');
+    if (path == NULL) {
+        fprintf(stderr, "Bad path given.\n");
+        exit(EXIT_FAILURE);
+    }
+    int drive_length = path - drive;
+    char *prefix = g_resource_path;
+    int up_to_path = 0;
+    if (prefix == NULL) {
+        printf("No resource path.\n");
+        return NULL;
+    }
+    do {
+        int i;
+        for (i = 0; prefix[i] != ':'; i++) {
+            if (prefix[i] == '\0') {
+                fprintf(stderr, "Bad resource path variable.\n");
+                exit(EXIT_FAILURE);
+            }
+            drive_buffer[i] = prefix[i];
+        }
+        drive_buffer[i] = '\0';
+
+        i++;
+        int j = 0;
+        for (; prefix[i] != '\0' && prefix[i] != ':'; i++, j++) {
+            if (j >= path_buffer_size) goto buffer_size_error;
+            path_buffer[j] = prefix[i];
+        }
+
+        //----- check this
+        path_buffer[j] = '/';
+        if (strlen(path_buffer) + strlen(path) >= path_buffer_size) goto buffer_size_error;
+        strcpy(path_buffer + j + 1, path);
+        if (strlen(path_buffer) + strlen(suffix) >= path_buffer_size) goto buffer_size_error;
+        strcpy(path_buffer + j + 1 + strlen(path), suffix);
+    
+        if (up_to_path >= start_index && strlen(drive_buffer) == drive_length && strncmp(drive_buffer, drive, drive_length) == 0) {
+            // Checking lengths since a strncmp can have equal prefixes yet the drive buffer stores a longer drive name.
+            return true;
+        }
+        prefix = strchr(prefix, ':');
+        prefix = strchr(prefix + 1, ':');
+        if (prefix != NULL) prefix ++;
+        up_to_path ++;
+    } while (prefix != NULL);
+    return false;
+buffer_size_error:
+    fprintf(stderr, ERROR_ALERT "Resource path too large for given buffer.\n");
+    exit(EXIT_FAILURE);
+}

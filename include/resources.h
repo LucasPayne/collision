@@ -49,7 +49,7 @@ typedef struct ResourceTableEntry_s {
     void *resource;
     struct ResourceTableEntry_s *next; //This struct is an entry in a chaining hash table.
 } ResourceTableEntry;
-extern ResourceTableEntry *g_resource_table;
+extern ResourceTableEntry g_resource_table[];
 
 /*--------------------------------------------------------------------------------
     Resource handles and resource "dereferencing"

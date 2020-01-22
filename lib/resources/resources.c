@@ -25,29 +25,13 @@ static ResourceID null_resource_id(void)
     ResourceID id;
     id.uuid = 0;
     id.type = 0;
-    id.table_index = 0;
     return id;
 }
 
 /*================================================================================
-    Resource system and memory initialization.
+    Resource system initialization.
 ================================================================================*/
-void init_resource_system(void)
-{
-    // Initialize the small memory allocator, where the resource data will be allocated.
-    // Could initialize the small memory allocator elsewhere if, for example, the entity system would want to use it.
-    static const uint8_t sma_pool_powers = { // Edit this to change the available pool sizes.
-        3, //8
-        4, //16
-        5, //32
-        6, //64
-        7, //128
-    };
-    static const int num_sma_pool_powers = sizeof(sma_pool_powers)/sizeof(uint8_t);
-    init_small_memory_allocator(sma_pool_powers, num_sma_pool_powers);
-
-    // Initialize the resource cache.
-}
+// Currently nothing needs to be done by the user.
 
 /*================================================================================
     Resource types.
@@ -102,8 +86,8 @@ ResourceHandle ___new_resource_handle(ResourceType resource_type, char *path)
     resource_handle.path_backed = true;
     resource_handle._id = null_resource_id();
     resource_handle._id.type = resource_type;
-    handle->_id.uuid = hash_crc32(handle->data.path); // hopefully universally unique.
     resource_handle.data.path = (char *) malloc((strlen(path) + 1) * sizeof(char));
+    resource_handle._id.uuid = hash_crc32(resource_handle.data.path); // hopefully universally unique.
     mem_check(resource_handle.data.path);
     strcpy(resource_handle.data.path, path);
     return resource_handle;
@@ -120,14 +104,16 @@ void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle)
 }
 void *___resource_data(ResourceHandle *handle)
 {
-    if (!handle->path_backed) return handle->data.resource;
 
-    ResourceTableEntry *checking_entry = &g_resource_table[resource_handle->_id.uuid % RESOURCE_TABLE_SIZE];
+    if (!handle->path_backed) return handle->data.resource;
+    printf("Getting resource data from path ...\n", handle->data.path);
+
+    ResourceTableEntry *checking_entry = &g_resource_table[handle->_id.uuid % RESOURCE_TABLE_SIZE];
     ResourceTableEntry *new_entry = checking_entry; // At the end of search, if the resource wasn't found cached, this will be left as a pointer to fill with the new loaded entry.
                                                     // This complication is here since a new entry can be added either straight in the table, or at the end of one of the chains.
     if (checking_entry->uuid != 0) {
         while (1) {
-            if (checking_entry->uuid == resource_handle->_id.uuid) {
+            if (checking_entry->uuid == handle->_id.uuid) {
                 // The point of this. Resource loading and unloading should be very rare compared to references to the resource,
                 // so that should be a constant (-except chaining) fast lookup, yet still trigger a resource load if needed, unknown to the caller.
                 return checking_entry->resource;
@@ -141,6 +127,7 @@ void *___resource_data(ResourceHandle *handle)
             checking_entry = checking_entry->next;
         }
     }
+    printf("Resource not cached, loading ...\n");
     // The resource is not cached. Load it and cache it.
     ResourceTypeInfo *resource_type = &g_resource_type_info[handle->_id.type];
     void *resource = sma_alloc(resource_type->size); // Allocate it a block of an appropriate size using the small memory allocator.
@@ -194,6 +181,10 @@ to be post-load conditioned, that is, uploaded to vram to a texture handle, whic
 The conditioning/asset-compilation routine might be called as a backup if the "image" is not there, or it might fail (so the asset needs to be conditioned
 before running the application), it might save the image file or it might not.
 */
+static uint32_t g_resource_path_length = 0;
+static char *g_resource_path = NULL;
+int g_resource_path_count = 0;
+
 void resource_path_add(char *drive_name, char *path)
 {
     g_resource_path_count ++;

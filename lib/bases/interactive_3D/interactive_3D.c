@@ -24,6 +24,7 @@ base_libs:
     + helper_definitions
     + helper_gl
     + helper_input
+    + memory
     + glsl_utilities
     + data_dictionary
     + matrix_mathematics
@@ -76,8 +77,33 @@ static void key_callback(GLFWwindow *window, int key,
 
 static void init_base(void)
 {
+    /*--------------------------------------------------------------------------------
+        Program memory.
+    --------------------------------------------------------------------------------*/
+    // Allocate program memory. Ideally this will be used instead of malloc.
+    /////?? Why is this number incorrect? It is small enough to fit in a 32-bit int as well.
+    // printf("Allocating %zu\n bytes\n", (size_t) bytes_GB(2));getchar();
+    // size_t num_bytes = 1024*1024*1024*( 2 );
+    // printf("Allocating %zu\n bytes\n", num_bytes);
+    // mem_init(2147483648); // 2GB
+    mem_init(1000000000); // ~0.9313 GB
 
-    /* Non-window initialization. */
+    // Initialize the small memory allocator, where, for example, the resource data will be allocated.
+    // (A small memory allocator is a pool consisting of multiple pools, each with power-of-two cell sizes. The allocation routine
+    //  infers from the size what pool to use.)
+    static const SMAPoolInfo sma_pool_info[] = { // Edit this to change the available pool sizes.
+        { 3, 1 << (12 - 3)},
+        { 4, 1 << (12 - 4)},
+        { 5, 1 << (12 - 5)},
+        // { 6, 1 << (12 - 6)},
+        { 7, 1 << (12 - 7)},
+    };
+    static const int num_sma_pools = sizeof(sma_pool_info)/sizeof(SMAPoolInfo);
+    init_small_memory_allocator(sma_pool_info, num_sma_pools);
+
+    /*--------------------------------------------------------------------------------
+        Non window/context initialization.
+    --------------------------------------------------------------------------------*/
     // Create the basic shader blocks.
     add_shader_block(MaterialProperties); // The definition of this block is part of the rendering module.
     add_shader_block(StandardLoopWindow);

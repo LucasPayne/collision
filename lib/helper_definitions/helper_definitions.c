@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include "helper_definitions.h"
 
 uint32_t hash_crc32(char *string)

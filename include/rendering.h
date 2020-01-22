@@ -114,7 +114,7 @@ typedef struct /* Resource */ Shader_s {
     ShaderType shader_type;
     GLuint shader_id;
 } Shader;
-void *Shader_load(char *path);
+void Shader_load(void *resource, char *path);
 bool Shader_reload(ResourceHandle handle);
 
 /*--------------------------------------------------------------------------------
@@ -194,7 +194,7 @@ typedef struct /* Resource */ MaterialType_s {
     GraphicsProgramType program_type;
     GLuint program_id;
 } MaterialType;
-void *MaterialType_load(char *path);
+void MaterialType_load(void *resource, char *path);
 void print_material_type(MaterialType *material_type);
 
 
@@ -209,8 +209,7 @@ typedef struct /* Resource */ Material_RTID {
     ResourceHandle textures[MATERIAL_MAX_TEXTURES]; /* Resource[]: Texture */
     void *properties;
 } Material;
-void *Material_load(char *path);
-
+void Material_load(void *resource, char *path);
 
 // This is the (currently) only given-from-the-start shader block. This is not meant to be
 // accessed with the macro syntax, but corresponds to a buffer of a given size
@@ -266,7 +265,7 @@ typedef struct /* Resource */ Geometry_s {
 // Like all resources, this structure does not need to be used as a shared resource or loaded with this function.
 // This is for instancing and file-backed mesh rendering.
 // Really need to think more about "virtual resources" and if any of this makes sense.
-void *Geometry_load(char *path);
+void Geometry_load(void *resource, char *path);
 Geometry upload_mesh(MeshData *mesh_data);
 
 #define GM_ATTRIBUTE_BUFFER_SIZE (1024*1024)
@@ -307,7 +306,7 @@ extern ResourceType Texture_RTID;
 typedef struct /* Resource */ Texture_s {
     GLuint texture_id;
 } Texture;
-void *Texture_load(char *path);
+void Texture_load(void *resource, char *path);
 
 //--------------------------------------------------------------------------------
 // Working on currently

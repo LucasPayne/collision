@@ -35,7 +35,7 @@ ResourceType Texture_RTID;
   =notes=
   Currently the only texture-resource support is for 2D textures with some options in RGB/RGBA/grayscale.
 --------------------------------------------------------------------------------*/
-void *Texture_load(void *resource, char *path)
+void Texture_load(void *resource, char *path)
 {
     #define load_error(str) { fprintf(stderr, "Texture load error: " str "\n"); exit(EXIT_FAILURE); }
 

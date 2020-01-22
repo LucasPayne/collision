@@ -11,6 +11,7 @@
 #include "helper_definitions.h"
 #include "helper_gl.h"
 #include "helper_input.h"
+#include "memory.h"
 #include "data_dictionary.h"
 #include "ply.h"
 #include "rendering.h"

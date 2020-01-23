@@ -128,19 +128,6 @@ vec4 str_to_color_key(char *color)
 }
 
 
-void paint_line(vec3 a, vec3 b, vec4 color)
-{
-    gm_lines(VERTEX_FORMAT_3);
-    attribute_3f(Position, a.vals[0],a.vals[1],a.vals[2]);
-    attribute_3f(Position, b.vals[0],b.vals[1],b.vals[2]);
-    Geometry g = gm_done();
-    ResourceHandle mat = Material_create("Materials/flat_color");
-    material_set_property_vec4(resource_data(Material, mat), "flat_color", color);
-    gm_draw(g, resource_data(Material, mat));
-    gm_free(g);
-    destroy_resource_handle(&mat);
-}
-
 extern void loop_program(void)
 {
     // paint_line(new_vec3(0,0,0), new_vec3(50,50,50), "g");

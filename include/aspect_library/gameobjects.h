@@ -104,14 +104,21 @@ ASPECT_PROPERTIES()
     sends those events through to the Input aspects).
 --------------------------------------------------------------------------------*/
 struct Input_s;
-typedef void (*InputCallback)(struct Input_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
+typedef void (*KeyListener)(struct Input_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
+typedef void (*MouseMoveListener)(struct Input_s *, double, double); // x, y position of mouse in GLFW screen units.
 extern AspectType Input_TYPE_ID;
+#define INPUT_KEY 0
+#define INPUT_MOUSE_MOVE 1
 typedef struct /* Aspect */ Input_s {
 ASPECT_PROPERTIES()
     bool listening;
-    InputCallback callback;
+    uint8_t input_type;
+    union {
+        KeyListener key;
+        MouseMoveListener mouse_move;
+    } callback;
 } Input;
-void Input_init(Input *inp, InputCallback callback, bool listening);
+void Input_init(Input *inp, uint8_t input_type, /* generic function, type unsafe */ void *callback, bool listening);
 
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/

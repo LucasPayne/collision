@@ -17,7 +17,7 @@ The application must provide:
     void loop_program(void);
     void close_program(void);
     void input_event(int key, int action, int mods);
-    
+    void cursor_move_event(float x, float y);
 
 base_libs:
     + glad
@@ -57,7 +57,18 @@ static void toggle_raw_mouse(void)
     }
     g_raw_mouse = !g_raw_mouse;
 }
+static void cursor_position_callback(GLFWwindow *window, double x, double y)
+{
+    // Send input events to Input aspects listening for mouse movements.
+    for_aspect(Input, inp)
+        if (inp->input_type == INPUT_MOUSE_MOVE) {
+            inp->callback.mouse_move(inp, x, y);
+        }
+    end_for_aspect()
 
+    // Call the application's move event handler.
+    cursor_move_event(x, y);
+}
 
 float time = 0;
 float dt = 0;
@@ -66,6 +77,7 @@ extern void init_program(void);
 extern void loop_program(void);
 extern void close_program(void);
 extern void input_event(int key, int action, int mods);
+extern void cursor_move_event(double x, double y);
 
 #define config_error(str)\
     { fprintf(stderr, ERROR_ALERT "Application configuration error: non-existent or malformed \"" str "\" entry.\n");\
@@ -88,10 +100,10 @@ static void key_callback(GLFWwindow *window, int key,
         }
     }
 
-    // Send input events to Input aspects (listeners and handlers).
+    // Send input events to Input aspects listening for keys.
     for_aspect(Input, inp)
-        if (inp->listening) {
-            inp->callback(inp, key, action, mods);
+        if (inp->input_type == INPUT_KEY) {
+            inp->callback.key(inp, key, action, mods);
         }
     end_for_aspect()
 
@@ -186,7 +198,6 @@ static void loop_base(void)
 }
 
 
-
 int main(void)
 {
     DD *base_config = dd_fopen(BASE_DIRECTORY "interactive_3D.dd");
@@ -239,7 +250,7 @@ int main(void)
     glfwSetKeyCallback(window, key_callback);
 
     GLbitfield clear_mask = GL_COLOR_BUFFER_BIT; // To be |='d if another buffer is being used.
-    float fg_color[4];
+    float fg_color[4]; // Clear color in the rectangle being rendered onto.
     if (!dd_get(app_config, "fg_color", "vec4", fg_color)) config_error("fg_color");
     float bg_color[4]; // Background behind rectangle, visible if the window proportions do not match the aspect ratio.
     if (!dd_get(app_config, "bg_color", "vec4", bg_color)) config_error("bg_color");
@@ -287,7 +298,8 @@ int main(void)
         }
     } else {
         g_raw_mouse = false;
-    }
+    } 
+    glfwSetCursorPosCallback(window, cursor_position_callback);
 
     init_base();
 

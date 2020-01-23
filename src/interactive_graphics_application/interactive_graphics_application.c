@@ -55,14 +55,32 @@ extern void input_event(int key, int action, int mods)
     CASE(PRESS, O) open_scene(g_data, "Scenes/scene2");
     CASE(PRESS, L) printf("Pressed L\n");
 }
+extern void cursor_move_event(double x, double y)
+{
+}
 
 // Entity-attached input handlers.
-#define InputListener(NAME) void NAME (Input *inp, int key, int action, int mods)
-InputListener(input_test_1)
+#define NewKeyListener(NAME) void NAME (Input *inp, int key, int action, int mods)
+#define NewMouseMoveListener(NAME) void NAME (Input *inp, double x, double y)
+NewKeyListener(input_test_1)
 {
     Transform *t = get_sibling_aspect(inp, Transform);
     CASE(PRESS, I) t->x -= 1;
-} 
+}
+NewMouseMoveListener(mouse_move_test_1)
+{
+    printf("mouse position: %g, %g\n", x, y);
+}
+
+NewMouseMoveListener(camera_mouse_move)
+{
+    Transform *t = get_sibling_aspect(inp, Transform);
+    printf("Camera position: %f, %f, %f\n", t->x, t->y, t->z);
+    printf("mouse position: %g, %g\n", x, y);
+}
+
+
+
 #undef CASE
 
 extern void init_program(void)
@@ -79,6 +97,7 @@ extern void init_program(void)
     Camera_init(camera, ASPECT_RATIO, 1, 0.9, 10);
     Logic *logic = entity_add_aspect(camera_man, Logic);
     logic->update = camera_controls;
+    Input_init(entity_add_aspect(camera_man, Input), INPUT_MOUSE_MOVE, camera_mouse_move, true);
 
 #define init_get_logic_data(DATA_LVALUE,LOGIC_ASPECT_POINTER,DATA_STRUCT,UPDATE_FUNCTION)\
 
@@ -104,6 +123,7 @@ extern void init_program(void)
         body->geometry = new_resource_handle(Geometry, frand() > 0.5 ? "Models/quad" : "Models/cube");
         Logic *logic = entity_add_aspect(thing, Logic);
         logic->update = logic_misc1;
+        Input_init(entity_add_aspect(thing, Input), INPUT_KEY, input_test_1, true);
     }
 #endif
     
@@ -114,7 +134,6 @@ extern void init_program(void)
     // resource_data(Geometry, r2);
 
 }
-
 
 extern void loop_program(void)
 {

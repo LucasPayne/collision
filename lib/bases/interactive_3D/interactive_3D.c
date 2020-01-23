@@ -193,7 +193,8 @@ static void render(void)
             }
             Matrix4x4f mvp_matrix = vp_matrix;
             right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
-
+            
+            set_uniform_mat4x4(Standard3D, model_matrix.vals, model_matrix.vals);
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
 
             gm_draw(*mesh, material);

@@ -5,3 +5,4 @@ fg_color: 1.0,0.78,0.89,1;
 bg_color: 0.1,0.1,0.2,1;
 aspect_ratio: 0.5616;
 raw_mouse: true;
+cull_mode: none;

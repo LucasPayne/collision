@@ -25,16 +25,26 @@ static void logic_misc1(Logic *logic)
 static void camera_controls(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
-    float rotate_speed = 3;
-    if (alt_arrow_key_down(Right)) t->theta_y += rotate_speed * dt;
-    if (alt_arrow_key_down(Left)) t->theta_y -= rotate_speed * dt;
-    if (alt_arrow_key_down(Up)) t->theta_x -= rotate_speed * dt;
-    if (alt_arrow_key_down(Down)) t->theta_x += rotate_speed * dt;
-    float speed = 10;
-    if (arrow_key_down(Right)) t->x -= speed * dt;
-    if (arrow_key_down(Left)) t->x += speed * dt;
-    if (arrow_key_down(Up)) t->z += speed * dt;
-    if (arrow_key_down(Down)) t->z -= speed * dt;
+    // float rotate_speed = 3;
+    // if (arrow_key_down(Right)) t->theta_y += rotate_speed * dt;
+    // if (arrow_key_down(Left)) t->theta_y -= rotate_speed * dt;
+    // if (arrow_key_down(Up)) t->theta_x -= rotate_speed * dt;
+    // if (arrow_key_down(Down)) t->theta_x += rotate_speed * dt;
+    float speed = 20;
+    if (alt_arrow_key_down(Right)) t->x -= speed * dt;
+    if (alt_arrow_key_down(Left)) t->x += speed * dt;
+    if (alt_arrow_key_down(Up)) t->z += speed * dt;
+    if (alt_arrow_key_down(Down)) t->z -= speed * dt;
+}
+static void quad_test_update(Logic *logic)
+{
+    Transform *t = get_sibling_aspect(logic, Transform);
+    float speed = 5;
+    if (arrow_key_down(Right)) t->theta_y -= speed * dt;
+    if (arrow_key_down(Left)) t->theta_y += speed * dt;
+    if (arrow_key_down(Up)) t->theta_x += speed * dt;
+    if (arrow_key_down(Down)) t->theta_x -= speed * dt;
+
 }
 
 void make_thing(float x, float y, float z)
@@ -62,7 +72,7 @@ extern void cursor_move_event(double x, double y)
 // Entity-attached input handlers.
 #define NewKeyListener(NAME) void NAME (Input *inp, int key, int action, int mods)
 #define NewMousePositionListener(NAME) void NAME (Input *inp, double x, double y)
-#define NewMouseMoveListener(NAME) void NAME (Input *inp, double x, double y)
+#define NewMouseMoveListener(NAME) void NAME (Input *inp, double dx, double dy)
 NewKeyListener(input_test_1)
 {
     Transform *t = get_sibling_aspect(inp, Transform);
@@ -77,7 +87,10 @@ NewMouseMoveListener(camera_mouse_move)
 {
     Transform *t = get_sibling_aspect(inp, Transform);
     printf("Camera position: %f, %f, %f\n", t->x, t->y, t->z);
-    printf("mouse velocity: %g, %g\n", x, y);
+    printf("mouse velocity: %g, %g\n", dx, dy);
+
+    t->theta_y += dx * -0.002;
+    t->theta_x += dy * 0.002;
 }
 #undef CASE
 
@@ -100,7 +113,7 @@ extern void init_program(void)
 #define init_get_logic_data(DATA_LVALUE,LOGIC_ASPECT_POINTER,DATA_STRUCT,UPDATE_FUNCTION)\
 
     // Textured thing
-#if 1
+#if 0
     for (int i = 0; i < 200; i++)
     { 
         EntityID thing = new_entity(3);
@@ -108,8 +121,9 @@ extern void init_program(void)
         Body *body = entity_add_aspect(thing, Body);
         body->scale = 1;
         Material *mat = oneoff_resource(Material, body->material);
-        mat->material_type = new_resource_handle(MaterialType, "Materials/tinted_texture");
-        material_set_property_vec4(mat, "flat_color", new_vec4(0,0,0,1));
+        // mat->material_type = new_resource_handle(MaterialType, "Materials/tinted_texture");
+        // material_set_property_vec4(mat, "flat_color", new_vec4(0,0,0,1));
+        mat->material_type = new_resource_handle(MaterialType, "Materials/textured_phong");
         float f = frand();
         if (f > 0.7) {
 	    material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/dirt");
@@ -118,12 +132,27 @@ extern void init_program(void)
         } else {
             material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
         }
-        body->geometry = new_resource_handle(Geometry, frand() > 0.5 ? "Models/quad" : "Models/cube");
+        // body->geometry = new_resource_handle(Geometry, frand() > 0.5 ? "Models/quad" : "Models/cube");
+        body->geometry = new_resource_handle(Geometry, "Models/cube");
         Logic *logic = entity_add_aspect(thing, Logic);
         logic->update = logic_misc1;
         Input_init(entity_add_aspect(thing, Input), INPUT_KEY, input_test_1, true);
     }
 #endif
+    
+    {
+        EntityID quad = new_entity(4);
+        Transform_set(entity_add_aspect(quad, Transform), 0,0,0, 0,0,0);
+        Body *body = entity_add_aspect(quad, Body);
+        body->scale = 1;
+        body->material = Material_create("Materials/textured_phong");
+        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/stone_bricks");
+        body->geometry = new_resource_handle(Geometry, "Models/quad");
+        Logic *logic = entity_add_aspect(quad, Logic);
+        logic->update = quad_test_update;
+        // Input_init(entity_add_aspect(quad, Input), INPUT_KEY, input_test_1, true);
+    }
+
     
     // open_scene(g_data, "Scenes/scene1");
     // ResourceHandle r1 = new_resource_handle(Geometry, "Models/quad");

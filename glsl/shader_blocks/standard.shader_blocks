@@ -2,6 +2,7 @@
 
 block Standard3D {
     mat4x4 mvp_matrix;
+    mat4x4 model_matrix;
 };
 
 block StandardLoopWindow {

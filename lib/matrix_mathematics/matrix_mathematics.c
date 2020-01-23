@@ -291,6 +291,9 @@ vec3 vec3_neg(vec3 a)
 
 // Use a 4x4 matrix (supposedly a rigid transformation matrix) and use it to transform a 3-vector without translations.
 // This is for transformation of normals.
+//////////////////////////////////////////////////////////////////////////////////
+// this is wrong.
+//////////////////////////////////////////////////////////////////////////////////
 vec3 matrix4_vec3_normal(Matrix4x4f *matrix, vec3 v)
 {
     vec3 vp;

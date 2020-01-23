@@ -20,5 +20,9 @@ void main(void)
     gl_Position = mvp_matrix * vPosition;
     fTexCoord = vTexCoord;
     fPosition = vPosition * transpose(model_matrix);
-    fNormal = (vec4(vNormal.xyz, 1) * inverse(transpose(model_matrix))).xyz;
+
+    // fNormal = (vec4(vNormal, 1) * transpose(model_matrix)).xyz - model_position;
+
+    fNormal = normalize((vec4(vNormal.xyz, 1) * inverse(transpose(model_matrix))).xyz - model_position);
+    // fNormal = (vec4(vNormal, 1) * model_matrix).xyz;
 }

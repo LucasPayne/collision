@@ -7,21 +7,10 @@ definitions between glsl and C.
 
 struct DirectionalLight {
     vec4 color;
+    bool is_active;
     vec3 direction;
-    bool is_active;
-};
-struct SpotLight {
-    float cubic_attenuation;
-    vec4 color;
-    float quadratic_attenuation;
-    vec3 position;
-    float pulse_rate;
-    bool is_active;
-    float linear_attenuation;
 };
 
 layout (std140) uniform Lights {
-    bool lighting_enabled;
     DirectionalLight directional_lights[32];
-    SpotLight spotlights[32];
 };

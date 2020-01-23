@@ -48,7 +48,8 @@ static void quad_test_update(Logic *logic)
 static void light_test_update(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
-    printf("Light is going.\n");
+    // printf("Light is going.\n");
+    t->theta_y += 0.5 * dt;
 }
 
 void make_thing(float x, float y, float z)
@@ -61,6 +62,22 @@ void make_thing(float x, float y, float z)
     mat->material_type = new_resource_handle(MaterialType, "Materials/red");
     body->geometry = new_resource_handle(Geometry, "Models/icosohedron");
 }
+static void spawn_cubes(int n)
+{
+    for (int i = 0; i < n; i++) {
+        EntityID quad = new_entity(4);
+        Transform_set(entity_add_aspect(quad, Transform), frand()*50-25,frand()*50-25,-2, frand()*M_PI*2,0,0);
+        Body *body = entity_add_aspect(quad, Body);
+        body->scale = 1;
+        body->material = Material_create("Materials/textured_phong");
+        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/stone_bricks");
+        body->geometry = new_resource_handle(Geometry, "Models/cube");
+        Logic *logic = entity_add_aspect(quad, Logic);
+        logic->update = quad_test_update;
+        // Input_init(entity_add_aspect(quad, Input), INPUT_KEY, input_test_1, true);
+    }
+}
+
 
 extern void input_event(int key, int action, int mods)
 {
@@ -68,6 +85,7 @@ extern void input_event(int key, int action, int mods)
     if (action == ( GLFW_ ## ACTION ) && key == ( GLFW_KEY_ ## KEY ))
     CASE(PRESS, O) open_scene(g_data, "Scenes/scene2");
     CASE(PRESS, L) printf("Pressed L\n");
+    CASE(PRESS, C) spawn_cubes(5);
 }
 extern void cursor_move_event(double x, double y)
 {
@@ -96,6 +114,14 @@ NewMouseMoveListener(camera_mouse_move)
     t->theta_y += dx * -0.002;
     t->theta_x += dy * 0.002;
 }
+
+NewKeyListener(light_test_key)
+{
+    Transform *t = get_sibling_aspect(inp, Transform);
+    CASE(PRESS, M) t->theta_x += 0.5;
+    CASE(PRESS, N) t->theta_x -= 0.5;
+}
+
 #undef CASE
 
 extern void init_program(void)
@@ -143,24 +169,15 @@ extern void init_program(void)
 #endif
     
     // Lighting testing
-    {
-        EntityID quad = new_entity(4);
-        Transform_set(entity_add_aspect(quad, Transform), 0,0,-2, 0,0,M_PI/2);
-        Body *body = entity_add_aspect(quad, Body);
-        body->scale = 1;
-        body->material = Material_create("Materials/textured_phong");
-        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/stone_bricks");
-        body->geometry = new_resource_handle(Geometry, "Models/quad");
-        Logic *logic = entity_add_aspect(quad, Logic);
-        logic->update = quad_test_update;
-        // Input_init(entity_add_aspect(quad, Input), INPUT_KEY, input_test_1, true);
-    }
+    spawn_cubes(5);
     {
         EntityID light = new_entity(4);
         Transform_set(entity_add_aspect(light, Transform), 0,0,0,  0,0,0);
         Logic *logic = entity_add_aspect(light, Logic);
         logic->update = light_test_update;
-        // Input_init(entity_add_aspect(quad, Input), INPUT_KEY, input_test_1, true);
+        DirectionalLight *directional_light = entity_add_aspect(light, DirectionalLight);
+        directional_light->color = new_vec4(1,0,0,1);
+        Input_init(entity_add_aspect(light, Input), INPUT_KEY, light_test_key, true);
     }
 
     

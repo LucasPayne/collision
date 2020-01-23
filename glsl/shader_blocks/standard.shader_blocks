@@ -3,6 +3,7 @@
 block Standard3D {
     mat4x4 mvp_matrix;
     mat4x4 model_matrix;
+    vec3 model_position;
 };
 
 block StandardLoopWindow {
@@ -16,20 +17,19 @@ block Lights {
     #define MAX_NUM_DIRECTIONAL_LIGHTS 32
     #define MAX_NUM_SPOTLIGHTS 32
     struct DirectionalLight {
-        bool is_active;
         vec3 direction;
-        vec4 color;
-    };
-    struct SpotLight {
-        float linear_attenuation;
         bool is_active;
-	float pulse_rate;
-        vec3 position;
-        float quadratic_attenuation;
         vec4 color;
-        float cubic_attenuation;
     };
-    bool lighting_enabled;
+    // struct SpotLight {
+    //     float linear_attenuation;
+    //     bool is_active;
+    //     float pulse_rate;
+    //     vec3 position;
+    //     float quadratic_attenuation;
+    //     vec4 color;
+    //     float cubic_attenuation;
+    // };
     DirectionalLight directional_lights[MAX_NUM_DIRECTIONAL_LIGHTS];
-    SpotLight spotlights[MAX_NUM_SPOTLIGHTS];
+    // SpotLight spotlights[MAX_NUM_SPOTLIGHTS];
 };

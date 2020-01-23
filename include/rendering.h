@@ -153,11 +153,26 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name);
     ___set_uniform_mat4x4(( ShaderBlockID_ ## BLOCK_NAME ),\
                          (( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
                          ( MAT4X4_POINTER ))
+#define set_uniform_bool(BLOCK_NAME,ENTRY,VALUE)\
+    ___set_uniform_bool(( ShaderBlockID_ ## BLOCK_NAME ),\
+                         &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
+                         ( VALUE ))
+#define set_uniform_vec3(BLOCK_NAME,ENTRY,VALUE)\
+    ___set_uniform_vec3(( ShaderBlockID_ ## BLOCK_NAME ),\
+                         &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
+                         ( VALUE ))
+#define set_uniform_vec4(BLOCK_NAME,ENTRY,VALUE)\
+    ___set_uniform_vec4(( ShaderBlockID_ ## BLOCK_NAME ),\
+                         &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
+                         ( VALUE ))
 
 /* Pointer arithmetic can be used if needed, to calculate the offset (it is used for bitflags.) */
 ShaderBlockID get_shader_block_id(char *name);
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val);
 void ___set_uniform_mat4x4(ShaderBlockID id, float *entry_address, float *vals);
+void ___set_uniform_bool(ShaderBlockID id, bool *entry_address, bool val);
+void ___set_uniform_vec3(ShaderBlockID id, vec3 *entry_address, vec3 val);
+void ___set_uniform_vec4(ShaderBlockID id, vec4 *entry_address, vec4 val);
 void synchronize_shader_blocks(void);
 
 /*--------------------------------------------------------------------------------

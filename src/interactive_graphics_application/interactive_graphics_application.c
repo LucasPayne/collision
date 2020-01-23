@@ -44,7 +44,11 @@ static void quad_test_update(Logic *logic)
     if (arrow_key_down(Left)) t->theta_y += speed * dt;
     if (arrow_key_down(Up)) t->theta_x += speed * dt;
     if (arrow_key_down(Down)) t->theta_x -= speed * dt;
-
+}
+static void light_test_update(Logic *logic)
+{
+    Transform *t = get_sibling_aspect(logic, Transform);
+    printf("Light is going.\n");
 }
 
 void make_thing(float x, float y, float z)
@@ -110,8 +114,6 @@ extern void init_program(void)
     logic->update = camera_controls;
     Input_init(entity_add_aspect(camera_man, Input), INPUT_MOUSE_MOVE, camera_mouse_move, true);
 
-#define init_get_logic_data(DATA_LVALUE,LOGIC_ASPECT_POINTER,DATA_STRUCT,UPDATE_FUNCTION)\
-
     // Textured thing
 #if 0
     for (int i = 0; i < 200; i++)
@@ -140,6 +142,7 @@ extern void init_program(void)
     }
 #endif
     
+    // Lighting testing
     {
         EntityID quad = new_entity(4);
         Transform_set(entity_add_aspect(quad, Transform), 0,0,-2, 0,0,M_PI/2);
@@ -150,6 +153,13 @@ extern void init_program(void)
         body->geometry = new_resource_handle(Geometry, "Models/quad");
         Logic *logic = entity_add_aspect(quad, Logic);
         logic->update = quad_test_update;
+        // Input_init(entity_add_aspect(quad, Input), INPUT_KEY, input_test_1, true);
+    }
+    {
+        EntityID light = new_entity(4);
+        Transform_set(entity_add_aspect(light, Transform), 0,0,0,  0,0,0);
+        Logic *logic = entity_add_aspect(light, Logic);
+        logic->update = light_test_update;
         // Input_init(entity_add_aspect(quad, Input), INPUT_KEY, input_test_1, true);
     }
 

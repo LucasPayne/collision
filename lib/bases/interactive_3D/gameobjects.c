@@ -92,7 +92,7 @@ void Input_init(Input *inp, uint8_t input_type, /* generic function pointer (no 
     Lights
 ================================================================================*/
 AspectType DirectionalLight_TYPE_ID;
-DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca)
+void DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca)
 {
     directional_light->color = new_vec4(cr, cg, cb, ca);
 }

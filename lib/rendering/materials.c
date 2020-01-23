@@ -21,6 +21,8 @@
 #include "resources.h"
 #include "rendering.h"
 
+#include "matrix_mathematics.h" //--- vector definitions
+
 int g_num_shader_blocks = 0;
 ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
@@ -432,24 +434,35 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
     g_num_shader_blocks ++;
 }
 
-void ___set_uniform_mat4x4(ShaderBlockID id, float *entry_address, float *vals)
+static void ___set_uniform(ShaderBlockID id, void *entry_address, void *data, size_t size)
 {
     g_shader_blocks[id].dirty = true;
-    size_t offset = ((bool *) entry_address) - ((bool *) g_shader_blocks[id].shader_block);
-    for (int i = 0; i < 16*sizeof(float); i++) g_shader_blocks[id].dirty_flags[offset + i] = true;
-    /* for (int i = 0; i < 16; i++) printf("%.2f ", vals[i]); */
-    /* getchar(); */
-    memcpy(entry_address, vals, 16*sizeof(float));
-    /* for (int i = 0; i < 16; i++) printf("%.2f ", entry_address[i]); */
-    /* getchar(); */
+    size_t offset = entry_address - g_shader_blocks[id].shader_block;
+    for (int i = 0; i < size; i++) g_shader_blocks[id].dirty_flags[offset + i] = true;
+    memcpy(entry_address, data, size);
+}
+
+void ___set_uniform_mat4x4(ShaderBlockID id, float *entry_address, float *vals)
+{
+    ___set_uniform(id, entry_address, vals, sizeof(float)*4*4);
 }
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val)
 {
-    g_shader_blocks[id].dirty = true;
-    size_t offset = ((bool *) entry_address) - ((bool *) g_shader_blocks[id].shader_block);
-    for (int i = 0; i < sizeof(float); i++) g_shader_blocks[id].dirty_flags[offset + i] = true;
-    *entry_address = val;
+    ___set_uniform(id, entry_address, &val, sizeof(float));
 }
+void ___set_uniform_bool(ShaderBlockID id, bool *entry_address, bool val)
+{
+    ___set_uniform(id, entry_address, &val, sizeof(bool));
+}
+void ___set_uniform_vec3(ShaderBlockID id, vec3 *entry_address, vec3 val)
+{
+    ___set_uniform(id, entry_address, &val, sizeof(vec3));
+}
+void ___set_uniform_vec4(ShaderBlockID id, vec4 *entry_address, vec4 val)
+{
+    ___set_uniform(id, entry_address, &val, sizeof(vec4));
+}
+
 
 ShaderBlockID get_shader_block_id(char *name)
 {

@@ -209,6 +209,23 @@ static void loop_base(void)
         logic->update(logic);
     end_for_aspect()
 
+    // Handle lights.
+    int index = 0;
+    for_aspect(DirectionalLight, directional_light)
+        if (index >= MAX_NUM_DIRECTIONAL_LIGHTS) {
+            fprintf(stderr, ERROR_ALERT "scene error: Too many directional lights have been created. The maximum number is set to %d.\n", MAX_NUM_DIRECTIONAL_LIGHTS);
+            exit(EXIT_FAILURE);
+        }
+        set_uniform_bool(Lights, directional_lights[index].is_active, true);
+        Transform *t = get_sibling_aspect(directional_light, Transform);
+        set_uniform_vec3(Lights, directional_lights[index].direction, new_vec3(t->theta_x, t->theta_y, t->theta_z));
+        index++;
+    end_for_aspect()
+    // Disable the rest of the directional lights.
+    for (int i = index; i < MAX_NUM_DIRECTIONAL_LIGHTS; i++) {
+        set_uniform_bool(Lights, directional_lights[i].is_active, false);
+    }
+
     render();
     loop_program();
 }

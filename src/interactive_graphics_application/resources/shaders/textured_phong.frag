@@ -36,7 +36,21 @@ void main(void)
         //---calculating normals outward from centre of model
         float intensity = (1 - ambient) * max(0, dot(normalize(fPosition.xyz - model_position), -normalize(fPosition.xyz - point_lights[i].position)));
         // color += point_lights[i].color * vec4(intensity,intensity,intensity,1);
-        color += vec4(intensity,intensity,intensity,1);
+        
+        float dist = length(fPosition.xyz - point_lights[i].position);
+#if 0 // test attenuation
+        float attenuation = exp(-(
+            dist * 0.03
+        ));
+#else
+        float attenuation = exp(-(
+            dist * point_lights[i].linear_attenuation +
+            dist*dist * point_lights[i].quadratic_attenuation +
+            dist*dist*dist * point_lights[i].cubic_attenuation
+        ));
+#endif
+
+        color += vec4(intensity,intensity,intensity,1) * attenuation;
     }
 
 

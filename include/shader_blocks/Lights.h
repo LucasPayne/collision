@@ -13,11 +13,11 @@ struct ShaderBlockStruct_Lights_DirectionalLight { //size: 32
     vec4 color;    //offset: 16, alignment: 16, C_type_size: 16
 };
 struct ShaderBlockStruct_Lights_PointLight { //size: 48
-    vec3 position;    //offset: 0, alignment: 16, C_type_size: 12
-    char ___std140_pad1[4];
-    float cubic_attenuation;    //offset: 16, alignment: 4, C_type_size: 4
-    float quadratic_attenuation;    //offset: 20, alignment: 4, C_type_size: 4
-    float linear_attenuation;    //offset: 24, alignment: 4, C_type_size: 4
+    float cubic_attenuation;    //offset: 0, alignment: 4, C_type_size: 4
+    float quadratic_attenuation;    //offset: 4, alignment: 4, C_type_size: 4
+    float linear_attenuation;    //offset: 8, alignment: 4, C_type_size: 4
+    char ___std140_pad3[4];
+    vec3 position;    //offset: 16, alignment: 16, C_type_size: 12
     char ___std140_pad4[4];
     vec4 color;    //offset: 32, alignment: 16, C_type_size: 16
 };

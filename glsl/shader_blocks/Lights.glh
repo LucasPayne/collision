@@ -10,10 +10,10 @@ struct DirectionalLight {
     vec4 color;
 };
 struct PointLight {
-    vec3 position;
     float cubic_attenuation;
     float quadratic_attenuation;
     float linear_attenuation;
+    vec3 position;
     vec4 color;
 };
 

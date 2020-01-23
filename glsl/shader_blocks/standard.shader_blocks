@@ -22,10 +22,10 @@ block Lights {
     };
     struct PointLight {
         vec4 color;
+        vec3 position;
         float linear_attenuation;
         float quadratic_attenuation;
         float cubic_attenuation;
-        vec3 position;
     };
     int num_directional_lights;
     int num_point_lights;

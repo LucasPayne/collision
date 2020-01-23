@@ -181,6 +181,7 @@ extern void init_program(void)
     
     // Lighting testing
     spawn_cubes(5);
+    #if 1 // create directional lights
     {
         EntityID light = new_entity(4);
         Transform_set(entity_add_aspect(light, Transform), 0,0,0,  0,0,0);
@@ -196,10 +197,11 @@ extern void init_program(void)
         directional_light->color = new_vec4(1,1,0.1,1);
         Input_init(entity_add_aspect(light, Input), INPUT_KEY, light_test_key, true);
     }
+    #endif
     {
         EntityID light = new_entity(4);
         Transform_set(entity_add_aspect(light, Transform), 1,0,0,  0,0,0);
-        PointLight_init(entity_add_aspect(light, PointLight),  10,3,1,  1,1,1,1);
+        PointLight_init(entity_add_aspect(light, PointLight),  0.07,0,0,  1,1,1,1);
         Logic *logic = entity_add_aspect(light, Logic);
         logic->update = test_controls;
 

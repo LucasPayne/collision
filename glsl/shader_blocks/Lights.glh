@@ -7,10 +7,10 @@ definitions between glsl and C.
 
 struct DirectionalLight {
     vec4 color;
-    bool is_active;
     vec3 direction;
 };
 
 layout (std140) uniform Lights {
+    int num_directional_lights;
     DirectionalLight directional_lights[32];
 };

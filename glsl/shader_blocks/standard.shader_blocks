@@ -18,7 +18,6 @@ block Lights {
     #define MAX_NUM_SPOTLIGHTS 32
     struct DirectionalLight {
         vec3 direction;
-        bool is_active;
         vec4 color;
     };
     // struct SpotLight {
@@ -30,6 +29,7 @@ block Lights {
     //     vec4 color;
     //     float cubic_attenuation;
     // };
+    int num_directional_lights;
     DirectionalLight directional_lights[MAX_NUM_DIRECTIONAL_LIGHTS];
     // SpotLight spotlights[MAX_NUM_SPOTLIGHTS];
 };

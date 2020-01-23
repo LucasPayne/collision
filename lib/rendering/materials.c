@@ -450,6 +450,10 @@ void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val)
 {
     ___set_uniform(id, entry_address, &val, sizeof(float));
 }
+void ___set_uniform_int(ShaderBlockID id, int *entry_address, int val)
+{
+    ___set_uniform(id, entry_address, &val, sizeof(int));
+}
 void ___set_uniform_bool(ShaderBlockID id, bool *entry_address, bool val)
 {
     ___set_uniform(id, entry_address, &val, sizeof(bool));

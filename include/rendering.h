@@ -157,6 +157,10 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name);
     ___set_uniform_bool(( ShaderBlockID_ ## BLOCK_NAME ),\
                          &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
                          ( VALUE ))
+#define set_uniform_int(BLOCK_NAME,ENTRY,VALUE)\
+    ___set_uniform_int(( ShaderBlockID_ ## BLOCK_NAME ),\
+                         &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
+                         ( VALUE ))
 #define set_uniform_vec3(BLOCK_NAME,ENTRY,VALUE)\
     ___set_uniform_vec3(( ShaderBlockID_ ## BLOCK_NAME ),\
                          &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\

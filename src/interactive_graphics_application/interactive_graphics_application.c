@@ -176,10 +176,15 @@ extern void init_program(void)
         Logic *logic = entity_add_aspect(light, Logic);
         logic->update = light_test_update;
         DirectionalLight *directional_light = entity_add_aspect(light, DirectionalLight);
-        directional_light->color = new_vec4(1,0,0,1);
+        directional_light->color = new_vec4(1,0.7,0.7,1);
+    }
+    {
+        EntityID light = new_entity(4);
+        Transform_set(entity_add_aspect(light, Transform), 0,0,0,  0,0,0);
+        DirectionalLight *directional_light = entity_add_aspect(light, DirectionalLight);
+        directional_light->color = new_vec4(1,1,0.1,1);
         Input_init(entity_add_aspect(light, Input), INPUT_KEY, light_test_key, true);
     }
-
     
     // open_scene(g_data, "Scenes/scene1");
     // ResourceHandle r1 = new_resource_handle(Geometry, "Models/quad");

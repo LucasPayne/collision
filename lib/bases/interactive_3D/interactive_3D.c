@@ -217,21 +217,16 @@ static void loop_base(void)
             fprintf(stderr, ERROR_ALERT "scene error: Too many directional lights have been created. The maximum number is set to %d.\n", MAX_NUM_DIRECTIONAL_LIGHTS);
             exit(EXIT_FAILURE);
         }
-        // printf("Activating light.\n");
-        set_uniform_bool(Lights, directional_lights[index].is_active, true);
         Transform *t = get_sibling_aspect(directional_light, Transform);
-
         // The direction of the light is in the light entity's local z direction.
         Matrix4x4f m;
         euler_rotation_matrix4x4f(&m, t->theta_x, t->theta_y, t->theta_z);
         vec4 direction = matrix_vec4(&m, new_vec4(0,0,1,1));
         set_uniform_vec3(Lights, directional_lights[index].direction, new_vec3(direction.vals[0],direction.vals[1],direction.vals[2]));
+        set_uniform_vec4(Lights, directional_lights[index].color, directional_light->color);
         index++;
     end_for_aspect()
-    // Disable the rest of the directional lights.
-    for (int i = index; i < MAX_NUM_DIRECTIONAL_LIGHTS; i++) {
-        set_uniform_bool(Lights, directional_lights[i].is_active, false);
-    }
+    set_uniform_int(Lights, num_directional_lights, index);
 
     render();
     loop_program();

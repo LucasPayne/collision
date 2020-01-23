@@ -95,8 +95,10 @@ static void init_base(void)
         { 3, 1 << (12 - 3)},
         { 4, 1 << (12 - 4)},
         { 5, 1 << (12 - 5)},
-        // { 6, 1 << (12 - 6)},
+        { 6, 1 << (12 - 6)},
         { 7, 1 << (12 - 7)},
+        { 8, 1 << (12 - 8)},
+        { 12, 128 }, // 4 KB for "big resources".
     };
     static const int num_sma_pools = sizeof(sma_pool_info)/sizeof(SMAPoolInfo);
     init_small_memory_allocator(sma_pool_info, num_sma_pools);

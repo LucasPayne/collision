@@ -113,16 +113,16 @@ void *sma_alloc(size_t size)
     // To find the pool which this size fits into, calculate the position of the most significant bit.
     // Let s be the number of left shifts needed so that the left-hand bit is 1. p = sizeof(size_t) - 1 - s is then the optimal power of the pool.
     // However, this may not be in the sma pool powers bitmask, so this value will be increased to the position of the first 1 bit in the powers mask.
-    int s;
-    for (s = 0; s < sizeof(size_t); s++) {
-        if (((size << s) & (1 << (sizeof(size_t)-1))) != 0) break;
-    }
-    int p = sizeof(size_t) - s;
-    while (p < 32) {
-        printf("%d\n", sma_pool_powers_mask & (1 << p));
-        if ((sma_pool_powers_mask & (1 << p)) == 0) p++;
-        else break;
-    }
+    // int s;
+    // for (s = 0; s < sizeof(size_t); s++) {
+    //     if (((size << s) & (1 << (sizeof(size_t)-1))) != 0) break;
+    // }
+    // int p = sizeof(size_t) - s;
+    // while (p < 32) {
+    //     if ((sma_pool_powers_mask & (1 << p)) == 0) p++;
+    //     else break;
+    // }
+    int p = 12;
     printf("Pool %d chosen, cell size: %d\n", p, 1 << p);
     // p is now the power of the sma pool being used for allocation.
     // ------------------------------------------------------------------

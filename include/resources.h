@@ -73,6 +73,9 @@ typedef struct ResourceHandle_s {
 
 void *___resource_data(ResourceHandle *handle);
 ResourceHandle ___new_resource_handle(ResourceType resource_type, char *path);
+// It is important that resource handles are destroyed when their owners are destroyed, since
+// they either hold paths or data (for oneoff resources) on the heap.
+void destroy_resource_handle(ResourceHandle *handle);
 
 #define resource_data(STRUCTURE_NAME,HANDLE)\
     ( (STRUCTURE_NAME *) ___resource_data( &( HANDLE ) ) )
@@ -85,6 +88,7 @@ void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle);
 #define oneoff_resource(RESOURCE_TYPE_NAME,RESOURCE_HANDLE)\
     ___oneoff_resource(( RESOURCE_TYPE_NAME ## _RTID ),\
                        &( RESOURCE_HANDLE ));
+
 
 /*--------------------------------------------------------------------------------
     Resource types and the global resource type information array
@@ -126,7 +130,7 @@ void ___add_resource_type(ResourceType *type_pointer, size_t size, char *name, R
                           ( RESOURCE_TYPE_NAME ## _load ),\
                           NULL)
 #define add_resource_type(RESOURCE_TYPE_NAME)\
-     ___add_resource_type_no_unload(&( RESOURCE_TYPE_NAME ## _RTID ),\
+     ___add_resource_type(&( RESOURCE_TYPE_NAME ## _RTID ),\
                           sizeof(RESOURCE_TYPE_NAME),\
                           ( #RESOURCE_TYPE_NAME ),\
                           ( RESOURCE_TYPE_NAME ## _load ),\

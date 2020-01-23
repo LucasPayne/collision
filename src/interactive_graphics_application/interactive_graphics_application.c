@@ -6,6 +6,20 @@ project_libs:
 #include "bases/interactive_3D.h"
 #include "scenes.h"
 
+//--------------------------------------------------------------------------------
+// Testing and debugging.
+//--------------------------------------------------------------------------------
+static Material *g_flat_color;
+//--------------------------------------------------------------------------------
+// Random behaviour/logic functions.
+static void logic_misc1(Logic *logic)
+{
+    Transform *t = get_sibling_aspect(logic, Transform);
+    t->theta_x += dt;
+    t->theta_y += 0.7 * dt;
+}
+//--------------------------------------------------------------------------------
+
 static void camera_controls(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
@@ -65,21 +79,31 @@ extern void init_program(void)
 #define init_get_logic_data(DATA_LVALUE,LOGIC_ASPECT_POINTER,DATA_STRUCT,UPDATE_FUNCTION)\
 
     // Textured thing
-#if 0
+#if 1
+    for (int i = 0; i < 200; i++)
     { 
         EntityID thing = new_entity(3);
-        Transform_set(entity_add_aspect(thing, Transform), 0,0,-10,0,0,0);
+        Transform_set(entity_add_aspect(thing, Transform), frand()*50-25,frand()*50-25,frand()*50-25, frand()*2*M_PI, frand()*2*M_PI, frand()*2*M_PI);
         Body *body = entity_add_aspect(thing, Body);
         body->scale = 1;
         Material *mat = oneoff_resource(Material, body->material);
         mat->material_type = new_resource_handle(MaterialType, "Materials/tinted_texture");
         material_set_property_vec4(mat, "flat_color", new_vec4(0,0,0,1));
-        material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/dirt");
+        float f = frand();
+        if (f > 0.7) {
+	    material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/dirt");
+        } else if (f > 0.3) {
+            material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/ladder");
+        } else {
+            material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
+        }
         body->geometry = new_resource_handle(Geometry, "Models/quad");
+        Logic *logic = entity_add_aspect(thing, Logic);
+        logic->update = logic_misc1;
     }
 #endif
     
-    open_scene(g_data, "Scenes/scene1");
+    // open_scene(g_data, "Scenes/scene1");
     // ResourceHandle r1 = new_resource_handle(Geometry, "Models/quad");
     // resource_data(Geometry, r1);
     // ResourceHandle r2 = new_resource_handle(Geometry, "Models/quad");
@@ -91,7 +115,7 @@ extern void init_program(void)
 vec4 str_to_color_key(char *color)
 {
     #define col(STR,R,G,B,A) if (strcmp(color, ( STR )) == 0) return new_vec4((R),(G),(B),(A));
-    col("g", 0,0,1,1);
+    col("g", 0,1,0,1);
     col("r", 1,0,0,1);
     col("y", 1,0,1,1);
     col("b", 0,0,1,1);
@@ -103,27 +127,30 @@ vec4 str_to_color_key(char *color)
     #undef col
 }
 
-void paint_line(vec3 a, vec3 b, char *color)
+
+void paint_line(vec3 a, vec3 b, vec4 color)
 {
     gm_lines(VERTEX_FORMAT_3);
     attribute_3f(Position, a.vals[0],a.vals[1],a.vals[2]);
     attribute_3f(Position, b.vals[0],b.vals[1],b.vals[2]);
     Geometry g = gm_done();
-    ResourceHandle res;
-    Material *mat = oneoff_resource(Material, res);
-    mat->material_type = new_resource_handle(MaterialType, "Materials/flat_color");
-    material_set_property_vec4(mat, "flat_color", str_to_color_key(color));
-    gm_draw(g, mat);
+    ResourceHandle mat = Material_create("Materials/flat_color");
+    material_set_property_vec4(resource_data(Material, mat), "flat_color", color);
+    gm_draw(g, resource_data(Material, mat));
     gm_free(g);
+    destroy_resource_handle(&mat);
 }
 
 extern void loop_program(void)
 {
-    // for (int i = 0; i < 10; i++) {
-    //     float theta = 6 * i * 2*M_PI / 10;
-    //     float thetap = 6 * (i + 1) * 2*M_PI / 10;
-    //     paint_line(new_vec3(sin(theta), cos(theta), i*0.1), new_vec3(sin(thetap), cos(thetap), i*0.1), "g");
-    // }
+    // paint_line(new_vec3(0,0,0), new_vec3(50,50,50), "g");
+
+    for (int i = 0; i < 100; i++) {
+        float theta = 6 * i * 2*M_PI / 100;
+        float thetap = 6 * (i + 1) * 2*M_PI / 100;
+        // paint_line(new_vec3(sin(theta), cos(theta), i*0.1), new_vec3(sin(thetap), cos(thetap), i*0.1), str_to_color_key("g"));
+        paint_line(new_vec3(sin(theta), cos(theta), i*0.1), new_vec3(sin(thetap), cos(thetap), i*0.1), new_vec4(0,0,i/100.0,1));
+    }
 }
 
 

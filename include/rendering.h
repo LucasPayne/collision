@@ -163,11 +163,15 @@ void synchronize_shader_blocks(void);
 /*--------------------------------------------------------------------------------
   Material types
 --------------------------------------------------------------------------------*/
-#define MATERIAL_MAX_SHADER_BLOCKS 64
-#define MATERIAL_MAX_TEXTURES 80
-#define MATERIAL_MAX_TEXTURE_NAME_LENGTH 64
-#define MATERIAL_MAX_PROPERTIES 80
-#define MATERIAL_MAX_PROPERTY_NAME_LENGTH 64
+////// note: This resource consists of a lot of string data. Possibly it would be best
+// not to provide for the maximal size, but to somehow have this as a dynamic resource.
+// Static components would be in the root struct, then it would point to a string table which
+// it will free when it is unloaded.
+#define MATERIAL_MAX_SHADER_BLOCKS 4
+#define MATERIAL_MAX_TEXTURES 4
+#define MATERIAL_MAX_TEXTURE_NAME_LENGTH 32
+#define MATERIAL_MAX_PROPERTIES 16
+#define MATERIAL_MAX_PROPERTY_NAME_LENGTH 32
 typedef struct MaterialPropertyInfo_s {
     char name[MATERIAL_MAX_PROPERTY_NAME_LENGTH + 1];
     GLint location;
@@ -210,6 +214,9 @@ typedef struct /* Resource */ Material_RTID {
     void *properties;
 } Material;
 void Material_load(void *resource, char *path);
+void Material_unload(void *resource);
+// Create a oneoff material, not backed by a dictionary, by the path of a material type.
+ResourceHandle Material_create(char *material_type_path);
 
 // This is the (currently) only given-from-the-start shader block. This is not meant to be
 // accessed with the macro syntax, but corresponds to a buffer of a given size

@@ -60,6 +60,6 @@ void init_resources_rendering(void)
     add_resource_type_no_unload(Texture);
 
     add_resource_type_no_unload(MaterialType);
-    add_resource_type_no_unload(Material);
+    add_resource_type(Material);
 }
 

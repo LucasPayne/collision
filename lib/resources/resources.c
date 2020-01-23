@@ -1,5 +1,12 @@
 /*================================================================================
     Resources, resource management, and resource loading module.
+
+notes:
+    Think more about oneoff resources. Should there be heap or pool allocated "oneoff" resources,
+    not backed by a dictionary, for procedural objects for example? What about also giving these
+    names or ("virtual") paths so they can be a shared resource?
+
+    Also, a Hydro Thunder-like frame-stack could be better, especially for resources created for drawing dynamic geometry.
 ================================================================================*/
 #include <stdio.h>
 #include <stdlib.h>
@@ -92,9 +99,26 @@ ResourceHandle ___new_resource_handle(ResourceType resource_type, char *path)
     resource_handle._id.uuid = hash_crc32(resource_handle.data.path); // hopefully universally unique.
     return resource_handle;
 }
+void destroy_resource_handle(ResourceHandle *handle)
+{
+    if (handle->path_backed) {
+        // Free the path string from the heap.
+        if (handle->data.path != NULL) free(handle->data.path);
+    } else {
+        // This is a oneoff resource, unload it (using the resource type's unload function) and free it from the heap.
+        ResourceTypeInfo *resource_type = &g_resource_type_info[handle->_id.type];
+        // Not all resource types need unload functions, since that is only required as "tear-down" needed in addition to freeing of the memory,
+        // for example if a resource owns an ID for a vram object or owns a dynamic array.
+        if (handle->data.resource != NULL) {
+            if (resource_type->unload != NULL) resource_type->unload(handle->data.resource);
+            free(handle->data.resource);
+        }
+    }
+}
+
 void *___oneoff_resource(ResourceType resource_type, ResourceHandle *handle)
 {
-    // Create a oneoff, non-path-backed, non-shareable resource, set the resource handle
+    // Create a oneoff, non-path-backed, non-shareable resource.
     handle->path_backed = false;
     handle->_id = null_resource_id();
     handle->_id.type = resource_type;

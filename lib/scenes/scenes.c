@@ -9,7 +9,7 @@
 #include "resources.h"
 #include "entity.h"
 #include "scenes.h"
-#include "aspect_library/gameobjects.h"
+#include "bases/interactive_3D.h" //---...
 #include "matrix_mathematics.h"
 #include "rendering.h"
 

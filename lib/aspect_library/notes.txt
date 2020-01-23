@@ -1,2 +1,0 @@
-I don't think I will be using aspects in another way for a while, but aspects should
-_not_ implement "gameobjects". This is an "aspect library".

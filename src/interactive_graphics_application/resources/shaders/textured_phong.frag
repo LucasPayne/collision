@@ -16,5 +16,10 @@ out vec4 color;
 
 void main(void)
 {
+    for (int i = 0; i < MAX_NUM_DIRECTIONAL_LIGHTS; i++) {
+        if (directional_lights[i].is_active) {
+
+        }
+    }
     color = texture(diffuse_map, fTexCoord);
 }

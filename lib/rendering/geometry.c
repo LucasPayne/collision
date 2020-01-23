@@ -324,6 +324,13 @@ Geometry gm_done(void)
 void gm_draw(Geometry geometry, Material *material)
 {
     MaterialType *mt = resource_data(MaterialType, material->material_type);
+
+    // Check that the vertex formats are compatible, that is, there are no attributes required by the material that the geometry doesn't have.
+    if ((mt->vertex_format & ~geometry.vertex_format) != 0)  {
+        fprintf(stderr, ERROR_ALERT "Attempted to render geometry which does not have enough of the required attributes for the material it is being rendered with.\n");
+        exit(EXIT_FAILURE);
+    }
+
     glUseProgram(mt->program_id);
     // Bind the textures
     for (int i = 0; i < mt->num_textures; i++) {

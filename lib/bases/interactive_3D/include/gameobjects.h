@@ -138,4 +138,17 @@ ASPECT_PROPERTIES()
 } Camera;
 void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far);
 
+/*--------------------------------------------------------------------------------
+    Lights
+--------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------
+    A directional light depends on a transform, but only for its rotation.
+--------------------------------------------------------------------------------*/
+extern AspectType DirectionalLight_TYPE_ID;
+typedef struct DirectionalLight_s {
+ASPECT_PROPERTIES()    
+    vec4 color;
+} DirectionalLight;
+DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca);
+
 #endif // HEADER_DEFINED_ASPECT_LIBRARY_GAMEOBJECTS

@@ -7,12 +7,15 @@ property float y
 property float z
 property float u
 property float v
+property float normal_x
+property float normal_y
+property float normal_z
 element face 2
 property list uchar int vertex_index
 end_header
--1 -1 0     0 1
-1 -1 0      1 1
-1 1 0       1 0
--1 1 0      0 0
+-1 -1 0     0 1    -1 -1 0
+1 -1 0      1 1    1 -1 0
+1 1 0       1 0    1 1 0
+-1 1 0      0 0    -1 1 0
 3 0 1 2
 3 0 2 3

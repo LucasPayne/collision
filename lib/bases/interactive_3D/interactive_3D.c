@@ -29,7 +29,6 @@ base_libs:
     + data_dictionary
     + matrix_mathematics
     + entity
-    + aspect_library/gameobjects
     + iterator
     + resources
     + rendering
@@ -38,6 +37,8 @@ base_libs:
 #define BASE_DIRECTORY "/home/lucas/collision/lib/bases/interactive_3D/"
 #define PROJECT_DIRECTORY "/home/lucas/collision/"
 #include "bases/interactive_3D.h"
+//---
+#include "gameobjects.c"
 
 static GLFWwindow *window;
 
@@ -159,7 +160,7 @@ static void init_base(void)
     add_shader_block(MaterialProperties); // The definition of this block is part of the rendering module.
     add_shader_block(StandardLoopWindow);
     add_shader_block(Standard3D);
-    // add_shader_block(Lights);
+    add_shader_block(Lights);
     
     // Initialize the entity and aspect system, and load type data for aspects
     // forming the "GameObject" library.

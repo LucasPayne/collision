@@ -3,7 +3,7 @@
 
 quad < Geometry (
     type: ply;
-    vertex_format: 3U;
+    vertex_format: 3NU;
     path: Meshes/quad.ply;
 );
 icosohedron < Geometry (

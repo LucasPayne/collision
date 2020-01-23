@@ -130,7 +130,7 @@ build/lib/bases/gl_debug/gl_debug.o: lib/bases/gl_debug/gl_debug.c $$(shell cat 
 #
 %: $(SRC_DIR)/$$@/$$@.c $$(shell cat $(SRC_DIR)/$$@/$$@.c | cslots project_libs --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
 	# (cd $(TOOLS_DIR)/gen_shader_blocks ; make gen_shader_blocks)
-	$(TOOLS_DIR)/gen_shader_blocks/gen_shader_blocks glsl/shader_blocks/standard.shader_blocks -c include/shader_blocks -g glsl/shader_blocks
+	# $(TOOLS_DIR)/gen_shader_blocks/gen_shader_blocks glsl/shader_blocks/standard.shader_blocks -c include/shader_blocks -g glsl/shader_blocks
 	mkdir -p $(APPLICATIONS_DIR)
 	$(CC) -o "$(APPLICATIONS_DIR)/$@" $^ $(CFLAGS)
 #================================================================================

@@ -142,7 +142,7 @@ extern void init_program(void)
     
     {
         EntityID quad = new_entity(4);
-        Transform_set(entity_add_aspect(quad, Transform), 0,0,0, 0,0,0);
+        Transform_set(entity_add_aspect(quad, Transform), 0,0,-2, 0,0,M_PI/2);
         Body *body = entity_add_aspect(quad, Body);
         body->scale = 1;
         body->material = Material_create("Materials/textured_phong");

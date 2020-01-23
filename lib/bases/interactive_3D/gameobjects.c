@@ -13,16 +13,6 @@ Currently, this is not really a "library". A useful "game object" system above
 the entity and resource systems should probably only be made by editing this a lot
 and then deciding what aspects are useful, then making it a proper library.
 --------------------------------------------------------------------------------*/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include "rendering.h"
-#include "matrix_mathematics.h"
-#include "resources.h"
-#include "entity.h"
-#include "aspect_library/gameobjects.h"
 
 void init_aspects_gameobjects(void)
 {
@@ -31,6 +21,7 @@ void init_aspects_gameobjects(void)
     new_default_manager(Logic, NULL);
     new_default_manager(Input, NULL);
     new_default_manager(Camera, NULL);
+    new_default_manager(DirectionalLight, NULL);
 }
 
 /*================================================================================
@@ -95,6 +86,15 @@ void Input_init(Input *inp, uint8_t input_type, /* generic function pointer (no 
     inp->input_type = input_type;
     inp->callback.key = (KeyListener) callback; // cast to a function, does not matter which type.
     inp->listening = listening;
+}
+
+/*================================================================================
+    Lights
+================================================================================*/
+AspectType DirectionalLight_TYPE_ID;
+DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca)
+{
+    directional_light->color = new_vec4(cr, cg, cb, ca);
 }
 
 /*================================================================================

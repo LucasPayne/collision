@@ -2,9 +2,11 @@
 project_libs:
     + bases/interactive_3D
     + scenes
+    + painting
 --------------------------------------------------------------------------------*/
 #include "bases/interactive_3D.h"
 #include "scenes.h"
+#include "painting.h"
 
 //--------------------------------------------------------------------------------
 // Testing and debugging.
@@ -65,6 +67,8 @@ InputListener(input_test_1)
 
 extern void init_program(void)
 {
+    painting_init(); //---
+    
     resource_path_add("Meshes", "resources/meshes");
     resource_path_add("Images", "resources/images");
     resource_path_add("Shaders", "resources/shaders");
@@ -97,7 +101,7 @@ extern void init_program(void)
         } else {
             material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
         }
-        body->geometry = new_resource_handle(Geometry, "Models/quad");
+        body->geometry = new_resource_handle(Geometry, frand() > 0.5 ? "Models/quad" : "Models/cube");
         Logic *logic = entity_add_aspect(thing, Logic);
         logic->update = logic_misc1;
     }
@@ -112,22 +116,6 @@ extern void init_program(void)
 }
 
 
-vec4 str_to_color_key(char *color)
-{
-    #define col(STR,R,G,B,A) if (strcmp(color, ( STR )) == 0) return new_vec4((R),(G),(B),(A));
-    col("g", 0,1,0,1);
-    col("r", 1,0,0,1);
-    col("y", 1,0,1,1);
-    col("b", 0,0,1,1);
-    col("k", 0,0,0,1);
-    col("w", 1,1,1,1);
-    col("gr", 0.4,0.4,0.4,1);
-    fprintf(stderr, ERROR_ALERT "Unsupported color \"%s\".\n", color);
-    exit(EXIT_FAILURE);
-    #undef col
-}
-
-
 extern void loop_program(void)
 {
     // paint_line(new_vec3(0,0,0), new_vec3(50,50,50), "g");
@@ -136,8 +124,14 @@ extern void loop_program(void)
         float theta = 6 * i * 2*M_PI / 100;
         float thetap = 6 * (i + 1) * 2*M_PI / 100;
         // paint_line(new_vec3(sin(theta), cos(theta), i*0.1), new_vec3(sin(thetap), cos(thetap), i*0.1), str_to_color_key("g"));
-        paint_line(new_vec3(sin(theta), cos(theta), i*0.1), new_vec3(sin(thetap), cos(thetap), i*0.1), new_vec4(0,0,i/100.0,1));
+        paint_line(sin(theta), cos(theta), i*0.1,
+                   sin(thetap), cos(thetap), i*0.1,
+                   0,0,i/100.0,1);
     }
+    float loop[] = {
+        0,0,0,  5,0,0,  5,5,0,  0,5,0
+    };
+    paint_loop(loop, 4, 1,0,0,1);
 }
 
 

@@ -1,0 +1,18 @@
+
+// Materials < (
+//     #include(resources/materials);
+// );
+// 
+// Textures < (
+//     #include(resources/textures);
+// );
+// 
+// Models < (
+//     #include(resources/models);
+// );
+
+// Required for the painting module. Need a better way to do this.
+Painting < (
+    #include(../../lib/painting/painting_resources);
+);
+

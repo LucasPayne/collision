@@ -637,16 +637,16 @@ static const YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    4,    1,    1,    5,    1,    1,    1,    1,    6,
-        7,    1,    1,    1,    1,    1,    8,    9,    9,    9,
-        9,    9,    9,    9,    9,    9,    9,   10,   11,   12,
-        1,    1,    1,    1,    9,    9,    9,    9,    9,    9,
-        9,    9,    9,    9,    9,    9,    9,    9,    9,    9,
-        9,    9,    9,    9,    9,    9,    9,    9,    9,    9,
-        1,    1,    1,    1,    9,    1,    9,    9,   13,   14,
+        7,    1,    1,    1,    1,    8,    9,   10,   10,   10,
+       10,   10,   10,   10,   10,   10,   10,   11,   12,   13,
+        1,    1,    1,    1,   10,   10,   10,   10,   10,   10,
+       10,   10,   10,   10,   10,   10,   10,   10,   10,   10,
+       10,   10,   10,   10,   10,   10,   10,   10,   10,   10,
+        1,    1,    1,    1,   10,    1,   10,   10,   14,   15,
 
-       15,    9,    9,    9,   16,    9,    9,   17,    9,   18,
-        9,    9,    9,    9,    9,    9,   19,    9,    9,    9,
-        9,    9,    1,    1,    1,    1,    1,    1,    1,    1,
+       16,   10,   10,   10,   17,   10,   10,   18,   10,   19,
+       10,   10,   10,   10,   10,   10,   20,   10,   10,   10,
+       10,   10,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
@@ -663,19 +663,19 @@ static const YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static const YY_CHAR yy_meta[20] =
+static const YY_CHAR yy_meta[21] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,    2,    2,    1,
-        3,    1,    2,    2,    2,    2,    2,    2,    2
+        1,    1,    1,    1,    1,    1,    1,    2,    3,    3,
+        1,    4,    1,    3,    3,    3,    3,    3,    3,    3
     } ;
 
 static const flex_int16_t yy_base[43] =
     {   0,
-        0,    0,   42,   41,   41,   40,   26,   25,   40,   47,
-       47,   47,   47,   47,   31,    0,   47,   47,   47,    0,
-       47,   47,   20,    0,    0,    0,   24,   19,   16,   20,
-       18,   26,    0,   24,   19,   47,   47,   19,   22,   27,
-       25,   26
+        0,    0,   47,   46,   46,   45,   30,   29,   45,   52,
+       52,   52,   52,   52,   35,    0,   52,   52,   52,    0,
+       52,   52,   24,    0,    0,    0,   28,   23,   20,   24,
+       22,   31,    0,   29,   23,   52,   52,   20,   24,   31,
+       28,   30
     } ;
 
 static const flex_int16_t yy_def[43] =
@@ -687,26 +687,28 @@ static const flex_int16_t yy_def[43] =
        37,   37
     } ;
 
-static const flex_int16_t yy_nxt[67] =
+static const flex_int16_t yy_nxt[73] =
     {   0,
-       10,   11,   11,   11,   12,   13,   14,   15,   16,   17,
-       18,   19,   16,   16,   16,   16,   16,   16,   16,   10,
-       10,   10,   21,   21,   21,   26,   26,   34,   25,   36,
-       35,   33,   32,   31,   30,   29,   28,   27,   24,   37,
-       23,   23,   22,   22,   20,   20,    9,   37,   37,   37,
+       10,   11,   11,   11,   12,   13,   14,   10,   15,   16,
+       17,   18,   19,   16,   16,   16,   16,   16,   16,   16,
+       10,   10,   10,   10,   21,   21,   21,   21,   26,   26,
+       26,   34,   34,   25,   36,   35,   33,   32,   31,   30,
+       29,   28,   27,   24,   37,   23,   23,   22,   22,   20,
+       20,    9,   37,   37,   37,   37,   37,   37,   37,   37,
        37,   37,   37,   37,   37,   37,   37,   37,   37,   37,
-       37,   37,   37,   37,   37,   37
+       37,   37
     } ;
 
-static const flex_int16_t yy_chk[67] =
+static const flex_int16_t yy_chk[73] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,   38,
-       38,   38,   39,   39,   39,   41,   41,   42,   40,   35,
-       34,   32,   31,   30,   29,   28,   27,   23,   15,    9,
-        8,    7,    6,    5,    4,    3,   37,   37,   37,   37,
+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+       38,   38,   38,   38,   39,   39,   39,   39,   41,   41,
+       41,   42,   42,   40,   35,   34,   32,   31,   30,   29,
+       28,   27,   23,   15,    9,    8,    7,    6,    5,    4,
+        3,   37,   37,   37,   37,   37,   37,   37,   37,   37,
        37,   37,   37,   37,   37,   37,   37,   37,   37,   37,
-       37,   37,   37,   37,   37,   37
+       37,   37
     } ;
 
 static yy_state_type yy_last_accepting_state;
@@ -759,9 +761,9 @@ struct FileStackEntry {
 };
 struct FileStackEntry *g_file_stack_top = NULL;
 
-#line 763 "data_dictionary_scanner.yy.c"
-
 #line 765 "data_dictionary_scanner.yy.c"
+
+#line 767 "data_dictionary_scanner.yy.c"
 
 #define INITIAL 0
 #define ValueText 1
@@ -981,10 +983,10 @@ YY_DECL
 		}
 
 	{
-#line 46 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 47 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 
 
-#line 988 "data_dictionary_scanner.yy.c"
+#line 990 "data_dictionary_scanner.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1017,7 +1019,7 @@ yy_match:
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
 			++yy_cp;
 			}
-		while ( yy_base[yy_current_state] != 47 );
+		while ( yy_base[yy_current_state] != 52 );
 
 yy_find_action:
 		yy_act = yy_accept[yy_current_state];
@@ -1043,23 +1045,23 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 48 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 49 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { BEGIN CommentOneLine; }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 49 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 50 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { /* */ }
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 50 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 51 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { BEGIN INITIAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 52 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 53 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     if (trace_lex) printf("Reading #-directive...\n");
     BEGIN Directive;
@@ -1067,7 +1069,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 56 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 57 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     char *start = strchr(yytext, '(') + 1;
     char *end = strchr(yytext, ')');
@@ -1085,33 +1087,33 @@ YY_RULE_SETUP
         fprintf(stderr, "Attempted to include unknown data-definition file \"%s\".\n", buf);
         exit(EXIT_FAILURE);
     }
-    dd_push_file(file);
     if (trace_lex) printf("Started including data-definition file \"%s\".\n", buf);
+    dd_push_file(file);
     BEGIN INITIAL;
 }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 78 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 79 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     if (trace_lex) printf("IDENTIFIER: %s\n", yytext);
     yylval.symbol = new_symbol(yytext); RETURN(IDENTIFIER);
 }
 	YY_BREAK
 case 7:
-#line 83 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
-case 8:
 #line 84 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
-case 9:
+case 8:
 #line 85 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+case 9:
+#line 86 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 case 10:
 YY_RULE_SETUP
-#line 85 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 86 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { if (trace_lex) printf("symbol: %c\n", yytext[0]); RETURN(yytext[0]); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 87 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 88 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     if (trace_lex) printf("symbol: :\n");
     if (trace_lex) printf("getting value text\n");
@@ -1122,14 +1124,14 @@ YY_RULE_SETUP
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
-#line 93 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 94 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { /* eat whitespace */ }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(ValueText):
 case YY_STATE_EOF(CommentOneLine):
 case YY_STATE_EOF(Directive):
-#line 95 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 96 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     // Complete lexing if at the bottom of the file stack, or pop a file and continue lexing where the previous open file was left of.
     dd_pop_file();
@@ -1142,7 +1144,7 @@ case YY_STATE_EOF(Directive):
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 104 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 105 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     if (trace_lex) printf("VALUE_TEXT: \"%s\":\n", yytext);
     yylval.symbol = new_symbol(yytext + 1);
@@ -1152,10 +1154,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 111 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 112 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1159 "data_dictionary_scanner.yy.c"
+#line 1161 "data_dictionary_scanner.yy.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2158,7 +2160,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 111 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 112 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
 
 #include "helper_definitions.h"
 

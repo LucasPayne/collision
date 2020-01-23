@@ -11,4 +11,8 @@ icosohedron < Geometry (
     vertex_format: 3;
     path: Meshes/icosohedron.ply;
 );
-
+cube < Geometry (
+    type: ply;
+    vertex_format: 3U;
+    path: Meshes/cube.ply;
+);

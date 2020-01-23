@@ -1,0 +1,14 @@
+
+Materials < (
+    flat_color < MaterialType (
+        vertex_format: 3;
+        fragment_shader: Painting/shaders/flat_color.frag;
+        vertex_shader: Painting/shaders/passthrough.vert;
+        num_blocks: 2;
+        string block0: Standard3D;
+        string block1: MaterialProperties;
+    );
+);
+
+
+

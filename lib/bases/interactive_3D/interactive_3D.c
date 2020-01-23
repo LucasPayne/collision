@@ -211,13 +211,42 @@ int main(void)
     gladLoadGL();
     glfwSwapInterval(1);
 
+    GLbitfield clear_mask = GL_COLOR_BUFFER_BIT; // To be |='d if another buffer is being used.
     float clear_color[4];
     if (!dd_get(app_config, "clear_color", "vec4", clear_color)) config_error("clear_color");
     glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
     glfwSetFramebufferSizeCallback(window, reshape);
     glfwSetKeyCallback(window, key_callback);
+    float bg_color[4]; // Background behind rectangle, visible if the window proportions do not match the aspect ratio.
+    if (!dd_get(app_config, "bg_color", "vec4", clear_color)) config_error("clear_color");
 
     if (!dd_get(app_config, "aspect_ratio", "float", &ASPECT_RATIO)) config_error("aspect_ratio");
+
+    char *cull_mode;
+    if (!dd_get(app_config, "cull_mode", "string", &cull_mode)) config_error("cull_mode");
+    if (strcmp(cull_mode, "back") == 0) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+    } else if (strcmp(cull_mode, "front") == 0) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+    } else if (strcmp(cull_mode, "none") == 0) {
+        // no culling
+    } else {
+        fprintf(stderr, "Invalid cull_mode option set. The options are \"front\", \"back\", and \"none\".\n");
+        exit(EXIT_FAILURE);
+    }
+    free(cull_mode);
+
+    bool depth_test;
+    if (!dd_get(app_config, "depth_test", "bool", &depth_test)) config_error("depth_test");
+    if (depth_test) {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        clear_mask |= GL_DEPTH_BUFFER_BIT; // Must now clear the depth buffer each frame.
+    } else {
+        // Nothing needs to be done.
+    }
 
     init_base();
 
@@ -237,16 +266,16 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
         GLfloat clear_color[4];
         glGetFloatv(GL_COLOR_CLEAR_VALUE, clear_color);
-        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
         glDisable(GL_SCISSOR_TEST);
-        glClear(GL_COLOR_BUFFER_BIT); //----config: clear mask
+        glClear(clear_mask); //----config: clear mask
 
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
         glEnable(GL_SCISSOR_TEST);
         glScissor(viewport[0], viewport[1], viewport[2], viewport[3]);
         glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
-        glClear(GL_COLOR_BUFFER_BIT); //----config: clear mask
+        glClear(clear_mask);
 
         loop_base();
 

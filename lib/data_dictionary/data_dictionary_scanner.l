@@ -42,6 +42,7 @@ struct FileStackEntry *g_file_stack_top = NULL;
 %x Directive
 
 NAME    [/_A-Za-z0-9]+
+PATH    [/._A-Za-z0-9]+
 
 %%
 
@@ -53,7 +54,7 @@ NAME    [/_A-Za-z0-9]+
     if (trace_lex) printf("Reading #-directive...\n");
     BEGIN Directive;
 }
-<Directive>"include("{NAME}");" {
+<Directive>"include("{PATH}");" {
     char *start = strchr(yytext, '(') + 1;
     char *end = strchr(yytext, ')');
     const int buf_size = 4096;
@@ -70,8 +71,8 @@ NAME    [/_A-Za-z0-9]+
         fprintf(stderr, "Attempted to include unknown data-definition file \"%s\".\n", buf);
         exit(EXIT_FAILURE);
     }
-    dd_push_file(file);
     if (trace_lex) printf("Started including data-definition file \"%s\".\n", buf);
+    dd_push_file(file);
     BEGIN INITIAL;
 }
 

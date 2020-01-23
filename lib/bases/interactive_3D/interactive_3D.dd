@@ -59,8 +59,11 @@ Body < Aspect (
 ApplicationConfiguration < (
     ivec2 gl_version;
     bool core_profile;
-    vec4 clear_color: 0,0,0,1;
+    vec4 clear_color: 1,1,1,1;
+    vec4 bg_color: 0,0,0,1;
     float aspect_ratio: 1;
+    string cull_mode: front;
+    bool depth_test: true;
 );
 app_config < ApplicationConfiguration (
     #include(conf);

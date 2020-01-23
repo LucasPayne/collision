@@ -39,8 +39,25 @@ base_libs:
 #define PROJECT_DIRECTORY "/home/lucas/collision/"
 #include "bases/interactive_3D.h"
 
+static GLFWwindow *window;
+
 DataDictionary *g_data; // Global data dictionary for the application.
 float ASPECT_RATIO;
+static bool g_raw_mouse = false; // If enabled in config, a meta-key will toggle this.
+static const int g_glfw_raw_mouse_key = GLFW_KEY_F12;
+static void toggle_raw_mouse(void)
+{
+    ///////--- Why does it only toggle once?
+    if (g_raw_mouse) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+    } else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    }
+    g_raw_mouse = !g_raw_mouse;
+}
+
 
 float time = 0;
 float dt = 0;
@@ -64,6 +81,12 @@ static void key_callback(GLFWwindow *window, int key,
 {
     key_callback_quit(window, key, scancode, action, mods);
     key_callback_arrows_down(window, key, scancode, action, mods);
+
+    if (g_raw_mouse) { // if the raw mouse option is enabled, it is toggleable with a meta-key.
+        if (action == GLFW_PRESS && key == g_glfw_raw_mouse_key) {
+            toggle_raw_mouse();
+        }
+    }
 
     // Send input events to Input aspects (listeners and handlers).
     for_aspect(Input, inp)
@@ -162,6 +185,8 @@ static void loop_base(void)
     loop_program();
 }
 
+
+
 int main(void)
 {
     DD *base_config = dd_fopen(BASE_DIRECTORY "interactive_3D.dd");
@@ -201,8 +226,8 @@ int main(void)
     else              glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
     char *name = "Window";
-    GLFWwindow *window = glfwCreateWindow(1, 1, name, NULL, NULL);
-    if (!window) {
+    window = glfwCreateWindow(1, 1, name, NULL, NULL);
+    if (window == NULL) {
         fprintf(stderr, ERROR_ALERT "GLFW error: failed to create a window properly.\n");
         glfwTerminate();
         exit(EXIT_FAILURE);
@@ -210,15 +235,14 @@ int main(void)
     glfwMakeContextCurrent(window);
     gladLoadGL();
     glfwSwapInterval(1);
-
-    GLbitfield clear_mask = GL_COLOR_BUFFER_BIT; // To be |='d if another buffer is being used.
-    float clear_color[4];
-    if (!dd_get(app_config, "clear_color", "vec4", clear_color)) config_error("clear_color");
-    glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
     glfwSetFramebufferSizeCallback(window, reshape);
     glfwSetKeyCallback(window, key_callback);
+
+    GLbitfield clear_mask = GL_COLOR_BUFFER_BIT; // To be |='d if another buffer is being used.
+    float fg_color[4];
+    if (!dd_get(app_config, "fg_color", "vec4", fg_color)) config_error("fg_color");
     float bg_color[4]; // Background behind rectangle, visible if the window proportions do not match the aspect ratio.
-    if (!dd_get(app_config, "bg_color", "vec4", clear_color)) config_error("clear_color");
+    if (!dd_get(app_config, "bg_color", "vec4", bg_color)) config_error("bg_color");
 
     if (!dd_get(app_config, "aspect_ratio", "float", &ASPECT_RATIO)) config_error("aspect_ratio");
 
@@ -248,6 +272,23 @@ int main(void)
         // Nothing needs to be done.
     }
 
+    // Raw mouse input enable/disable, e.g. for 3D camera control.
+    // g_raw_mouse is a global variable so that it may be toggled with a meta-key.
+    bool raw_mouse;
+    if (!dd_get(app_config, "raw_mouse", "bool", &raw_mouse)) config_error("raw_mouse");
+    if (raw_mouse) {
+        // details: https://www.glfw.org/docs/latest/input_guide.html#input_mouse
+        if (glfwRawMouseMotionSupported()) {
+            g_raw_mouse = false; // make sure its switched off.
+            toggle_raw_mouse();  // now switch it on.
+        } else { 
+            fprintf(stderr, ERROR_ALERT "GLFW error: Could not find support for raw mouse motion.\n");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        g_raw_mouse = false;
+    }
+
     init_base();
 
     init_program();
@@ -263,9 +304,6 @@ int main(void)
         /* Clearing: window clear to black, viewport clear to the clear colour.
          * (restore clear colour after window clear)
          */
-        glClear(GL_COLOR_BUFFER_BIT);
-        GLfloat clear_color[4];
-        glGetFloatv(GL_COLOR_CLEAR_VALUE, clear_color);
         glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
         glDisable(GL_SCISSOR_TEST);
         glClear(clear_mask); //----config: clear mask
@@ -274,7 +312,7 @@ int main(void)
         glGetIntegerv(GL_VIEWPORT, viewport);
         glEnable(GL_SCISSOR_TEST);
         glScissor(viewport[0], viewport[1], viewport[2], viewport[3]);
-        glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
+        glClearColor(fg_color[0], fg_color[1], fg_color[2], fg_color[3]);
         glClear(clear_mask);
 
         loop_base();

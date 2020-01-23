@@ -61,13 +61,14 @@ extern void cursor_move_event(double x, double y)
 
 // Entity-attached input handlers.
 #define NewKeyListener(NAME) void NAME (Input *inp, int key, int action, int mods)
+#define NewMousePositionListener(NAME) void NAME (Input *inp, double x, double y)
 #define NewMouseMoveListener(NAME) void NAME (Input *inp, double x, double y)
 NewKeyListener(input_test_1)
 {
     Transform *t = get_sibling_aspect(inp, Transform);
     CASE(PRESS, I) t->x -= 1;
 }
-NewMouseMoveListener(mouse_move_test_1)
+NewMousePositionListener(mouse_position_test_1)
 {
     printf("mouse position: %g, %g\n", x, y);
 }
@@ -76,11 +77,8 @@ NewMouseMoveListener(camera_mouse_move)
 {
     Transform *t = get_sibling_aspect(inp, Transform);
     printf("Camera position: %f, %f, %f\n", t->x, t->y, t->z);
-    printf("mouse position: %g, %g\n", x, y);
+    printf("mouse velocity: %g, %g\n", x, y);
 }
-
-
-
 #undef CASE
 
 extern void init_program(void)

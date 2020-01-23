@@ -59,15 +59,29 @@ static void toggle_raw_mouse(void)
 }
 static void cursor_position_callback(GLFWwindow *window, double x, double y)
 {
-    // Send input events to Input aspects listening for mouse movements.
+    static bool set_last = false;
+    static double last_x;
+    static double last_y;
+    if (!set_last) { // so that the first relative position 0,0.
+        set_last = true;
+        last_x = x;
+        last_y = y;
+    }
+
+    // Send input events to Input aspects listening for mouse absolute or relative movements.
     for_aspect(Input, inp)
-        if (inp->input_type == INPUT_MOUSE_MOVE) {
-            inp->callback.mouse_move(inp, x, y);
+        if (inp->input_type == INPUT_MOUSE_POSITION) {
+            inp->callback.mouse_position(inp, x, y);
+        } else if (inp->input_type == INPUT_MOUSE_MOVE) {
+            inp->callback.mouse_move(inp, x - last_x, y - last_y);
         }
     end_for_aspect()
 
     // Call the application's move event handler.
     cursor_move_event(x, y);
+
+    last_x = x;
+    last_y = y;
 }
 
 float time = 0;

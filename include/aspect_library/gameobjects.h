@@ -105,16 +105,19 @@ ASPECT_PROPERTIES()
 --------------------------------------------------------------------------------*/
 struct Input_s;
 typedef void (*KeyListener)(struct Input_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
+typedef void (*MousePositionListener)(struct Input_s *, double, double); // x, y position of mouse in GLFW screen units.
 typedef void (*MouseMoveListener)(struct Input_s *, double, double); // x, y position of mouse in GLFW screen units.
 extern AspectType Input_TYPE_ID;
-#define INPUT_KEY 0
-#define INPUT_MOUSE_MOVE 1
+#define INPUT_KEY 0                // Key press and release.
+#define INPUT_MOUSE_POSITION 1     // Mouse position change.
+#define INPUT_MOUSE_MOVE 2         // Mouse position change, but given position relative to last mouse position event.
 typedef struct /* Aspect */ Input_s {
 ASPECT_PROPERTIES()
     bool listening;
     uint8_t input_type;
     union {
         KeyListener key;
+        MousePositionListener mouse_position;
         MouseMoveListener mouse_move;
     } callback;
 } Input;

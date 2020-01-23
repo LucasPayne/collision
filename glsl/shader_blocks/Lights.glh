@@ -3,14 +3,23 @@ This code was generated with the gen_shader_blocks tool, for synchronizing
 definitions between glsl and C.
 --------------------------------------------------------------------------------*/
 #define MAX_NUM_DIRECTIONAL_LIGHTS 32
-#define MAX_NUM_SPOTLIGHTS 32
+#define MAX_NUM_POINT_LIGHTS 32
 
 struct DirectionalLight {
-    vec4 color;
     vec3 direction;
+    vec4 color;
+};
+struct PointLight {
+    vec3 position;
+    float cubic_attenuation;
+    float quadratic_attenuation;
+    float linear_attenuation;
+    vec4 color;
 };
 
 layout (std140) uniform Lights {
     int num_directional_lights;
+    int num_point_lights;
     DirectionalLight directional_lights[32];
+    PointLight point_lights[32];
 };

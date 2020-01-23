@@ -127,8 +127,7 @@ ASPECT_PROPERTIES()
     /* mem_check(( LOGIC_ASPECT_POINTER )->data);\ */
 
 /*--------------------------------------------------------------------------------
-    An Input aspect allows the entity to listen for input events (if something in the application
-    sends those events through to the Input aspects).
+    An Input aspect allows the entity to listen for input events.
 --------------------------------------------------------------------------------*/
 struct Input_s;
 typedef void (*KeyListener)(struct Input_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
@@ -177,5 +176,18 @@ ASPECT_PROPERTIES()
     vec4 color;
 } DirectionalLight;
 void DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca);
+
+/*--------------------------------------------------------------------------------
+    Point light, omnidirectional light source.
+--------------------------------------------------------------------------------*/
+extern AspectType PointLight_TYPE_ID;
+typedef struct PointLight_s {
+ASPECT_PROPERTIES()
+    vec4 color;
+    float linear_attenuation;
+    float quadratic_attenuation;
+    float cubic_attenuation;
+} PointLight;
+void PointLight_init(PointLight *point_light, float linear_attenuation, float quadratic_attenuation, float cubic_attenuation, float cr, float cg, float cb, float ca);
 
 #endif // HEADER_DEFINED_INTERACTIVE_3D

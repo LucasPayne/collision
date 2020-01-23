@@ -211,6 +211,9 @@ static void loop_base(void)
     end_for_aspect()
 
     // Handle lights.
+    // --------------
+    // Directional lights.
+{
     int index = 0;
     for_aspect(DirectionalLight, directional_light)
         if (index >= MAX_NUM_DIRECTIONAL_LIGHTS) {
@@ -224,10 +227,31 @@ static void loop_base(void)
         vec4 direction = matrix_vec4(&m, new_vec4(0,0,1,1));
         set_uniform_vec3(Lights, directional_lights[index].direction, new_vec3(direction.vals[0],direction.vals[1],direction.vals[2]));
         set_uniform_vec4(Lights, directional_lights[index].color, directional_light->color);
-        index++;
+        index ++;
     end_for_aspect()
     set_uniform_int(Lights, num_directional_lights, index);
-
+    // Point lights.
+}
+{
+    #if 1
+    int index = 0;
+    for_aspect(PointLight, point_light)
+        if (index >= MAX_NUM_POINT_LIGHTS) {
+            fprintf(stderr, ERROR_ALERT "scene error: Too many point lights have been created. The maximum number is set to %d.\n", MAX_NUM_POINT_LIGHTS);
+            exit(EXIT_FAILURE);
+        }
+        Transform *t = get_sibling_aspect(point_light, Transform);
+        set_uniform_vec3(Lights, point_lights[index].position, new_vec3(t->x, t->y, t->z));
+        set_uniform_vec4(Lights, point_lights[index].color, point_light->color);
+        set_uniform_float(Lights, point_lights[index].linear_attenuation, point_light->linear_attenuation);
+        set_uniform_float(Lights, point_lights[index].quadratic_attenuation, point_light->quadratic_attenuation);
+        set_uniform_float(Lights, point_lights[index].cubic_attenuation, point_light->cubic_attenuation);
+    
+        index ++;
+    end_for_aspect()
+    set_uniform_int(Lights, num_point_lights, index);
+    #endif
+}
     render();
     loop_program();
 }
@@ -348,12 +372,11 @@ int main(void)
         time = glfwGetTime();
         dt = time - last_time;
 
-        /* Clearing: window clear to black, viewport clear to the clear colour.
-         * (restore clear colour after window clear)
+        /* Clearing: window clear to background color, viewport clear to the foreground color.
          */
         glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
         glDisable(GL_SCISSOR_TEST);
-        glClear(clear_mask); //----config: clear mask
+        glClear(clear_mask);
 
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);

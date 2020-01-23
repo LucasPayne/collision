@@ -22,6 +22,7 @@ void init_aspects_gameobjects(void)
     new_default_manager(Input, NULL);
     new_default_manager(Camera, NULL);
     new_default_manager(DirectionalLight, NULL);
+    new_default_manager(PointLight, NULL);
 }
 
 /*================================================================================
@@ -96,6 +97,15 @@ void DirectionalLight_init(DirectionalLight *directional_light, float cr, float 
 {
     directional_light->color = new_vec4(cr, cg, cb, ca);
 }
+AspectType PointLight_TYPE_ID;
+void PointLight_init(PointLight *point_light, float linear_attenuation, float quadratic_attenuation, float cubic_attenuation, float cr, float cg, float cb, float ca)
+{
+    point_light->color = new_vec4(cr, cg, cb, ca);
+    point_light->linear_attenuation = linear_attenuation;
+    point_light->quadratic_attenuation = quadratic_attenuation;
+    point_light->cubic_attenuation = cubic_attenuation;
+}
+
 
 /*================================================================================
     Camera

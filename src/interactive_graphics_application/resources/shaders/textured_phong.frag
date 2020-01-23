@@ -26,12 +26,20 @@ void main(void)
 
     // for (int i = 0; i < MAX_NUM_DIRECTIONAL_LIGHTS; i++) {
     for (int i = 0; i < num_directional_lights; i++) {
-            // litness += max(0, dot(fNormal, -directional_lights[i].direction));
-            //---calculating normals outward from centre of model
-            float intensity = (1 - ambient) * max(0, dot(fPosition.xyz - model_position, -directional_lights[i].direction));
-            color += directional_lights[i].color * vec4(intensity,intensity,intensity,1);
-        // }
+        // litness += max(0, dot(fNormal, -directional_lights[i].direction));
+        //---calculating normals outward from centre of model
+        float intensity = (1 - ambient) * max(0, dot(normalize(fPosition.xyz - model_position), -directional_lights[i].direction));
+        color += directional_lights[i].color * vec4(intensity,intensity,intensity,1);
     }
+
+    for (int i = 0; i < num_point_lights; i++) {     
+        //---calculating normals outward from centre of model
+        float intensity = (1 - ambient) * max(0, dot(normalize(fPosition.xyz - model_position), -normalize(fPosition.xyz - point_lights[i].position)));
+        // color += point_lights[i].color * vec4(intensity,intensity,intensity,1);
+        color += vec4(intensity,intensity,intensity,1);
+    }
+
+
     color *= texture(diffuse_map, fTexCoord);
 
 #endif

@@ -36,6 +36,17 @@ static void camera_controls(Logic *logic)
     if (alt_arrow_key_down(Up)) t->z += speed * dt;
     if (alt_arrow_key_down(Down)) t->z -= speed * dt;
 }
+static void test_controls(Logic *logic)
+{
+    Transform *t = get_sibling_aspect(logic, Transform);
+    float speed = 20;
+    if (arrow_key_down(Right)) t->x -= speed * dt;
+    if (arrow_key_down(Left)) t->x += speed * dt;
+    if (arrow_key_down(Up)) t->z += speed * dt;
+    if (arrow_key_down(Down)) t->z -= speed * dt;
+}
+
+
 static void quad_test_update(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
@@ -184,6 +195,18 @@ extern void init_program(void)
         DirectionalLight *directional_light = entity_add_aspect(light, DirectionalLight);
         directional_light->color = new_vec4(1,1,0.1,1);
         Input_init(entity_add_aspect(light, Input), INPUT_KEY, light_test_key, true);
+    }
+    {
+        EntityID light = new_entity(4);
+        Transform_set(entity_add_aspect(light, Transform), 1,0,0,  0,0,0);
+        PointLight_init(entity_add_aspect(light, PointLight),  10,3,1,  1,1,1,1);
+        Logic *logic = entity_add_aspect(light, Logic);
+        logic->update = test_controls;
+
+        Body *body = entity_add_aspect(light, Body);
+        body->scale = 0.003;
+        body->material = Material_create("Materials/red");
+        body->geometry = new_resource_handle(Geometry, "Models/icosohedron");
     }
     
     // open_scene(g_data, "Scenes/scene1");

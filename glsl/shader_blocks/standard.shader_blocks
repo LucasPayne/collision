@@ -15,21 +15,20 @@ block StandardLoopWindow {
 
 block Lights {
     #define MAX_NUM_DIRECTIONAL_LIGHTS 32
-    #define MAX_NUM_SPOTLIGHTS 32
+    #define MAX_NUM_POINT_LIGHTS 32
     struct DirectionalLight {
-        vec3 direction;
         vec4 color;
+        vec3 direction;
     };
-    // struct SpotLight {
-    //     float linear_attenuation;
-    //     bool is_active;
-    //     float pulse_rate;
-    //     vec3 position;
-    //     float quadratic_attenuation;
-    //     vec4 color;
-    //     float cubic_attenuation;
-    // };
+    struct PointLight {
+        vec4 color;
+        float linear_attenuation;
+        float quadratic_attenuation;
+        float cubic_attenuation;
+        vec3 position;
+    };
     int num_directional_lights;
+    int num_point_lights;
     DirectionalLight directional_lights[MAX_NUM_DIRECTIONAL_LIGHTS];
-    // SpotLight spotlights[MAX_NUM_SPOTLIGHTS];
+    PointLight point_lights[MAX_NUM_POINT_LIGHTS];
 };

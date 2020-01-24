@@ -446,6 +446,10 @@ void ___set_uniform_mat4x4(ShaderBlockID id, float *entry_address, float *vals)
 {
     ___set_uniform(id, entry_address, vals, sizeof(float)*4*4);
 }
+void ___set_uniform_mat3x3(ShaderBlockID id, float *entry_address, float *vals)
+{
+    ___set_uniform(id, entry_address, vals, sizeof(float)*3*3);
+}
 void ___set_uniform_float(ShaderBlockID id, float *entry_address, float val)
 {
     ___set_uniform(id, entry_address, &val, sizeof(float));

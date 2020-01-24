@@ -192,9 +192,11 @@ static void render(void)
             }
             Matrix4x4f mvp_matrix = vp_matrix;
             right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
-            
             set_uniform_vec3(Standard3D, model_position, new_vec3(transform->x, transform->y, transform->z));
             set_uniform_mat4x4(Standard3D, model_matrix.vals, model_matrix.vals);
+            Matrix4x4f normal_matrix;
+            euler_rotation_matrix4x4f(&normal_matrix, transform->theta_x, transform->theta_y, transform->theta_z);
+            set_uniform_mat4x4(Standard3D, normal_matrix.vals, normal_matrix.vals); // assuming only rigid transformations.
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
             gm_draw(*mesh, material);
         end_for_aspect()

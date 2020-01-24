@@ -153,6 +153,10 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name);
     ___set_uniform_mat4x4(( ShaderBlockID_ ## BLOCK_NAME ),\
                          (( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
                          ( MAT4X4_POINTER ))
+#define set_uniform_mat3x3(BLOCK_NAME,ENTRY,POINTER)\
+    ___set_uniform_mat3x3(( ShaderBlockID_ ## BLOCK_NAME ),\
+                         (( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\
+                         ( POINTER ))
 #define set_uniform_bool(BLOCK_NAME,ENTRY,VALUE)\
     ___set_uniform_bool(( ShaderBlockID_ ## BLOCK_NAME ),\
                          &(( ((ShaderBlock_ ## BLOCK_NAME *) g_shader_blocks[( ShaderBlockID_ ## BLOCK_NAME )].shader_block)->ENTRY)),\

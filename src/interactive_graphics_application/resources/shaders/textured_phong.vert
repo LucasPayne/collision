@@ -1,4 +1,3 @@
-
 #version 420
 
 #block Standard3D
@@ -17,12 +16,14 @@ layout (location = 3) in vec2 vTexCoord;
 
 void main(void)
 {
-    gl_Position = mvp_matrix * vPosition;
+    gl_Position = mvp_matrix * vPosition; // Interpolate the position of the fragment in the canonical view volume.
+    fPosition = model_matrix * vPosition; // Interpolate the position of the fragment in global coordinates.
     fTexCoord = vTexCoord;
-    fPosition = vPosition * transpose(model_matrix);
 
-    // fNormal = (vec4(vNormal, 1) * transpose(model_matrix)).xyz - model_position;
+    // fNormal = (model_matrix * vec4(vNormal, 1)).xyz - model_position;
+    
+    // fNormal = vec3(0,1,0);
 
-    fNormal = normalize((vec4(vNormal.xyz, 1) * inverse(transpose(model_matrix))).xyz - model_position);
-    // fNormal = (vec4(vNormal, 1) * model_matrix).xyz;
+
+    fNormal = (normal_matrix * vec4(vNormal, 1)).xyz;
 }

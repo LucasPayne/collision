@@ -73,7 +73,8 @@ float v|V|textureV|texV|tex_coord_v|tex_coord_V";
     if ((vertex_format & VERTEX_FORMAT_N) != 0) {
         char *normal_query = "[" BASE_VERTEX_QUERY "]: \
 float nx|nX|NX|Nx|normal_x|Normal_x|Normal_X|xNormal|XNormal, \
-float ny|nY|NY|Ny|normal_y|Normal_y|Normal_Y|yNormal|YNormal";
+float ny|nY|NY|Ny|normal_y|Normal_y|Normal_Y|yNormal|YNormal, \
+float nz|nZ|NZ|Nz|normal_z|Normal_z|Normal_Z|zNormal|ZNormal";
         void *normal_data = ply_get(file, ply, normal_query, NULL);
         mesh->attribute_data[ATTRIBUTE_TYPE_NORMAL] = normal_data;
     }

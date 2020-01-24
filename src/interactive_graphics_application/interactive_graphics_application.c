@@ -199,7 +199,7 @@ extern void init_program(void)
     
     // Lighting testing
     // spawn_cubes(5);
-    #if 1 // create directional lights
+    #if 0 // create directional lights
     {
         EntityID light = new_entity(4);
         Transform_set(entity_add_aspect(light, Transform), 0,0,0,  0,0,0);
@@ -218,7 +218,7 @@ extern void init_program(void)
     #endif
     {
         EntityID light = new_entity(4);
-        Transform_set(entity_add_aspect(light, Transform), 1,1,0,  0,0,0);
+        Transform_set(entity_add_aspect(light, Transform), 1,3,0,  0,0,0);
         PointLight_init(entity_add_aspect(light, PointLight),  0.07,0,0,  1,1,1,1);
         Logic *logic = entity_add_aspect(light, Logic);
         logic->update = test_controls;
@@ -276,6 +276,11 @@ extern void loop_program(void)
         0,0,0,  5,0,0,  5,5,0,  0,5,0
     };
     paint_loop(quad_loop, 4, 1,0,0,1);
+
+    // Draw helpful coordinte axes.
+    paint_line_c(-2,2,-2,   1,2,-2,   "r"); // x
+    paint_line_c(-2,2,-2,   -2,5,-2,  "g"); // y
+    paint_line_c(-2,2,-2,   -2,2,1,   "b"); // z
 }
 
 

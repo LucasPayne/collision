@@ -17,44 +17,32 @@ out vec4 color;
 
 void main(void)
 {
-#if 0 // testing normals
-    if (fNormal.x > 0) discard;
+    // if (fPosition.x > 0) discard; //test fPosition
+#if 0
+    // testing normals
+    if (fNormal.z > 0) discard;
     color = texture(diffuse_map, fTexCoord);
-#else
+    return;
+#endif
     float ambient = 0.2;
-    color = vec4(0.2, 0.2, 0.2, 1);
+    color = vec4(ambient, ambient, ambient, 1);
 
-    // for (int i = 0; i < MAX_NUM_DIRECTIONAL_LIGHTS; i++) {
     for (int i = 0; i < num_directional_lights; i++) {
-        // litness += max(0, dot(fNormal, -directional_lights[i].direction));
-        //---calculating normals outward from centre of model
-        float intensity = (1 - ambient) * max(0, dot(normalize(fPosition.xyz - model_position), -directional_lights[i].direction));
+        float intensity = (1 - ambient) * max(0, dot(fNormal, -directional_lights[i].direction)); // The light's direction should be normal.
         color += directional_lights[i].color * vec4(intensity,intensity,intensity,1);
     }
 
-    for (int i = 0; i < num_point_lights; i++) {     
-        //---calculating normals outward from centre of model
-        float intensity = (1 - ambient) * max(0, dot(normalize(fPosition.xyz - model_position), -normalize(fPosition.xyz - point_lights[i].position)));
-        // color += point_lights[i].color * vec4(intensity,intensity,intensity,1);
-        
+    for (int i = 0; i < num_point_lights; i++) {
+        vec3 to_light = normalize(point_lights[i].position - fPosition.xyz);
+        float intensity = (1 - ambient) * max(0, dot(fNormal, to_light));
+
         float dist = length(fPosition.xyz - point_lights[i].position);
-#if 0 // test attenuation
-        float attenuation = exp(-(
-            dist * 0.03
-        ));
-#else
         float attenuation = exp(-(
             dist * point_lights[i].linear_attenuation +
             dist*dist * point_lights[i].quadratic_attenuation +
             dist*dist*dist * point_lights[i].cubic_attenuation
         ));
-#endif
-
         color += vec4(intensity,intensity,intensity,1) * attenuation;
     }
-
-
     color *= texture(diffuse_map, fTexCoord);
-
-#endif
 }

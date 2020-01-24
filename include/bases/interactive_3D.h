@@ -20,6 +20,7 @@
 #include "matrix_mathematics.h"
 
 typedef Matrix4x4f mat4x4;
+typedef Matrix3x3f mat3x3;
 #include "shader_blocks/Standard3D.h"
 #include "shader_blocks/StandardLoopWindow.h"
 #include "shader_blocks/Lights.h"

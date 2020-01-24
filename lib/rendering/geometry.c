@@ -378,4 +378,3 @@ void gm_free(Geometry geometry)
         }
     }
 }
-#undef gm_size_error

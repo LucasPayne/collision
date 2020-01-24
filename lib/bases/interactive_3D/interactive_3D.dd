@@ -50,8 +50,8 @@ Transform < Aspect (
 );
 Body < Aspect (
     float scale;
-    geometry < Geometry;
-    material < Material;
+    string geometry;
+    string material;
 );
 
 //--------------------------------------------------------------------------------

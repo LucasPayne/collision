@@ -10,11 +10,20 @@
 // In-lining is fine, and treated the same as something like
 // geometry < Models/quad.
 
+
+dirt_material < Material (
+    type: Resources/Materials/textured_phong;
+    diffuse_map < Resources/Textures/minecraft/dirt;
+    properties < (
+        int specular: 1;
+    );
+);
+
 dirt < GameObject (
     body < Body (
         scale: 1;
-        geometry < Resources/Models/quad;
-        material < Resources/Materials/tinted_texture;
+        geometry: Resources/Models/cube;
+        material: Data/Scenes/dirt_material;
     );
 );
 scene1 < Scene (

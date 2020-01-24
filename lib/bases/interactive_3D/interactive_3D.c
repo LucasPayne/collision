@@ -63,7 +63,7 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
     static bool set_last = false;
     static double last_x;
     static double last_y;
-    if (!set_last) { // so that the first relative position 0,0.
+    if (!set_last) { // so that the first relative position is 0,0.
         set_last = true;
         last_x = x;
         last_y = y;
@@ -94,9 +94,6 @@ extern void close_program(void);
 extern void input_event(int key, int action, int mods);
 extern void cursor_move_event(double x, double y);
 
-#define config_error(str)\
-    { fprintf(stderr, ERROR_ALERT "Application configuration error: non-existent or malformed \"" str "\" entry.\n");\
-      exit(EXIT_FAILURE); }
 
 static void reshape(GLFWwindow *window, int width, int height)
 {
@@ -176,16 +173,17 @@ static void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
     for_aspect(Camera, camera)
+        // Form the view-projection matrix.
         Transform *camera_transform = get_sibling_aspect(camera, Transform);
         Matrix4x4f view_matrix = Transform_matrix(camera_transform);
         Matrix4x4f vp_matrix = camera->projection_matrix;
         right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
-
+        // Render each body.
         for_aspect(Body, body)
             Transform *transform = get_sibling_aspect(body, Transform);
             Geometry *mesh = resource_data(Geometry, body->geometry);
-
             Material *material = resource_data(Material, body->material);
+            // Form the mvp matrix.
             Matrix4x4f model_matrix = Transform_matrix(transform);
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
@@ -198,22 +196,26 @@ static void render(void)
             set_uniform_vec3(Standard3D, model_position, new_vec3(transform->x, transform->y, transform->z));
             set_uniform_mat4x4(Standard3D, model_matrix.vals, model_matrix.vals);
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
-
             gm_draw(*mesh, material);
         end_for_aspect()
+        // Draw the buffered paint (in global coordinates).
+        set_uniform_mat4x4(Standard3D, mvp_matrix.vals, vp_matrix.vals);
+        painting_draw();
     end_for_aspect()
+    // Flush the paint.
+    painting_flush();
 }
 
 static void loop_base(void)
 {
+    // Update entity logic
     for_aspect(Logic, logic)
         logic->update(logic);
     end_for_aspect()
 
-    // Handle lights.
-    // --------------
-    // Directional lights.
+    // Handle lights
 {
+    // Directional lights
     int index = 0;
     for_aspect(DirectionalLight, directional_light)
         if (index >= MAX_NUM_DIRECTIONAL_LIGHTS) {
@@ -230,10 +232,9 @@ static void loop_base(void)
         index ++;
     end_for_aspect()
     set_uniform_int(Lights, num_directional_lights, index);
-    // Point lights.
 }
-{
-    #if 1
+{   
+    // Point lights
     int index = 0;
     for_aspect(PointLight, point_light)
         if (index >= MAX_NUM_POINT_LIGHTS) {
@@ -250,13 +251,15 @@ static void loop_base(void)
         index ++;
     end_for_aspect()
     set_uniform_int(Lights, num_point_lights, index);
-    #endif
 }
     render();
     loop_program();
 }
 
 
+#define config_error(str)\
+    { fprintf(stderr, ERROR_ALERT "Application configuration error: non-existent or malformed \"" str "\" entry.\n");\
+      exit(EXIT_FAILURE); }
 int main(void)
 {
     DD *base_config = dd_fopen(BASE_DIRECTORY "interactive_3D.dd");
@@ -372,8 +375,8 @@ int main(void)
         time = glfwGetTime();
         dt = time - last_time;
 
-        /* Clearing: window clear to background color, viewport clear to the foreground color.
-         */
+        // Clearing: window clear to background color, viewport clear to the foreground color.
+        
         glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
         glDisable(GL_SCISSOR_TEST);
         glClear(clear_mask);

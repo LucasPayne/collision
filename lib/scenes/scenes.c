@@ -31,16 +31,23 @@ new_reader(Transform) {
     return true;
 }
 new_reader(Body) {
+    Body *body = (Body *) data;
     float scale;
     if (!dd_get(aspect_dd, "scale", "float", &scale)) return false;
-    Body *body = (Body *) data;
+    body->scale = scale;
+    Material *mat = oneoff_resource(Material, body->material);
+    char *geometry_path;
+    if (!dd_get(aspect_dd, "geometry", "string", &geometry_path)) return false;
+    body->geometry = new_resource_handle(Geometry, geometry_path);
+    char *material_path;
+    if (!dd_get(aspect_dd, "material", "string", &material_path)) return false;
+    body->material = new_resource_handle(Material, material_path);
     
     //----dummy for now
-    Material *mat = oneoff_resource(Material, body->material);
-    mat->material_type = new_resource_handle(MaterialType, "Materials/red");
-    body->geometry = new_resource_handle(Geometry, "Models/quad");
+    // Material *mat = oneoff_resource(Material, body->material);
+    // mat->material_type = new_resource_handle(MaterialType, "Materials/red");
+    // body->geometry = new_resource_handle(Geometry, "Models/quad");
 
-    body->scale = scale;
     return true;
 }
 #define reader(NAME) { #NAME, &NAME ## _TYPE_ID, read_aspect_ ## NAME }

@@ -1,4 +1,8 @@
 /*--------------------------------------------------------------------------------
+notes:
+    It might be fine not to use the resource system at all. Painting would be a very special
+    purpose thing, with its own materials, which could be hardcoded. This would bypass the overhead
+    of doing resource lookups, caching, etc.
 --------------------------------------------------------------------------------*/
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,6 +13,29 @@
 #include "resources.h"
 #include "rendering.h"
 #include "painting.h"
+
+/*--------------------------------------------------------------------------------
+    Painting function calls buffer "paint", which is then drawn when the user wants with
+    painting_draw(), and flushed with painting_flush(). (this separation is done so that paint can be rendered multiple times, e.g. with multiple cameras, before flushing.)
+- implementation
+    This is implemented by making "paint" be a piece of geometry and the material it will
+    be rendered with (meaning that both of these resources must be destroyed when the buffer is flushed).
+    Flushing goes through the buffer and renders each paint, then destroys it.
+-
+    This might better be implemented with painting information at a higher level, like colors and types of paint,
+    which could then be sorted in the buffer while it is being built up, allowing for example the minimization of
+    material switches.
+--------------------------------------------------------------------------------*/
+typedef struct Paint_s {
+    Geometry geometry;
+    ResourceHandle material; // Resource: Material
+} Paint;
+// Implemented now with a fixed size buffer. If this turns out to be a problem, something like a linked list of buffers might work, so
+// that paint count doesn't matter, but the paint is still mostly contiguous.
+// static const int g_painting_size = 4096;
+#define g_painting_size 4096
+static int g_painting_count = 0;
+static Paint g_paint[g_painting_size];
 
 static enum LineModes {
     LINE_FLAT,
@@ -43,14 +70,14 @@ void painting_init(void)
 --------------------------------------------------------------------------------*/
 vec4 str_to_color_key(char *color)
 {
-    #define col(STR,R,G,B,A) if (strcmp(color, ( STR )) == 0) return new_vec4((R),(G),(B),(A));
-    col("g", 0,1,0,1);
-    col("r", 1,0,0,1);
-    col("y", 1,0,1,1);
-    col("b", 0,0,1,1);
-    col("k", 0,0,0,1);
-    col("w", 1,1,1,1);
-    col("gr", 0.4,0.4,0.4,1);
+    #define col(STR1,STR2,R,G,B,A) if (strcmp(color, ( STR1 )) == 0 || strcmp(color, ( STR2 )) == 0) return new_vec4((R),(G),(B),(A));
+    col("g", "green", 0,1,0,1);
+    col("r", "red", 1,0,0,1);
+    col("y", "yellow", 1,0,1,1);
+    col("b", "blue", 0,0,1,1);
+    col("k", "black", 0,0,0,1);
+    col("w", "white", 1,1,1,1);
+    col("gr", "gray", 0.4,0.4,0.4,1);
     fprintf(stderr, ERROR_ALERT "Unsupported color \"%s\".\n", color);
     exit(EXIT_FAILURE);
     #undef col
@@ -68,16 +95,12 @@ Variants can be combined.
 void paint_line_v(vec3 a, vec3 b, vec4 color)
 {
     init_check();
-
     gm_lines(VERTEX_FORMAT_3);
     attribute_3f(Position, a.vals[0],a.vals[1],a.vals[2]);
     attribute_3f(Position, b.vals[0],b.vals[1],b.vals[2]);
-    Geometry g = gm_done();
     ResourceHandle mat = Material_create("Painting/Materials/flat_color");
     material_set_property_vec4(resource_data(Material, mat), "flat_color", color);
-    gm_draw(g, resource_data(Material, mat));
-    gm_free(g);
-    destroy_resource_handle(&mat);
+    painting_add(gm_done(), mat);
 }
 void paint_line(float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS)
 {
@@ -102,13 +125,9 @@ void paint_chain(float vals[], int num_points, COLOR_SCALARS) // vals length: nu
         float z = vals[3*i + 2];
         attribute_3f(Position, x,y,z);
     }
-    Geometry g = gm_done();
-
     ResourceHandle mat = Material_create("Painting/Materials/flat_color");
     material_set_property_vec4(resource_data(Material, mat), "flat_color", new_vec4(cr,cg,cb,ca));
-    gm_draw(g, resource_data(Material, mat));
-    gm_free(g);
-    destroy_resource_handle(&mat);
+    painting_add(gm_done(), mat);
 }
 void paint_chain_c(float vals[], int num_points, char *color_str)
 {
@@ -126,16 +145,42 @@ void paint_loop(float vals[], int num_points, COLOR_SCALARS) // vals length: num
         float z = vals[3*i + 2];
         attribute_3f(Position, x,y,z);
     }
-    Geometry g = gm_done();
-
     ResourceHandle mat = Material_create("Painting/Materials/flat_color");
     material_set_property_vec4(resource_data(Material, mat), "flat_color", new_vec4(cr,cg,cb,ca));
-    gm_draw(g, resource_data(Material, mat));
-    gm_free(g);
-    destroy_resource_handle(&mat);
+    painting_add(gm_done(), mat);
+
 }
 void paint_loop_c(float vals[], int num_points, char *color_str)
 {
     vec4 color = str_to_color_key(color_str);
     paint_loop(vals, num_points, UNPACK_COLOR(color));
 }
+
+
+void painting_add(Geometry geometry, ResourceHandle material)
+{
+    if (g_painting_count >= g_painting_size) {
+        fprintf(stderr, ERROR_ALERT "paint error: The maximum number of pieces of paint has been exceeded. Possibly the buffer has not been flushed, or there is too much paint.\n");
+        exit(EXIT_FAILURE);
+    }
+    g_paint[g_painting_count].geometry = geometry;
+    g_paint[g_painting_count].material = material;
+
+    g_painting_count ++;
+}
+void painting_draw(void)
+{
+    for (int i = 0; i < g_painting_count; i++) {
+        gm_draw(g_paint[i].geometry, resource_data(Material, g_paint[i].material));
+    }
+}
+void painting_flush(void)
+{
+    for (int i = 0; i < g_painting_count; i++) {
+        gm_free(g_paint[i].geometry);
+        destroy_resource_handle(&g_paint[i].material);
+    }
+    g_painting_count = 0;
+}
+
+

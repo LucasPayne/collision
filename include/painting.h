@@ -9,6 +9,9 @@
 #define UNPACK_COLOR(color) color.vals[0],color.vals[1],color.vals[2],color.vals[3]
 
 void painting_init(void);
+void painting_add(Geometry geometry, ResourceHandle material);
+void painting_draw(void);
+void painting_flush(void);
 
 vec4 str_to_color_key(char *color);
 

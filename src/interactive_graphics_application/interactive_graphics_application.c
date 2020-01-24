@@ -8,6 +8,7 @@ project_libs:
 #include "scenes.h"
 #include "painting.h"
 
+
 //--------------------------------------------------------------------------------
 // Testing and debugging.
 //--------------------------------------------------------------------------------
@@ -24,6 +25,10 @@ static void logic_misc1(Logic *logic)
 
 static void camera_controls(Logic *logic)
 {
+    static float velocity_y = 0.0;
+    static bool on_ground = false;
+    
+
     Transform *t = get_sibling_aspect(logic, Transform);
     // float rotate_speed = 3;
     // if (arrow_key_down(Right)) t->theta_y += rotate_speed * dt;
@@ -35,6 +40,20 @@ static void camera_controls(Logic *logic)
     if (alt_arrow_key_down(Left)) t->x += speed * dt;
     if (alt_arrow_key_down(Up)) t->z += speed * dt;
     if (alt_arrow_key_down(Down)) t->z -= speed * dt;
+    return;
+    if (alt_arrow_key_down(Right)) t->theta_y += speed * dt;
+    if (alt_arrow_key_down(Left)) t->theta_y -= speed * dt;
+
+    if (alt_arrow_key_down(Up)) t->z += speed * dt;
+    if (alt_arrow_key_down(Down)) t->z -= speed * dt;
+
+    velocity_y -= dt;
+    t->y -= velocity_y;
+    if (t->y < 2) {
+        on_ground = true;
+        t->y = 0;
+        velocity_y = 0;
+    }
 }
 static void test_controls(Logic *logic)
 {
@@ -95,7 +114,6 @@ extern void input_event(int key, int action, int mods)
 #define CASE(ACTION,KEY)\
     if (action == ( GLFW_ ## ACTION ) && key == ( GLFW_KEY_ ## KEY ))
     CASE(PRESS, O) open_scene(g_data, "Scenes/scene2");
-    CASE(PRESS, L) printf("Pressed L\n");
     CASE(PRESS, C) spawn_cubes(5);
 }
 extern void cursor_move_event(double x, double y)
@@ -180,7 +198,7 @@ extern void init_program(void)
 #endif
     
     // Lighting testing
-    spawn_cubes(5);
+    // spawn_cubes(5);
     #if 1 // create directional lights
     {
         EntityID light = new_entity(4);
@@ -200,7 +218,7 @@ extern void init_program(void)
     #endif
     {
         EntityID light = new_entity(4);
-        Transform_set(entity_add_aspect(light, Transform), 1,0,0,  0,0,0);
+        Transform_set(entity_add_aspect(light, Transform), 1,1,0,  0,0,0);
         PointLight_init(entity_add_aspect(light, PointLight),  0.07,0,0,  1,1,1,1);
         Logic *logic = entity_add_aspect(light, Logic);
         logic->update = test_controls;
@@ -210,12 +228,23 @@ extern void init_program(void)
         body->material = Material_create("Materials/red");
         body->geometry = new_resource_handle(Geometry, "Models/icosohedron");
     }
-    
+    { // make a floor
+        EntityID quad = new_entity(4);
+        Transform_set(entity_add_aspect(quad, Transform), 0,0,2,  M_PI/2,0,0);
+        Body *body = entity_add_aspect(quad, Body);
+        body->scale = 50;
+        body->material = Material_create("Materials/textured_phong");
+        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/stone_bricks");
+        body->geometry = new_resource_handle(Geometry, "Models/quad");
+        // Input_init(entity_add_aspect(quad, Input), INPUT_KEY, input_test_1, true);
+    }
     // open_scene(g_data, "Scenes/scene1");
     // ResourceHandle r1 = new_resource_handle(Geometry, "Models/quad");
     // resource_data(Geometry, r1);
     // ResourceHandle r2 = new_resource_handle(Geometry, "Models/quad");
     // resource_data(Geometry, r2);
+
+    open_scene(g_data, "Scenes/scene1");
 
 }
 

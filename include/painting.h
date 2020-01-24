@@ -15,7 +15,7 @@ void painting_flush(void);
 
 vec4 str_to_color_key(char *color);
 
-void paint_line(float ax, float ay, float az, float bx, float by, float bz, float cr, float cg, float cb, float ca);
+void paint_line(float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS);
 void paint_line_c(float ax, float ay, float az, float bx, float by, float bz, char *color_str);
 void paint_line_v(vec3 a, vec3 b, vec4 color);
 void paint_line_cv(vec3 a, vec3 b, char *color_str);

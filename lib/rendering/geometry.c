@@ -348,7 +348,7 @@ void gm_draw(Geometry geometry, Material *material)
     GLenum gl_primitive_type;
     switch(geometry.primitive_type) {
         case Triangles: gl_primitive_type = GL_TRIANGLES; break;
-        case Lines: gl_primitive_type = GL_LINES; break;
+        case Lines: gl_primitive_type = GL_LINE_STRIP; break; // GL_LINES treats each two vertices as a separate line, so use this for a contiguous chain.
         default:
             fprintf(stderr, ERROR_ALERT "Have not accounted for the primitive type of a piece of geometry passed into gm_draw.\n");
             exit(EXIT_FAILURE);

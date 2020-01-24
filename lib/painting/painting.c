@@ -166,11 +166,11 @@ void paint_chain_c(float vals[], int num_points, char *color_str)
 void paint_loop(float vals[], int num_points, COLOR_SCALARS) // vals length: num_points * 3
 {
     gm_lines(VERTEX_FORMAT_3);
-    for (int i = 0; i < num_points; i++) {
+    for (int i = 0; i < num_points + 1; i++) {
         int j = (i + 1) % num_points;
-        float x = vals[3*i + 0];
-        float y = vals[3*i + 1];
-        float z = vals[3*i + 2];
+        float x = vals[3*j + 0];
+        float y = vals[3*j + 1];
+        float z = vals[3*j + 2];
         attribute_3f(Position, x,y,z);
     }
     ResourceHandle mat = Material_create("Painting/Materials/flat_color");

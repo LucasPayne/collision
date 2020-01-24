@@ -22,7 +22,7 @@ dirt_material < Material (
 dirt < GameObject (
     body < Body (
         scale: 1;
-        geometry: Resources/Models/cube;
+        geometry: Resources/Models/block;
         material: Data/Scenes/dirt_material;
     );
 );

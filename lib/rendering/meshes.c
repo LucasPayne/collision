@@ -126,7 +126,6 @@ Geometry upload_mesh(MeshData *mesh_data)
 {
     // Upload a triangle mesh (for the mesh+material pair rendering of objects).
     gm_triangles(mesh_data->vertex_format);
-
     
     for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
         if (mesh_data->vertex_format & (1 << i)) {

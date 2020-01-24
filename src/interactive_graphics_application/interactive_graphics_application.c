@@ -101,7 +101,7 @@ static void spawn_cubes(int n)
         body->scale = 1;
         body->material = Material_create("Materials/textured_phong");
         material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/stone_bricks");
-        body->geometry = new_resource_handle(Geometry, "Models/cube");
+        body->geometry = new_resource_handle(Geometry, "Models/block");
         Logic *logic = entity_add_aspect(quad, Logic);
         logic->update = quad_test_update;
         // Input_init(entity_add_aspect(quad, Input), INPUT_KEY, input_test_1, true);
@@ -265,20 +265,17 @@ extern void loop_program(void)
         }
     }
 
-
-
+    vec3 spiral[100];
     for (int i = 0; i < 100; i++) {
         float theta = 6 * i * 2*M_PI / 100;
-        float thetap = 6 * (i + 1) * 2*M_PI / 100;
-        // paint_line(new_vec3(sin(theta), cos(theta), i*0.1), new_vec3(sin(thetap), cos(thetap), i*0.1), str_to_color_key("g"));
-        paint_line(sin(theta), cos(theta), i*0.1,
-                   sin(thetap), cos(thetap), i*0.1,
-                   0,0,i/100.0,1);
+        spiral[i] = new_vec3(sin(theta + time), 3 + cos(theta + time), i*0.1);
     }
-    float loop[] = {
+    paint_chain_c((float *) spiral, 100, "g");
+
+    float quad_loop[] = {
         0,0,0,  5,0,0,  5,5,0,  0,5,0
     };
-    paint_loop(loop, 4, 1,0,0,1);
+    paint_loop(quad_loop, 4, 1,0,0,1);
 }
 
 

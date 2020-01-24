@@ -1,5 +1,11 @@
 
-// PlyModel < Geometry ( type: ply; );
+
+// A block is wrapped with the same texture on each face (quad). It has rigid normals, and does not share vertices between quads.
+block < Geometry (
+    type: ply;
+    vertex_format: 3NU;
+    path: Meshes/block.ply;
+);
 
 quad < Geometry (
     type: ply;

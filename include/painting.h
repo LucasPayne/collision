@@ -25,4 +25,11 @@ void paint_chain_c(float vals[], int num_points, char *color_str);
 void paint_loop(float vals[], int num_points, COLOR_SCALARS); // vals length: num_points * 3
 void paint_loop_c(float vals[], int num_points, char *color_str);
 
+void paint_quad(float p1x, float p1y, float p1z, 
+                float p2x, float p2y, float p2z, 
+                float p3x, float p3y, float p3z, 
+                float p4x, float p4y, float p4z,
+                COLOR_SCALARS);
+void paint_quad_v(vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec4 color);
+
 #endif // HEADER_DEFINED_PAINTING

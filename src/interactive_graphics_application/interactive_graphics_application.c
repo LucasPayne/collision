@@ -252,6 +252,21 @@ extern void loop_program(void)
 {
     // paint_line(new_vec3(0,0,0), new_vec3(50,50,50), "g");
 
+    const float quad_size = 5;
+    static vec4 grid[5*5] = { 0 };
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (frand() < 0.05) grid[5*i + j] = new_vec4(frand(),frand(),frand(),1);
+            paint_quad_v(new_vec3(quad_size*i,quad_size*j,0),
+                         new_vec3(quad_size*(i+1),quad_size*j,0),
+                         new_vec3(quad_size*(i+1),quad_size*(j+1),0),
+                         new_vec3(quad_size*i,quad_size*(j+1),0),
+                         grid[5*i + j]);
+        }
+    }
+
+
+
     for (int i = 0; i < 100; i++) {
         float theta = 6 * i * 2*M_PI / 100;
         float thetap = 6 * (i + 1) * 2*M_PI / 100;

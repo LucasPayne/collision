@@ -7,6 +7,7 @@ notes:
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 #include "matrix_mathematics.h"
 #include "helper_definitions.h"
 #include "data_dictionary.h"
@@ -64,6 +65,33 @@ void painting_init(void)
 
     painting_module_initialized = true;
 }
+void painting_add(Geometry geometry, ResourceHandle material)
+{
+    if (g_painting_count >= g_painting_size) {
+        fprintf(stderr, ERROR_ALERT "paint error: The maximum number of pieces of paint has been exceeded. Possibly the buffer has not been flushed, or there is too much paint.\n");
+        exit(EXIT_FAILURE);
+    }
+    g_paint[g_painting_count].geometry = geometry;
+    g_paint[g_painting_count].material = material;
+
+    g_painting_count ++;
+}
+void painting_draw(void)
+{
+    for (int i = 0; i < g_painting_count; i++) {
+        gm_draw(g_paint[i].geometry, resource_data(Material, g_paint[i].material));
+    }
+}
+void painting_flush(void)
+{
+    for (int i = 0; i < g_painting_count; i++) {
+        gm_free(g_paint[i].geometry);
+        destroy_resource_handle(&g_paint[i].material);
+    }
+    g_painting_count = 0;
+}
+
+
 
 /*--------------------------------------------------------------------------------
     Colors
@@ -156,31 +184,66 @@ void paint_loop_c(float vals[], int num_points, char *color_str)
     paint_loop(vals, num_points, UNPACK_COLOR(color));
 }
 
-
-void painting_add(Geometry geometry, ResourceHandle material)
+void paint_quad(float p1x, float p1y, float p1z, 
+                float p2x, float p2y, float p2z, 
+                float p3x, float p3y, float p3z, 
+                float p4x, float p4y, float p4z,
+                COLOR_SCALARS)
 {
-    if (g_painting_count >= g_painting_size) {
-        fprintf(stderr, ERROR_ALERT "paint error: The maximum number of pieces of paint has been exceeded. Possibly the buffer has not been flushed, or there is too much paint.\n");
-        exit(EXIT_FAILURE);
-    }
-    g_paint[g_painting_count].geometry = geometry;
-    g_paint[g_painting_count].material = material;
-
-    g_painting_count ++;
-}
-void painting_draw(void)
+    gm_triangles(VERTEX_FORMAT_3);
+    attribute_3f(Position, p1x, p1y, p1z);
+    attribute_3f(Position, p2x, p2y, p2z);
+    attribute_3f(Position, p3x, p3y, p3z);
+    attribute_3f(Position, p4x, p4y, p4z);
+    gm_index(0); gm_index(1); gm_index(2);
+    gm_index(0); gm_index(2); gm_index(3);
+    ResourceHandle mat = Material_create("Painting/Materials/flat_color");
+    material_set_property_vec4(resource_data(Material, mat), "flat_color", new_vec4(cr,cg,cb,ca));
+    painting_add(gm_done(), mat);
+} 
+void paint_quad_v(vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec4 color)
 {
-    for (int i = 0; i < g_painting_count; i++) {
-        gm_draw(g_paint[i].geometry, resource_data(Material, g_paint[i].material));
-    }
-}
-void painting_flush(void)
-{
-    for (int i = 0; i < g_painting_count; i++) {
-        gm_free(g_paint[i].geometry);
-        destroy_resource_handle(&g_paint[i].material);
-    }
-    g_painting_count = 0;
+    paint_quad(p1.vals[0], p1.vals[1], p1.vals[2],
+               p2.vals[0], p2.vals[1], p2.vals[2],
+               p3.vals[0], p3.vals[1], p3.vals[2],
+               p4.vals[0], p4.vals[1], p4.vals[2],
+               UNPACK_COLOR(color));
 }
 
 
+// void paint_quad(float p1x, float p1y, float p1z, float nx, float ny, float nz, float ux, float uy, float uz, float w, float h)
+// {
+//     // Form u' by extracting the part of u in the direction of n, getting a vector orthogonal to n
+//     // yet on the same plane formed by the span of u and n. Width will be extended along this vector.
+//     float n_length_inv = 1/sqrt(nx*nx + ny*ny + nz*nz);
+//     nx *= n_length_inv;
+//     ny *= n_length_inv;
+//     nz *= n_length_inv;
+//     float d = nx*ux + ny*uy + nz*uz;
+//     float u_length_inv = 1/sqrt(ux*ux + uy*uy + uz*uz);
+//     float upx = (ux - nx*d)*u_length_inv;
+//     float upy = (uy - ny*d)*u_length_inv;
+//     float upz = (uz - nz*d)*u_length_inv;
+//     // Measure the width across u' to get the second point on the quad.
+//     float p2x = p1x + upx*w;
+//     float p2y = p1y + upy*w;
+//     float p2z = p1z + upz*w;
+//     // Measure the height across cross(u', n) to get the fourth point on the quad.
+//     //...
+// 
+//     // Add these differences from p1 to get the third point.
+//     float p3x = p1x + (p2x - p1x) + (p4x - p1x);
+//     float p3y = p1y + (p2y - p1y) + (p4y - p1y);
+//     float p3z = p1z + (p2z - p1z) + (p4z - p1z);
+//     
+//     gm_triangles(VERTEX_FORMAT_3);
+//     attribute_3f(Position, p1x, p1y, p1z);
+//     attribute_3f(Position, p2x, p2y, p2z);
+//     attribute_3f(Position, p3x, p3y, p3z);
+//     attribute_3f(Position, p4x, p4y, p4z);
+//     gm_index(0); gm_index(1); gm_index(2);
+//     gm_index(0); gm_index(2); gm_index(3);
+//     ResourceHandle mat = Material_create("Painting/Materials/flat_color");
+//     material_set_property_vec4(resource_data(Material, mat), "flat_color", new_vec4(cr,cg,cb,ca));
+//     painting_add(gm_done(), mat);
+// }

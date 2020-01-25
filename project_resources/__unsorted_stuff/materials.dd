@@ -1,0 +1,54 @@
+
+3DMT < MaterialType (
+    num_blocks: 1;
+    string block0: Standard3D;
+);
+
+red < 3DMT (
+    vertex_format: 3;
+    vertex_shader: Shaders/passthrough.vert;
+    fragment_shader: Shaders/red.frag;
+);
+
+// Changes over time, to test the uniform uploading.
+timetest < MaterialType (
+    vertex_format: 3;
+    vertex_shader: Shaders/passthrough_none.vert;
+    fragment_shader: Shaders/timetest.frag;
+    num_blocks: 1;
+    string block0: StandardLoopWindow;
+);
+
+flat_color < MaterialType (
+    vertex_format: 3;
+    vertex_shader: Shaders/passthrough.vert;
+    fragment_shader: Shaders/flat_color.frag;
+    num_blocks: 2;
+    string block0: Standard3D;
+    string block1: MaterialProperties;
+);
+
+tinted_texture < MaterialType (
+    vertex_format: 3U;
+    vertex_shader: Shaders/tinted_texture.vert;
+    fragment_shader: Shaders/tinted_texture.frag;
+    num_blocks: 2;
+    string block0: MaterialProperties;
+    string block1: Standard3D;
+    num_textures: 1;
+    string texture0: diffuse_map;
+    properties < (
+        vec4 flat_color: 1,0,1,1;
+    );
+);
+textured_phong < MaterialType (
+    vertex_format: 3NU;
+    vertex_shader: Shaders/textured_phong.vert;
+    fragment_shader: Shaders/textured_phong.frag;
+    num_blocks: 3;
+    string block0: Standard3D;
+    string block1: MaterialProperties;
+    string block2: Lights;
+    num_textures: 1;
+    string texture0: diffuse_map;
+);

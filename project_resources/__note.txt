@@ -1,0 +1,4 @@
+Project resources are available to all applications which want to use them. This is for convenience.
+If anything would be used in multiple applications, put it here. Otherwise, it is fine to put those resources
+in the application directories, and migrate them later if wanted.
+

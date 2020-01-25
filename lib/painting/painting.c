@@ -183,6 +183,10 @@ void paint_loop_c(float vals[], int num_points, char *color_str)
     vec4 color = str_to_color_key(color_str);
     paint_loop(vals, num_points, UNPACK_COLOR(color));
 }
+void paint_loop_v(float vals[], int num_points, vec4 color)
+{
+    paint_loop(vals, num_points, UNPACK_COLOR(color));
+}
 
 void paint_quad(float p1x, float p1y, float p1z, 
                 float p2x, float p2y, float p2z, 

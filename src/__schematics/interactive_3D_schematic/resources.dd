@@ -1,18 +1,21 @@
 
 Materials < (
-    #include(resources/materials);
+    #include(/home/lucas/collision/project_resources/materials); // project-wide materials.
+    #include(resources/materials);                               // application-specific materials.
 );
 
 Textures < (
-    #include(resources/textures);
+    #include(/home/lucas/collision/project_resources/textures);  // project-wide textures.
+    #include(resources/textures);                                // application-specific textures.
 );
 
 Models < (
-    #include(resources/models);
+    #include(/home/lucas/collision/project_resources/models);    // project-wide models.
+    #include(resources/models);                                  // application-specific models.
 );
 
 // Required for the painting module. Need a better way to do this.
 Painting < (
-    #include(../../lib/painting/painting_resources);
+    #include(/home/lucas/collision/lib/painting/painting_resources);
 );
 

@@ -24,6 +24,7 @@ void paint_chain(float vals[], int num_points, COLOR_SCALARS); // vals length: n
 void paint_chain_c(float vals[], int num_points, char *color_str);
 void paint_loop(float vals[], int num_points, COLOR_SCALARS); // vals length: num_points * 3
 void paint_loop_c(float vals[], int num_points, char *color_str);
+void paint_loop_v(float vals[], int num_points, vec4 color);
 
 void paint_quad(float p1x, float p1y, float p1z, 
                 float p2x, float p2y, float p2z, 

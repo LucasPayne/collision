@@ -33,6 +33,7 @@ base_libs:
     + resources
     + rendering
     + ply
+    + painting
 --------------------------------------------------------------------------------*/
 #define BASE_DIRECTORY "/home/lucas/collision/lib/bases/interactive_3D/"
 #define PROJECT_DIRECTORY "/home/lucas/collision/"
@@ -41,6 +42,7 @@ base_libs:
 #include "gameobjects.c"
 //--- may separate this
 #include "helper.c"
+#include "testing.c"
 
 static GLFWwindow *window;
 
@@ -169,6 +171,15 @@ static void init_base(void)
     init_resources_rendering();
 
     glsl_include_path_add(PROJECT_DIRECTORY "glsl/shader_blocks");
+    
+    // Project-wide source/asset directories.
+    resource_path_add("Meshes", "/home/lucas/collision/project_resources/meshes");
+    resource_path_add("Images", "/home/lucas/collision/project_resources/images");
+    resource_path_add("Shaders", "/home/lucas/collision/project_resources/shaders");
+    // Application-specific source/asset directories. (these directories need not exist.)
+    resource_path_add("Meshes", "resources/meshes");
+    resource_path_add("Images", "resources/images");
+    resource_path_add("Shaders", "resources/shaders");
 }
 
 static void render(void)
@@ -193,7 +204,6 @@ static void render(void)
         set_uniform_vec3(Standard3D, camera_position, new_vec3(camera_transform->x, camera_transform->y, camera_transform->z));
         vec4 camera_forward_vector = matrix_vec4(&view_matrix, new_vec4(0,0,1,1));
         set_uniform_vec3(Standard3D, camera_direction, *((vec3 *) &camera_forward_vector)); //... get better matrix/vector routines.
-    
 
         // Upload the uniform half-vectors for directional lights. This depends on the camera, and saves recomputation of the half-vector per-pixel,
         // since in the case of directional lights this vector is constant.
@@ -217,7 +227,7 @@ static void render(void)
             Transform *transform = get_sibling_aspect(body, Transform);
             Geometry *mesh = resource_data(Geometry, body->geometry);
             Material *material = resource_data(Material, body->material);
-            // Form the mvp matrix.
+            // Form the mvp matrix and upload it, along with other Standard3D information.
             Matrix4x4f model_matrix = Transform_matrix(transform);
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {

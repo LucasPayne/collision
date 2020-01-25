@@ -33,7 +33,7 @@ static void camera_mouse_move(Input *input, double dx, double dy)
     t->theta_y += dx * 0.002;
     //---what is pitch yaw and roll?
     vec3 x_rel = Transform_relative_direction(t, new_vec3(1,0,0));
-    printf("%.2f %.2f %.2f\n", x_rel.vals[0], x_rel.vals[1], x_rel.vals[2]);
+    // printf("%.2f %.2f %.2f\n", x_rel.vals[0], x_rel.vals[1], x_rel.vals[2]);
     float dpitch = dy * -0.002;
 
     // t->theta_x += dpitch * x_rel.vals[0];
@@ -56,3 +56,7 @@ void create_camera_man(float x, float y, float z, float lookat_x, float lookat_y
     Input_init(entity_add_aspect(camera_man, Input), INPUT_MOUSE_MOVE, camera_mouse_move, true);
     Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
 }
+
+
+
+

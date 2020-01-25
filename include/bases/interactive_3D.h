@@ -18,6 +18,7 @@
 #include "resources.h"
 #include "entity.h"
 #include "matrix_mathematics.h"
+#include "painting.h"
 
 #include "shader_blocks/Standard3D.h"
 #include "shader_blocks/StandardLoopWindow.h"
@@ -201,5 +202,14 @@ void PointLight_init(PointLight *point_light, float linear_attenuation, float qu
 //================================================================================
 // Helper stuff. May separate this.
 void create_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z);
+
+//================================================================================
+// Testing stuff.
+void test_spawn_cubes(int n);
+void test_floor(char *texture_path);
+void test_directional_light_auto(void);
+void test_directional_light_controlled(void);
+void test_point_light_1(void);
+void test_mass_objects(int number_of_them);
 
 #endif // HEADER_DEFINED_INTERACTIVE_3D

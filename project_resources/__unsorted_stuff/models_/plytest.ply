@@ -1,0 +1,35 @@
+ply
+format ascii 1.0
+comment object: cube
+element vertex 8
+property float x
+property float y
+property float z
+property float red
+property float green
+property float blue
+element triangle 12
+property int index_a
+property int index_b
+property int index_c
+end_header
+-0.100000 -0.100000 -0.100000 1.0 0.0 0.0
+0.100000 0.100000 0.100000 0.0 1.0 0.0
+-0.100000 -0.100000 -0.100000 0.0 0.0 1.0
+0.100000 0.100000 0.100000 0.5 0.5 0.5
+-0.100000 -0.100000 -0.100000 0.0 0.0 0.0
+0.100000 0.100000 0.100000 1.0 1.0 1.0
+-0.100000 -0.100000 -0.100000 1.0 1.0 0.0
+0.100000 0.100000 0.100000 0.5 0.5 0.0
+0 1 2
+1 3 2
+3 1 5
+7 3 5
+5 6 7
+5 4 6
+4 0 2
+4 2 6
+6 2 3
+6 3 7
+4 5 1
+4 1 0

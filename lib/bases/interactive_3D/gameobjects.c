@@ -44,15 +44,22 @@ Matrix4x4f Transform_matrix(Transform *transform)
     translate_rotate_3d_matrix4x4f(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
     return mat;
 }
-vec3 Transform_global_position(Transform *transform)
+vec3 Transform_relative_direction(Transform *t, vec3 direction)
 {
-    Matrix4x4f mat = Transform_matrix(transform);
-    vec3 pos;
-    pos.vals[0] = transform->x;
-    pos.vals[1] = transform->y;
-    pos.vals[2] = transform->z;
-    return matrix4_vec3_normal(&mat, pos);
+    return matrix_vec3(rotation_part_rigid_mat4x4(Transform_matrix(t)), direction);
 }
+void Transform_move(Transform *t, vec3 translation)
+{
+    //--idea: could make vectors structs with x,y,z[,w], and cast to an array when iteration is wanted.
+    t->x += translation.vals[0];
+    t->y += translation.vals[1];
+    t->z += translation.vals[2];
+}
+void Transform_move_relative(Transform *t, vec3 translation)
+{
+    Transform_move(t, Transform_relative_direction(t, translation));
+}
+
 
 /*================================================================================
     Body
@@ -97,6 +104,16 @@ void DirectionalLight_init(DirectionalLight *directional_light, float cr, float 
 {
     directional_light->color = new_vec4(cr, cg, cb, ca);
 }
+vec3 DirectionalLight_direction(DirectionalLight *directional_light)
+{
+    // The direction of the light is in the light entity's local z direction.
+    Transform *t = get_sibling_aspect(directional_light, Transform);
+    Matrix4x4f m;
+    euler_rotation_matrix4x4f(&m, t->theta_x, t->theta_y, t->theta_z);
+    vec4 d4 = matrix_vec4(&m, new_vec4(0,0,1,1));
+    return new_vec3(d4.vals[0],d4.vals[1],d4.vals[2]); //---should just use a 3x3 rotation matrix.
+}
+
 AspectType PointLight_TYPE_ID;
 void PointLight_init(PointLight *point_light, float linear_attenuation, float quadratic_attenuation, float cubic_attenuation, float cr, float cg, float cb, float ca)
 {

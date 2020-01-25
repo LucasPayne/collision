@@ -20,10 +20,5 @@ void main(void)
     fPosition = model_matrix * vPosition; // Interpolate the position of the fragment in global coordinates.
     fTexCoord = vTexCoord;
 
-    // fNormal = (model_matrix * vec4(vNormal, 1)).xyz - model_position;
-    
-    // fNormal = vec3(0,1,0);
-
-
     fNormal = (normal_matrix * vec4(vNormal, 1)).xyz;
 }

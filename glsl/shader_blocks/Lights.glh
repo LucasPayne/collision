@@ -6,6 +6,7 @@ definitions between glsl and C.
 #define MAX_NUM_POINT_LIGHTS 32
 
 struct DirectionalLight {
+    vec3 half_vector;
     vec3 direction;
     vec4 color;
 };

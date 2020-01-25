@@ -39,6 +39,8 @@ base_libs:
 #include "bases/interactive_3D.h"
 //---
 #include "gameobjects.c"
+//--- may separate this
+#include "helper.c"
 
 static GLFWwindow *window;
 
@@ -173,11 +175,43 @@ static void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
     for_aspect(Camera, camera)
+        //------
+        // ---Allow cameras to have rectangles, and render to these.
+        // ---Could do resize rectangles (so the camera aspect ratio is infered and this is used to compute the projection matrix)
+        // ---as well as masking rectangles.
+        //------
+
         // Form the view-projection matrix.
         Transform *camera_transform = get_sibling_aspect(camera, Transform);
-        Matrix4x4f view_matrix = Transform_matrix(camera_transform);
+        Matrix4x4f view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
         Matrix4x4f vp_matrix = camera->projection_matrix;
+
+        // right_multiply_by_transpose_matrix4x4f(&vp_matrix, &view_matrix);
         right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+        
+        // Upload the camera position and direction.
+        set_uniform_vec3(Standard3D, camera_position, new_vec3(camera_transform->x, camera_transform->y, camera_transform->z));
+        vec4 camera_forward_vector = matrix_vec4(&view_matrix, new_vec4(0,0,1,1));
+        set_uniform_vec3(Standard3D, camera_direction, *((vec3 *) &camera_forward_vector)); //... get better matrix/vector routines.
+    
+
+        // Upload the uniform half-vectors for directional lights. This depends on the camera, and saves recomputation of the half-vector per-pixel,
+        // since in the case of directional lights this vector is constant.
+        int directional_light_index = 0; //---may be artifacts due to the desynchronization of the index of the directional light through each frame when a light changes.
+        for_aspect(DirectionalLight, directional_light)
+            vec3 direction = DirectionalLight_direction(directional_light);
+            // Both the directional light direction and the camera forward vector are unit length, so their sum gives a half vector, then this is normalized.
+            float hx = camera_forward_vector.vals[0] + direction.vals[0];
+            float hy = camera_forward_vector.vals[1] + direction.vals[2];
+            float hz = camera_forward_vector.vals[2] + direction.vals[2];
+            float inv_length = 1/sqrt(hx*hx + hy*hy + hz*hz);
+            hx *= inv_length;
+            hy *= inv_length;
+            hz *= inv_length;
+            set_uniform_vec3(Lights, directional_lights[directional_light_index].half_vector, new_vec3(hx, hy, hz));
+            directional_light_index ++;
+        end_for_aspect()
+
         // Render each body.
         for_aspect(Body, body)
             Transform *transform = get_sibling_aspect(body, Transform);
@@ -224,12 +258,7 @@ static void loop_base(void)
             fprintf(stderr, ERROR_ALERT "scene error: Too many directional lights have been created. The maximum number is set to %d.\n", MAX_NUM_DIRECTIONAL_LIGHTS);
             exit(EXIT_FAILURE);
         }
-        Transform *t = get_sibling_aspect(directional_light, Transform);
-        // The direction of the light is in the light entity's local z direction.
-        Matrix4x4f m;
-        euler_rotation_matrix4x4f(&m, t->theta_x, t->theta_y, t->theta_z);
-        vec4 direction = matrix_vec4(&m, new_vec4(0,0,1,1));
-        set_uniform_vec3(Lights, directional_lights[index].direction, new_vec3(direction.vals[0],direction.vals[1],direction.vals[2]));
+        set_uniform_vec3(Lights, directional_lights[index].direction, DirectionalLight_direction(directional_light));
         set_uniform_vec4(Lights, directional_lights[index].color, directional_light->color);
         index ++;
     end_for_aspect()

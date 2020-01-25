@@ -19,8 +19,6 @@
 #include "entity.h"
 #include "matrix_mathematics.h"
 
-typedef Matrix4x4f mat4x4;
-typedef Matrix3x3f mat3x3;
 #include "shader_blocks/Standard3D.h"
 #include "shader_blocks/StandardLoopWindow.h"
 #include "shader_blocks/Lights.h"
@@ -36,11 +34,11 @@ extern DataDictionary *g_data;
 "Gameobject" aspects.
 Transform : 3D position, orientation, stored with Euler angles.
 Body: Viewable mesh aspect.
-Camera: 
-
-Currently, this is not really a "library". A useful "game object" system above
-the entity and resource systems should probably only be made by editing this a lot
-and then deciding what aspects are useful, then making it a proper library.
+Camera:
+Logic:
+Input:
+DirectionalLight:
+PointLight:
 ================================================================================*/
 void init_aspects_gameobjects(void);
 
@@ -67,7 +65,9 @@ ASPECT_PROPERTIES()
 } Transform;
 void Transform_set(Transform *transform, float x, float y, float z, float theta_x, float theta_y, float theta_z);
 Matrix4x4f Transform_matrix(Transform *transform);
-vec3 Transform_global_position(Transform *transform);
+vec3 Transform_relative_direction(Transform *t, vec3 direction);
+void Transform_move(Transform *t, vec3 translation);
+void Transform_move_relative(Transform *t, vec3 translation);
 
 /*--------------------------------------------------------------------------------
 A Body is the seeable aspect of a gameobject. This gives information enough
@@ -151,6 +151,12 @@ ASPECT_PROPERTIES()
 void Input_init(Input *inp, uint8_t input_type, /* generic function, type unsafe */ void *callback, bool listening);
 
 /*--------------------------------------------------------------------------------
+    A camera aspect causes things to be rendered to the camera's rectangle,
+    using a projection matrix derived from its initialization (--and rectangle)
+    and view matrix derived via the inverse of its Transform matrix. 
+---Depends on Transform.
+---todo
+    Camera target rectangle, masking rectangle.
 --------------------------------------------------------------------------------*/
 extern AspectType Camera_TYPE_ID;
 typedef struct /* Aspect */ Camera_s {
@@ -177,6 +183,7 @@ ASPECT_PROPERTIES()
     vec4 color;
 } DirectionalLight;
 void DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca);
+vec3 DirectionalLight_direction(DirectionalLight *directional_light);
 
 /*--------------------------------------------------------------------------------
     Point light, omnidirectional light source.
@@ -190,5 +197,9 @@ ASPECT_PROPERTIES()
     float cubic_attenuation;
 } PointLight;
 void PointLight_init(PointLight *point_light, float linear_attenuation, float quadratic_attenuation, float cubic_attenuation, float cr, float cg, float cb, float ca);
+
+//================================================================================
+// Helper stuff. May separate this.
+void create_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z);
 
 #endif // HEADER_DEFINED_INTERACTIVE_3D

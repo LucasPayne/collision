@@ -12,6 +12,9 @@ typedef struct Matrix4x4f_s {
     float vals[4 * 4];
 } Matrix4x4f;
 
+typedef Matrix4x4f mat4x4;
+typedef Matrix3x3f mat3x3;
+
 // Vector stuff
 typedef struct vec4_s {
     float vals[4];
@@ -86,6 +89,15 @@ void print_vec4(vec4 v);
 
 vec4 new_vec4(float x, float y, float z, float w);
 vec3 new_vec3(float x, float y, float z);
+
+//----changing matrix module to stuff more like this.
+vec3 matrix_vec3(mat3x3 m, vec3 v);
+mat3x3 transpose_mat3x3(mat3x3 m);
+mat3x3 rotation_part_rigid_mat4x4(mat4x4 m);
+vec3 translation_vector_rigid_mat4x4(mat4x4 m);
+mat4x4 invert_rigid_mat4x4(mat4x4 m);
+
+mat4x4 euler_angles_mat4x4(float theta_x, float theta_y, float theta_z);
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

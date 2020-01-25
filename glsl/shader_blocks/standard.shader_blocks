@@ -4,6 +4,8 @@ block Standard3D {
     mat4x4 mvp_matrix;
     mat4x4 model_matrix;
     vec3 model_position;
+    vec3 camera_direction;
+    vec3 camera_position;
     mat4x4 normal_matrix;
 };
 
@@ -20,6 +22,7 @@ block Lights {
     struct DirectionalLight {
         vec4 color;
         vec3 direction;
+        vec3 half_vector;
     };
     struct PointLight {
         vec4 color;

@@ -15,7 +15,7 @@ dirt_material < Material (
     type: Resources/Materials/textured_phong;
     diffuse_map < Resources/Textures/minecraft/dirt;
     properties < (
-        int specular: 1;
+        int temp: 1;
     );
 );
 

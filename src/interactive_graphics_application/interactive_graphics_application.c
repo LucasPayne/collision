@@ -23,38 +23,6 @@ static void logic_misc1(Logic *logic)
 }
 //--------------------------------------------------------------------------------
 
-static void camera_controls(Logic *logic)
-{
-    static float velocity_y = 0.0;
-    static bool on_ground = false;
-    
-
-    Transform *t = get_sibling_aspect(logic, Transform);
-    // float rotate_speed = 3;
-    // if (arrow_key_down(Right)) t->theta_y += rotate_speed * dt;
-    // if (arrow_key_down(Left)) t->theta_y -= rotate_speed * dt;
-    // if (arrow_key_down(Up)) t->theta_x -= rotate_speed * dt;
-    // if (arrow_key_down(Down)) t->theta_x += rotate_speed * dt;
-    float speed = 20;
-    if (alt_arrow_key_down(Right)) t->x -= speed * dt;
-    if (alt_arrow_key_down(Left)) t->x += speed * dt;
-    if (alt_arrow_key_down(Up)) t->z += speed * dt;
-    if (alt_arrow_key_down(Down)) t->z -= speed * dt;
-    return;
-    if (alt_arrow_key_down(Right)) t->theta_y += speed * dt;
-    if (alt_arrow_key_down(Left)) t->theta_y -= speed * dt;
-
-    if (alt_arrow_key_down(Up)) t->z += speed * dt;
-    if (alt_arrow_key_down(Down)) t->z -= speed * dt;
-
-    velocity_y -= dt;
-    t->y -= velocity_y;
-    if (t->y < 2) {
-        on_ground = true;
-        t->y = 0;
-        velocity_y = 0;
-    }
-}
 static void test_controls(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
@@ -134,16 +102,6 @@ NewMousePositionListener(mouse_position_test_1)
     printf("mouse position: %g, %g\n", x, y);
 }
 
-NewMouseMoveListener(camera_mouse_move)
-{
-    Transform *t = get_sibling_aspect(inp, Transform);
-    printf("Camera position: %f, %f, %f\n", t->x, t->y, t->z);
-    printf("mouse velocity: %g, %g\n", dx, dy);
-
-    t->theta_y += dx * -0.002;
-    t->theta_x += dy * 0.002;
-}
-
 NewKeyListener(light_test_key)
 {
     Transform *t = get_sibling_aspect(inp, Transform);
@@ -161,13 +119,7 @@ extern void init_program(void)
     resource_path_add("Images", "resources/images");
     resource_path_add("Shaders", "resources/shaders");
 
-    EntityID camera_man = new_entity(4);
-    Transform_set(entity_add_aspect(camera_man, Transform), 0,0,0,0,0,0);
-    Camera *camera = entity_add_aspect(camera_man, Camera);
-    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 10);
-    Logic *logic = entity_add_aspect(camera_man, Logic);
-    logic->update = camera_controls;
-    Input_init(entity_add_aspect(camera_man, Input), INPUT_MOUSE_MOVE, camera_mouse_move, true);
+    create_camera_man(0,0,0, 0,0,1);
 
     // Textured thing
 #if 0
@@ -208,6 +160,8 @@ extern void init_program(void)
         DirectionalLight *directional_light = entity_add_aspect(light, DirectionalLight);
         directional_light->color = new_vec4(1,0.7,0.7,1);
     }
+    #endif
+    #if 1
     {
         EntityID light = new_entity(4);
         Transform_set(entity_add_aspect(light, Transform), 0,0,0,  0,0,0);

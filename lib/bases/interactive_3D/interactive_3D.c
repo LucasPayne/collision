@@ -176,7 +176,7 @@ static void init_base(void)
     resource_path_add("Meshes", "/home/lucas/collision/project_resources/meshes");
     resource_path_add("Images", "/home/lucas/collision/project_resources/images");
     resource_path_add("Shaders", "/home/lucas/collision/project_resources/shaders");
-    // Application-specific source/asset directories. (these directories need not exist.)
+    // Application-specific source/asset directories (these directories need not exist.)
     resource_path_add("Meshes", "resources/meshes");
     resource_path_add("Images", "resources/images");
     resource_path_add("Shaders", "resources/shaders");
@@ -196,8 +196,6 @@ static void render(void)
         Transform *camera_transform = get_sibling_aspect(camera, Transform);
         Matrix4x4f view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
         Matrix4x4f vp_matrix = camera->projection_matrix;
-
-        // right_multiply_by_transpose_matrix4x4f(&vp_matrix, &view_matrix);
         right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
         
         // Upload the camera position and direction.
@@ -212,7 +210,7 @@ static void render(void)
             vec3 direction = DirectionalLight_direction(directional_light);
             // Both the directional light direction and the camera forward vector are unit length, so their sum gives a half vector, then this is normalized.
             float hx = camera_forward_vector.vals[0] + direction.vals[0];
-            float hy = camera_forward_vector.vals[1] + direction.vals[2];
+            float hy = camera_forward_vector.vals[1] + direction.vals[1];
             float hz = camera_forward_vector.vals[2] + direction.vals[2];
             float inv_length = 1/sqrt(hx*hx + hy*hy + hz*hz);
             hx *= inv_length;
@@ -229,6 +227,7 @@ static void render(void)
             Material *material = resource_data(Material, body->material);
             // Form the mvp matrix and upload it, along with other Standard3D information.
             Matrix4x4f model_matrix = Transform_matrix(transform);
+            //---This body rescaling is a hack.
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
                     model_matrix.vals[4*i + j] *= body->scale;
@@ -246,10 +245,20 @@ static void render(void)
         end_for_aspect()
         // Draw the buffered paint (in global coordinates).
         set_uniform_mat4x4(Standard3D, mvp_matrix.vals, vp_matrix.vals);
-        painting_draw();
+        painting_draw(Canvas3D);
     end_for_aspect()
-    // Flush the paint.
-    painting_flush();
+    // Flush the standard 3D paint canvas.
+    painting_flush(Canvas3D);
+    // Draw the 2D overlay paint. ----make this an actual overlay.
+    
+    bool culling;
+    glGetIntegerv(GL_CULL_FACE, &culling);
+    glDisable(GL_CULL_FACE);
+    mat4x4 overlay_matrix = matrix_paint2d();
+    set_uniform_mat4x4(Standard3D, mvp_matrix.vals, overlay_matrix.vals);
+    painting_draw(Canvas2D);
+    painting_flush(Canvas2D);
+    if (culling) glEnable(GL_CULL_FACE);
 }
 
 static void loop_base(void)
@@ -288,7 +297,6 @@ static void loop_base(void)
         set_uniform_float(Lights, point_lights[index].linear_attenuation, point_light->linear_attenuation);
         set_uniform_float(Lights, point_lights[index].quadratic_attenuation, point_light->quadratic_attenuation);
         set_uniform_float(Lights, point_lights[index].cubic_attenuation, point_light->cubic_attenuation);
-    
         index ++;
     end_for_aspect()
     set_uniform_int(Lights, num_point_lights, index);

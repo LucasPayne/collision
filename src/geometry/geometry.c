@@ -70,7 +70,12 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-    paint_line_c(0,0,0,   50,50,50,   "r");
+    paint_line_c(0,0,0,  50,50,50,  "r");
+    
+    paint2d_rect_c(0.9,0.9,  0.1,0.1,  "g");
+    paint2d_quad_c(0,0,  0.1,0,  0.1,0.1,  0,0.1,  "y");
+
+    paint2d_line_c(0,0,  1,1,  "b");
 }
 extern void close_program(void)
 {

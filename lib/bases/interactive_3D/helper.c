@@ -7,7 +7,9 @@ static void camera_controls(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
     float speed = 20;
-    float move_x, move_y, move_z;
+    float move_x = 0;
+    float move_y = 0;
+    float move_z = 0;
     if (alt_arrow_key_down(Right)) move_x += speed * dt;
     if (alt_arrow_key_down(Left)) move_x -= speed * dt;
     if (alt_arrow_key_down(Up)) move_z -= speed * dt;

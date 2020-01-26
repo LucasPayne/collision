@@ -2,7 +2,6 @@
 project_libs:
     + bases/interactive_3D
     + scenes
-    + painting
 --------------------------------------------------------------------------------*/
 #include "bases/interactive_3D.h"
 #include "scenes.h"
@@ -66,7 +65,6 @@ extern void loop_program(void)
     paint_line_c(-2,2,-2,   -2,5,-2,  "g"); // y
     paint_line_c(-2,2,-2,   -2,2,1,   "b"); // z
 }
-
 
 extern void close_program(void)
 {

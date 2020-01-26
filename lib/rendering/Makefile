@@ -1,8 +1,14 @@
-rendering.o: $(LIB)/rendering.c $(LIB)/geometry.c $(LIB)/shaders.c $(LIB)/materials.c $(LIB)/textures.c $(LIB)/meshes.c
-	$(CC) -o _rendering.o -c $(LIB)/rendering.c $(CFLAGS)
-	$(CC) -o geometry.o -c $(LIB)/geometry.c $(CFLAGS)
-	$(CC) -o shaders.o -c $(LIB)/shaders.c $(CFLAGS)
-	$(CC) -o materials.o -c $(LIB)/materials.c $(CFLAGS)
-	$(CC) -o textures.o -c $(LIB)/textures.c $(CFLAGS)
-	$(CC) -o meshes.o -c $(LIB)/meshes.c $(CFLAGS)
-	ld -relocatable _rendering.o geometry.o shaders.o materials.o textures.o meshes.o -o rendering.o
+rendering.o: _rendering.o geometry.o shaders.o materials.o textures.o meshes.o
+	ld -relocatable -o $@ $^
+meshes.o: $(LIB)/meshes.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
+textures.o: $(LIB)/textures.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
+materials.o: $(LIB)/materials.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
+shaders.o: $(LIB)/shaders.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
+geometry.o: $(LIB)/geometry.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
+_rendering.o: $(LIB)/rendering.c
+	$(CC) -o $@ -c $^ $(CFLAGS)

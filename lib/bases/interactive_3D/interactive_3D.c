@@ -38,7 +38,6 @@ project_libs:
 #define BASE_DIRECTORY "/home/lucas/collision/lib/bases/interactive_3D/"
 #define PROJECT_DIRECTORY "/home/lucas/collision/"
 #include "bases/interactive_3D.h"
-//---
 
 static GLFWwindow *window;
 

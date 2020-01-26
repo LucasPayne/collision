@@ -23,9 +23,6 @@ This consists of
 ResourceType Shader_RTID;
 void Shader_load(void *resource, char *path)
 {
-    /* printf("loading shader from path \"%s\" ...\n", path); */
-    /* getchar(); */
-
     // Path format:
     //      Drive/path/to/shader.{vert,geom,frag}
     // Corresponds directly to a GLSL shader source file.

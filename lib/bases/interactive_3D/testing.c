@@ -13,6 +13,8 @@ Right now a scripting language seems like a far more complex problem, but would 
 most logic would be defined for a specific thing, and it would be nice to create random logic without altering
 code, providing function pointers, etc. Then scripts could even be a type in the .dd system, and also sourced with #include(...).
 --------------------------------------------------------------------------------*/
+#include "bases/interactive_3D.h"
+
 /*--------------------------------------------------------------------------------
     Testing entity control schemes.
 --------------------------------------------------------------------------------*/

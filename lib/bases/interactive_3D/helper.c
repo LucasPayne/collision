@@ -2,6 +2,7 @@
     These are helper functions for a possibly more specific "base", which could
     be separated as an extension of this base. Mouse-controllable camera, etc.
 --------------------------------------------------------------------------------*/
+#include "bases/interactive_3D.h"
 
 static void camera_controls(Logic *logic)
 {

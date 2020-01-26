@@ -39,10 +39,6 @@ project_libs:
 #define PROJECT_DIRECTORY "/home/lucas/collision/"
 #include "bases/interactive_3D.h"
 //---
-#include "gameobjects.c"
-//--- may separate this
-#include "helper.c"
-#include "testing.c"
 
 static GLFWwindow *window;
 

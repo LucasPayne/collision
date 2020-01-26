@@ -53,7 +53,7 @@ static struct Pool {
     int power;
     int count;
     void *location;
-    uint16_t free_list;
+    int16_t free_list;
 } sma_pools[32] = { 0 };
 static uint32_t sma_pool_powers_mask = 0;
 
@@ -98,7 +98,7 @@ void init_small_memory_allocator(const SMAPoolInfo sma_pool_info[], const int nu
         for (int j = 0; j < new_sma_pool->count; j++) {
             FreeList *fl = (FreeList *) (new_sma_pool->location + (j << new_sma_pool->power));
             fl->prev = j - 1;
-            fl->next = j + 1;
+            fl->next = j == new_sma_pool->count - 1 ? -1 : j + 1; // end the free list if at the end.
         }
         printf("pool:\n\tpower: %zu\n\tcount: %d\n\tfree_list: %d\n\toffset: %zu\n",
                 new_sma_pool->power, new_sma_pool->count, new_sma_pool->free_list, new_sma_pool->location - g_small_memory_allocator.location);
@@ -188,9 +188,27 @@ void small_memory_allocator_debug_overlay(void)
         while (square_side * square_side < pool->count) square_side += 1; // Find the root of the smallest square number which can contain the number of cells.
         float cell_width = pool_width / square_side;
         float cell_height = height / square_side;
+
+        bool cell_states[square_side * square_side];
+        memset(cell_states, true, square_side * square_side);
+        // Deactivate the cells in the free list.
+        FreeList *free_list = (FreeList *) (pool->location + (pool->free_list << pool->power));
+        printf("next: %d\n", free_list->next);
+        // //---first in free list
+        while (free_list->next != -1) {
+            printf("next: %d\n", free_list->next);
+            cell_states[free_list->next] = false;
+            free_list = ((FreeList*) (pool->location + (free_list->next << pool->power)));
+        }
+
         for (int j = 0; j < square_side; j++) {
             for (int k = 0; k < square_side; k++) {
-                paint2d_rect(pool_blx+cell_width*j,pool_bly+cell_height*k,  cell_width,cell_height,  0,j*1.0/square_side,k*1.0/square_side,1);
+                int cell_index = j*square_side + k;
+                if (cell_index >= pool->count) continue;
+                if (cell_states[cell_index])
+                    paint2d_rect(pool_blx+cell_width*j,pool_bly+cell_height*k,  cell_width,cell_height,  0,j*1.0/square_side,k*1.0/square_side,1);
+                // else
+                //     paint2d_loop(pool_blx,pool_bly,  pool_blx+cell_width,pool_bly,  pool_blx+cell_width,pool_blx+cell_height,  pool_blx,pool_bly+cell_height,  0,0,1,1);
             }
         }
         index ++;

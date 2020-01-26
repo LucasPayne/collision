@@ -1,7 +1,7 @@
 /*--------------------------------------------------------------------------------
 notes
 -----
-It might be fine not to use the resource system minimally. Painting would be a very special
+It might be fine to use the resource system minimally. Painting would be a very special
 purpose thing, with its own materials, which could be hardcoded. This would bypass the overhead
 of doing resource lookups, caching, etc.
 

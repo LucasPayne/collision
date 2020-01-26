@@ -77,4 +77,9 @@ void init_small_memory_allocator(const SMAPoolInfo sma_pool_info[], const int nu
 void *sma_alloc(size_t size);
 // todo: sma_free
 
+/*================================================================================
+    Debugging
+================================================================================*/
+void small_memory_allocator_debug_overlay(void);
+
 #endif // HEADER_DEFINED_MEMORY

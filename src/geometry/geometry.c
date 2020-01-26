@@ -65,15 +65,22 @@ extern void init_program(void)
     painting_init();
     create_camera_man(0,0,0,  0,0,0);
 
-    test_floor("Textures/archimedes");
-    test_directional_light_controlled();
+    // test_floor("Textures/archimedes");
+    // test_directional_light_controlled();
 }
 extern void loop_program(void)
 {
-    paint_line_c(0,0,0,  50,50,50,  "r");
-    
-    paint2d_rect_c(0.9,0.9,  0.1,0.1,  "g");
-    paint2d_quad_c(0,0,  0.1,0,  0.1,0.1,  0,0.1,  "y");
+    // paint_line_c(0,0,0,  50,50,50,  "r");
+
+#if 1
+    int cell_h = 6;
+    int cell_v = 6;
+    for (int i = 0; i < cell_h; i++) {
+        for (int j = 0; j < cell_v; j++) {
+            paint2d_rect(i/(cell_h*5.0),j/(cell_v*5.0),  1.0/5.0,1.0/5.0,   i*1.0/cell_h,frand(),1-j*1.0/cell_v,1);
+        }
+    }
+#endif
 
     paint2d_line_c(0,0,  1,1,  "b");
 }

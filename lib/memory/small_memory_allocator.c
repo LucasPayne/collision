@@ -5,6 +5,10 @@
 #include "helper_definitions.h"
 #include "memory.h"
 
+// Memory debugging rendering is built into this module. Maybe it would be better to define a separate header for graphical memory debugging utilities, and
+// have a separate module.
+#include "painting.h"
+
 /*--------------------------------------------------------------------------------
     Debugging
 --------------------------------------------------------------------------------*/
@@ -115,16 +119,16 @@ void *sma_alloc(size_t size)
     // To find the pool which this size fits into, calculate the position of the most significant bit.
     // Let s be the number of left shifts needed so that the left-hand bit is 1. p = sizeof(size_t) - 1 - s is then the optimal power of the pool.
     // However, this may not be in the sma pool powers bitmask, so this value will be increased to the position of the first 1 bit in the powers mask.
-    // int s;
-    // for (s = 0; s < sizeof(size_t); s++) {
-    //     if (((size << s) & (1 << (sizeof(size_t)-1))) != 0) break;
-    // }
-    // int p = sizeof(size_t) - s;
-    // while (p < 32) {
-    //     if ((sma_pool_powers_mask & (1 << p)) == 0) p++;
-    //     else break;
-    // }
-    int p = 12; // Allocate 4 KB ////////////////
+    int s;
+    for (s = 0; s < sizeof(size_t); s++) {
+        if (((size << s) & (1 << (sizeof(size_t)-1))) != 0) break;
+    }
+    int p = sizeof(size_t) - s;
+    while (p < 32) {
+        if ((sma_pool_powers_mask & (1 << p)) == 0) p++;
+        else break;
+    }
+    // int p = 12; // Allocate 4 KB ////////////////
     printf("Pool %d chosen, cell size: %d\n", p, 1 << p);
     // p is now the power of the sma pool being used for allocation.
     // ------------------------------------------------------------------
@@ -154,3 +158,54 @@ void *sma_alloc(size_t size)
 //     fl->next = sma_pools[p].free_list;
 //     sma_pools[p].free_list = 
 // }
+
+/*--------------------------------------------------------------------------------
+    Graphical debugging.
+note: the memory allocators need to work somewhat already to be able to use this.
+--------------------------------------------------------------------------------*/
+void small_memory_allocator_debug_overlay(void)
+{
+    float blx = 0.1;
+    float bly = 0.6;
+    float trx = 0.9;
+    float try = 0.9;
+    float width = trx - blx;
+    float height = try - bly;
+    
+    int num_sma_pools = 0;
+    for (int i = 0; i < 32; i++) {
+        if ((sma_pool_powers_mask & (1 << i)) != 0) num_sma_pools ++;
+    }
+    float pool_width = width / num_sma_pools;
+
+    int index = 0;
+    for (int i = 0; i < 32; i++) {
+        if ((sma_pool_powers_mask & (1 << i)) == 0) continue;
+        float pool_blx = blx+pool_width*index;
+        float pool_bly = bly;
+        struct Pool *pool = &sma_pools[i];
+        int square_side = 1;
+        while (square_side * square_side < pool->count) square_side += 1; // Find the root of the smallest square number which can contain the number of cells.
+        float cell_width = pool_width / square_side;
+        float cell_height = height / square_side;
+        for (int j = 0; j < square_side; j++) {
+            for (int k = 0; k < square_side; k++) {
+                paint2d_rect(pool_blx+cell_width*j,pool_bly+cell_height*k,  cell_width,cell_height,  0,j*1.0/square_side,k*1.0/square_side,1);
+            }
+        }
+        index ++;
+    }
+        
+
+// static struct Pool {
+//     int power;
+//     int count;
+//     void *location;
+//     uint16_t free_list;
+// } sma_pools[32] = { 0 };
+
+        // paint2d_rect(blx+pool_width*i,bly,  pool_width,height,  0,0,i*1.0/num_sma_pools,1);
+}
+
+
+

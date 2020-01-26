@@ -48,6 +48,9 @@ static GLFWwindow *window;
 
 DataDictionary *g_data; // Global data dictionary for the application.
 float ASPECT_RATIO;
+
+static const int g_glfw_sma_debug_overlay_key = GLFW_KEY_F11; // debugging small memory allocator.
+static bool g_sma_debug_overlay = false;
 static bool g_raw_mouse = false; // If enabled in config, a meta-key will toggle this.
 static const int g_glfw_raw_mouse_key = GLFW_KEY_F12;
 static void toggle_raw_mouse(void)
@@ -110,10 +113,14 @@ static void key_callback(GLFWwindow *window, int key,
     key_callback_quit(window, key, scancode, action, mods);
     key_callback_arrows_down(window, key, scancode, action, mods);
 
+    // Meta-keys (debug, input, etc.)
     if (g_raw_mouse) { // if the raw mouse option is enabled, it is toggleable with a meta-key.
         if (action == GLFW_PRESS && key == g_glfw_raw_mouse_key) {
             toggle_raw_mouse();
         }
+    }
+    if (action == GLFW_PRESS && key == g_glfw_sma_debug_overlay_key) {
+        g_sma_debug_overlay = !g_sma_debug_overlay;
     }
 
     // Send input events to Input aspects listening for keys.
@@ -143,12 +150,12 @@ static void init_base(void)
     // (A small memory allocator is a pool consisting of multiple pools, each with power-of-two cell sizes. The allocation routine
     //  infers from the size what pool to use.)
     static const SMAPoolInfo sma_pool_info[] = { // Edit this to change the available pool sizes.
-        { 3, 1 << (12 - 3)},
-        { 4, 1 << (12 - 4)},
-        { 5, 1 << (12 - 5)},
-        { 6, 1 << (12 - 6)},
-        { 7, 1 << (12 - 7)},
-        { 8, 1 << (12 - 8)},
+        { 3, 1 << (10 - 3)},
+        { 4, 1 << (10 - 4)},
+        { 5, 1 << (10 - 5)},
+        { 6, 1 << (10 - 6)},
+        { 7, 1 << (10 - 7)},
+        { 8, 1 << (10 - 8)},
         { 12, 128 }, // 4 KB for "big resources".
     };
     static const int num_sma_pools = sizeof(sma_pool_info)/sizeof(SMAPoolInfo);
@@ -302,6 +309,10 @@ static void loop_base(void)
     set_uniform_int(Lights, num_point_lights, index);
 }
     render();
+
+    // Debug rendering
+    if (g_sma_debug_overlay) small_memory_allocator_debug_overlay();
+
     loop_program();
 }
 

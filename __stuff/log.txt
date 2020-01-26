@@ -1,0 +1,53 @@
+rm -r build/*
+mkdir -p "build/lib/glad";\
+# echo "!!!!!!!!!! MAKING build/lib/glad/glad.o !!!!!!!!!!!!!!!"
+# sleep 1.5
+test -f "/home/lucas/collision/lib/glad/Makefile" && (\
+	cd "build/lib/glad" && LIB=/home/lucas/collision/lib/glad\
+		make -e --file=/home/lucas/collision/lib/glad/Makefile;\
+) || (\
+	gcc -rdynamic -I/home/lucas/collision/include -Wall -o build/lib/glad/glad.o -c lib/glad/glad.c -lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng;\
+)
+make[1]: Entering directory '/home/lucas/collision/build/lib/glad'
+gcc -rdynamic -I/home/lucas/collision/include -Wall -o "glad.o" -c "/home/lucas/collision/lib/glad/glad.c" -lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng
+make[1]: Leaving directory '/home/lucas/collision/build/lib/glad'
+mkdir -p "build/lib/helper_definitions";\
+# echo "!!!!!!!!!! MAKING build/lib/helper_definitions/helper_definitions.o !!!!!!!!!!!!!!!"
+# sleep 1.5
+test -f "/home/lucas/collision/lib/helper_definitions/Makefile" && (\
+	cd "build/lib/helper_definitions" && LIB=/home/lucas/collision/lib/helper_definitions\
+		make -e --file=/home/lucas/collision/lib/helper_definitions/Makefile;\
+) || (\
+	gcc -rdynamic -I/home/lucas/collision/include -Wall -o build/lib/helper_definitions/helper_definitions.o -c lib/helper_definitions/helper_definitions.c -lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng;\
+)
+mkdir -p "build/lib/helper_gl";\
+# echo "!!!!!!!!!! MAKING build/lib/helper_gl/helper_gl.o !!!!!!!!!!!!!!!"
+# sleep 1.5
+test -f "/home/lucas/collision/lib/helper_gl/Makefile" && (\
+	cd "build/lib/helper_gl" && LIB=/home/lucas/collision/lib/helper_gl\
+		make -e --file=/home/lucas/collision/lib/helper_gl/Makefile;\
+) || (\
+	gcc -rdynamic -I/home/lucas/collision/include -Wall -o build/lib/helper_gl/helper_gl.o -c lib/helper_gl/helper_gl.c -lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng;\
+)
+mkdir -p "build/lib/helper_input";\
+# echo "!!!!!!!!!! MAKING build/lib/helper_input/helper_input.o !!!!!!!!!!!!!!!"
+# sleep 1.5
+test -f "/home/lucas/collision/lib/helper_input/Makefile" && (\
+	cd "build/lib/helper_input" && LIB=/home/lucas/collision/lib/helper_input\
+		make -e --file=/home/lucas/collision/lib/helper_input/Makefile;\
+) || (\
+	gcc -rdynamic -I/home/lucas/collision/include -Wall -o build/lib/helper_input/helper_input.o -c lib/helper_input/helper_input.c -lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng;\
+)
+mkdir -p "build/lib/memory";\
+# echo "!!!!!!!!!! MAKING build/lib/memory/memory.o !!!!!!!!!!!!!!!"
+# sleep 1.5
+test -f "/home/lucas/collision/lib/memory/Makefile" && (\
+	cd "build/lib/memory" && LIB=/home/lucas/collision/lib/memory\
+		make -e --file=/home/lucas/collision/lib/memory/Makefile;\
+) || (\
+	gcc -rdynamic -I/home/lucas/collision/include -Wall -o build/lib/memory/memory.o -c lib/memory/memory.c -lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng;\
+)
+make[1]: Entering directory '/home/lucas/collision/build/lib/memory'
+gcc -rdynamic -I/home/lucas/collision/include -Wall -o _memory.o -c /home/lucas/collision/lib/memory/memory.c -lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng
+/home/lucas/collision/lib/memory/Makefile:3: recipe for target 'memory.o' failed
+Makefile:95: recipe for target 'build/lib/memory/memory.o' failed

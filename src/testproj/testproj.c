@@ -4,6 +4,7 @@ project_libs:
     + ply
     + test_lib
 */
+#include <stdio.h>
 
 int main(void)
 {

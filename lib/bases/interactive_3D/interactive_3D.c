@@ -19,7 +19,7 @@ The application must provide:
     void input_event(int key, int action, int mods);
     void cursor_move_event(float x, float y);
 
-base_libs:
+project_libs:
     + glad
     + helper_definitions
     + helper_gl

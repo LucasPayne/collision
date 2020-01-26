@@ -1,0 +1,4 @@
+# The default makefile for libraries.
+# This assumes that the library is a single C file with straightforward compilation.
+all:
+	$(CC) -o $(LIBNAME).o -c $(LIB)/$(LIBNAME).c $(CFLAGS)

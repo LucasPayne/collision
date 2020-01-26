@@ -7,7 +7,10 @@ Body
     Viewable mesh aspect.
 Logic
     Per-frame update logic.
+Input
 Camera
+DirectionalLight
+PointLight
 
 Currently, this is not really a "library". A useful "game object" system above
 the entity and resource systems should probably only be made by editing this a lot
@@ -37,6 +40,10 @@ void Transform_set(Transform *transform, float x, float y, float z, float theta_
     transform->theta_x = theta_x;
     transform->theta_y = theta_y;
     transform->theta_z = theta_z;
+}
+vec3 Transform_position(Transform *t)
+{
+    return new_vec3(t->x, t->y, t->z);
 }
 Matrix4x4f Transform_matrix(Transform *transform)
 {
@@ -107,11 +114,7 @@ void DirectionalLight_init(DirectionalLight *directional_light, float cr, float 
 vec3 DirectionalLight_direction(DirectionalLight *directional_light)
 {
     // The direction of the light is in the light entity's local z direction.
-    Transform *t = get_sibling_aspect(directional_light, Transform);
-    Matrix4x4f m;
-    euler_rotation_matrix4x4f(&m, t->theta_x, t->theta_y, t->theta_z);
-    vec4 d4 = matrix_vec4(&m, new_vec4(0,0,1,1));
-    return new_vec3(d4.vals[0],d4.vals[1],d4.vals[2]); //---should just use a 3x3 rotation matrix.
+    return Transform_relative_direction(get_sibling_aspect(directional_light, Transform), new_vec3(0,0,1));
 }
 
 AspectType PointLight_TYPE_ID;

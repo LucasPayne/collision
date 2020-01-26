@@ -290,8 +290,6 @@ vec3 vec3_neg(vec3 a)
     return v;
 }
 
-typedef Matrix4x4f mat4x4;
-typedef Matrix3x3f mat3x3;
 
 // mat4x4 multiply_mat4x4(mat4x4 a, mat4x4 b)
 // {

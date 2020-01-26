@@ -6,6 +6,13 @@ project_libs:
 
 void star_update(Logic *logic)
 {
+    Transform *t = get_sibling_aspect(logic, Transform);
+    t->x += 4 * sin(time) * dt;
+    t->y += 4 * cos(time) * dt;
+    t->theta_x -= 1.1 * dt;
+    t->theta_y += 1.5 * dt;
+    t->theta_z -= 1.3 * dt;
+
     const int n = 5;
     vec4 colors[] = {
         new_vec4(1,0,0,1),
@@ -23,20 +30,16 @@ void star_update(Logic *logic)
         mul -= (int) mul;
 
         float size = 2;
-        Transform *t = get_sibling_aspect(logic, Transform);
         float vertices[3 * 10];
         for (int i = 0; i < 10; i++) {
             float outward = i % 2 == 0 ? size : size/2;
             float x = cos(i * 2*M_PI/10);
             float y = sin(i * 2*M_PI/10);
-            vertices[3*i + 0] = t->x + x*outward*mul;
-            vertices[3*i + 1] = t->y + y*outward*mul;
-            vertices[3*i + 2] = t->z;
+            *((vec3 *) &vertices[3*i]) = vec3_add(Transform_position(t), Transform_relative_direction(t, new_vec3(x*outward*mul, y*outward*mul, 0)));
         }
         paint_loop_v(vertices, 10, colors[i]);
     }
 }
-
 void spawn_star(float x, float y, float z, float theta_x, float theta_y, float theta_z)
 {
     EntityID entity = new_entity(4);

@@ -49,5 +49,6 @@ void main(void)
 
     // Texture
     color *= texture(diffuse_map, fTexCoord);
+    // Specular
     color += vec4(specular, specular, specular, 0);
 }

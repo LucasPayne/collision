@@ -60,7 +60,7 @@ static void test_directional_light_controlled_key_input(Input *input, int key, i
 void test_directional_light_controlled(void)
 {
     EntityID light = new_entity(4);
-    Transform_set(entity_add_aspect(light, Transform), 0,0,0,  0,0,0);
+    Transform_set(entity_add_aspect(light, Transform), 0,0,0,  3,-1,1);
     DirectionalLight *directional_light = entity_add_aspect(light, DirectionalLight);
     directional_light->color = new_vec4(1,1,0.1,1);
     Input_init(entity_add_aspect(light, Input), INPUT_KEY, test_directional_light_controlled_key_input, true);

@@ -20,7 +20,7 @@ extern void init_program(void)
     Transform_set(entity_add_aspect(cube, Transform), 0,3,0,  0,0,0);
     Body *body = entity_add_aspect(cube, Body);
     body->scale = 20;
-    body->material = Material_create("Materials/textured_phong");
+    body->material = Material_create("Materials/textured_phong_shadows");
     material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/dirt");
     body->geometry = new_resource_handle(Geometry, "Models/block");
 

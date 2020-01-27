@@ -190,10 +190,30 @@ static void do_shadows(void)
 
         for_aspect(Body, body)
             Geometry *geometry = resource_data(Geometry, body->geometry);
+            gm_draw(*geometry, g_shadow_map_material);
         end_for_aspect()
+
+        ResourceHandle gres = new_resource_handle(Geometry, "Models/quad");
+        Geometry *geom = resource_data(Geometry, gres);
+        ResourceHandle mres = Material_create("Materials/texture");
+        Material *mat = resource_data(Material, mres);
+        ResourceHandle tres;
+        Texture *tex = oneoff_resource(Texture, tres);
+        tex->texture_id = shadow_map->texture;
+        material_set_texture(mat, "diffuse_map", tres);
+        // mat4x4 mvp_matrix = {{
+        //     
+        // }}
+        // set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
+        gm_draw(*geom, mat);
+
+        destroy_resource_handle(&gres);
+        destroy_resource_handle(&mres);
+        destroy_resource_handle(&tres);
 
         index ++;
     end_for_aspect()
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 

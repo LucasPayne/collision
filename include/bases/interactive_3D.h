@@ -214,4 +214,7 @@ void test_directional_light_controlled(void);
 void test_point_light_1(void);
 void test_mass_objects(int number_of_them);
 
+// Applications are not supposed to use this, but it is exposed here for testing.
+void ___render(void);
+
 #endif // HEADER_DEFINED_INTERACTIVE_3D

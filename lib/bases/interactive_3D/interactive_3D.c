@@ -192,11 +192,10 @@ static void do_shadows(void)
 {
     int index = 0;
     for_aspect(DirectionalLight, light)
-        ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
         Transform *t = get_sibling_aspect(light, Transform);
-        mat4x4 shadow_view_matrix = invert_rigid_mat4x4(Transform_matrix(t));
-        //mat4x4 shadow_matrix = shadow_view_matrix;
-        //mat4x4 shadow_matrix = identity_mat4x4();
+        ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
+        mat4x4 shadow_matrix;
+        //mat4x4 shadow_view_matrix = invert_rigid_mat4x4(Transform_matrix(t));
         Camera *camera;
         for_aspect(Camera, getting_camera)
             camera = getting_camera;
@@ -204,11 +203,13 @@ static void do_shadows(void)
         end_for_aspect()
         Transform *camera_transform = get_sibling_aspect(camera, Transform);
         Matrix4x4f view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
-        Matrix4x4f vp_matrix = camera->projection_matrix;
-        right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
-        mat4x4 shadow_matrix = vp_matrix;
+        //Matrix4x4f vp_matrix = camera->projection_matrix;
+        //right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+        //shadow_matrix = vp_matrix;
+        //shadow_matrix = view_matrix;
+        shadow_matrix = identity_mat4x4();
 
-        set_uniform_mat4x4(Lights, active_shadow_matrix.vals, shadow_matrix.vals);
+        //set_uniform_mat4x4(Lights, active_shadow_matrix.vals, shadow_matrix.vals);
 
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
         // Save the viewport, switch it for rendering to the shadow map, then later switch it back.
@@ -220,7 +221,23 @@ static void do_shadows(void)
         // glClearDepth is the analogue to glClearColor.
         glClearDepth(1.0); //---maybe should save this and restore it after.
         glClear(GL_DEPTH_BUFFER_BIT);
-#if 1
+{
+        ResourceHandle gres = new_resource_handle(Geometry, "Models/quad");
+        Geometry *geom = resource_data(Geometry, gres);
+        ResourceHandle mres = Material_create("Materials/red");
+        Material *mat = resource_data(Material, mres);
+        mat4x4 matrix = {{
+            0.25,  0,    0,    0.25,
+            0,    0.25,  0,    0.25,
+            0,    0,    0.25,  0,
+            0,    0,    0,    1,
+        }};
+        set_uniform_mat4x4(Standard3D, mvp_matrix.vals, matrix.vals);
+        gm_draw(*geom, mat);
+        destroy_resource_handle(&gres);
+        destroy_resource_handle(&mres);
+}
+#if 0
         for_aspect(Body, body)
             Transform *t = get_sibling_aspect(body, Transform);
             Matrix4x4f model_matrix = Transform_matrix(t);
@@ -294,7 +311,7 @@ static void do_shadows(void)
         ResourceHandle mres = Material_create("Materials/render_shadow_map");
         Material *mat = resource_data(Material, mres);
 #if 0
-        material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
+        material_set_texture_path(mat, "shadow_map", "Textures/minecraft/dirt");
 #else
         Texture *tex = oneoff_resource(Texture, tres);
         tex->texture_id = map_tex;
@@ -417,14 +434,24 @@ static void init_base(void)
     resource_path_add("Images", "resources/images");
     resource_path_add("Shaders", "resources/shaders");
 
-    init_shadows();
+    //init_shadows();
 }
 
 static void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
 
-    do_shadows();
+    // Draw the 2D overlay paint. ----make this an actual overlay.
+    bool culling;
+    glGetIntegerv(GL_CULL_FACE, &culling);
+    glDisable(GL_CULL_FACE);
+    mat4x4 overlay_matrix = matrix_paint2d();
+    set_uniform_mat4x4(Standard3D, mvp_matrix.vals, overlay_matrix.vals);
+    painting_draw(Canvas2D);
+    painting_flush(Canvas2D);
+    if (culling) glEnable(GL_CULL_FACE);
+
+    //do_shadows();
     for_aspect(Camera, camera)
         //------
         // ---Allow cameras to have rectangles, and render to these.
@@ -489,16 +516,11 @@ static void render(void)
     end_for_aspect()
     // Flush the standard 3D paint canvas.
     painting_flush(Canvas3D);
-
-    // Draw the 2D overlay paint. ----make this an actual overlay.
-    bool culling;
-    glGetIntegerv(GL_CULL_FACE, &culling);
-    glDisable(GL_CULL_FACE);
-    mat4x4 overlay_matrix = matrix_paint2d();
-    set_uniform_mat4x4(Standard3D, mvp_matrix.vals, overlay_matrix.vals);
-    painting_draw(Canvas2D);
-    painting_flush(Canvas2D);
-    if (culling) glEnable(GL_CULL_FACE);
+}
+// Applications are not supposed to use this, but it is exposed here for testing.
+void ___render(void)
+{
+    render();
 }
 
 static void loop_base(void)

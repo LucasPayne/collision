@@ -6,5 +6,5 @@
 layout (location = 0) out vec4 color; // why set location?
 void main(void)
 {
-    color = vec4(1.0);
+    gl_FragDepth = gl_FragCoord.z; // this is already done implicity.
 }

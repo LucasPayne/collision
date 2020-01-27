@@ -58,13 +58,13 @@ void Shader_load(void *resource, char *path)
         }
     }
     if (i == g_resource_path_count) {
-        fprintf(stderr, "FAILED TO GET SHADER FILE PATH\n");
+        fprintf(stderr, ERROR_ALERT "Failed to get shader from path \"%s\".\n", path);
         exit(EXIT_FAILURE);
         return NULL;
     }
     printf("Shader path: \"%s\"\n", shader_path_buffer);
     if (!load_and_compile_shader(shader_id, shader_path_buffer)) {
-        fprintf(stderr, "FAILED TO COMPILE SHADER\n");
+        fprintf(stderr, ERROR_ALERT "Failed to compile shader.\n");
         exit(EXIT_FAILURE);
         return NULL;
     }
@@ -76,7 +76,7 @@ void Shader_load(void *resource, char *path)
 }
 bool Shader_reload(ResourceHandle handle)
 {
-    fprintf(stderr, "unimplemented\n");
+    fprintf(stderr, ERROR_ALERT "Shader_reload unimplemented\n");
     exit(EXIT_FAILURE);
     /* Shader *shader = resource_data(Shader, handle); */
     /* char shader_path_buffer[1024]; */

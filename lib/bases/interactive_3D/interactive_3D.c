@@ -263,52 +263,38 @@ static void do_shadows(void)
         printf("%d / %d\n", count, SHADOW_MAP_TEXTURE_WIDTH*SHADOW_MAP_TEXTURE_HEIGHT);
 #endif
         // Create a new texture to show the shadow map.
-        static float view_depth_data[4 * SHADOW_MAP_TEXTURE_WIDTH * SHADOW_MAP_TEXTURE_HEIGHT];
-        for (int i = 0; i < SHADOW_MAP_TEXTURE_WIDTH; i++) {
-            for (int j = 0; j < SHADOW_MAP_TEXTURE_HEIGHT; j++) {
-                // *((vec4 *) &view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j)]) = new_vec4(1,0,1,1);
-                view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 0] = depth_data[SHADOW_MAP_TEXTURE_HEIGHT*i + j];
-                view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 1] = depth_data[SHADOW_MAP_TEXTURE_HEIGHT*i + j];
-                view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 2] = depth_data[SHADOW_MAP_TEXTURE_HEIGHT*i + j];
-                view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 3] = 1.0;
-                // view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 0] = 0.3;
-                // view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 1] = 0.3;
-                // view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 2] = 0.3;
-                // view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 3] = 1.0;
-            }
-        }
         GLuint map_tex;
         glGenTextures(1, &map_tex);
         glBindTexture(GL_TEXTURE_2D, map_tex);
-        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
 #if 1
         glTexSubImage2D(GL_TEXTURE_2D,
                         0, // first mipmap level
                         0, 0, // x and y offset
                         SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT,
-                        GL_RGBA, GL_FLOAT,
-                        view_depth_data);
+                        GL_DEPTH_COMPONENT, GL_FLOAT,
+                        depth_data);
 #endif
 
         ResourceHandle tres;
         // Test view the depth buffer as a rendered texture.
         ResourceHandle gres = new_resource_handle(Geometry, "Models/quad");
         Geometry *geom = resource_data(Geometry, gres);
-        ResourceHandle mres = Material_create("Materials/texture");
+        ResourceHandle mres = Material_create("Materials/render_shadow_map");
         Material *mat = resource_data(Material, mres);
 #if 0
         material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
 #else
         Texture *tex = oneoff_resource(Texture, tres);
         tex->texture_id = map_tex;
-        material_set_texture(mat, "diffuse_map", tres);
+        material_set_texture(mat, "shadow_map", tres);
 #endif
 
         mat4x4 mvp_matrix = {{
-            0.25,  0,    0,    0,
-            0,    0.25,  0,    0,
+            0.25,  0,    0,    0.25,
+            0,    0.25,  0,    0.25,
             0,    0,    0.25,  0,
-            0.25,    0.25,    0,    1,
+            0,    0,    0,    1,
         }};
         set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

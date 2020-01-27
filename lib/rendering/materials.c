@@ -100,11 +100,11 @@ void MaterialType_load(void *resource, char *path)
         strncpy(mt.texture_names[i], texture, MATERIAL_MAX_TEXTURE_NAME_LENGTH);
         // Bind this texture in the program to the binding point.
         GLint texture_location = glGetUniformLocation(mt.program_id, texture);
-        if (texture_location < 0) {
-            // ----Since a sampler in glsl is a loose uniform variable, maybe it could be optimized out. -1 being passed to texture functions
-            // fails silently, so it might be fine to not give a load error here.
-            load_error("Could not find sampler in linked program.");
-        }
+        // if (texture_location < 0) {
+        //     // ----Since a sampler in glsl is a loose uniform variable, maybe it could be optimized out. -1 being passed to texture functions
+        //     // fails silently, so it might be fine to not give a load error here.
+        //     load_error("Could not find sampler in linked program.");
+        // }
         glUniform1i(texture_location, i);
     }
     glUseProgram(0);

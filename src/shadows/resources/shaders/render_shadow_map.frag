@@ -4,6 +4,7 @@ This shader is for debugging shadow maps, or other depth maps, allowing them to 
 rendered to quads.
 https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 --------------------------------------------------------------------------------*/
+#version 420
 
 uniform sampler2D shadow_map;
 
@@ -17,4 +18,3 @@ void main(void)
     float depth = texture(shadow_map, fTexCoord).r;
     color = vec4(vec3(depth), 1);
 }
-

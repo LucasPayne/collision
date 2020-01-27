@@ -25,4 +25,6 @@ render_shadow_map < MaterialType (
     fragment_shader: Shaders/render_shadow_map.frag;
     num_blocks: 1;
     string block0: Standard3D;
+    num_textures: 1;
+    string texture0: shadow_map;
 );

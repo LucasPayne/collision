@@ -18,3 +18,11 @@ textured_phong_shadows < MaterialType (
     num_textures: 1;
     string texture0: diffuse_map;
 );
+
+render_shadow_map < MaterialType (
+    vertex_format: 3U;
+    vertex_shader: Shaders/passthrough_U.vert;
+    fragment_shader: Shaders/render_shadow_map.frag;
+    num_blocks: 1;
+    string block0: Standard3D;
+);

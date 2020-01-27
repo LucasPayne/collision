@@ -96,8 +96,8 @@ extern void close_program(void);
 extern void input_event(int key, int action, int mods);
 extern void cursor_move_event(double x, double y);
 
-#define SHADOW_MAP_TEXTURE_WIDTH 2048
-#define SHADOW_MAP_TEXTURE_HEIGHT 2048
+#define SHADOW_MAP_TEXTURE_WIDTH 512
+#define SHADOW_MAP_TEXTURE_HEIGHT 512
 
 // Currently only doing directional light shadows.
 typedef struct ShadowMap_s {
@@ -116,6 +116,7 @@ static void init_shadows(void)
 
     // Load the shadow depth-pass shaders into a material.
     ResourceHandle shadow_map_material_handle = Material_create("Materials/shadows");
+    //ResourceHandle shadow_map_material_handle = Material_create("Materials/red");
     g_shadow_map_material = resource_data(Material, shadow_map_material_handle);
     // Force-load the shadow depth-pass material-type.
     resource_data(MaterialType, g_shadow_map_material->material_type);
@@ -194,8 +195,20 @@ static void do_shadows(void)
         ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
         Transform *t = get_sibling_aspect(light, Transform);
         mat4x4 shadow_view_matrix = invert_rigid_mat4x4(Transform_matrix(t));
-        mat4x4 shadow_matrix = shadow_view_matrix;
+        //mat4x4 shadow_matrix = shadow_view_matrix;
         //mat4x4 shadow_matrix = identity_mat4x4();
+        Camera *camera;
+        for_aspect(Camera, getting_camera)
+            camera = getting_camera;
+            break;
+        end_for_aspect()
+        Transform *camera_transform = get_sibling_aspect(camera, Transform);
+        Matrix4x4f view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
+        Matrix4x4f vp_matrix = camera->projection_matrix;
+        right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+        mat4x4 shadow_matrix = vp_matrix;
+        print_matrix4x4f(&shadow_matrix);
+
         set_uniform_mat4x4(Lights, active_shadow_matrix.vals, shadow_matrix.vals);
 
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
@@ -292,14 +305,18 @@ static void do_shadows(void)
 #endif
 
         mat4x4 mvp_matrix = {{
-            0.5,  0,    0,    0,
-            0,    0.5,  0,    0,
-            0,    0,    0.5,  0,
+            0.25,  0,    0,    0,
+            0,    0.25,  0,    0,
+            0,    0,    0.25,  0,
             0.25,    0.25,    0,    1,
         }};
         set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         gm_draw(*geom, mat);
+        float loop[2*4] = {
+            0.5,0.5,  0.75,0.5,  0.75,0.75,  0.5,0.75
+        };
+        paint2d_loop_c(loop, 4, "r");
 
         destroy_resource_handle(&gres);
         destroy_resource_handle(&mres);
@@ -347,6 +364,9 @@ static void key_callback(GLFWwindow *window, int key,
 
 static void init_base(void)
 {
+    //---
+    glLineWidth(20);
+
     /*--------------------------------------------------------------------------------
         Program memory.
     --------------------------------------------------------------------------------*/

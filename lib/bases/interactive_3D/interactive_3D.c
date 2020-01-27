@@ -207,7 +207,6 @@ static void do_shadows(void)
         Matrix4x4f vp_matrix = camera->projection_matrix;
         right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
         mat4x4 shadow_matrix = vp_matrix;
-        print_matrix4x4f(&shadow_matrix);
 
         set_uniform_mat4x4(Lights, active_shadow_matrix.vals, shadow_matrix.vals);
 
@@ -223,7 +222,19 @@ static void do_shadows(void)
         glClear(GL_DEPTH_BUFFER_BIT);
 #if 1
         for_aspect(Body, body)
+            Transform *t = get_sibling_aspect(body, Transform);
+            Matrix4x4f model_matrix = Transform_matrix(t);
+            //---This body rescaling is a hack.
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    model_matrix.vals[4*i + j] *= body->scale;
+                }
+            }
             Geometry *geometry = resource_data(Geometry, body->geometry);
+            mat4x4 mvp_matrix = shadow_matrix;
+            right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+            print_matrix4x4f(&mvp_matrix);
+            set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
             gm_draw(*geometry, g_shadow_map_material);
         end_for_aspect()
 #endif

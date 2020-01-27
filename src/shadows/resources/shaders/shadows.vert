@@ -3,12 +3,11 @@
 --------------------------------------------------------------------------------*/
 #version 420
 
-// Using active_shadow_matrix in Lights block.
-#block Lights
+#block Standard3D
 
 layout (location = 0) in vec4 vPosition;
 
 void main(void)
 {
-    gl_Position = active_shadow_matrix * vPosition;
+    gl_Position = mvp_matrix * vPosition;
 }

@@ -84,6 +84,7 @@ void test_point_light_1(void)
     Testing objects.
 --------------------------------------------------------------------------------*/
 // spawn 5 textured, phong-lit cubes.
+
 void test_spawn_cubes(int n)
 {
     for (int i = 0; i < n; i++) {

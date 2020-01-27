@@ -1,0 +1,11 @@
+
+
+// Make shadow passes on a depth texture.
+shadows < MaterialType (
+    vertex_format: 3;
+    vertex_shader: Shaders/shadows.vert;
+    fragment_shader: Shaders/shadows.frag;
+);
+
+
+

@@ -11,10 +11,6 @@ Input
 Camera
 DirectionalLight
 PointLight
-
-Currently, this is not really a "library". A useful "game object" system above
-the entity and resource systems should probably only be made by editing this a lot
-and then deciding what aspects are useful, then making it a proper library.
 --------------------------------------------------------------------------------*/
 #include "bases/interactive_3D.h"
 

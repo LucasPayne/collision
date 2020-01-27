@@ -17,7 +17,7 @@ The application must provide:
     void loop_program(void);
     void close_program(void);
     void input_event(int key, int action, int mods);
-    void cursor_move_event(float x, float y);
+    void cursor_move_event(double x, double y);
 
 project_libs:
     + glad
@@ -95,6 +95,108 @@ extern void loop_program(void);
 extern void close_program(void);
 extern void input_event(int key, int action, int mods);
 extern void cursor_move_event(double x, double y);
+
+#define SHADOW_MAP_TEXTURE_WIDTH 2048
+#define SHADOW_MAP_TEXTURE_HEIGHT 2048
+
+// Currently only doing directional light shadows.
+typedef struct ShadowMap_s {
+    GLuint framebuffer;
+    GLuint texture;
+} ShadowMap;
+static ShadowMap g_directional_light_shadow_maps[MAX_NUM_DIRECTIONAL_LIGHTS];
+static Material *g_shadow_map_material = NULL;
+
+static void init_shadows(void)
+{
+    // Load the shadow depth-pass shaders into a material.
+    ResourceHandle shadow_map_material_handle = Material_create("Materials/shadows");
+    g_shadow_map_material = resource_data(Material, shadow_map_material_handle);
+    // Force-load the shadow depth-pass material-type.
+    resource_data(MaterialType, g_shadow_map_material->material_type);
+
+    // https://www.khronos.org/opengl/wiki/Framebuffer
+    // https://www.khronos.org/opengl/wiki/Framebuffer_Object
+    for (int i = 0; i < MAX_NUM_DIRECTIONAL_LIGHTS; i++) {
+        ShadowMap *shadow_map = &g_directional_light_shadow_maps[i];
+        // OGLPG p401
+        glGenTextures(1, &shadow_map->texture);
+        glBindTexture(GL_TEXTURE_2D, shadow_map->texture);
+        // Initialize texture metadata.
+        glTexImage2D(GL_TEXTURE_2D,
+                     0, // mipmap level
+                     GL_DEPTH_COMPONENT32, // internal format
+                     SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT,
+                     0, // border
+                     GL_DEPTH_COMPONENT, // external format
+                     GL_FLOAT, // type
+                     NULL); // don't provide data
+        // https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glTexParameter.xml
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE); //---What is GL_COMPARE_REF_TO_TEXTURE?
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+        // Wrapping modes.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+        // Unbind the depth texture.
+        glBindTexture(GL_TEXTURE_2D, 0);
+    
+        // Create a framebuffer object to render depth into.
+        glGenFramebuffers(1, &shadow_map->framebuffer);
+        // The binding target parameters for framebuffers are GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, and GL_READ_FRAMEBUFFER.
+        // There are really two targets, and GL_FRAMEBUFFER attaches the given framebuffer object to both.
+        // GL_DRAW_FRAMEBUFFER:
+        //        target of rendering, clearing, and other write operations.
+        // GL_READ_FRAMEBUFFER:
+        //        used as a source for reading operations.
+        // Possibly there is some use for the pipeline being set up to have both these framebuffers interact? Maybe copying across framebuffers.
+        glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
+        // Attach the texture, its single mipmap-level image as a buffer, to the stencil attachment of the framebuffer object.
+        // glFramebufferTexture — attach a level of a texture object as a logical buffer of a framebuffer object
+        glFramebufferTexture(GL_FRAMEBUFFER,
+                             GL_DEPTH_STENCIL_ATTACHMENT, // attachment point (which buffer of the framebuffer object)
+                             shadow_map->texture, // attach the texture
+                             0); // mipmap level 0 (the only one declared with texture metadata in glTexImage2D)
+        //: Disable color rendering as there are no color attachments.
+        // So, the fbo is empty when created, and it consists of buffer attachments.
+        //:: The buffers for FBOs reference images from either Textures or Renderbuffers; they are never directly visible.
+        // Renderbuffers allow the implementation to optimize for specific use as attached to a buffer of an fbo, and don't allow sampling as a texture.
+        // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDrawBuffer.xhtml
+        //: Disable color rendering as there are no color attachments.
+        glDrawBuffer(GL_NONE);
+        
+        // Check that the frame buffer was defined correctly (as in, complete).
+        // GLenum fbo_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        // if (fbo_status != GL_FRAMEBUFFER_COMPLETE) {
+        //     fprintf(stderr, ERROR_ALERT "interactive_3D error: Shadow map framebuffer was not defined correctly. The framebuffer is incomplete.\n");
+        //     exit(EXIT_FAILURE);
+        // }
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); // bind back to the default framebuffer.
+    }
+}
+static void do_shadows(void)
+{
+    int index = 0;
+    for_aspect(DirectionalLight, light)
+        mat4x4 shadow_matrix = identity_mat4x4();
+        set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrix.vals, shadow_matrix.vals);
+
+        ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
+        glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
+
+        for_aspect(Body, body)
+            Geometry *geometry = resource_data(Geometry, body->geometry);
+        end_for_aspect()
+
+        index ++;
+    end_for_aspect()
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 
 
 static void reshape(GLFWwindow *window, int width, int height)
@@ -182,11 +284,15 @@ static void init_base(void)
     resource_path_add("Meshes", "resources/meshes");
     resource_path_add("Images", "resources/images");
     resource_path_add("Shaders", "resources/shaders");
+
+    init_shadows();
 }
 
 static void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
+
+    do_shadows();
     for_aspect(Camera, camera)
         //------
         // ---Allow cameras to have rectangles, and render to these.
@@ -251,8 +357,8 @@ static void render(void)
     end_for_aspect()
     // Flush the standard 3D paint canvas.
     painting_flush(Canvas3D);
+
     // Draw the 2D overlay paint. ----make this an actual overlay.
-    
     bool culling;
     glGetIntegerv(GL_CULL_FACE, &culling);
     glDisable(GL_CULL_FACE);

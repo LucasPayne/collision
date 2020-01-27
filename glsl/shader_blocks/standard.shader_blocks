@@ -17,12 +17,13 @@ block StandardLoopWindow {
 };
 
 block Lights {
-    #define MAX_NUM_DIRECTIONAL_LIGHTS 32
-    #define MAX_NUM_POINT_LIGHTS 32
+    #define MAX_NUM_DIRECTIONAL_LIGHTS 8
+    #define MAX_NUM_POINT_LIGHTS 8
     struct DirectionalLight {
         vec4 color;
         vec3 direction;
         vec3 half_vector;
+        mat4x4 shadow_matrix;
     };
     struct PointLight {
         vec4 color;
@@ -35,4 +36,5 @@ block Lights {
     int num_point_lights;
     DirectionalLight directional_lights[MAX_NUM_DIRECTIONAL_LIGHTS];
     PointLight point_lights[MAX_NUM_POINT_LIGHTS];
+    mat4x4 active_shadow_matrix;
 };

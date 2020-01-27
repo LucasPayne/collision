@@ -7,7 +7,7 @@
 static void camera_controls(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
-    float speed = 20;
+    float speed = 100;
     float move_x = 0;
     float move_y = 0;
     float move_z = 0;
@@ -48,6 +48,8 @@ static void camera_mouse_move(Input *input, double dx, double dy)
     // if (t->theta_x > max_theta_x) t->theta_x = max_theta_x;
     // else if (t->theta_x < min_theta_x) t->theta_x = min_theta_x;
 }
+
+// Create a camera man with mouse controls.
 void create_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z)
 {
     EntityID camera_man = new_entity(4);
@@ -61,5 +63,30 @@ void create_camera_man(float x, float y, float z, float lookat_x, float lookat_y
 }
 
 
+static void camera_key_controls(Logic *logic)
+{
+    Transform *t = get_sibling_aspect(logic, Transform);
+    float speed = 100;
+    float move_x = 0, move_z = 0;
+    if (alt_arrow_key_down(Right)) move_x += speed * dt;
+    if (alt_arrow_key_down(Left)) move_x -= speed * dt;
+    if (alt_arrow_key_down(Up)) move_z -= speed * dt;
+    if (alt_arrow_key_down(Down)) move_z += speed * dt;
+    Transform_move_relative(t, new_vec3(move_x, 0, move_z));
 
+    float look_speed = 4;
+    if (arrow_key_down(Left)) t->theta_y -= look_speed * dt;
+    if (arrow_key_down(Right)) t->theta_y += look_speed * dt;
+}
 
+// Create a camera man controlled by keys.
+void create_key_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z)
+{
+    EntityID camera_man = new_entity(4);
+    Transform_set(entity_add_aspect(camera_man, Transform), x,y,z,  0,0,0);//--do lookat
+    Camera *camera = entity_add_aspect(camera_man, Camera);
+    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 10);
+    Logic *logic = entity_add_aspect(camera_man, Logic);
+    logic->update = camera_key_controls;
+    Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
+}

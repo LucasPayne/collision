@@ -27,12 +27,12 @@ struct ShaderBlockStruct_Lights_PointLight { //size: 48
 
 ShaderBlockID ShaderBlockID_Lights;
 typedef struct ShaderBlock_Lights_s {
-    int num_directional_lights;    //offset: 0, alignment: 4, C_type_size: 4
-    int num_point_lights;    //offset: 4, alignment: 4, C_type_size: 4
-    char ___std140_pad2[8];
-    struct ShaderBlockStruct_Lights_DirectionalLight directional_lights[8];    //offset: 16, alignment: 16, C_type_size: 112
-    struct ShaderBlockStruct_Lights_PointLight point_lights[8];    //offset: 128, alignment: 16, C_type_size: 48
-    mat4x4 active_shadow_matrix;    //offset: 176, alignment: 16, C_type_size: 64
+    mat4x4 active_shadow_matrix;    //offset: 0, alignment: 16, C_type_size: 64
+    int num_directional_lights;    //offset: 64, alignment: 4, C_type_size: 4
+    int num_point_lights;    //offset: 68, alignment: 4, C_type_size: 4
+    char ___std140_pad3[8];
+    struct ShaderBlockStruct_Lights_DirectionalLight directional_lights[8];    //offset: 80, alignment: 16, C_type_size: 112
+    struct ShaderBlockStruct_Lights_PointLight point_lights[8];    //offset: 192, alignment: 16, C_type_size: 48
 } ShaderBlock_Lights;
 
 #endif // SHADER_BLOCK_HEADER_DEFINED_LIGHTS

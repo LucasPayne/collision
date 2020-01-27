@@ -169,11 +169,14 @@ static void init_shadows(void)
         glDrawBuffer(GL_NONE);
         
         // Check that the frame buffer was defined correctly (as in, complete).
-        // GLenum fbo_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        // if (fbo_status != GL_FRAMEBUFFER_COMPLETE) {
-        //     fprintf(stderr, ERROR_ALERT "interactive_3D error: Shadow map framebuffer was not defined correctly. The framebuffer is incomplete.\n");
-        //     exit(EXIT_FAILURE);
-        // }
+#if 0
+        // See framebuffer completeness,    https://www.khronos.org/opengl/wiki/Framebuffer_Object
+        GLenum fbo_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (fbo_status != GL_FRAMEBUFFER_COMPLETE) {
+            fprintf(stderr, ERROR_ALERT "interactive_3D error: Shadow map framebuffer was not defined correctly. The framebuffer is incomplete.\n");
+            exit(EXIT_FAILURE);
+        }
+#endif
         
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // bind back to the default framebuffer.
     }
@@ -182,29 +185,54 @@ static void do_shadows(void)
 {
     int index = 0;
     for_aspect(DirectionalLight, light)
+        Transform *t = get_sibling_aspect(light, Transform);
+        mat4x4 shadow_view_matrix = invert_rigid_mat4x4(Transform_matrix(t));
+        // mat4x4 shadow_matrix = shadow_view_matrix;
         mat4x4 shadow_matrix = identity_mat4x4();
-        set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrix.vals, shadow_matrix.vals);
+
+        set_uniform_mat4x4(Lights, active_shadow_matrix.vals, shadow_matrix.vals);
 
         ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
+
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
+        // Save the viewport, switch it for rendering to the shadow map, then later switch it back.
+        //:: glViewport specifies the affine transformation of x and y from normalized device coordinates to window coordinates. 
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        glViewport(0, 0, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
+
+        // Clearing the depth buffer while this framebuffer is bound clears the shadow map (sets all values to 1.0).
+        // glClearDepth is the analogue to glClearColor.
+        glClearDepth(1.0); //---maybe should save this and restore it after.
+        glClear(GL_DEPTH_BUFFER_BIT);
 
         for_aspect(Body, body)
             Geometry *geometry = resource_data(Geometry, body->geometry);
             gm_draw(*geometry, g_shadow_map_material);
         end_for_aspect()
+        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+        
 
+        // Test view the depth buffer as a rendered texture.
         ResourceHandle gres = new_resource_handle(Geometry, "Models/quad");
         Geometry *geom = resource_data(Geometry, gres);
         ResourceHandle mres = Material_create("Materials/texture");
         Material *mat = resource_data(Material, mres);
         ResourceHandle tres;
+        // material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
         Texture *tex = oneoff_resource(Texture, tres);
         tex->texture_id = shadow_map->texture;
         material_set_texture(mat, "diffuse_map", tres);
-        // mat4x4 mvp_matrix = {{
-        //     
-        // }}
-        // set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
+
+        mat4x4 mvp_matrix = {{
+            0.5,  0,    0,    0,
+            0,    0.5,  0,    0,
+            0,    0,    0.5,  0,
+            0.25,    0.25,    0,    1,
+        }};
+        set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         gm_draw(*geom, mat);
 
         destroy_resource_handle(&gres);

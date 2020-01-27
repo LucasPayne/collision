@@ -20,9 +20,9 @@ struct PointLight {
 };
 
 layout (std140) uniform Lights {
+    mat4x4 active_shadow_matrix;
     int num_directional_lights;
     int num_point_lights;
     DirectionalLight directional_lights[8];
     PointLight point_lights[8];
-    mat4x4 active_shadow_matrix;
 };

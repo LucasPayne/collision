@@ -32,9 +32,9 @@ block Lights {
         float quadratic_attenuation;
         float cubic_attenuation;
     };
+    mat4x4 active_shadow_matrix;
     int num_directional_lights;
     int num_point_lights;
     DirectionalLight directional_lights[MAX_NUM_DIRECTIONAL_LIGHTS];
     PointLight point_lights[MAX_NUM_POINT_LIGHTS];
-    mat4x4 active_shadow_matrix;
 };

@@ -109,6 +109,11 @@ static Material *g_shadow_map_material = NULL;
 
 static void init_shadows(void)
 {
+    // shadow map implementation discussion
+    // https://gamedev.stackexchange.com/questions/74508/shadow-map-depth-texture-always-returns-0
+    // shadow map implementation
+    // https://github.com/cforfang/opengl-shadowmapping/blob/master/src/pcf/main.cpp
+
     // Load the shadow depth-pass shaders into a material.
     ResourceHandle shadow_map_material_handle = Material_create("Materials/shadows");
     g_shadow_map_material = resource_data(Material, shadow_map_material_handle);
@@ -125,7 +130,7 @@ static void init_shadows(void)
         // Initialize texture metadata.
         glTexImage2D(GL_TEXTURE_2D,
                      0, // mipmap level
-                     GL_DEPTH_COMPONENT32, // internal format
+                     GL_DEPTH_COMPONENT, // internal format
                      SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT,
                      0, // border
                      GL_DEPTH_COMPONENT, // external format
@@ -140,7 +145,6 @@ static void init_shadows(void)
         // Wrapping modes.
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    
         // Unbind the depth texture.
         glBindTexture(GL_TEXTURE_2D, 0);
     
@@ -156,10 +160,11 @@ static void init_shadows(void)
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
         // Attach the texture, its single mipmap-level image as a buffer, to the stencil attachment of the framebuffer object.
         // glFramebufferTexture — attach a level of a texture object as a logical buffer of a framebuffer object
-        glFramebufferTexture(GL_FRAMEBUFFER,
-                             GL_DEPTH_STENCIL_ATTACHMENT, // attachment point (which buffer of the framebuffer object)
-                             shadow_map->texture, // attach the texture
-                             0); // mipmap level 0 (the only one declared with texture metadata in glTexImage2D)
+        glFramebufferTexture2D(GL_FRAMEBUFFER,
+                               GL_DEPTH_ATTACHMENT, // attachment point (which buffer of the framebuffer object)
+                               GL_TEXTURE_2D, // texture target
+                               shadow_map->texture, // attach the texture
+                               0); // mipmap level 0 (the only one declared with texture metadata in glTexImage2D)
         //: Disable color rendering as there are no color attachments.
         // So, the fbo is empty when created, and it consists of buffer attachments.
         //:: The buffers for FBOs reference images from either Textures or Renderbuffers; they are never directly visible.
@@ -167,9 +172,10 @@ static void init_shadows(void)
         // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDrawBuffer.xhtml
         //: Disable color rendering as there are no color attachments.
         glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
         
         // Check that the frame buffer was defined correctly (as in, complete).
-#if 0
+#if 1
         // See framebuffer completeness,    https://www.khronos.org/opengl/wiki/Framebuffer_Object
         GLenum fbo_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (fbo_status != GL_FRAMEBUFFER_COMPLETE) {
@@ -185,14 +191,12 @@ static void do_shadows(void)
 {
     int index = 0;
     for_aspect(DirectionalLight, light)
+        ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
         Transform *t = get_sibling_aspect(light, Transform);
         mat4x4 shadow_view_matrix = invert_rigid_mat4x4(Transform_matrix(t));
-        // mat4x4 shadow_matrix = shadow_view_matrix;
-        mat4x4 shadow_matrix = identity_mat4x4();
-
+        mat4x4 shadow_matrix = shadow_view_matrix;
+        //mat4x4 shadow_matrix = identity_mat4x4();
         set_uniform_mat4x4(Lights, active_shadow_matrix.vals, shadow_matrix.vals);
-
-        ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
 
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
         // Save the viewport, switch it for rendering to the shadow map, then later switch it back.
@@ -200,29 +204,92 @@ static void do_shadows(void)
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
         glViewport(0, 0, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
-
         // Clearing the depth buffer while this framebuffer is bound clears the shadow map (sets all values to 1.0).
         // glClearDepth is the analogue to glClearColor.
         glClearDepth(1.0); //---maybe should save this and restore it after.
         glClear(GL_DEPTH_BUFFER_BIT);
-
+#if 1
         for_aspect(Body, body)
             Geometry *geometry = resource_data(Geometry, body->geometry);
             gm_draw(*geometry, g_shadow_map_material);
         end_for_aspect()
+#endif
         glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-        
 
+        static float depth_data[SHADOW_MAP_TEXTURE_WIDTH * SHADOW_MAP_TEXTURE_HEIGHT];
+#define select 0
+#if select == 0
+        glBindTexture(GL_TEXTURE_2D, shadow_map->texture);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, depth_data);
+        glBindTexture(GL_TEXTURE_2D, 0);
+#elif select == 1
+        glReadPixels(0, 0, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT,
+                     GL_DEPTH_COMPONENT,
+                     GL_FLOAT,
+                     depth_data);
+#elif select == 2
+        for (int i = 0; i < SHADOW_MAP_TEXTURE_WIDTH; i++) {
+            for (int j = 0; j < SHADOW_MAP_TEXTURE_WIDTH; j++) {
+                depth_data[SHADOW_MAP_TEXTURE_WIDTH*j + i] = j % 2;
+            }
+        }
+#endif
+#if 1
+        // Uncomment for debugging the shadow map framebuffer without viewing a texture.
+        // This counts the number of non-zero entries, which if the light is pointing at things, should hint at whether it is working.
+        int count = 0;
+        for (int i = 0; i < SHADOW_MAP_TEXTURE_WIDTH; i++) {
+            for (int j = 0; j < SHADOW_MAP_TEXTURE_HEIGHT; j++) {
+                if (depth_data[SHADOW_MAP_TEXTURE_HEIGHT*i + j] != 0) {
+                    count ++;
+                    // printf("%.2f\n", depth_data[SHADOW_MAP_TEXTURE_WIDTH*i + j]);
+                    // getchar();
+                }
+            }
+        }
+        printf("%d / %d\n", count, SHADOW_MAP_TEXTURE_WIDTH*SHADOW_MAP_TEXTURE_HEIGHT);
+#endif
+        // Create a new texture to show the shadow map.
+        static float view_depth_data[4 * SHADOW_MAP_TEXTURE_WIDTH * SHADOW_MAP_TEXTURE_HEIGHT];
+        for (int i = 0; i < SHADOW_MAP_TEXTURE_WIDTH; i++) {
+            for (int j = 0; j < SHADOW_MAP_TEXTURE_HEIGHT; j++) {
+                // *((vec4 *) &view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j)]) = new_vec4(1,0,1,1);
+                view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 0] = depth_data[SHADOW_MAP_TEXTURE_HEIGHT*i + j];
+                view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 1] = depth_data[SHADOW_MAP_TEXTURE_HEIGHT*i + j];
+                view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 2] = depth_data[SHADOW_MAP_TEXTURE_HEIGHT*i + j];
+                view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 3] = 1.0;
+                // view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 0] = 0.3;
+                // view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 1] = 0.3;
+                // view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 2] = 0.3;
+                // view_depth_data[4*(SHADOW_MAP_TEXTURE_HEIGHT*i + j) + 3] = 1.0;
+            }
+        }
+        GLuint map_tex;
+        glGenTextures(1, &map_tex);
+        glBindTexture(GL_TEXTURE_2D, map_tex);
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
+#if 1
+        glTexSubImage2D(GL_TEXTURE_2D,
+                        0, // first mipmap level
+                        0, 0, // x and y offset
+                        SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT,
+                        GL_RGBA, GL_FLOAT,
+                        view_depth_data);
+#endif
+
+        ResourceHandle tres;
         // Test view the depth buffer as a rendered texture.
         ResourceHandle gres = new_resource_handle(Geometry, "Models/quad");
         Geometry *geom = resource_data(Geometry, gres);
         ResourceHandle mres = Material_create("Materials/texture");
         Material *mat = resource_data(Material, mres);
-        ResourceHandle tres;
-        // material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
+#if 0
+        material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/stone_bricks");
+#else
         Texture *tex = oneoff_resource(Texture, tres);
-        tex->texture_id = shadow_map->texture;
+        tex->texture_id = map_tex;
         material_set_texture(mat, "diffuse_map", tres);
+#endif
 
         mat4x4 mvp_matrix = {{
             0.5,  0,    0,    0,
@@ -231,13 +298,13 @@ static void do_shadows(void)
             0.25,    0.25,    0,    1,
         }};
         set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
-
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         gm_draw(*geom, mat);
 
         destroy_resource_handle(&gres);
         destroy_resource_handle(&mres);
         destroy_resource_handle(&tres);
+        glDeleteTextures(1, &map_tex);
 
         index ++;
     end_for_aspect()

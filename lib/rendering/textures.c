@@ -55,7 +55,6 @@ void Texture_load(void *resource, char *path)
         if (file == NULL) load_error("Could not open png file.");
         if (!load_image_png(&image_data, file)) load_error("Failed to decode png.");
     }
-
     // free(type);
     // free(filename);
 
@@ -77,6 +76,12 @@ void Texture_load(void *resource, char *path)
     // Destroy the image data.
     //-------------Organize actual destruction/tear-down functions. On-heap (destruction?) versus properties on heap (teardown, terminology?)
     free(image_data.data);
+
+    // printf("GETTING DEPTH DATA\n");
+    // getchar();getchar();getchar();
+    // float depth_data[4 * image_data.width * image_data.height];
+    // glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, depth_data);
+    // printf("GOT DEPTH\n");
 
     // Set the texture defaults.
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

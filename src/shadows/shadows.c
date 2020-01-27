@@ -6,6 +6,9 @@ project_libs:
 
 extern void input_event(int key, int action, int mods)
 {
+    if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_C) test_spawn_cubes(5);
+    }
 }
 extern void cursor_move_event(double x, double y)
 {

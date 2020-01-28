@@ -165,7 +165,36 @@ static void do_shadows(void)
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
         glClearDepth(1.0);
         glClear(GL_DEPTH_BUFFER_BIT);
-        
+
+        mat4x4 shadow_matrix;
+        //---rendering the shadow map from the camera
+        Camera *camera;
+        for_aspect(Camera, getting_camera)
+            camera = getting_camera;
+            break;
+        end_for_aspect()
+        Transform *camera_transform = get_sibling_aspect(camera, Transform);
+        mat4x4 view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
+        mat4x4 vp_matrix = camera->projection_matrix;
+        right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+        shadow_matrix = vp_matrix;
+
+        for_aspect(Body, body)
+            Transform *transform = get_sibling_aspect(body, Transform);
+            mat4x4 model_matrix = Transform_matrix(transform);
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    model_matrix.vals[4*i + j] *= body->scale;
+                }
+            }
+            mat4x4 mvp_matrix = vp_matrix;
+            right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+            set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
+
+            Geometry *geometry = resource_data(Geometry, body->geometry);
+            gm_draw(*geometry, g_shadow_map_material);
+        end_for_aspect()
+
         paint2d_sprite_m(index*0.15,0,  0.15,0.15,  shadow_map->depth_texture_material);
         index ++;
     end_for_aspect()

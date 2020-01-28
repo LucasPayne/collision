@@ -12,8 +12,7 @@ extern void cursor_move_event(double x, double y)
 }
 extern void init_program(void)
 {
-    painting_init();
-    create_camera_man(0,0,0,  0,0,0);
+    create_key_camera_man(0,0,0,  0,0,0);
 }
 extern void loop_program(void)
 {

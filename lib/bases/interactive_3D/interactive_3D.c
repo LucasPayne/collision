@@ -34,6 +34,7 @@ project_libs:
     + rendering
     + ply
     + painting
+    + scenes
 --------------------------------------------------------------------------------*/
 #define BASE_DIRECTORY "/home/lucas/collision/lib/bases/interactive_3D/"
 #define PROJECT_DIRECTORY "/home/lucas/collision/"
@@ -41,6 +42,7 @@ project_libs:
 
 static GLFWwindow *window;
 
+DataDictionary *g_scenes;
 DataDictionary *g_data; // Global data dictionary for the application.
 float ASPECT_RATIO;
 
@@ -116,6 +118,7 @@ static void init_shadows(void)
     // //ResourceHandle shadow_map_material_handle = Material_create("Materials/red");
     // g_shadow_map_material = resource_data(Material, shadow_map_material_handle);
     // // Force-load the shadow depth-pass material-type.
+#if 0
     // resource_data(MaterialType, g_shadow_map_material->material_type);
 
     // // For each directional light, initialize
@@ -163,6 +166,10 @@ static void __old_init_shadows(void)
         // OGLPG p401
         glGenTextures(1, &shadow_map->texture);
         glBindTexture(GL_TEXTURE_2D, shadow_map->texture);
+static void do_shadows(void)
+{
+
+}
         // Initialize texture metadata.
         glTexImage2D(GL_TEXTURE_2D,
                      0, // mipmap level
@@ -182,6 +189,7 @@ static void __old_init_shadows(void)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         // Unbind the depth texture.
+#endif
         glBindTexture(GL_TEXTURE_2D, 0);
     
         // Create a framebuffer object to render depth into.
@@ -230,8 +238,9 @@ static void __old_do_shadows(void)
     int index = 0;
     for_aspect(DirectionalLight, light)
         Transform *t = get_sibling_aspect(light, Transform);
-        ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
+        ShadowMap __old_*shadow_map = &g_directional_light_shadow_maps[index];
         mat4x4 shadow_matrix;
+#if 0
         //mat4x4 shadow_view_matrix = invert_rigid_mat4x4(Transform_matrix(t));
         Camera *camera;
         for_aspect(Camera, getting_camera)
@@ -359,6 +368,7 @@ static void __old_do_shadows(void)
             0.25,  0,    0,    0.25,
             0,    0.25,  0,    0.25,
             0,    0,    0.25,  0,
+#endif
             0,    0,    0,    1,
         }};
         set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
@@ -472,7 +482,8 @@ static void init_base(void)
     resource_path_add("Images", "resources/images");
     resource_path_add("Shaders", "resources/shaders");
 
-    //init_shadows();
+    painting_init();
+    init_shadows();
 }
 
 static void render(void)
@@ -628,6 +639,13 @@ int main(void)
         fprintf(stderr, ERROR_ALERT "Could not open resource dictionary.\n");
         exit(EXIT_FAILURE);
     }
+    // Set the scene dictionary.
+    g_scenes = dd_open(base_config, "Scenes");
+    if (g_scenes == NULL) {
+        fprintf(stderr, ERROR_ALERT "Could not open scenes dictionary.\n");
+        exit(EXIT_FAILURE);
+    }
+
     DD *app_config = dd_open(base_config, "app_config");
     if (app_config == NULL) {
         fprintf(stderr, ERROR_ALERT "Missing app_config.\n");

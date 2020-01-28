@@ -62,7 +62,7 @@ void open_scene(DD *dict, char *path)
 {
     DD *scene_dictionary = dd_open(dict, path);
     if (scene_dictionary == NULL) {
-        fprintf(stderr, ERROR_ALERT "Could not open scene.\n");
+        fprintf(stderr, ERROR_ALERT "Could not open scene dictionary from path \"%s\".\n", path);
 	exit(EXIT_FAILURE);
     }
 

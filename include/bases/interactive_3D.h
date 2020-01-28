@@ -19,6 +19,7 @@
 #include "entity.h"
 #include "matrix_mathematics.h"
 #include "painting.h"
+#include "scenes.h"
 
 #include "shader_blocks/Standard3D.h"
 #include "shader_blocks/StandardLoopWindow.h"
@@ -29,6 +30,7 @@ extern float dt;
 
 extern float ASPECT_RATIO;
 extern DataDictionary *g_data;
+extern DataDictionary *g_scenes;
 
 //---
 /*================================================================================

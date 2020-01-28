@@ -10,6 +10,7 @@ extern void input_event(int key, int action, int mods)
 extern void cursor_move_event(double x, double y)
 {
 }
+
 extern void init_program(void)
 {
     create_key_camera_man(0,50,100,  0,0,0);
@@ -18,6 +19,7 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
+    paint2d_sprite_p(0,0,  0.5,0.5,  "Textures/minecraft/dirt");
 }
 extern void close_program(void)
 {

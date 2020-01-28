@@ -2,11 +2,21 @@
 Materials < (
     flat_color < MaterialType (
         vertex_format: 3;
-        fragment_shader: Painting/shaders/flat_color.frag;
         vertex_shader: Painting/shaders/passthrough.vert;
+        fragment_shader: Painting/shaders/flat_color.frag;
         num_blocks: 2;
         string block0: Standard3D;
         string block1: MaterialProperties;
+    );
+    sprite < MaterialType (
+        vertex_format: 3U;
+        vertex_shader: Painting/shaders/sprite.vert;
+        fragment_shader: Painting/shaders/sprite.frag;
+        num_blocks: 1;
+        // Currently 2D stuff is just drawn with a special mvp matrix, so this does use Standard3D.
+        string block0: Standard3D;
+        num_textures: 1;
+        string texture0: sprite;
     );
 );
 

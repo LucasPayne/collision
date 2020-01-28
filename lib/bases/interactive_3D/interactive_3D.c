@@ -441,16 +441,6 @@ static void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
 
-    // Draw the 2D overlay paint. ----make this an actual overlay.
-    bool culling;
-    glGetIntegerv(GL_CULL_FACE, &culling);
-    glDisable(GL_CULL_FACE);
-    mat4x4 overlay_matrix = matrix_paint2d();
-    set_uniform_mat4x4(Standard3D, mvp_matrix.vals, overlay_matrix.vals);
-    painting_draw(Canvas2D);
-    painting_flush(Canvas2D);
-    if (culling) glEnable(GL_CULL_FACE);
-
     //do_shadows();
     for_aspect(Camera, camera)
         //------
@@ -465,10 +455,13 @@ static void render(void)
         Matrix4x4f vp_matrix = camera->projection_matrix;
         right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
         
-        // Upload the camera position and direction.
+        // Upload the camera position and direction, and other information.
         set_uniform_vec3(Standard3D, camera_position, new_vec3(camera_transform->x, camera_transform->y, camera_transform->z));
         vec4 camera_forward_vector = matrix_vec4(&view_matrix, new_vec4(0,0,1,1));
         set_uniform_vec3(Standard3D, camera_direction, *((vec3 *) &camera_forward_vector)); //... get better matrix/vector routines.
+        // Upload camera parameters.
+        set_uniform_float(Standard3D, near_plane, camera->plane_n);
+        set_uniform_float(Standard3D, far_plane, camera->plane_f);
 
         // Upload the uniform half-vectors for directional lights. This depends on the camera, and saves recomputation of the half-vector per-pixel,
         // since in the case of directional lights this vector is constant.
@@ -515,7 +508,15 @@ static void render(void)
         painting_draw(Canvas3D);
     end_for_aspect()
     // Flush the standard 3D paint canvas.
-    painting_flush(Canvas3D);
+
+    // Draw the 2D overlay paint. ----make this an actual overlay.
+    bool culling;
+    glGetIntegerv(GL_CULL_FACE, &culling);
+    glDisable(GL_CULL_FACE);
+    mat4x4 overlay_matrix = matrix_paint2d();
+    set_uniform_mat4x4(Standard3D, mvp_matrix.vals, overlay_matrix.vals);
+    painting_draw(Canvas2D);
+    if (culling) glEnable(GL_CULL_FACE);
 }
 // Applications are not supposed to use this, but it is exposed here for testing.
 void ___render(void)
@@ -564,6 +565,7 @@ static void loop_base(void)
     set_uniform_int(Lights, num_point_lights, index);
 }
     render();
+    painting_flush(Canvas3D);
 
     // Debug rendering
     if (g_sma_debug_overlay) small_memory_allocator_debug_overlay();

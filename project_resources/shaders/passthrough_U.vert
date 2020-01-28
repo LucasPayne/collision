@@ -11,6 +11,7 @@ out vOut {
 
 void main(void)
 {
-    gl_Position = vPosition * mvp_matrix;
+// this transpose fixed something, think about this more ...
+    gl_Position = vPosition * transpose(mvp_matrix);
     fTexCoord = vTexCoord;
 }

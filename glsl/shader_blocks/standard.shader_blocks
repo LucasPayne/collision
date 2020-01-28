@@ -1,6 +1,8 @@
 // Standard shader blocks intended to be shared between many shaders.
 
 block Standard3D {
+    float near_plane;
+    float far_plane;
     mat4x4 mvp_matrix;
     mat4x4 model_matrix;
     vec3 model_position;

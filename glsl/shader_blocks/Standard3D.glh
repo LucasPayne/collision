@@ -3,6 +3,8 @@ This code was generated with the gen_shader_blocks tool, for synchronizing
 definitions between glsl and C.
 --------------------------------------------------------------------------------*/
 layout (std140) uniform Standard3D {
+    float near_plane;
+    float far_plane;
     mat4x4 mvp_matrix;
     mat4x4 model_matrix;
     vec3 model_position;

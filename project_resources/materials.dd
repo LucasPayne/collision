@@ -64,3 +64,44 @@ textured_phong < MaterialType (
     num_textures: 1;
     string texture0: diffuse_map;
 );
+
+// Make shadow passes on a depth texture.
+shadows < MaterialType (
+    vertex_format: 3;
+    vertex_shader: Shaders/shadows.vert;
+    fragment_shader: Shaders/shadows.frag;
+    num_blocks: 1;
+    string block0: Standard3D;
+);
+
+textured_phong_shadows < MaterialType (
+    vertex_format: 3NU;
+    vertex_shader: Shaders/textured_phong_shadows.vert;
+    fragment_shader: Shaders/textured_phong_shadows.frag;
+    num_blocks: 3;
+    string block0: Standard3D;
+    string block1: MaterialProperties;
+    string block2: Lights;
+    num_textures: 1;
+    string texture0: diffuse_map;
+);
+
+render_shadow_map < MaterialType (
+    vertex_format: 3U;
+    vertex_shader: Shaders/passthrough_U.vert;
+    fragment_shader: Shaders/render_shadow_map.frag;
+    num_blocks: 1;
+    string block0: Standard3D;
+    num_textures: 1;
+    string texture0: shadow_map;
+);
+render_projection_shadow_map < MaterialType (
+    vertex_format: 3U;
+    vertex_shader: Shaders/passthrough_U.vert;
+    // fragment shader taken from https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
+    fragment_shader: Shaders/render_projection_shadow_map.frag;
+    num_blocks: 1;
+    string block0: Standard3D;
+    num_textures: 1;
+    string texture0: shadow_map;
+);

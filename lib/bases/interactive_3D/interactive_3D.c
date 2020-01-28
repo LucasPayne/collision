@@ -102,13 +102,48 @@ extern void cursor_move_event(double x, double y);
 // Currently only doing directional light shadows.
 typedef struct ShadowMap_s {
     GLuint framebuffer;
-    GLuint texture;
+    GLuint depth_texture;
+    GLuint color_texture;
 } ShadowMap;
 static ShadowMap g_directional_light_shadow_maps[MAX_NUM_DIRECTIONAL_LIGHTS];
 static Material *g_shadow_map_material = NULL;
 
+
 static void init_shadows(void)
 {
+    // // Load the shadow depth-pass shaders into a material.
+    // ResourceHandle shadow_map_material_handle = Material_create("Materials/shadows");
+    // //ResourceHandle shadow_map_material_handle = Material_create("Materials/red");
+    // g_shadow_map_material = resource_data(Material, shadow_map_material_handle);
+    // // Force-load the shadow depth-pass material-type.
+    // resource_data(MaterialType, g_shadow_map_material->material_type);
+
+    // // For each directional light, initialize
+    // for (int i = 0; i < MAX_NUM_DIRECTIONAL_LIGHTS; i++) {
+    //     ShadowMap *shadow_map = &g_directional_light_shadow_maps[i];
+    //     glGenTextures(1, &shadow_map->color_texture);
+    //     glBindTexture(GL_TEXTURE_2D, shadow_map->color_texture);
+    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    //     glGenTextures(1, &shadow_map->depth_texture);
+    //     glBindTexture(GL_TEXTURE_2D, 
+
+
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, test_fb_width, test_fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // glBindTexture(GL_TEXTURE_2D, 0);
+    // Texture *tex = oneoff_resource(Texture, test_framebuffer_texture_handle);
+    // tex->texture_id = test_framebuffer_texture;
+    // }
+}
+static void do_shadows(void)
+{
+
+}
+
+static void __old_init_shadows(void)
+{
+#if 0
     // shadow map implementation discussion
     // https://gamedev.stackexchange.com/questions/74508/shadow-map-depth-texture-always-returns-0
     // shadow map implementation
@@ -187,9 +222,11 @@ static void init_shadows(void)
         
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // bind back to the default framebuffer.
     }
+#endif
 }
-static void do_shadows(void)
+static void __old_do_shadows(void)
 {
+#if 0
     int index = 0;
     for_aspect(DirectionalLight, light)
         Transform *t = get_sibling_aspect(light, Transform);
@@ -341,6 +378,7 @@ static void do_shadows(void)
     end_for_aspect()
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
 }
 
 

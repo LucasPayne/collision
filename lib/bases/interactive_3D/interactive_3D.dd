@@ -76,6 +76,11 @@ Resources < (
 );
 // Could source project-wide resources here as another operand (so the collections, Textures etc., are collected) if that is convenient.
 
+Scenes < (
+    //---need directory-independent paths
+    #include(/home/lucas/collision/project_resources/scenes);
+    #include(scenes);
+);
 // Source the application data.dd file. This is everything else the application writer wants to store.
 Data < (
     #include(data);

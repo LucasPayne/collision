@@ -2,4 +2,3 @@ gl_version: 4,2;
 core_profile: true;
 clear_color: 1,1,1,1;
 aspect_ratio: 0.5616;
-cull_mode: none;

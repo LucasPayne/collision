@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [[ $# -ne 1 ]] ; then
+    echo "Usage: ./newapp <app name>"
+    exit 0
+fi
+appname=$1
+
+mkdir -p "src/$appname"
+cp -r utils/schematics/interactive_3D_schematic/* "src/$appname"
+mv "src/$appname/interactive_3D_schematic.c" "src/$appname/$appname.c"
+vim "src/$appname/$appname.c"
+

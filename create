@@ -1,0 +1,138 @@
+#!/bin/bash
+
+PROJDIR=$(pwd)
+cc="gcc -rdynamic -I$PROJDIR/include -Wall"
+cflags="-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng"
+
+# Everything that should happen before any compilation should be put here.
+preparebuild() {
+    # Generate the shader blocks, structure definitions for both C and glsl defined in one source file.
+    (cd tools/gen_shader_blocks ; make gen_shader_blocks)
+    tools/gen_shader_blocks/gen_shader_blocks glsl/shader_blocks/standard.shader_blocks -c include/shader_blocks -g glsl/shader_blocks
+}
+
+gatherdependencies() {
+    source=$1
+    libs="$(cat $source | cslots project_libs --pattern  '{n}')"
+    echo $libs
+    if [[ $libs =~ ^\ +$ ]] ; then
+        # libs is whitespace so empty, terminate recursion.
+        exit 0
+    fi
+    for lib in $libs ; do
+        # Recur into one of the library source files to gather dependencies.
+        libsource="lib/$lib/$(basename $lib).c"
+        if [ ! -f $libsource ] ; then
+            echo "failed: Library \"$lib\" has no .c source file."
+        fi
+        sublibs="$(gatherdependencies $libsource)"
+        echo $sublibs
+    done
+}
+
+buildlib() {
+    lib=$1
+    libdir=lib/$1
+    libbuilddir=build/lib/$1
+    if [ ! -d $libdir ] ; then
+        echo "failed: No \"$lib\" library found."
+        exit 1
+    fi
+    libmakefile="$PROJDIR/$libdir/Makefile"
+    if [ ! -f $libmakefile ] ; then
+        echo "failed: Library \"$lib\" has no Makefile."
+        exit 1
+    fi
+    ( cd $libbuilddir ; LIBNAME="$(basename $lib)" APPNAME=$appname CC=$cc CFLAGS=$cflags LIB=$PROJDIR/$libdir make -e --makefile=$libmakefile )
+    # Uncomment for the defaulting behaviour instead of requiring a makefile.
+    # if [ ! -f $libmakefile ] ; then
+    #     # The default "making" assumes the library is a single C file with straightforward compilation.
+    #     $cc -o $libbuilddir/$(basename $lib).o -c $libdir/$(basename $lib).c $cflags
+    # else
+    #     ( cd $libbuilddir ; LIBNAME="$(basename $lib)" APPNAME=$appname CC=$cc CFLAGS=$cflags LIB=$PROJDIR/$libdir make -e --makefile=$libmakefile )
+    # fi
+}
+buildlibs() {
+    libs=$1
+    bigecho "BUILDING LIBRARIES $libs"
+    for lib in $libs ; do
+        mediumecho "Building module \"$lib\" ..."
+        if ! buildlib $lib ; then
+            hugeecho "Failed to create application \"$appname\" due to faulty library \"$lib\"."
+            exit 1
+        fi
+    done
+}
+
+hugeecho() {
+    echo "================================================================================"
+    echo $1
+    echo "================================================================================"
+}
+bigecho() {
+    echo "--------------------------------------------------------------------------------"
+    echo $1
+    echo "--------------------------------------------------------------------------------"
+}
+mediumecho() {
+    echo --- $1
+}
+
+usage() {
+    echo "Usage: ./create <application name>"
+}
+
+if [ $# -ne 1 ] ; then
+    usage
+    exit 0
+fi
+appname="$1"
+appdir="src/$1"
+appsource="src/$1/$1.c"
+hugeecho "BUILDING APPLICATION \"$appname\""
+if [ ! -d $appdir ] ; then
+    echo "failed: Application \"$appname\" has no source directory."
+    exit 1
+fi
+if [ ! -f $appsource ] ; then
+    echo "failed: Application \"$appname\" has no source file."
+    exit 1
+fi
+mediumecho "Gathering dependencies ..."
+libs="$(gatherdependencies $appsource)"
+objects=""
+for lib in $libs ; do
+    objects="$objects build/lib/$lib/$(basename $lib).o"
+    mkdir -p "build/lib/$lib"
+done
+echo $libs
+preparebuild
+buildlibs "$libs"
+
+echo "Collated library objects"
+echo "$objects"
+
+bigecho "Compiling application ..."
+appobjectsdir="build/applications/objects"
+appobject="$appobjectsdir/_$appname.o"
+appexecutable="build/applications/$appname"
+mkdir -p $appobjectsdir
+if ! $cc -o "$appobject" -c "$appsource" $cflags ; then
+    hugeecho "failed: Application source failed to compile."
+    exit 1
+fi
+
+bigecho "Linking application with libraries ..."
+if ! $cc -o $appexecutable "$appobject" $objects $cflags ; then
+    hugeecho "failed: Application failed to link with its libraries."
+    exit 1
+fi
+hugeecho "Successfully compiled application executable."
+exit 0
+
+
+# %: $(SRC_DIR)/$$@/$$@.c $$(shell cat $(SRC_DIR)/$$@/$$@.c | cslots project_libs --pattern '$(BUILD_DIR)/$(LIB_DIR)/{n}/{h}.o')
+# 	# (cd $(TOOLS_DIR)/gen_shader_blocks ; make gen_shader_blocks)
+# 	# $(TOOLS_DIR)/gen_shader_blocks/gen_shader_blocks glsl/shader_blocks/standard.shader_blocks -c include/shader_blocks -g glsl/shader_blocks
+# 	mkdir -p $(APPLICATIONS_DIR)
+# 	$(CC) -o "$(APPLICATIONS_DIR)/$@" $^ $(CFLAGS)

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+PROJDIR="$(pwd)"
+
+usage() {
+    echo "Usage: ./run <app_name> [app_args ...]"
+}
+if [ $# -lt 1 ] ; then
+    usage
+    exit 0
+fi
+
+appname=$1
+echo "Running application \"$appname\" ..."
+
+if ! ./create $appname ; then
+    echo "run failed: Application \"$appname\" could not be created."
+    exit 1
+fi
+
+executable="$PROJDIR/build/applications/$appname"
+sourcedir="$PROJDIR/src/$appname"
+if [ ! -f  $executable ] ; then
+    echo "run failed: Application executable could not be found."
+    exit 1
+fi
+if [ ! -d $sourcedir ] ; then
+    echo "run failed: Application source directory could not be found."
+    exit 1
+fi
+
+shift
+( cd $sourcedir ; $executable $@ )

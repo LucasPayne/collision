@@ -106,6 +106,9 @@ typedef struct ShadowMap_s {
     GLuint framebuffer;
     GLuint depth_texture;
     GLuint color_texture;
+    // For debugging purposes, the shadow map keeps a resource handle for a material which has the depth texture attached.
+    // This won't be destroyed, and can be used to render the depth map to a quad.
+    ResourceHandle depth_texture_material; // Resource: Material
 } ShadowMap;
 static ShadowMap g_directional_light_shadow_maps[MAX_NUM_DIRECTIONAL_LIGHTS];
 static Material *g_shadow_map_material = NULL;
@@ -113,45 +116,6 @@ static Material *g_shadow_map_material = NULL;
 
 static void init_shadows(void)
 {
-    // // Load the shadow depth-pass shaders into a material.
-    // ResourceHandle shadow_map_material_handle = Material_create("Materials/shadows");
-    // //ResourceHandle shadow_map_material_handle = Material_create("Materials/red");
-    // g_shadow_map_material = resource_data(Material, shadow_map_material_handle);
-    // // Force-load the shadow depth-pass material-type.
-#if 0
-    // resource_data(MaterialType, g_shadow_map_material->material_type);
-
-    // // For each directional light, initialize
-    // for (int i = 0; i < MAX_NUM_DIRECTIONAL_LIGHTS; i++) {
-    //     ShadowMap *shadow_map = &g_directional_light_shadow_maps[i];
-    //     glGenTextures(1, &shadow_map->color_texture);
-    //     glBindTexture(GL_TEXTURE_2D, shadow_map->color_texture);
-    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-    //     glGenTextures(1, &shadow_map->depth_texture);
-    //     glBindTexture(GL_TEXTURE_2D, 
-
-
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, test_fb_width, test_fb_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    // glBindTexture(GL_TEXTURE_2D, 0);
-    // Texture *tex = oneoff_resource(Texture, test_framebuffer_texture_handle);
-    // tex->texture_id = test_framebuffer_texture;
-    // }
-}
-static void do_shadows(void)
-{
-
-}
-
-static void __old_init_shadows(void)
-{
-#if 0
-    // shadow map implementation discussion
-    // https://gamedev.stackexchange.com/questions/74508/shadow-map-depth-texture-always-returns-0
-    // shadow map implementation
-    // https://github.com/cforfang/opengl-shadowmapping/blob/master/src/pcf/main.cpp
-
     // Load the shadow depth-pass shaders into a material.
     ResourceHandle shadow_map_material_handle = Material_create("Materials/shadows");
     //ResourceHandle shadow_map_material_handle = Material_create("Materials/red");
@@ -159,79 +123,42 @@ static void __old_init_shadows(void)
     // Force-load the shadow depth-pass material-type.
     resource_data(MaterialType, g_shadow_map_material->material_type);
 
-    // https://www.khronos.org/opengl/wiki/Framebuffer
-    // https://www.khronos.org/opengl/wiki/Framebuffer_Object
+    // For each directional light slot, initialize its shadow map.
     for (int i = 0; i < MAX_NUM_DIRECTIONAL_LIGHTS; i++) {
         ShadowMap *shadow_map = &g_directional_light_shadow_maps[i];
-        // OGLPG p401
-        glGenTextures(1, &shadow_map->texture);
-        glBindTexture(GL_TEXTURE_2D, shadow_map->texture);
+        glGenTextures(1, &shadow_map->color_texture);
+        glBindTexture(GL_TEXTURE_2D, shadow_map->color_texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glGenTextures(1, &shadow_map->depth_texture);
+        glBindTexture(GL_TEXTURE_2D, shadow_map->depth_texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        shadow_map->depth_texture_material = Material_create("Materials/render_shadow_map");
+        ResourceHandle depth_texture_handle;
+        Texture *depth_texture = oneoff_resource(Texture, depth_texture_handle);
+        depth_texture->texture_id = shadow_map->depth_texture;
+        material_set_texture(resource_data(Material, shadow_map->depth_texture_material), "shadow_map", depth_texture_handle);
+                             
+        glGenFramebuffers(1, &shadow_map->framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, shadow_map->color_texture, 0);
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_map->depth_texture, 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            fprintf(stderr, ERROR_ALERT "Incomplete framebuffer when initializing shadow maps.");
+            exit(EXIT_FAILURE);
+        }
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 static void do_shadows(void)
 {
 
 }
-        // Initialize texture metadata.
-        glTexImage2D(GL_TEXTURE_2D,
-                     0, // mipmap level
-                     GL_DEPTH_COMPONENT, // internal format
-                     SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT,
-                     0, // border
-                     GL_DEPTH_COMPONENT, // external format
-                     GL_FLOAT, // type
-                     NULL); // don't provide data
-        // https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glTexParameter.xml
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE); //---What is GL_COMPARE_REF_TO_TEXTURE?
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-        // Wrapping modes.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        // Unbind the depth texture.
-#endif
-        glBindTexture(GL_TEXTURE_2D, 0);
-    
-        // Create a framebuffer object to render depth into.
-        glGenFramebuffers(1, &shadow_map->framebuffer);
-        // The binding target parameters for framebuffers are GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, and GL_READ_FRAMEBUFFER.
-        // There are really two targets, and GL_FRAMEBUFFER attaches the given framebuffer object to both.
-        // GL_DRAW_FRAMEBUFFER:
-        //        target of rendering, clearing, and other write operations.
-        // GL_READ_FRAMEBUFFER:
-        //        used as a source for reading operations.
-        // Possibly there is some use for the pipeline being set up to have both these framebuffers interact? Maybe copying across framebuffers.
-        glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
-        // Attach the texture, its single mipmap-level image as a buffer, to the stencil attachment of the framebuffer object.
-        // glFramebufferTexture — attach a level of a texture object as a logical buffer of a framebuffer object
-        glFramebufferTexture2D(GL_FRAMEBUFFER,
-                               GL_DEPTH_ATTACHMENT, // attachment point (which buffer of the framebuffer object)
-                               GL_TEXTURE_2D, // texture target
-                               shadow_map->texture, // attach the texture
-                               0); // mipmap level 0 (the only one declared with texture metadata in glTexImage2D)
-        //: Disable color rendering as there are no color attachments.
-        // So, the fbo is empty when created, and it consists of buffer attachments.
-        //:: The buffers for FBOs reference images from either Textures or Renderbuffers; they are never directly visible.
-        // Renderbuffers allow the implementation to optimize for specific use as attached to a buffer of an fbo, and don't allow sampling as a texture.
-        // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDrawBuffer.xhtml
-        //: Disable color rendering as there are no color attachments.
-        glDrawBuffer(GL_NONE);
-        glReadBuffer(GL_NONE);
-        
-        // Check that the frame buffer was defined correctly (as in, complete).
-#if 1
-        // See framebuffer completeness,    https://www.khronos.org/opengl/wiki/Framebuffer_Object
-        GLenum fbo_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        if (fbo_status != GL_FRAMEBUFFER_COMPLETE) {
-            fprintf(stderr, ERROR_ALERT "interactive_3D error: Shadow map framebuffer was not defined correctly. The framebuffer is incomplete.\n");
-            exit(EXIT_FAILURE);
-        }
-#endif
-        
-        glBindFramebuffer(GL_FRAMEBUFFER, 0); // bind back to the default framebuffer.
-    }
-#endif
-}
+
 static void __old_do_shadows(void)
 {
 #if 0

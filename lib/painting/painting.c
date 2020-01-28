@@ -385,3 +385,13 @@ void paint2d_rect_c(float x, float y, float width, float height, char *color_str
     paint2d_quad_c(x,y,  x+width,y,  x+width,y+height,  x,y+height,  color_str);
 }
 
+// Standard 2D canvas sprite painting
+// ----------------------------------
+void paint2d_sprite(float blx, float bly, float width, float height, ResourceHandle texture_handle)
+{
+
+}
+void paint2d_sprite_p(float blx, float bly, float width, float height, char *texture_path)
+{
+    paint2d_sprite(blx, bly, width, height, new_resource_handle(Texture, texture_path));
+}

@@ -387,24 +387,31 @@ void paint2d_rect_c(float x, float y, float width, float height, char *color_str
 
 // Standard 2D canvas sprite painting
 // ----------------------------------
-void paint2d_sprite(float blx, float bly, float width, float height, ResourceHandle texture_handle)
+void paint2d_sprite_m(float blx, float bly, float width, float height, ResourceHandle material_handle)
 {
+    // Render the sprite using a custom material.
     gm_triangles(VERTEX_FORMAT_3U);
     attribute_3f(Position, blx, bly, paint2d_depth);
     attribute_3f(Position, blx+width, bly, paint2d_depth);
     attribute_3f(Position, blx+width, bly+height, paint2d_depth);
     attribute_3f(Position, blx, bly+height, paint2d_depth);
     attribute_2f(TexCoord, 0, 1);
-    attribute_2f(TexCoord, 0, 0);
-    attribute_2f(TexCoord, 1, 0);
     attribute_2f(TexCoord, 1, 1);
+    attribute_2f(TexCoord, 1, 0);
+    attribute_2f(TexCoord, 0, 0);
     gm_index(0); gm_index(1); gm_index(2);
     gm_index(0); gm_index(2); gm_index(3);
+    painting_add(Canvas2D, gm_done(), material_handle);
+}
+void paint2d_sprite(float blx, float bly, float width, float height, ResourceHandle texture_handle)
+{
+    // Render a regular sprite with a single texture.
     ResourceHandle mat = Material_create("Painting/Materials/sprite");
     material_set_texture(resource_data(Material, mat), "sprite", texture_handle);
-    painting_add(Canvas2D, gm_done(), mat);
+    paint2d_sprite_m(blx, bly, width, height, mat);
 }
 void paint2d_sprite_p(float blx, float bly, float width, float height, char *texture_path)
 {
+    // Render a regular sprite with a single texture, the texture being given by its resource path.
     paint2d_sprite(blx, bly, width, height, new_resource_handle(Texture, texture_path));
 }

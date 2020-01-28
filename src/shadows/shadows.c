@@ -19,7 +19,7 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-    paint2d_sprite_p(0,0,  0.5,0.5,  "Textures/minecraft/dirt");
+    //paint2d_sprite_p(0,0,  0.15,0.15,  "Textures/ghibli_meadow");
 }
 extern void close_program(void)
 {

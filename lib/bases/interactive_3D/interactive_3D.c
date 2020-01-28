@@ -156,7 +156,21 @@ static void init_shadows(void)
 }
 static void do_shadows(void)
 {
-
+    // GLint prev_viewport[4];
+    // glGetIntegerv(GL_VIEWPORT, prev_viewport);
+    // glViewport(0, 0, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
+    int index;
+    for_aspect(DirectionalLight, light)
+        ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
+        glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
+        glClearDepth(1.0);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        
+        paint2d_sprite_m(index*0.15,0,  0.15,0.15,  shadow_map->depth_texture_material);
+        index ++;
+    end_for_aspect()
+    // glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 static void __old_do_shadows(void)
@@ -417,7 +431,7 @@ static void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
 
-    //do_shadows();
+    do_shadows();
     for_aspect(Camera, camera)
         //------
         // ---Allow cameras to have rectangles, and render to these.

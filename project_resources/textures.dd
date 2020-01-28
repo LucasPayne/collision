@@ -19,3 +19,5 @@ minecraft < (
         path: Images/minecraft/stone_bricks.png;
     );
 );
+
+ghibli_meadow < Texture ( type: png; path: Images/ghibli_meadow.png; );

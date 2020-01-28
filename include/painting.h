@@ -73,6 +73,7 @@ void paint2d_quad_c(float p1x, float p1y, float p2x, float p2y, float p3x, float
 void paint2d_rect(float x, float y, float width, float height, COLOR_SCALARS);
 void paint2d_rect_c(float x, float y, float width, float height, char *color_str);
 
+void paint2d_sprite_m(float blx, float bly, float width, float height, ResourceHandle material_handle);
 void paint2d_sprite(float blx, float bly, float width, float height, ResourceHandle texture_handle);
 void paint2d_sprite_p(float blx, float bly, float width, float height, char *texture_path);
 

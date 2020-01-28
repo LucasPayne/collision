@@ -1,4 +1,5 @@
-
+// In the case of textures, it makes sense for them to be autodetected, or at least
+// to have a little script which generates texture definitions which is sourced by textures.dd.
 
 archimedes < Texture (
     type: png;
@@ -21,3 +22,8 @@ minecraft < (
 );
 
 ghibli_meadow < Texture ( type: png; path: Images/ghibli_meadow.png; );
+
+mario < (
+    sand_bricks < Texture ( type: png; path: Images/mario/sand_bricks.png; );
+);
+

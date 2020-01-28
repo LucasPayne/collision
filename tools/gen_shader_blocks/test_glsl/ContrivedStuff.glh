@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------------
-This code was generated with the gen_shader_blocks utility, for synchronizing
+This code was generated with the gen_shader_blocks tool, for synchronizing
 definitions between glsl and C.
 --------------------------------------------------------------------------------*/
 #define NUM 1000
@@ -24,7 +24,7 @@ struct OtherStuff {
     uint a;
 };
 
-uniform layout(std140) ContrivedStuff {
+layout (std140) uniform ContrivedStuff {
     bool ays[1000];
     Stuff things[1000];
     vec3 vvvvvv[33];

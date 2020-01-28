@@ -48,7 +48,9 @@ typedef struct Entry_s {
     // C size
     size_t type_size; //for arrays and structs, this is the same as the std140 size.
 
-    bool is_struct;
+    bool is_struct; // could be an enum instead of two flags
+    bool is_sampler;
+
     int struct_number; //the index in the block's struct definitions array that this entry is an instance of.
     bool is_array; // both is_struct and is_array can be true, for an array of structs.
     int array_length;

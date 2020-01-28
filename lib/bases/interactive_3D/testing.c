@@ -91,9 +91,9 @@ void test_spawn_cubes(int n)
         EntityID quad = new_entity(4);
         Transform_set(entity_add_aspect(quad, Transform), frand()*50-25,frand()*50-25,frand()*50-25, frand()*M_PI*2,0,0);
         Body *body = entity_add_aspect(quad, Body);
-        body->scale = 1;
+        body->scale = 5;
         body->material = Material_create("Materials/textured_phong");
-        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/stone_bricks");
+        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/mario/sand_bricks");
         body->geometry = new_resource_handle(Geometry, "Models/block");
         // Logic *logic = entity_add_aspect(quad, Logic);
         // logic->update = quad_test_update;

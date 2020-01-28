@@ -195,7 +195,8 @@ static void do_shadows(void)
             gm_draw(*geometry, g_shadow_map_material);
         end_for_aspect()
 
-        paint2d_sprite_m(index*0.15,0,  0.15,0.15,  shadow_map->depth_texture_material);
+        float rect_size = 0.23;
+        paint2d_sprite_m(index*rect_size,0,  rect_size,rect_size,  shadow_map->depth_texture_material);
         index ++;
     end_for_aspect()
     glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);

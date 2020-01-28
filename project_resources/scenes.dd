@@ -5,7 +5,7 @@ block_material < Material (
 );
 floor_material < Material (
     type: Resources/Materials/textured_phong_shadows;
-    diffuse_map < Resources/Textures/minecraft/dirt;
+    diffuse_map < Resources/Textures/minecraft/stone_bricks;
     properties < ( int temp: 1;);
 );
 stanford_bunny_material < Material (

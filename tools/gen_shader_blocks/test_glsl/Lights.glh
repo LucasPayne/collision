@@ -1,27 +1,35 @@
 /*--------------------------------------------------------------------------------
-This code was generated with the gen_shader_blocks utility, for synchronizing
+This code was generated with the gen_shader_blocks tool, for synchronizing
 definitions between glsl and C.
 --------------------------------------------------------------------------------*/
-#define MAX_NUM_DIRECTIONAL_LIGHTS 32
-#define MAX_NUM_SPOTLIGHTS 32
+#define MAX_NUM_DIRECTIONAL_LIGHTS 8
+#define MAX_NUM_POINT_LIGHTS 8
+
+// Begin samplers
+    sampler2DShadow directional_light_shadow_maps[8];
+    sampler2DShadow point_light_shadow_maps[8];
+// End samplers
 
 struct DirectionalLight {
-    vec4 color;
+    mat4x4 shadow_matrix;
+    vec3 half_vector;
     vec3 direction;
-    bool is_active;
-};
-struct SpotLight {
-    float cubic_attenuation;
     vec4 color;
+};
+struct PointLight {
+    float cubic_attenuation;
     float quadratic_attenuation;
-    vec3 position;
-    float pulse_rate;
-    bool is_active;
     float linear_attenuation;
+    vec3 position;
+    vec4 color;
 };
 
-uniform layout(std140) Lights {
-    bool lighting_enabled;
-    DirectionalLight directional_lights[32];
-    SpotLight spotlights[32];
+layout (std140) uniform Lights {
+    mat4x4 active_shadow_matrix;
+    int num_directional_lights;
+    int num_point_lights;
+    sampler2DShadow directional_light_shadow_maps[8];
+    DirectionalLight directional_lights[8];
+    sampler2DShadow point_light_shadow_maps[8];
+    PointLight point_lights[8];
 };

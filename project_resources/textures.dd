@@ -22,6 +22,7 @@ minecraft < (
 );
 
 ghibli_meadow < Texture ( type: png; path: Images/ghibli_meadow.png; );
+marble_tile < Texture ( type: png; path: Images/marble_tile.png; );
 
 mario < (
     sand_bricks < Texture ( type: png; path: Images/mario/sand_bricks.png; );

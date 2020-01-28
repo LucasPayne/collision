@@ -387,22 +387,50 @@ void paint2d_rect_c(float x, float y, float width, float height, char *color_str
 
 // Standard 2D canvas sprite painting
 // ----------------------------------
-void paint2d_sprite_m(float blx, float bly, float width, float height, ResourceHandle material_handle)
+// Variants:
+// p: The texture is from a path
+// h: Horizontal flip
+// v: vertical flip
+
+static void _paint2d_sprite_m(float blx, float bly, float width, float height, ResourceHandle material_handle, bool horiz_flip, int rotate)
 {
+    // horiz_flip and rotate generate D8, so variant functions can be based off of this.
+
     // Render the sprite using a custom material.
     gm_triangles(VERTEX_FORMAT_3U);
     attribute_3f(Position, blx, bly, paint2d_depth);
     attribute_3f(Position, blx+width, bly, paint2d_depth);
     attribute_3f(Position, blx+width, bly+height, paint2d_depth);
     attribute_3f(Position, blx, bly+height, paint2d_depth);
-    attribute_2f(TexCoord, 0, 1);
-    attribute_2f(TexCoord, 1, 1);
-    attribute_2f(TexCoord, 1, 0);
-    attribute_2f(TexCoord, 0, 0);
+
+    // remember, flip * rotate = rotate^-1 * flip
+    static float coords[2 * 8] = {
+        0, 1,
+        1, 1,
+        1, 0,
+        0, 0,
+    };
+    for (int i = 0; i < 4; i++) {
+        int index = ((horiz_flip ? -i : i) + rotate) % 4;
+        attribute_2f(TexCoord, coords[2*index], coords[2*index + 1]);
+    }
     gm_index(0); gm_index(1); gm_index(2);
     gm_index(0); gm_index(2); gm_index(3);
     painting_add(Canvas2D, gm_done(), material_handle);
 }
+void paint2d_sprite_m(float blx, float bly, float width, float height, ResourceHandle material_handle)
+{
+    _paint2d_sprite_m(blx, bly, width, height, material_handle, false, 0);
+}
+void paint2d_sprite_mv(float blx, float bly, float width, float height, ResourceHandle material_handle)
+{
+    _paint2d_sprite_m(blx, bly, width, height, material_handle, true, 2);
+}
+void paint2d_sprite_mh(float blx, float bly, float width, float height, ResourceHandle material_handle)
+{
+    _paint2d_sprite_m(blx, bly, width, height, material_handle, true, 0);
+}
+
 void paint2d_sprite(float blx, float bly, float width, float height, ResourceHandle texture_handle)
 {
     // Render a regular sprite with a single texture.

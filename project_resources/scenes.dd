@@ -8,6 +8,9 @@ floor_material < Material (
     diffuse_map < Resources/Textures/minecraft/dirt;
     properties < ( int temp: 1;);
 );
+stanford_bunny_material < Material (
+    type: Resources/Materials/red;
+);
 
 block_on_floor < (
     block < GameObject (
@@ -30,6 +33,17 @@ block_on_floor < (
         transform < Transform (
             position: 0,0,2;
             rotation: 1.5707963,0,0;
+        );
+    );
+    stanford_bunny < GameObject (
+        body < Body (
+            scale: 150;
+            geometry: Resources/Models/stanford_bunny;
+            material: Scenes/stanford_bunny_material;
+        );
+        transform < Transform (
+            position: -18,-5,-10;
+            rotation: 0,0,0;
         );
     );
 );

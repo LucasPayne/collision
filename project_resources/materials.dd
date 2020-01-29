@@ -105,3 +105,12 @@ render_projection_shadow_map < MaterialType (
     num_textures: 1;
     string texture0: shadow_map;
 );
+
+// Testing materials
+test_texture < MaterialType (
+    vertex_format: 3U;
+    vertex_shader: Shaders/passthrough_U.vert;
+    fragment_shader: Shaders/test_texture.frag;
+    num_blocks: 1;
+    string block0: Standard3D;
+);

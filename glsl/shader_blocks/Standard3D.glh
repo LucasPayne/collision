@@ -2,6 +2,7 @@
 This code was generated with the gen_shader_blocks tool, for synchronizing
 definitions between glsl and C.
 --------------------------------------------------------------------------------*/
+uniform sampler2D test_texture;
 layout (std140) uniform Standard3D {
     float near_plane;
     float far_plane;

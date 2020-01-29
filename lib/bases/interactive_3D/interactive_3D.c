@@ -455,6 +455,10 @@ static void init_base(void)
 
     painting_init();
     init_shadows();
+
+    // Initialize a global test texture that shaders can access through Standard3D.
+    ResourceHandle test_texture = new_resource_handle(Texture, "Textures/test_texture");
+    set_uniform_texture(Standard3D, test_texture, resource_data(Texture, test_texture)->texture_id);
 }
 
 static void render(void)

@@ -22,6 +22,13 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
+
+    // printf("getting. ...\n");
+    // getchar();
+    // ResourceHandle mat = Material_create("Materials/test_texture");
+    // printf("got\n");
+    // paint2d_sprite_m(0.9,0,  0.1,0.1,  mat);
+    // destroy_resource_handle(&mat);
 }
 extern void close_program(void)
 {

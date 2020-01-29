@@ -9,6 +9,7 @@ block Standard3D {
     vec3 camera_direction;
     vec3 camera_position;
     mat4x4 normal_matrix;
+    sampler2D test_texture;
 };
 
 block StandardLoopWindow {

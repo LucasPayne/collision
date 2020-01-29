@@ -190,7 +190,7 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name, int
                            ( SAMPLER_ID ))
 #define set_uniform_texture(BLOCK_NAME,SAMPLER_ENTRY,TEXTURE_ID)\
     ___set_uniform_texture(( ShaderBlockID_ ## BLOCK_NAME ),\
-                           &( ShaderBlockSamplers_ ## BLOCK_NAME.SAMPLER_ENTRY ) - &( ShaderBlockSamplers_ ## BLOCK_NAME ),\
+                           &( ShaderBlockSamplers_ ## BLOCK_NAME.SAMPLER_ENTRY ) - (GLint *) &( ShaderBlockSamplers_ ## BLOCK_NAME ),\
                            ( TEXTURE_ID ))
 
 /* Pointer arithmetic can be used if needed, to calculate the offset (it is used for bitflags.) */

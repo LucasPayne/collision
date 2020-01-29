@@ -7,7 +7,23 @@ definitions between glsl and C.
 #define MAX_NUM_DIRECTIONAL_LIGHTS 8
 #define MAX_NUM_POINT_LIGHTS 8
 
-char **ShaderBlockSamplerNames_Lights[] = {
+char *ShaderBlockSamplerNames_Lights[] = {
+    "directional_light_shadow_maps[0]",
+    "directional_light_shadow_maps[1]",
+    "directional_light_shadow_maps[2]",
+    "directional_light_shadow_maps[3]",
+    "directional_light_shadow_maps[4]",
+    "directional_light_shadow_maps[5]",
+    "directional_light_shadow_maps[6]",
+    "directional_light_shadow_maps[7]",
+    "point_light_shadow_maps[0]",
+    "point_light_shadow_maps[1]",
+    "point_light_shadow_maps[2]",
+    "point_light_shadow_maps[3]",
+    "point_light_shadow_maps[4]",
+    "point_light_shadow_maps[5]",
+    "point_light_shadow_maps[6]",
+    "point_light_shadow_maps[7]",
 }; // ShaderBlockSamplerNames_Lights
 
 struct ShaderBlockStruct_Lights_DirectionalLight { //size: 112

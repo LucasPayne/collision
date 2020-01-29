@@ -38,5 +38,7 @@ block Lights {
     int num_directional_lights;
     int num_point_lights;
     DirectionalLight directional_lights[MAX_NUM_DIRECTIONAL_LIGHTS];
+    sampler2DShadow directional_light_shadow_maps[MAX_NUM_DIRECTIONAL_LIGHTS];
     PointLight point_lights[MAX_NUM_POINT_LIGHTS];
+    sampler2DShadow point_light_shadow_maps[MAX_NUM_POINT_LIGHTS];
 };

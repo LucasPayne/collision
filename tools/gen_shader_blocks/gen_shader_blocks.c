@@ -1,3 +1,8 @@
+/*================================================================================
+This is absolutely spaghetti code. Python would be a much better choice, since this
+is a pre-compile tool, if lexing and parsing is solved somehow (maybe still using flex and bison?)
+and using this as a base to know what code is actually generated, to make a cleaner program.
+================================================================================*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -312,6 +317,7 @@ Entry new_entry(int type, int the_rest)
     if (type_size == 0 && is_glsl_sampler_type(symbol(type))) {
         entry.is_sampler = true;
         entry.is_struct = false;
+        entry.type_size = 0;
     } else if (type_size == 0) {
         // Otherwise, check if it is a struct type of a struct that has been declared previously (the order matters).
         int i;
@@ -363,6 +369,7 @@ bool get_block(Block *block)
 static void glsl_generate_entries(FILE *file, Entry *entries, int num_entries)
 {
     for (int i = 0; i < num_entries; i++) {
+        if (entries[i].is_sampler) continue;
         if (entries[i].is_array) {
             fprintf(file, "    %s %s[%d];\n", symbol(entries[i].type), symbol(entries[i].the_rest), entries[i].array_length);
         } else {
@@ -383,16 +390,14 @@ void generate_block_glsl(FILE *file, Block block)
     // Count the samplers.
     int num_samplers = 0;
     for (int i = 0; i < block.num_entries; i++) if (block.entries[i].is_sampler) num_samplers ++;
-    if (num_samplers > 0) fprintf(file, "// Begin samplers\n");
     for (int i = 0; i < block.num_entries; i++) {
         if (!block.entries[i].is_sampler) continue; // only handling sampler entries here.
         if (block.entries[i].is_array) {
-            fprintf(file, "    %s %s[%d];\n", symbol(block.entries[i].type), symbol(block.entries[i].the_rest), block.entries[i].array_length);
+            fprintf(file, "uniform %s %s[%d];\n", symbol(block.entries[i].type), symbol(block.entries[i].the_rest), block.entries[i].array_length);
         } else {
-            fprintf(file, "    %s %s;\n", symbol(block.entries[i].type), symbol(block.entries[i].the_rest));
+            fprintf(file, "uniform %s %s;\n", symbol(block.entries[i].type), symbol(block.entries[i].the_rest));
         }
     }
-    if (num_samplers > 0) fprintf(file, "// End samplers\n\n");
     // Struct definitions
     for (int i = 0; i < block.num_struct_definitions; i++) {
         fprintf(file, "struct %s {\n", symbol(block.struct_definitions[i].name));
@@ -410,16 +415,18 @@ void generate_block_glsl(FILE *file, Block block)
 // so this function is separated.
 static void C_generate_entries(FILE *file, Block *block, Entry *entries, int num_entries)
 {
+    // Complication here since not all entries are actually entries, as some are samplers ...
+    size_t prev_type_size;
+    size_t prev_std140_offset;
+    int entry_num = 0;
     for (int i = 0; i < num_entries; i++) {
         if (entries[i].is_sampler) continue; // samplers aren't put in this struct.
         // ---struct renaming
         size_t type_size = entries[i].type_size;
         size_t std140_alignment = entries[i].std140_alignment;
         size_t std140_offset = entries[i].std140_offset;
-        if (i > 0) {
+        if (entry_num > 0) {
             // std140 padding
-            size_t prev_type_size = entries[i-1].type_size;
-            size_t prev_std140_offset = entries[i-1].std140_offset;
             // This calculates the amount of byte padding that needs to be sandwhiched from entry i-1 to i
             // to account for the lack of reaching the wanted offset.
             size_t pad = std140_offset - prev_std140_offset - prev_type_size;
@@ -439,7 +446,9 @@ static void C_generate_entries(FILE *file, Block *block, Entry *entries, int num
             }
         } 
         fprintf(file, "    //offset: %zu, alignment: %zu, C_type_size: %zu\n", std140_offset, std140_alignment, type_size);
-
+        prev_type_size = type_size;
+        prev_std140_offset = std140_offset;
+        entry_num ++;
     }
 }
 void generate_block_C(FILE *file, Block block)
@@ -490,7 +499,7 @@ typedef struct ShaderBlock_DirectionalLights_s {
     // Generate the array of all sampler names, in the form that they can be used with glGetUniformLocation.
     // This means that for each sampler in a sampler array, a name is generated, e.g. test_sampler[2].
     int num_samplers = 0; // build up the number of samplers.
-    fprintf(file, "char **ShaderBlockSamplerNames_%s[] = {\n", symbol(block.name));
+    fprintf(file, "char *ShaderBlockSamplerNames_%s[] = {\n", symbol(block.name));
     for (int i = 0; i < block.num_entries; i++) {
         if (!block.entries[i].is_sampler) continue; // only handling sampler entries here.
         if (block.entries[i].is_array) {

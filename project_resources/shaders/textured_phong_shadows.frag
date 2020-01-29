@@ -3,10 +3,6 @@
 #block Standard3D
 #block Lights
 
-//---Could change the glsl generator and allow blocks to contain uniform sampler definitions, which are put outside the block.
-// Then uploading the sampler could have its own functions, such as set_uniform_sampler.
-uniform sampler2DShadow directional_light_shadow_maps[MAX_NUM_DIRECTIONAL_LIGHTS];
-
 layout (std140) uniform MaterialProperties {
     int temp;
 };

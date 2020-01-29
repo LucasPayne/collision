@@ -344,7 +344,6 @@ void gm_draw(Geometry geometry, Material *material)
     }
     synchronize_shader_blocks();
 
-    //---- do this map elsewhere.
     GLenum gl_primitive_type;
     switch(geometry.primitive_type) {
         case Triangles: gl_primitive_type = GL_TRIANGLES; break;

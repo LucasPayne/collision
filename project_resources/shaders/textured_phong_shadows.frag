@@ -33,7 +33,8 @@ void main(void)
 
     // Texture
     color *= texture(diffuse_map, fTexCoord);
+    color = texture(test_texture_2, fTexCoord);
 
-    color = texture(directional_light_shadow_maps[6], fTexCoord);
+    //color = texture(directional_light_shadow_maps[0], fTexCoord);
 
 }

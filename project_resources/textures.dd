@@ -1,10 +1,14 @@
 // In the case of textures, it makes sense for them to be autodetected, or at least
 // to have a little script which generates texture definitions which is sourced by textures.dd.
 
-// Do not remove this.
+// Do not remove these.
 test_texture < Texture (
     type: png;
     path: Images/testing/test_texture.png;
+);
+test_texture_2 < Texture (
+    type: png;
+    path: Images/testing/test_texture_2.png;
 );
 //--------------------------------------------------------------------------------
 

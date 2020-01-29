@@ -153,6 +153,13 @@ static void init_shadows(void)
             fprintf(stderr, ERROR_ALERT "Incomplete framebuffer when initializing shadow maps.");
             exit(EXIT_FAILURE);
         }
+        // Bind the depth texture to its reserved texture unit. --------------------------------
+        //set_uniform_texture(Lights, directional_light_shadow_maps[i], shadow_map->depth_texture);
+        //----for now connecting the color texture, for debugging.
+        // set_uniform_texture(Lights, directional_light_shadow_maps[i], shadow_map->color_texture);
+        ResourceHandle dirt = new_resource_handle(Texture, "Textures/minecraft/dirt");
+        set_uniform_texture(Lights, directional_light_shadow_maps[i], resource_data(Texture, dirt)->texture_id);
+        // --------------------------------------------------------------------------------------
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -206,166 +213,6 @@ if (!g_freeze_shadows) { // toggleable for debugging.
     glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-
-static void __old_do_shadows(void)
-{
-#if 0
-    int index = 0;
-    for_aspect(DirectionalLight, light)
-        Transform *t = get_sibling_aspect(light, Transform);
-        ShadowMap __old_*shadow_map = &g_directional_light_shadow_maps[index];
-        mat4x4 shadow_matrix;
-#if 0
-        //mat4x4 shadow_view_matrix = invert_rigid_mat4x4(Transform_matrix(t));
-        Camera *camera;
-        for_aspect(Camera, getting_camera)
-            camera = getting_camera;
-            break;
-        end_for_aspect()
-        Transform *camera_transform = get_sibling_aspect(camera, Transform);
-        Matrix4x4f view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
-        //Matrix4x4f vp_matrix = camera->projection_matrix;
-        //right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
-        //shadow_matrix = vp_matrix;
-        //shadow_matrix = view_matrix;
-        shadow_matrix = identity_mat4x4();
-
-        //set_uniform_mat4x4(Lights, active_shadow_matrix.vals, shadow_matrix.vals);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
-        // Save the viewport, switch it for rendering to the shadow map, then later switch it back.
-        //:: glViewport specifies the affine transformation of x and y from normalized device coordinates to window coordinates. 
-        GLint viewport[4];
-        glGetIntegerv(GL_VIEWPORT, viewport);
-        glViewport(0, 0, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
-        // Clearing the depth buffer while this framebuffer is bound clears the shadow map (sets all values to 1.0).
-        // glClearDepth is the analogue to glClearColor.
-        glClearDepth(1.0); //---maybe should save this and restore it after.
-        glClear(GL_DEPTH_BUFFER_BIT);
-{
-        ResourceHandle gres = new_resource_handle(Geometry, "Models/quad");
-        Geometry *geom = resource_data(Geometry, gres);
-        ResourceHandle mres = Material_create("Materials/red");
-        Material *mat = resource_data(Material, mres);
-        mat4x4 matrix = {{
-            0.25,  0,    0,    0.25,
-            0,    0.25,  0,    0.25,
-            0,    0,    0.25,  0,
-            0,    0,    0,    1,
-        }};
-        set_uniform_mat4x4(Standard3D, mvp_matrix.vals, matrix.vals);
-        gm_draw(*geom, mat);
-        destroy_resource_handle(&gres);
-        destroy_resource_handle(&mres);
-}
-#if 0
-        for_aspect(Body, body)
-            Transform *t = get_sibling_aspect(body, Transform);
-            Matrix4x4f model_matrix = Transform_matrix(t);
-            //---This body rescaling is a hack.
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    model_matrix.vals[4*i + j] *= body->scale;
-                }
-            }
-            Geometry *geometry = resource_data(Geometry, body->geometry);
-            mat4x4 mvp_matrix = shadow_matrix;
-            right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
-            print_matrix4x4f(&mvp_matrix);
-            set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
-            gm_draw(*geometry, g_shadow_map_material);
-        end_for_aspect()
-#endif
-        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-
-        static float depth_data[SHADOW_MAP_TEXTURE_WIDTH * SHADOW_MAP_TEXTURE_HEIGHT];
-#define select 0
-#if select == 0
-        glBindTexture(GL_TEXTURE_2D, shadow_map->texture);
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, depth_data);
-        glBindTexture(GL_TEXTURE_2D, 0);
-#elif select == 1
-        glReadPixels(0, 0, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT,
-                     GL_DEPTH_COMPONENT,
-                     GL_FLOAT,
-                     depth_data);
-#elif select == 2
-        for (int i = 0; i < SHADOW_MAP_TEXTURE_WIDTH; i++) {
-            for (int j = 0; j < SHADOW_MAP_TEXTURE_WIDTH; j++) {
-                depth_data[SHADOW_MAP_TEXTURE_WIDTH*j + i] = j % 2;
-            }
-        }
-#endif
-#if 1
-        // Uncomment for debugging the shadow map framebuffer without viewing a texture.
-        // This counts the number of non-zero entries, which if the light is pointing at things, should hint at whether it is working.
-        int count = 0;
-        for (int i = 0; i < SHADOW_MAP_TEXTURE_WIDTH; i++) {
-            for (int j = 0; j < SHADOW_MAP_TEXTURE_HEIGHT; j++) {
-                if (depth_data[SHADOW_MAP_TEXTURE_HEIGHT*i + j] != 0) {
-                    count ++;
-                    // printf("%.2f\n", depth_data[SHADOW_MAP_TEXTURE_WIDTH*i + j]);
-                    // getchar();
-                }
-            }
-        }
-        printf("%d / %d\n", count, SHADOW_MAP_TEXTURE_WIDTH*SHADOW_MAP_TEXTURE_HEIGHT);
-#endif
-        // Create a new texture to show the shadow map.
-        GLuint map_tex;
-        glGenTextures(1, &map_tex);
-        glBindTexture(GL_TEXTURE_2D, map_tex);
-        glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
-#if 1
-        glTexSubImage2D(GL_TEXTURE_2D,
-                        0, // first mipmap level
-                        0, 0, // x and y offset
-                        SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT,
-                        GL_DEPTH_COMPONENT, GL_FLOAT,
-                        depth_data);
-#endif
-
-        ResourceHandle tres;
-        // Test view the depth buffer as a rendered texture.
-        ResourceHandle gres = new_resource_handle(Geometry, "Models/quad");
-        Geometry *geom = resource_data(Geometry, gres);
-        ResourceHandle mres = Material_create("Materials/render_shadow_map");
-        Material *mat = resource_data(Material, mres);
-#if 0
-        material_set_texture_path(mat, "shadow_map", "Textures/minecraft/dirt");
-#else
-        Texture *tex = oneoff_resource(Texture, tres);
-        tex->texture_id = map_tex;
-        material_set_texture(mat, "shadow_map", tres);
-#endif
-
-        mat4x4 mvp_matrix = {{
-            0.25,  0,    0,    0.25,
-            0,    0.25,  0,    0.25,
-            0,    0,    0.25,  0,
-#endif
-            0,    0,    0,    1,
-        }};
-        set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        gm_draw(*geom, mat);
-        float loop[2*4] = {
-            0.5,0.5,  0.75,0.5,  0.75,0.75,  0.5,0.75
-        };
-        paint2d_loop_c(loop, 4, "r");
-
-        destroy_resource_handle(&gres);
-        destroy_resource_handle(&mres);
-        destroy_resource_handle(&tres);
-        glDeleteTextures(1, &map_tex);
-
-        index ++;
-    end_for_aspect()
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-#endif
-}
-
 
 
 static void reshape(GLFWwindow *window, int width, int height)
@@ -465,9 +312,12 @@ static void init_base(void)
     painting_init();
     init_shadows();
 
-    // Initialize a global test texture that shaders can access through Standard3D.
+    // Initialize global test textures that shaders can access.
     ResourceHandle test_texture = new_resource_handle(Texture, "Textures/test_texture");
     set_uniform_texture(Standard3D, test_texture, resource_data(Texture, test_texture)->texture_id);
+
+    ResourceHandle test_texture_2 = new_resource_handle(Texture, "Textures/test_texture_2");
+    set_uniform_texture(Standard3D, test_texture_2, resource_data(Texture, test_texture_2)->texture_id);
 }
 
 static void render(void)

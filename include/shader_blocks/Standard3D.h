@@ -6,11 +6,13 @@ definitions between glsl and C.
 #define SHADER_BLOCK_HEADER_DEFINED_STANDARD3D
 static char *ShaderBlockSamplerNames_Standard3D[] = {
     "test_texture",
+    "test_texture_2",
 }; // ShaderBlockSamplerNames_Standard3D
 
-#define ShaderBlockNumSamplers_Standard3D 1
+#define ShaderBlockNumSamplers_Standard3D 2
 struct ___ShaderBlockSamplers_Standard3D {
     GLint test_texture;
+    GLint test_texture_2;
 } ShaderBlockSamplers_Standard3D;
 
 ShaderBlockID ShaderBlockID_Standard3D;

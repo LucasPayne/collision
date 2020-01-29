@@ -91,7 +91,7 @@ void MaterialType_load(void *resource, char *path)
 
     // A file-backed material instance of this material-type defines its textures from their names given in this material type text-file. Collate these
     // names, and attach texture{i}'s declared texture name to texture unit GL_TEXTURE{i}.
-    glUseProgram(mt.program_id); // use the program so sampler uniforms can be uploaded.
+    glUseProgram(mt.program_id); // use the program so sampler uniforms can be uploaded, and so other indirect-access functions can work.
     for (int i = 0; i < mt.num_textures; i++) {
         char texture_token[32];
         sprintf(texture_token, "texture%d", i);
@@ -108,7 +108,6 @@ void MaterialType_load(void *resource, char *path)
         // }
         glUniform1i(texture_location, i + g_num_reserved_samplers); // Offset this to account for reserved texture units, such as for shadow maps.
     }
-    glUseProgram(0);
 
     // Collect shader-block information and bind their backing buffers to the linked program.
     //      Possibly the material does not even need to keep information about its blocks after binding them to its program.
@@ -147,7 +146,15 @@ void MaterialType_load(void *resource, char *path)
             //printf("Binding to location %d\n", sampler_index);
             //getchar();
             // If the sampler isn't found, then it has probably been optimized out since it is unused. Just skip it.
+            // printf("mt: %s\n", path);
+            // if (location < 0) {
+            //     printf("could not find %s\n", sampler_names[i]);
+            //     getchar();
+            // }
             if (location < 0) continue;
+            // printf("mt: %s\n", path);
+            // printf("setting %s to %d\n", sampler_names[i], sampler_index);
+            // getchar();
             glUniform1i(location, sampler_index); // Bind this uniform sampler location in the material-type's shader program to this global reserved index.
         }
 #endif
@@ -206,6 +213,8 @@ void MaterialType_load(void *resource, char *path)
     /* printf("Finished loading material type from path %s\n", path); */
     /* print_material_type(&material_type); */
     
+    // Unbind the program.
+    glUseProgram(0);
     // Successfully filled the MaterialType.
     MaterialType *out_material_type = (MaterialType *) resource;
     memcpy(out_material_type, &mt, sizeof(MaterialType));
@@ -518,6 +527,7 @@ void ___set_uniform_vec4(ShaderBlockID id, vec4 *entry_address, vec4 val)
         fprintf(stderr, ERROR_ALERT "Something went wrong. A uniform sampler of a shaderblock was set with an index >= the number of samplers in the shader block.\n");\
         exit(EXIT_FAILURE);\
     }
+
 void ___set_uniform_sampler(ShaderBlockID id, int shaderblock_sampler_index, GLuint sampler_id)
 {
     sampler_error_check();
@@ -529,7 +539,10 @@ void ___set_uniform_texture(ShaderBlockID id, int shaderblock_sampler_index, GLu
     // Textures implicitly have their own sampler objects, and when glBindTexture is used when a texture unit is active,
     // this binds the texture's "built-in", default sampler. So, a variant is here for the usage of gl texture ids instead of gl sampler ids.
     sampler_error_check();
+    // printf("Setting uniform texture:\nblock_id: %d\nshaderblock_sampler_index: %d\ntexture_id: %u\n", id, shaderblock_sampler_index, texture_id);
     int sampler_index = g_shader_blocks[id].samplers_start_index + shaderblock_sampler_index;
+    // printf("sampler_index: %d\n", sampler_index);
+    // getchar();
     glActiveTexture(GL_TEXTURE0 + sampler_index);
     glBindTexture(GL_TEXTURE_2D, texture_id); //////////----Change to take a texture resource handle, and keep the gl texture type in the texture resource.
                                               // while all textures being used are GL_TEXTURE_2D, this works, but this needs to be changed.

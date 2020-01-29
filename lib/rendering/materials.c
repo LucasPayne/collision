@@ -106,7 +106,7 @@ void MaterialType_load(void *resource, char *path)
         //     // fails silently, so it might be fine to not give a load error here.
         //     load_error("Could not find sampler in linked program.");
         // }
-        glUniform1i(texture_location, i); //----offset this to account for reserved texture units, such as for shadow maps.
+        glUniform1i(texture_location, i + g_num_reserved_samplers); // Offset this to account for reserved texture units, such as for shadow maps.
     }
     glUseProgram(0);
 

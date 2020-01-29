@@ -27,3 +27,9 @@ stanford_bunny < Geometry (
     vertex_format: 3;
     path: Meshes/stanford_bunny_low.ply;
 );
+
+dolphins < Geometry (
+    type: ply;
+    vertex_format: 3;
+    path: Meshes/dolphins.ply;
+);

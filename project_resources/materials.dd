@@ -114,3 +114,19 @@ test_texture < MaterialType (
     num_blocks: 1;
     string block0: Standard3D;
 );
+
+// Create the normals for testing phong lighting approximately when a model does not have normals.
+flat_color_phong_outward_normals < MaterialType (
+    vertex_format: 3;
+    vertex_shader: Shaders/passthrough_3N_outward_normals.vert;
+    fragment_shader: Shaders/flat_color_phong.frag;
+    num_blocks: 4;
+    string block0: Standard3D;
+    string block1: MaterialProperties;
+    string block2: Lights;
+    string block3: StandardLoopWindow;
+    properties < (
+        vec4 flat_color;
+    );
+);
+

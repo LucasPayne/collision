@@ -1,14 +1,11 @@
 #version 420
 
 #block Standard3D
-#block Lights
 
 out vOut {
     vec2 fTexCoord;
     vec4 fPosition;
     vec3 fNormal;
-
-    vec4 fDirectionalLightShadowCoord[MAX_NUM_DIRECTIONAL_LIGHTS];
 };
 
 // #vertex_format 3NU
@@ -21,11 +18,6 @@ void main(void)
     gl_Position = mvp_matrix * vPosition; // Interpolate the position of the fragment in the canonical view volume.
     fPosition = model_matrix * vPosition; // Interpolate the position of the fragment in global coordinates.
     fTexCoord = vTexCoord;
-    fNormal = (normal_matrix * vec4(vNormal, 1)).xyz;
 
-    for (int i = 0; i < num_directional_lights; i++) {
-        mat4x4 model_shadow_matrix = directional_lights[i].shadow_matrix * model_matrix;
-        fDirectionalLightShadowCoord[i] = model_shadow_matrix * vPosition;
-        // gl_Position = model_shadow_matrix * vPosition;
-    }
+    fNormal = (normal_matrix * vec4(vNormal, 1)).xyz;
 }

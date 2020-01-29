@@ -50,6 +50,8 @@ static const int g_glfw_sma_debug_overlay_key = GLFW_KEY_F11; // debugging small
 static bool g_sma_debug_overlay = false;
 static bool g_raw_mouse = false; // If enabled in config, a meta-key will toggle this.
 static const int g_glfw_raw_mouse_key = GLFW_KEY_F12;
+static bool g_freeze_shadows = false; // can toggle this for debugging.
+static const int g_glfw_freeze_shadows_key = GLFW_KEY_F10;
 static void toggle_raw_mouse(void)
 {
     ///////--- Why does it only toggle once?
@@ -159,9 +161,10 @@ static void do_shadows(void)
     GLint prev_viewport[4];
     glGetIntegerv(GL_VIEWPORT, prev_viewport);
     glViewport(0, 0, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
-    int index;
+    int index = 0;
     for_aspect(DirectionalLight, light)
         ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
+if (!g_freeze_shadows) { // toggleable for debugging.
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
         glClearDepth(1.0);
         glClear(GL_DEPTH_BUFFER_BIT);
@@ -178,6 +181,8 @@ static void do_shadows(void)
         mat4x4 vp_matrix = camera->projection_matrix;
         right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
         shadow_matrix = vp_matrix;
+        print_matrix4x4f(&shadow_matrix);
+        set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrix.vals, shadow_matrix.vals);
 
         for_aspect(Body, body)
             Transform *transform = get_sibling_aspect(body, Transform);
@@ -194,7 +199,7 @@ static void do_shadows(void)
             Geometry *geometry = resource_data(Geometry, body->geometry);
             gm_draw(*geometry, g_shadow_map_material);
         end_for_aspect()
-
+} // endif (!g_freeze_shadows)
         float rect_size = 0.23;
         paint2d_sprite_m(index*rect_size,0,  rect_size,rect_size,  shadow_map->depth_texture_material);
         index ++;
@@ -381,8 +386,13 @@ static void key_callback(GLFWwindow *window, int key,
             toggle_raw_mouse();
         }
     }
-    if (action == GLFW_PRESS && key == g_glfw_sma_debug_overlay_key) {
-        g_sma_debug_overlay = !g_sma_debug_overlay;
+    if (action == GLFW_PRESS) {
+        if (key == g_glfw_sma_debug_overlay_key) {
+            g_sma_debug_overlay = !g_sma_debug_overlay;
+        }
+        if (key == g_glfw_freeze_shadows_key) {
+            g_freeze_shadows = !g_freeze_shadows;
+        }
     }
 
     // Send input events to Input aspects listening for keys.
@@ -465,7 +475,7 @@ static void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
 
-    do_shadows();
+    do_shadows(); // can toggle this for debugging.
     for_aspect(Camera, camera)
         //------
         // ---Allow cameras to have rectangles, and render to these.

@@ -9,7 +9,10 @@ floor_material < Material (
     properties < ( int temp: 1;);
 );
 stanford_bunny_material < Material (
-    type: Resources/Materials/red;
+    type: Resources/Materials/flat_color_phong_outward_normals;
+    properties < (
+        vec4 flat_color: 1,0,0,1;
+    );
 );
 
 block_on_floor < (
@@ -44,6 +47,17 @@ block_on_floor < (
         transform < Transform (
             position: -18,-5,-10;
             rotation: 0,0,0;
+        );
+    );
+    dolphins < GameObject (
+        body < Body (
+            scale: 0.1;
+            geometry: Resources/Models/dolphins;
+            material: Scenes/stanford_bunny_material;
+        );
+        transform < Transform (
+            position: 0,70,-50;
+            rotation: -1.57,0,0;
         );
     );
 );

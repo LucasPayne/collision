@@ -22,7 +22,6 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-
     // printf("getting. ...\n");
     // getchar();
     // ResourceHandle mat = Material_create("Materials/test_texture");

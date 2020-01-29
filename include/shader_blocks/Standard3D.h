@@ -4,6 +4,9 @@ definitions between glsl and C.
 --------------------------------------------------------------------------------*/
 #ifndef SHADER_BLOCK_HEADER_DEFINED_STANDARD3D
 #define SHADER_BLOCK_HEADER_DEFINED_STANDARD3D
+char **ShaderBlockSamplerNames_Standard3D[] = {
+}; // ShaderBlockSamplerNames_Standard3D
+
 ShaderBlockID ShaderBlockID_Standard3D;
 typedef struct ShaderBlock_Standard3D_s {
     float near_plane;    //offset: 0, alignment: 4, C_type_size: 4

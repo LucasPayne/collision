@@ -133,6 +133,20 @@ void MaterialType_load(void *resource, char *path)
         glUniformBlockBinding(mt.program_id, block_index, block_id);
         // The block id is both index into the global block info array, and the binding point.
         glBindBufferBase(GL_UNIFORM_BUFFER, block_id, g_shader_blocks[block_id].vram_buffer_id);
+#if 0
+        // Bind the global samplers of this shader block to their reserved binding points.
+        int num_samplers = g_shader_blocks[block_id].num_samplers;
+        char **sampler_names = g_shader_blocks[block_id].sampler_names;
+        for (int i = 0; i < num_samplers; i++) {
+            int sampler_index = g_shader_blocks[block_id].samplers_start_index + i;
+            GLint location = glGetUniformLocation(mt.program_id, sampler_names[i]);
+            if (location < 0) {
+                fprintf(stderr, ERROR_ALERT "A ShaderBlock declared as one of the shaderblocks of a material type was not found in that material type's program. Possibly the shaderblock wasn't included in its shaders.");
+                exit(EXIT_FAILURE);
+            }
+            glUniform1i(location, sampler_index); // Bind this uniform sampler location in the material-type's shader program to this global reserved index.
+        }
+#endif
     }
 
     // There is a special shader block, MaterialProperties, which is the per-material-instance interface to the parameters

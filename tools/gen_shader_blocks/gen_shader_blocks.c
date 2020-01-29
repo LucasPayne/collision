@@ -487,11 +487,23 @@ typedef struct ShaderBlock_DirectionalLights_s {
     }
     if (block.num_hash_defines != 0) fprintf(file, "\n");
     // Samplers (opaque types).
-    //---planning what to do with samplers in C
-    // for (int i = 0; i < block.num_entries; i++) {
-    //     if (!block.entries[i].is_sampler) continue; // only handling sampler entries here.
-    //     
-    // }
+    // Generate the array of all sampler names, in the form that they can be used with glGetUniformLocation.
+    // This means that for each sampler in a sampler array, a name is generated, e.g. test_sampler[2].
+    int num_samplers = 0; // build up the number of samplers.
+    fprintf(file, "char **ShaderBlockSamplerNames_%s[] = {\n", symbol(block.name));
+    for (int i = 0; i < block.num_entries; i++) {
+        if (!block.entries[i].is_sampler) continue; // only handling sampler entries here.
+        if (block.entries[i].is_array) {
+            for (int j = 0; j < block.entries[i].array_length; j++) {
+                fprintf(file, "    \"%s[%d]\",\n", symbol(block.entries[i].the_rest), j); //----"the_rest" should really just be called "name". It is the entry name.
+            }
+            num_samplers += block.entries[i].array_length;
+        } else {
+            fprintf(file, "    \"%s\",\n", symbol(block.entries[i].the_rest));
+            num_samplers ++;
+        }
+    }
+    fprintf(file, "}; // ShaderBlockSamplerNames_%s\n\n", symbol(block.name));
     // Struct definitions
     for (int i = 0; i < block.num_struct_definitions; i++) {
         fprintf(file, "struct ShaderBlockStruct_%s_%s { //size: %zu\n", symbol(block.name), symbol(block.struct_definitions[i].name), block.struct_definitions[i].std140_size);

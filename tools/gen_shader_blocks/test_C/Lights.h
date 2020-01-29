@@ -7,6 +7,25 @@ definitions between glsl and C.
 #define MAX_NUM_DIRECTIONAL_LIGHTS 8
 #define MAX_NUM_POINT_LIGHTS 8
 
+char **ShaderBlockSamplerNames_Lights[] = {
+    "directional_light_shadow_maps[0]",
+    "directional_light_shadow_maps[1]",
+    "directional_light_shadow_maps[2]",
+    "directional_light_shadow_maps[3]",
+    "directional_light_shadow_maps[4]",
+    "directional_light_shadow_maps[5]",
+    "directional_light_shadow_maps[6]",
+    "directional_light_shadow_maps[7]",
+    "point_light_shadow_maps[0]",
+    "point_light_shadow_maps[1]",
+    "point_light_shadow_maps[2]",
+    "point_light_shadow_maps[3]",
+    "point_light_shadow_maps[4]",
+    "point_light_shadow_maps[5]",
+    "point_light_shadow_maps[6]",
+    "point_light_shadow_maps[7]",
+}; // ShaderBlockSamplerNames_Lights
+
 struct ShaderBlockStruct_Lights_DirectionalLight { //size: 112
     mat4x4 shadow_matrix;    //offset: 0, alignment: 16, C_type_size: 64
     vec3 half_vector;    //offset: 64, alignment: 16, C_type_size: 12
@@ -30,9 +49,9 @@ typedef struct ShaderBlock_Lights_s {
     mat4x4 active_shadow_matrix;    //offset: 0, alignment: 16, C_type_size: 64
     int num_directional_lights;    //offset: 64, alignment: 4, C_type_size: 4
     int num_point_lights;    //offset: 68, alignment: 4, C_type_size: 4
-    char ___std140_pad4[18446649328354116808];
+    char ___std140_pad4[18446649503662740231];
     struct ShaderBlockStruct_Lights_DirectionalLight directional_lights[8];    //offset: 80, alignment: 16, C_type_size: 112
-    char ___std140_pad6[18446649328354116920];
+    char ___std140_pad6[18446649503662740343];
     struct ShaderBlockStruct_Lights_PointLight point_lights[8];    //offset: 192, alignment: 16, C_type_size: 48
 } ShaderBlock_Lights;
 

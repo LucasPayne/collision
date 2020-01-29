@@ -7,6 +7,9 @@ definitions between glsl and C.
 #define MAX_NUM_DIRECTIONAL_LIGHTS 8
 #define MAX_NUM_POINT_LIGHTS 8
 
+char **ShaderBlockSamplerNames_Lights[] = {
+}; // ShaderBlockSamplerNames_Lights
+
 struct ShaderBlockStruct_Lights_DirectionalLight { //size: 112
     mat4x4 shadow_matrix;    //offset: 0, alignment: 16, C_type_size: 64
     vec3 half_vector;    //offset: 64, alignment: 16, C_type_size: 12

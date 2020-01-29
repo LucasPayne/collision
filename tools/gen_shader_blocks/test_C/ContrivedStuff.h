@@ -7,6 +7,9 @@ definitions between glsl and C.
 #define NUM 1000
 #define ANOTHER_NUM 33
 
+char **ShaderBlockSamplerNames_ContrivedStuff[] = {
+}; // ShaderBlockSamplerNames_ContrivedStuff
+
 struct ShaderBlockStruct_ContrivedStuff_Stuff { //size: 76
     vec3 v4;    //offset: 0, alignment: 16, C_type_size: 12
     char ___std140_pad1[4];

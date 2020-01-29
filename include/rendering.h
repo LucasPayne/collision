@@ -120,6 +120,7 @@ bool Shader_reload(ResourceHandle handle);
 /*--------------------------------------------------------------------------------
     Shader blocks (buffer-backed shared uniform blocks)
 --------------------------------------------------------------------------------*/
+
 typedef int16_t ShaderBlockID; // null: -1
 typedef struct ShaderBlockInfo_s {
     bool dirty;
@@ -129,6 +130,10 @@ typedef struct ShaderBlockInfo_s {
     ShaderBlockID id;
     GLuint vram_buffer_id;
     size_t size;
+
+    int num_samplers;
+    int samplers_start_index;
+    char **sampler_names;
 } ShaderBlockInfo;
 #define print_shader_block(BLOCK_NAME)\
     ___print_shader_block(( ShaderBlockID_ ## BLOCK_NAME ))

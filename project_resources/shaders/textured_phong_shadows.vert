@@ -25,6 +25,12 @@ void main(void)
 
     for (int i = 0; i < num_directional_lights; i++) {
         mat4x4 model_shadow_matrix = directional_lights[i].shadow_matrix * model_matrix;
-        fDirectionalLightShadowCoord[i] = model_shadow_matrix * vPosition;
+        // Normalized device coordinates to UV texture coordinates + depth.
+        mat4x4 ndc_to_uvd_matrix = mat4x4(0.5, 0,   0,   0,
+                                          0,   0.5, 0,   0,
+                                          0,   0,   0.5, 0,
+                                          0.5, 0.5, 0.5, 1);
+        fDirectionalLightShadowCoord[i] = ndc_to_uvd_matrix * model_shadow_matrix * vPosition;
+        // fDirectionalLightShadowCoord[i] = model_shadow_matrix * vPosition;
     }
 }

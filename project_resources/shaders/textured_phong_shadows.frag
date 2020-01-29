@@ -17,28 +17,26 @@ in vOut {
 };
 out vec4 color;
 
+bool in_light(float depth_map_depth, float fragment_depth)
+{
+    float epsilon = 0.00001;
+    return abs(depth_map_depth - fragment_depth) < epsilon;
+}
+
+        // float depth = textureProj(directional_light_shadow_maps[i], fDirectionalLightShadowCoord[i]).r;
+        // vec4 depth_color = vec4(vec3(depth), 1);
+        // if (in_light(depth / gl_FragCoord.w, gl_FragCoord.z / gl_FragCoord.w)) color += vec4(vec3(0.5), 1);
+
 void main(void)
 {
-    float ambient = 0.2;
-    color = vec4(ambient, ambient, ambient, 1);
-
-    // Directional lights
+    color = vec4(0,0,0,1);
     for (int i = 0; i < num_directional_lights; i++) {
-        float intensity = (1 - ambient) * max(0, dot(fNormal, -directional_lights[i].direction));
-        float shadow_factor;
-        // shadow_factor = textureProj(directional_light_shadow_maps[i], fDirectionalLightShadowCoord[i]);
-        shadow_factor = 1;
-        color += directional_lights[i].color * vec4(intensity,intensity,intensity,1) * shadow_factor;
+        float depth = fDirectionalLightShadowCoord[i].z / fDirectionalLightShadowCoord[i].w;
+        // color = vec4(vec3(depth), 1);
+        float texture_depth = textureProj(directional_light_shadow_maps[i], fDirectionalLightShadowCoord[i]).r;
+        // color = vec4(vec3(texture_depth), 1);
+        if (in_light(texture_depth, depth)) {
+            color = vec4(1,0,1,1);
+        }
     }
-
-    // Texture
-#define mode 1
-#if mode == 0
-    color *= texture(diffuse_map, fTexCoord);
-#elif mode == 1
-    if (test_toggle) color = texture(test_texture, fTexCoord);
-    else color = texture(test_texture_2, fTexCoord);
-#elif mode == 2
-    color = texture(directional_light_shadow_maps[0], fTexCoord);
-#endif
 }

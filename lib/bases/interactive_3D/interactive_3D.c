@@ -156,11 +156,11 @@ static void init_shadows(void)
             exit(EXIT_FAILURE);
         }
         // Bind the depth texture to its reserved texture unit. --------------------------------
-        //set_uniform_texture(Lights, directional_light_shadow_maps[i], shadow_map->depth_texture);
+        set_uniform_texture(Lights, directional_light_shadow_maps[i], shadow_map->depth_texture);
         //----for now connecting the color texture, for debugging.
         // set_uniform_texture(Lights, directional_light_shadow_maps[i], shadow_map->color_texture);
-        ResourceHandle dirt = new_resource_handle(Texture, "Textures/minecraft/dirt");
-        set_uniform_texture(Lights, directional_light_shadow_maps[i], resource_data(Texture, dirt)->texture_id);
+        //ResourceHandle dirt = new_resource_handle(Texture, "Textures/minecraft/dirt");
+        //set_uniform_texture(Lights, directional_light_shadow_maps[i], resource_data(Texture, dirt)->texture_id);
         // --------------------------------------------------------------------------------------
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

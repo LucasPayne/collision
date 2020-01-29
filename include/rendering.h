@@ -306,6 +306,8 @@ typedef struct MeshData_s {
     uint32_t num_triangles;
     uint32_t *triangles;
 } MeshData;
+// This function allows the creation or replacement of normals in a MeshData, calculated from the mesh.
+void MeshData_calculate_normals(MeshData *mesh_data);
 
 extern ResourceType Geometry_RTID;
 typedef struct /* Resource */ Geometry_s {

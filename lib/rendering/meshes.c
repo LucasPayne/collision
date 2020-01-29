@@ -10,6 +10,7 @@ This module consists of
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -18,6 +19,33 @@ This module consists of
 #include "resources.h"
 #include "ply.h"
 #include "rendering.h"
+
+
+void MeshData_calculate_normals(MeshData *mesh_data)
+{
+    const int max_num_adjacent_triangles = 6; // If this becomes a problem, either change this number or allow the array to grow for rare cases.
+    const int triangle_array_length = max_num_adjacent_triangles + 1;
+    // First entry in each slot is the number of adjacent triangles.
+    uint32_t *triangle_arrays = (uint32_t *) calloc(mesh_data->num_vertices * triangle_array_length, sizeof(uint32_t));
+    mem_check(triangle_arrays);
+
+    // Build up adjacent-triangle arrays for each vertex.
+    for (int i = 0; i < mesh_data->num_triangles; i++) {
+        for (int j = 0; j < 3; j++) {
+            uint32_t vertex_index = mesh_data->triangles[3*i + j];
+            int num_triangles = triangle_arrays[triangle_array_length * vertex_index];
+            if (num_triangles >= max_num_adjacent_triangles) {
+                fprintf(stderr, ERROR_ALERT "Failed to calculate normals for mesh, as it has too many adjacent triangles for a single vertex. The maximum can be increased.\n");
+                exit(EXIT_FAILURE);
+            }
+            triangle_arrays[triangle_array_length * vertex_index + num_triangles + 1] = i; // Add this triangle index to this vertex's triangle array.
+            triangle_arrays[triangle_array_length * vertex_index] ++; // Up the count of triangles in this vertex's triangle array.
+        }
+    }
+
+    // For each vertex, calculate the normals of the adjacent triangles, and average these, then normalize this. This is the normal calculated at this vertex.
+
+}
 
 void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file)
 {

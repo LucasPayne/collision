@@ -1,17 +1,25 @@
 block_material < Material (
     type: Resources/Materials/textured_phong_shadows;
     diffuse_map < Resources/Textures/mario/sand_bricks;
-    properties < ( int temp: 1;);
+    properties < (
+        bool use_flat_color: false;
+        vec4 flat_color: 0,0,0,1;
+    );
 );
 floor_material < Material (
     type: Resources/Materials/textured_phong_shadows;
-    diffuse_map < Resources/Textures/minecraft/stone_bricks;
-    properties < ( int temp: 1;);
+    diffuse_map < Resources/Textures/marble_tile;
+    properties < (
+        bool use_flat_color: false;
+        vec4 flat_color: 0,0,0,1;
+    );
 );
 stanford_bunny_material < Material (
-    type: Resources/Materials/flat_color_phong_outward_normals;
+    type: Resources/Materials/textured_phong_shadows;
+    diffuse_map < Resources/Textures/test_texture;
     properties < (
-        vec4 flat_color: 1,0,0,1;
+        bool use_flat_color: true;
+        vec4 flat_color: 0.3,1,0.8432,1;
     );
 );
 

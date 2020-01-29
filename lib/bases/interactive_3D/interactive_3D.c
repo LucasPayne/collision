@@ -102,8 +102,8 @@ extern void close_program(void);
 extern void input_event(int key, int action, int mods);
 extern void cursor_move_event(double x, double y);
 
-#define SHADOW_MAP_TEXTURE_WIDTH 512
-#define SHADOW_MAP_TEXTURE_HEIGHT 512
+#define SHADOW_MAP_TEXTURE_WIDTH 1024
+#define SHADOW_MAP_TEXTURE_HEIGHT 1024
 
 // Currently only doing directional light shadows.
 typedef struct ShadowMap_s {

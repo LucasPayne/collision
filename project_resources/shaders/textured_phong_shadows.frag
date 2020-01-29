@@ -4,7 +4,8 @@
 #block Lights
 
 layout (std140) uniform MaterialProperties {
-    int temp;
+    bool use_flat_color; // Override the texture and just use a flat color.
+    vec4 flat_color;
 };
 uniform sampler2D diffuse_map;
 
@@ -23,20 +24,19 @@ bool in_light(float depth_map_depth, float fragment_depth)
     return abs(depth_map_depth - fragment_depth) < epsilon;
 }
 
-        // float depth = textureProj(directional_light_shadow_maps[i], fDirectionalLightShadowCoord[i]).r;
-        // vec4 depth_color = vec4(vec3(depth), 1);
-        // if (in_light(depth / gl_FragCoord.w, gl_FragCoord.z / gl_FragCoord.w)) color += vec4(vec3(0.5), 1);
-
 void main(void)
 {
-    color = vec4(0,0,0,1);
+    float ambient = 0.05;
+    color = vec4(vec3(ambient), 1);
+
     for (int i = 0; i < num_directional_lights; i++) {
         float depth = fDirectionalLightShadowCoord[i].z / fDirectionalLightShadowCoord[i].w;
-        // color = vec4(vec3(depth), 1);
         float texture_depth = textureProj(directional_light_shadow_maps[i], fDirectionalLightShadowCoord[i]).r;
-        // color = vec4(vec3(texture_depth), 1);
-        if (in_light(texture_depth, depth)) {
-            color = vec4(1,0,1,1);
-        }
+        if (!in_light(texture_depth, depth)) continue;
+        float intensity = (1 - ambient) * max(0, dot(fNormal, -directional_lights[i].direction));
+        color += vec4(vec3(intensity), 0);
     }
+
+    if (use_flat_color) color *= flat_color;
+    else color *= texture(diffuse_map, fTexCoord);
 }

@@ -24,12 +24,14 @@ cube < Geometry (
 
 stanford_bunny < Geometry (
     type: ply;    
-    vertex_format: 3;
+    vertex_format: 3N;
     path: Meshes/stanford_bunny_low.ply;
+    calculate_normals: true;
 );
 
 dolphins < Geometry (
     type: ply;
-    vertex_format: 3;
+    vertex_format: 3N;
     path: Meshes/dolphins.ply;
+    calculate_normals: true;
 );

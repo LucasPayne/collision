@@ -53,6 +53,10 @@ void Geometry_load(void *resource, char *path)
     if (vertex_format == VERTEX_FORMAT_NONE) load_error("Invalid vertex format given.");
     char *type;
     if (!dd_get(dd, "type", "string", &type)) manifest_error("type"); //- if not doing a fatal error, remember to free the queried strings.
+    
+    // With this option, normals are calculated from the mesh and override whatever normals were loaded (defaults to false).
+    bool calculate_normals;
+    if (!dd_get(dd, "calculate_normals", "bool", &calculate_normals)) manifest_error("calculate_normals");
 
     Geometry geometry;
     if (strcmp(type, "ply") == 0) {
@@ -62,7 +66,15 @@ void Geometry_load(void *resource, char *path)
         FILE *ply_file = resource_file_open(ply_path, "", "r");
         if (ply_file == NULL) load_error("Cannot open resource PLY file.");
         MeshData mesh_data = {0};
-        load_mesh_ply(&mesh_data, vertex_format, ply_file);
+        if (calculate_normals) {
+            // If calculating normals, mask out N from the vertex format so the normals aren't queried from the PLY file,
+            // and calculate them instead.
+	    load_mesh_ply(&mesh_data, vertex_format & (~VERTEX_FORMAT_N), ply_file);
+            MeshData_calculate_normals(&mesh_data);
+        } else {
+	    load_mesh_ply(&mesh_data, vertex_format, ply_file);
+        }
+
         geometry = upload_mesh(&mesh_data);
         // Destroy the mesh data.
         for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {

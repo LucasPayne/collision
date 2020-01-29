@@ -7,6 +7,7 @@ Geometry < (
     string vertex_format; // 3U, 3NCU, etc.
     string type;          // Types: ply
     string path;          // Principle path of the asset.
+    bool calculate_normals: false; // With this option, normals are calculated for each vertex as unit length averages of the normals of adjacent triangles.
 );
 MaterialType < (
     string vertex_format;

@@ -181,7 +181,6 @@ if (!g_freeze_shadows) { // toggleable for debugging.
         mat4x4 vp_matrix = camera->projection_matrix;
         right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
         shadow_matrix = vp_matrix;
-        print_matrix4x4f(&shadow_matrix);
         set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrix.vals, shadow_matrix.vals);
 
         for_aspect(Body, body)

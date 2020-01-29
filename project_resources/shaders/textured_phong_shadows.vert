@@ -26,6 +26,5 @@ void main(void)
     for (int i = 0; i < num_directional_lights; i++) {
         mat4x4 model_shadow_matrix = directional_lights[i].shadow_matrix * model_matrix;
         fDirectionalLightShadowCoord[i] = model_shadow_matrix * vPosition;
-        // gl_Position = model_shadow_matrix * vPosition;
     }
 }

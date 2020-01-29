@@ -400,6 +400,14 @@ void ___print_shader_block(ShaderBlockID id)
     printf("dirty?: %s\n", bstring(block->dirty));
     printf("size: %lu\n", block->size);
     printf("vram_buffer_id: %u\n", block->vram_buffer_id);
+    printf("num_samplers: %d\n", block->num_samplers);
+    printf("samplers_start_index: %d\n", block->samplers_start_index);
+    printf("samplers ----------------------------------\n");
+    for (int i = 0; i < block->num_samplers; i++) {
+        printf("%s\n", block->sampler_names[i]);
+    }
+    printf("-------------------------------------------\n");
+
     /* printf("DIRTY FLAGS\n"); */
     /* for (int i = 0; i < block->size; i++) { */
     /*     printf("%d: %s\n", i, bstring(block->dirty_flags[i])); */

@@ -8,6 +8,7 @@ extern void input_event(int key, int action, int mods)
 {
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_C) test_spawn_cubes(5);
+        if (key == GLFW_KEY_U) print_shader_blocks();
     }
 }
 extern void cursor_move_event(double x, double y)

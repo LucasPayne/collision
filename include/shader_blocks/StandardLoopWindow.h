@@ -4,8 +4,12 @@ definitions between glsl and C.
 --------------------------------------------------------------------------------*/
 #ifndef SHADER_BLOCK_HEADER_DEFINED_STANDARDLOOPWINDOW
 #define SHADER_BLOCK_HEADER_DEFINED_STANDARDLOOPWINDOW
-char *ShaderBlockSamplerNames_StandardLoopWindow[] = {
+static char *ShaderBlockSamplerNames_StandardLoopWindow[] = {
 }; // ShaderBlockSamplerNames_StandardLoopWindow
+
+#define ShaderBlockNumSamplers_StandardLoopWindow 0
+struct ___ShaderBlockSamplers_StandardLoopWindow {
+} ShaderBlockSamplers_StandardLoopWindow;
 
 ShaderBlockID ShaderBlockID_StandardLoopWindow;
 typedef struct ShaderBlock_StandardLoopWindow_s {

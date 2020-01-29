@@ -24,6 +24,7 @@
 #include "matrix_mathematics.h" //--- vector definitions
 
 int g_num_shader_blocks = 0;
+int g_num_reserved_samplers = 0;
 ShaderBlockInfo g_shader_blocks[MAX_NUM_SHADER_BLOCKS];
 
 ResourceType MaterialType_RTID;
@@ -133,17 +134,20 @@ void MaterialType_load(void *resource, char *path)
         glUniformBlockBinding(mt.program_id, block_index, block_id);
         // The block id is both index into the global block info array, and the binding point.
         glBindBufferBase(GL_UNIFORM_BUFFER, block_id, g_shader_blocks[block_id].vram_buffer_id);
-#if 0
+#if 1
         // Bind the global samplers of this shader block to their reserved binding points.
         int num_samplers = g_shader_blocks[block_id].num_samplers;
         char **sampler_names = g_shader_blocks[block_id].sampler_names;
         for (int i = 0; i < num_samplers; i++) {
             int sampler_index = g_shader_blocks[block_id].samplers_start_index + i;
             GLint location = glGetUniformLocation(mt.program_id, sampler_names[i]);
-            if (location < 0) {
-                fprintf(stderr, ERROR_ALERT "A ShaderBlock declared as one of the shaderblocks of a material type was not found in that material type's program. Possibly the shaderblock wasn't included in its shaders.");
-                exit(EXIT_FAILURE);
-            }
+            //---uncomment for debugging.
+            //printf("In material type %s\n", path);
+            //printf("Looking for sampler %s\n", sampler_names[i]);
+            //printf("Binding to location %d\n", sampler_index);
+            //getchar();
+            // If the sampler isn't found, then it has probably been optimized out since it is unused. Just skip it.
+            if (location < 0) continue;
             glUniform1i(location, sampler_index); // Bind this uniform sampler location in the material-type's shader program to this global reserved index.
         }
 #endif
@@ -411,7 +415,7 @@ void print_shader_blocks(void)
     }
 }
 
-void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
+void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name, int num_samplers, char **sampler_names)
 {
     if (g_num_shader_blocks >= MAX_NUM_SHADER_BLOCKS) {
         fprintf(stderr, ERROR_ALERT "Too many shader blocks have been created. The maximum is set to %d, but this can be changed.\n", MAX_NUM_SHADER_BLOCKS);
@@ -444,6 +448,22 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name)
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
     glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_DYNAMIC_DRAW); // Which buffer usage token should be used? (p96 OGLPG8e)
     new_block->vram_buffer_id = ubo;
+
+    // Set up sampler information. The names are needed since they are loose uniform variables, whose locations
+    // are not deterministic across shader programs. These names are needed so the locations can be looked up when
+    // a new material type is being loaded.
+    new_block->num_samplers = num_samplers;
+    new_block->sampler_names = sampler_names;
+    // The samplers start index is the lowest gl sampler index that this shader block is reserving.
+    // num_samplers indices are reserved, and they are contiguous.
+    // All materials then have these lower indices reserved for those samplers defined in shaderblocks, even if they
+    // are not using them. This is so shaderblock samplers do not have to be rebound when switching materials, since in all
+    // shader programs which use a shaderblock with samplers, those samplers have the same indices.
+    if (g_num_shader_blocks == 0) new_block->samplers_start_index = 0; // start at 0, otherwise continue where the last added shader block left off.
+    else new_block->samplers_start_index = g_shader_blocks[g_num_shader_blocks - 1].samplers_start_index + g_shader_blocks[g_num_shader_blocks - 1].num_samplers;
+
+    // Update the number of reserved samplers, so that MaterialType loads can take this into account when allocating sampler indices for its own samplers/textures.
+    g_num_reserved_samplers = new_block->samplers_start_index + new_block->num_samplers;
 
     g_num_shader_blocks ++;
 }
@@ -484,6 +504,29 @@ void ___set_uniform_vec4(ShaderBlockID id, vec4 *entry_address, vec4 val)
 {
     ___set_uniform(id, entry_address, &val, sizeof(vec4));
 }
+
+#define sampler_error_check()\
+    if (shaderblock_sampler_index >= g_shader_blocks[id].num_samplers) {\
+        fprintf(stderr, ERROR_ALERT "Something went wrong. A uniform sampler of a shaderblock was set with an index >= the number of samplers in the shader block.\n");\
+        exit(EXIT_FAILURE);\
+    }
+void ___set_uniform_sampler(ShaderBlockID id, int shaderblock_sampler_index, GLuint sampler_id)
+{
+    sampler_error_check();
+    int sampler_index = g_shader_blocks[id].samplers_start_index + shaderblock_sampler_index;
+    glBindSampler(sampler_index, sampler_id);
+}
+void ___set_uniform_texture(ShaderBlockID id, int shaderblock_sampler_index, GLuint texture_id)
+{
+    // Textures implicitly have their own sampler objects, and when glBindTexture is used when a texture unit is active,
+    // this binds the texture's "built-in", default sampler. So, a variant is here for the usage of gl texture ids instead of gl sampler ids.
+    sampler_error_check();
+    int sampler_index = g_shader_blocks[id].samplers_start_index + shaderblock_sampler_index;
+    glActiveTexture(GL_TEXTURE0 + sampler_index);
+    glBindTexture(GL_TEXTURE_2D, texture_id); //////////----Change to take a texture resource handle, and keep the gl texture type in the texture resource.
+                                              // while all textures being used are GL_TEXTURE_2D, this works, but this needs to be changed.
+}
+#undef sampler_error_check
 
 
 ShaderBlockID get_shader_block_id(char *name)

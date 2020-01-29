@@ -3,6 +3,7 @@
 #ifndef HEADER_DEFINED_PAINTING
 #define HEADER_DEFINED_PAINTING
 #include "matrix_mathematics.h"
+#include "resources.h"
 
 // Helper in definitions (since there will be many).
 #define COLOR_SCALARS float cr, float cg, float cb, float ca

@@ -499,7 +499,8 @@ typedef struct ShaderBlock_DirectionalLights_s {
     // Generate the array of all sampler names, in the form that they can be used with glGetUniformLocation.
     // This means that for each sampler in a sampler array, a name is generated, e.g. test_sampler[2].
     int num_samplers = 0; // build up the number of samplers.
-    fprintf(file, "char *ShaderBlockSamplerNames_%s[] = {\n", symbol(block.name));
+#if 1
+    fprintf(file, "static char *ShaderBlockSamplerNames_%s[] = {\n", symbol(block.name));
     for (int i = 0; i < block.num_entries; i++) {
         if (!block.entries[i].is_sampler) continue; // only handling sampler entries here.
         if (block.entries[i].is_array) {
@@ -513,6 +514,25 @@ typedef struct ShaderBlock_DirectionalLights_s {
         }
     }
     fprintf(file, "}; // ShaderBlockSamplerNames_%s\n\n", symbol(block.name));
+#endif
+    // Define a macro symbol for the number of samplers of this block.
+    fprintf(file, "#define ShaderBlockNumSamplers_%s %d\n", symbol(block.name), num_samplers);
+
+    // A global struct is generated which holds the sampler/texture ids, if wanted by the program, but also allows
+    // for the macro expansion to a sampler entry without a string lookup, set_uniform_sampler(TestBlock, test_sampler[3], some_sampler_id).
+    
+
+    fprintf(file, "struct ___ShaderBlockSamplers_%s {\n", symbol(block.name));
+    for (int i = 0; i < block.num_entries; i++) {
+        if (!block.entries[i].is_sampler) continue; // only handling sampler entries here.
+        if (block.entries[i].is_array) {
+            fprintf(file, "    GLint %s[%d];\n", symbol(block.entries[i].the_rest), block.entries[i].array_length);
+        } else {
+            fprintf(file, "    GLint %s;\n", symbol(block.entries[i].the_rest));
+        }
+    }
+    fprintf(file, "} ShaderBlockSamplers_%s;\n\n", symbol(block.name));
+
     // Struct definitions
     for (int i = 0; i < block.num_struct_definitions; i++) {
         fprintf(file, "struct ShaderBlockStruct_%s_%s { //size: %zu\n", symbol(block.name), symbol(block.struct_definitions[i].name), block.struct_definitions[i].std140_size);

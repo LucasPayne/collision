@@ -334,7 +334,7 @@ void gm_draw(Geometry geometry, Material *material)
     glUseProgram(mt->program_id);
     // Bind the textures
     for (int i = 0; i < mt->num_textures; i++) {
-        glActiveTexture(GL_TEXTURE0 + i); //---Change this to shift up a certain amount according to the number of shaderblock-defined samplers taking up texture units.
+        glActiveTexture(GL_TEXTURE0 + i + g_num_reserved_samplers); // Shift up a certain amount according to the number of shaderblock-defined samplers taking up texture units.
         glBindTexture(GL_TEXTURE_2D, resource_data(Texture, material->textures[i])->texture_id);
     }
     // Prepare the material properties, if there are any.

@@ -7,7 +7,7 @@ definitions between glsl and C.
 #define MAX_NUM_DIRECTIONAL_LIGHTS 8
 #define MAX_NUM_POINT_LIGHTS 8
 
-char *ShaderBlockSamplerNames_Lights[] = {
+static char *ShaderBlockSamplerNames_Lights[] = {
     "directional_light_shadow_maps[0]",
     "directional_light_shadow_maps[1]",
     "directional_light_shadow_maps[2]",
@@ -25,6 +25,12 @@ char *ShaderBlockSamplerNames_Lights[] = {
     "point_light_shadow_maps[6]",
     "point_light_shadow_maps[7]",
 }; // ShaderBlockSamplerNames_Lights
+
+#define ShaderBlockNumSamplers_Lights 16
+struct ___ShaderBlockSamplers_Lights {
+    GLint directional_light_shadow_maps[8];
+    GLint point_light_shadow_maps[8];
+} ShaderBlockSamplers_Lights;
 
 struct ShaderBlockStruct_Lights_DirectionalLight { //size: 112
     mat4x4 shadow_matrix;    //offset: 0, alignment: 16, C_type_size: 64

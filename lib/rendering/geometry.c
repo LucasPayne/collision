@@ -354,6 +354,18 @@ void gm_draw(Geometry geometry, Material *material)
     }
     synchronize_shader_blocks();
 
+    //----Note: The whole "reserved texture units" thing is probably a bad idea. I think that textures bound to texture units
+    // are part of the state of the _shader program_, not just the whole context. This means that when these global textures are changed,
+    // they need to be reuploaded.
+    for (int i = 0; i < mt->num_blocks; i++) {
+        ShaderBlockInfo *block_info = &g_shader_blocks[mt->shader_blocks[i]];
+        for (int j = 0; j < block_info->num_samplers; j++) {
+            int sampler_index = block_info->samplers_start_index + j;
+            glActiveTexture(GL_TEXTURE0 + sampler_index);
+            glBindTexture(GL_TEXTURE_2D, block_info->samplers[j]);
+        }
+    }
+
     GLenum gl_primitive_type;
     switch(geometry.primitive_type) {
         case Triangles: gl_primitive_type = GL_TRIANGLES; break;

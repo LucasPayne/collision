@@ -479,6 +479,11 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name, int
     if (g_num_shader_blocks == 0) new_block->samplers_start_index = 0; // start at 0, otherwise continue where the last added shader block left off.
     else new_block->samplers_start_index = g_shader_blocks[g_num_shader_blocks - 1].samplers_start_index + g_shader_blocks[g_num_shader_blocks - 1].num_samplers;
 
+    if (new_block->num_samplers > 0) {
+        new_block->samplers = (GLuint *) calloc(new_block->num_samplers, sizeof(GLuint));
+        mem_check(new_block->samplers);
+    } else new_block->samplers = NULL;
+
     // Update the number of reserved samplers, so that MaterialType loads can take this into account when allocating sampler indices for its own samplers/textures.
     g_num_reserved_samplers = new_block->samplers_start_index + new_block->num_samplers;
 
@@ -528,24 +533,26 @@ void ___set_uniform_vec4(ShaderBlockID id, vec4 *entry_address, vec4 val)
         exit(EXIT_FAILURE);\
     }
 
-void ___set_uniform_sampler(ShaderBlockID id, int shaderblock_sampler_index, GLuint sampler_id)
-{
-    sampler_error_check();
-    int sampler_index = g_shader_blocks[id].samplers_start_index + shaderblock_sampler_index;
-    glBindSampler(sampler_index, sampler_id);
-}
+// void ___set_uniform_sampler(ShaderBlockID id, int shaderblock_sampler_index, GLuint sampler_id)
+// {
+//     sampler_error_check();
+//     // int sampler_index = g_shader_blocks[id].samplers_start_index + shaderblock_sampler_index;
+//     // glBindSampler(sampler_index, sampler_id);
+// }
 void ___set_uniform_texture(ShaderBlockID id, int shaderblock_sampler_index, GLuint texture_id)
 {
     // Textures implicitly have their own sampler objects, and when glBindTexture is used when a texture unit is active,
     // this binds the texture's "built-in", default sampler. So, a variant is here for the usage of gl texture ids instead of gl sampler ids.
     sampler_error_check();
-    int sampler_index = g_shader_blocks[id].samplers_start_index + shaderblock_sampler_index;
+    g_shader_blocks[id].samplers[shaderblock_sampler_index] = texture_id;
+
+    //int sampler_index = g_shader_blocks[id].samplers_start_index + shaderblock_sampler_index;
     // printf("Setting uniform texture:\nblock_id: %d\nshaderblock_sampler_index: %d\ntexture_id: %u\n", id, shaderblock_sampler_index, texture_id);
     // printf("%s, %s\n", g_shader_blocks[id].name, g_shader_blocks[id].sampler_names[shaderblock_sampler_index]);
     // printf("sampler_index: %d\n", sampler_index);
     // getchar();
-    glActiveTexture(GL_TEXTURE0 + sampler_index);
-    glBindTexture(GL_TEXTURE_2D, texture_id); //////////----Change to take a texture resource handle, and keep the gl texture type in the texture resource.
+    // glActiveTexture(GL_TEXTURE0 + sampler_index);
+    // glBindTexture(GL_TEXTURE_2D, texture_id); //////////----Change to take a texture resource handle, and keep the gl texture type in the texture resource.
                                               // while all textures being used are GL_TEXTURE_2D, this works, but this needs to be changed.
 }
 #undef sampler_error_check

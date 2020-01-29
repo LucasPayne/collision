@@ -134,6 +134,7 @@ typedef struct ShaderBlockInfo_s {
     int num_samplers;
     int samplers_start_index;
     char **sampler_names;
+    GLuint *samplers;
 } ShaderBlockInfo;
 #define print_shader_block(BLOCK_NAME)\
     ___print_shader_block(( ShaderBlockID_ ## BLOCK_NAME ))
@@ -184,10 +185,10 @@ void ___add_shader_block(ShaderBlockID *id_pointer, size_t size, char *name, int
 // Sampler variant. In the background, different stuff is done in both the program and glsl, but it is the same syntax.
 // The syntax is achieved with a macro by calculating the index of the sampler in this shaderblock by pointer arithmetic with the entries of a
 // global (unused) struct. This is a compile-time constant, so the struct is there just so this syntax works with a macro.
-#define set_uniform_sampler(BLOCK_NAME,SAMPLER_ENTRY,SAMPLER_ID)\
-    ___set_uniform_sampler(( ShaderBlockID_ ## BLOCK_NAME ),\
-                           &( ShaderBlockSamplers_ ## BLOCK_NAME.SAMPLER_ENTRY ) - &( ShaderBlockSamplers_ ## BLOCK_NAME ),\
-                           ( SAMPLER_ID ))
+//#define set_uniform_sampler(BLOCK_NAME,SAMPLER_ENTRY,SAMPLER_ID)\
+//    ___set_uniform_sampler(( ShaderBlockID_ ## BLOCK_NAME ),\
+//                           &( ShaderBlockSamplers_ ## BLOCK_NAME.SAMPLER_ENTRY ) - &( ShaderBlockSamplers_ ## BLOCK_NAME ),\
+//                           ( SAMPLER_ID ))
 #define set_uniform_texture(BLOCK_NAME,SAMPLER_ENTRY,TEXTURE_ID)\
     ___set_uniform_texture(( ShaderBlockID_ ## BLOCK_NAME ),\
                            &( ShaderBlockSamplers_ ## BLOCK_NAME.SAMPLER_ENTRY ) - (GLint *) &( ShaderBlockSamplers_ ## BLOCK_NAME ),\

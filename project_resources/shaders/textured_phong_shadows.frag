@@ -32,9 +32,13 @@ void main(void)
     }
 
     // Texture
+#define mode 1
+#if mode == 0
     color *= texture(diffuse_map, fTexCoord);
-    color = texture(test_texture_2, fTexCoord);
-
-    //color = texture(directional_light_shadow_maps[0], fTexCoord);
-
+#elif mode == 1
+    if (test_toggle) color = texture(test_texture, fTexCoord);
+    else color = texture(test_texture_2, fTexCoord);
+#elif mode == 2
+    color = texture(directional_light_shadow_maps[0], fTexCoord);
+#endif
 }

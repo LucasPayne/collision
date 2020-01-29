@@ -539,8 +539,9 @@ void ___set_uniform_texture(ShaderBlockID id, int shaderblock_sampler_index, GLu
     // Textures implicitly have their own sampler objects, and when glBindTexture is used when a texture unit is active,
     // this binds the texture's "built-in", default sampler. So, a variant is here for the usage of gl texture ids instead of gl sampler ids.
     sampler_error_check();
-    // printf("Setting uniform texture:\nblock_id: %d\nshaderblock_sampler_index: %d\ntexture_id: %u\n", id, shaderblock_sampler_index, texture_id);
     int sampler_index = g_shader_blocks[id].samplers_start_index + shaderblock_sampler_index;
+    // printf("Setting uniform texture:\nblock_id: %d\nshaderblock_sampler_index: %d\ntexture_id: %u\n", id, shaderblock_sampler_index, texture_id);
+    // printf("%s, %s\n", g_shader_blocks[id].name, g_shader_blocks[id].sampler_names[shaderblock_sampler_index]);
     // printf("sampler_index: %d\n", sampler_index);
     // getchar();
     glActiveTexture(GL_TEXTURE0 + sampler_index);

@@ -52,6 +52,8 @@ static bool g_raw_mouse = false; // If enabled in config, a meta-key will toggle
 static const int g_glfw_raw_mouse_key = GLFW_KEY_F12;
 static bool g_freeze_shadows = false; // can toggle this for debugging.
 static const int g_glfw_freeze_shadows_key = GLFW_KEY_F10;
+static bool g_test_toggle = false;
+static const int g_glfw_test_toggle_key = GLFW_KEY_F9;
 static void toggle_raw_mouse(void)
 {
     ///////--- Why does it only toggle once?
@@ -233,11 +235,12 @@ static void key_callback(GLFWwindow *window, int key,
         }
     }
     if (action == GLFW_PRESS) {
-        if (key == g_glfw_sma_debug_overlay_key) {
-            g_sma_debug_overlay = !g_sma_debug_overlay;
-        }
-        if (key == g_glfw_freeze_shadows_key) {
-            g_freeze_shadows = !g_freeze_shadows;
+        if (key == g_glfw_sma_debug_overlay_key) g_sma_debug_overlay = !g_sma_debug_overlay;
+        if (key == g_glfw_freeze_shadows_key) g_freeze_shadows = !g_freeze_shadows;
+        if (key == g_glfw_test_toggle_key) {
+            // toggleable bool for testing shaders.
+            g_test_toggle = !g_test_toggle;
+            set_uniform_bool(Standard3D, test_toggle, g_test_toggle);
         }
     }
 
@@ -315,9 +318,11 @@ static void init_base(void)
     // Initialize global test textures that shaders can access.
     ResourceHandle test_texture = new_resource_handle(Texture, "Textures/test_texture");
     set_uniform_texture(Standard3D, test_texture, resource_data(Texture, test_texture)->texture_id);
-
     ResourceHandle test_texture_2 = new_resource_handle(Texture, "Textures/test_texture_2");
     set_uniform_texture(Standard3D, test_texture_2, resource_data(Texture, test_texture_2)->texture_id);
+    // Initialize global test toggle bool to false. This is switched with a meta-key, and can be used in shaders for testing.
+    g_test_toggle = false; //---currently can not read back the written uniform values.
+    set_uniform_bool(Standard3D, test_toggle, false);
 }
 
 static void render(void)

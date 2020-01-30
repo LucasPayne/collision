@@ -57,14 +57,14 @@ void MeshData_calculate_normals(MeshData *mesh_data)
             vec3 u = ((vec3 *) mesh_data->attribute_data[Position])[a];
             vec3 v = ((vec3 *) mesh_data->attribute_data[Position])[b];
             vec3 w = ((vec3 *) mesh_data->attribute_data[Position])[c];
-            vec3 tri_normal = vec3_normalize(vec3_cross(vec3_sub(v, u), vec3_sub(w, u)));
+            vec3 tri_normal = vec3_normalize(vec3_cross(vec3_sub(v, u), vec3_sub(w, u))); // The added normals need to be normalized before adding, or the average won't be correct.
             total = vec3_add(total, tri_normal);
         }
         vec3 normal = vec3_normalize(total);
         
         memcpy(&normals[3*i], &normal, sizeof(vec3));
     }
-    mesh_data->attribute_data[Normal] = normals;
+    mesh_data->attribute_data[Normal] = (void *) normals;
     mesh_data->attribute_data_sizes[Normal] = mesh_data->num_vertices * 3 * sizeof(float);
 #if 0
     // Debugging
@@ -76,6 +76,25 @@ void MeshData_calculate_normals(MeshData *mesh_data)
     }
     getchar();
 #endif
+}
+
+void MeshData_calculate_uv_orthographic(MeshData *mesh_data, vec3 direction)
+{
+    direction = vec3_normalize(direction);
+    // Use Gram-Schmidt and the cross product to create two vectors forming an orthonormal basis with the normalized direction.
+    vec3 orth_a = vec3_add(direction, new_vec3(1,0,0));
+    orth_a = vec3_normalize(vec3_sub(orth_a, vec3_mul(direction, vec3_dot(orth_a, direction))));
+    vec3 orth_b = vec3_normalize(vec3_cross(direction, orth_a));
+
+    float *uvs = (float *) malloc(mesh_data->num_vertices * 2 * sizeof(float));
+    mem_check(uvs);
+    for (int i = 0; i < mesh_data->num_vertices; i++) {
+        vec3 pos = ((vec3 *) mesh_data->attribute_data[Position])[i];
+        uvs[2*i + 0] = vec3_dot(pos, orth_a);
+        uvs[2*i + 1] = vec3_dot(pos, orth_b);
+    }
+    mesh_data->attribute_data[TexCoord] = (void *) uvs;
+    mesh_data->attribute_data_sizes[TexCoord] = mesh_data->num_vertices * 2 * sizeof(float);
 }
 
 void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file)

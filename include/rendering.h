@@ -308,6 +308,8 @@ typedef struct MeshData_s {
 } MeshData;
 // This function allows the creation or replacement of normals in a MeshData, calculated from the mesh.
 void MeshData_calculate_normals(MeshData *mesh_data);
+// MeshData can be loaded optionally with the generation of UV coordinates.
+void MeshData_calculate_uv_orthographic(MeshData *mesh_data, vec3 direction);
 
 extern ResourceType Geometry_RTID;
 typedef struct /* Resource */ Geometry_s {

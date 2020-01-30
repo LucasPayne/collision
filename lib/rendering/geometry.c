@@ -41,6 +41,10 @@ Loading file-backed Geometry:
   - Triangle mesh described in a .Mesh file
       - PLY, stanford triangle format
 --------------------------------------------------------------------------------*/
+enum CalculateUVType {
+    UVNone,
+    UVOrthographic,
+};
 void Geometry_load(void *resource, char *path)
 {
     #define load_error(STRING) { fprintf(stderr, ERROR_ALERT "Error loading geometry: %s\n", ( STRING )); exit(EXIT_FAILURE); }
@@ -55,8 +59,23 @@ void Geometry_load(void *resource, char *path)
     if (!dd_get(dd, "type", "string", &type)) manifest_error("type"); //- if not doing a fatal error, remember to free the queried strings.
     
     // With this option, normals are calculated from the mesh and override whatever normals were loaded (defaults to false).
+    // Normals (just a boolean flag, no variation, always calculated as the average of the normals of adjacent triangles.)
     bool calculate_normals;
     if (!dd_get(dd, "calculate_normals", "bool", &calculate_normals)) manifest_error("calculate_normals");
+    // UV, texture coordinates (options for different types of projections, and parameters for those options.)
+    char *calculate_uv_string;
+    if (!dd_get(dd, "calculate_uv", "string", &calculate_uv_string)) manifest_error("calculate_uv");
+    int calculate_uv_type;
+    bool calculate_uv = true;
+    if (strcmp(calculate_uv_string, "none") == 0) {
+        calculate_uv = false; // don't calculate any uv coordinates. This is the default.
+        calculate_uv_type = UVNone;
+    } else if (strcmp(calculate_uv_string, "orthographic") == 0) {
+        calculate_uv_type = UVOrthographic;
+    } else {
+        fprintf(stderr, ERROR_ALERT "Invalid option for uv coordinate calculation given in geometry resource definition.\n");
+        exit(EXIT_FAILURE);
+    }
 
     Geometry geometry;
     if (strcmp(type, "ply") == 0) {
@@ -66,14 +85,30 @@ void Geometry_load(void *resource, char *path)
         FILE *ply_file = resource_file_open(ply_path, "", "r");
         if (ply_file == NULL) load_error("Cannot open resource PLY file.");
         MeshData mesh_data = {0};
-        if (calculate_normals) {
-            // If calculating normals, mask out N from the vertex format so the normals aren't queried from the PLY file,
-            // and calculate them instead.
-	    load_mesh_ply(&mesh_data, vertex_format & (~VERTEX_FORMAT_N), ply_file);
-            // Only compute the normals if they are declared in the vertex format. Otherwise, they will not be freed when the mesh data is destroyed.
-            if ((vertex_format & VERTEX_FORMAT_N) != 0) MeshData_calculate_normals(&mesh_data);
-        } else {
-	    load_mesh_ply(&mesh_data, vertex_format, ply_file);
+
+        // Optionally calculate vertex attributes.
+        VertexFormat calculating_attributes = VERTEX_FORMAT_NONE;
+        if (calculate_normals) calculating_attributes |= VERTEX_FORMAT_N;
+        if (calculate_uv) calculating_attributes |= VERTEX_FORMAT_U;
+
+        // Mask the vertex format for the PLY query so that calculated attributes aren't queried for.
+        VertexFormat query_vertex_format = vertex_format & ~calculating_attributes;
+        load_mesh_ply(&mesh_data, query_vertex_format, ply_file);
+        mesh_data.vertex_format = vertex_format;
+
+        // Only compute attributes if they are declared in the vertex format. Otherwise, they will not be freed when the mesh data is destroyed.
+        if (calculate_normals && (vertex_format & VERTEX_FORMAT_N) != 0) {
+            MeshData_calculate_normals(&mesh_data);
+        }
+        if (calculate_uv && (vertex_format & VERTEX_FORMAT_U) != 0) {
+            if (calculate_uv_type == UVOrthographic) {
+                vec3 direction;
+                if (!dd_get(dd, "calculate_uv_orthographic_direction", "vec3", &direction)) manifest_error("calculate_uv_orthographic_direction");
+                MeshData_calculate_uv_orthographic(&mesh_data, direction);
+            } else {
+                fprintf(stderr, ERROR_ALERT "Something went wrong. Attempted to calculate UV coordinates for mesh with invalid projection type.\n");
+                exit(EXIT_FAILURE);
+            }
         }
 
         geometry = upload_mesh(&mesh_data);

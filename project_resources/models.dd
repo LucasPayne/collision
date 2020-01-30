@@ -24,7 +24,7 @@ cube < Geometry (
 
 stanford_bunny < Geometry (
     type: ply;    
-    vertex_format: 3N;
+    vertex_format: 3NU;
     path: Meshes/stanford_bunny_low.ply;
     calculate_normals: true;
     calculate_uv: orthographic;
@@ -33,7 +33,7 @@ stanford_bunny < Geometry (
 
 dolphins < Geometry (
     type: ply;
-    vertex_format: 3N;
+    vertex_format: 3NU;
     path: Meshes/dolphins.ply;
     calculate_normals: true;
     calculate_uv: orthographic;

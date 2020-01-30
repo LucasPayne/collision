@@ -8,6 +8,8 @@ Geometry < (
     string type;          // Types: ply
     string path;          // Principle path of the asset.
     bool calculate_normals: false; // With this option, normals are calculated for each vertex as unit length averages of the normals of adjacent triangles.
+    string calculate_uv: none; // This is a string so there can be multiple options for projections used to generate UV coordinates.
+    vec3 calculate_uv_orthographic_direction: 0,0,1; // Projection-type parameters.
 );
 MaterialType < (
     string vertex_format;

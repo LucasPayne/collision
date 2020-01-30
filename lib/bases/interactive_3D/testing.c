@@ -92,7 +92,7 @@ void test_spawn_cubes(int n)
         Transform_set(entity_add_aspect(quad, Transform), frand()*50-25,frand()*50-25,frand()*50-25, frand()*M_PI*2,0,0);
         Body *body = entity_add_aspect(quad, Body);
         body->scale = 5;
-        body->material = Material_create("Materials/textured_phong");
+        body->material = Material_create("Materials/textured_phong_shadows");
         material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/mario/sand_bricks");
         body->geometry = new_resource_handle(Geometry, "Models/block");
         // Logic *logic = entity_add_aspect(quad, Logic);

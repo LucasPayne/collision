@@ -70,7 +70,8 @@ void Geometry_load(void *resource, char *path)
             // If calculating normals, mask out N from the vertex format so the normals aren't queried from the PLY file,
             // and calculate them instead.
 	    load_mesh_ply(&mesh_data, vertex_format & (~VERTEX_FORMAT_N), ply_file);
-            MeshData_calculate_normals(&mesh_data);
+            // Only compute the normals if they are declared in the vertex format. Otherwise, they will not be freed when the mesh data is destroyed.
+            if ((vertex_format & VERTEX_FORMAT_N) != 0) MeshData_calculate_normals(&mesh_data);
         } else {
 	    load_mesh_ply(&mesh_data, vertex_format, ply_file);
         }

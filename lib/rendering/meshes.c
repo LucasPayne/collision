@@ -23,6 +23,9 @@ This module consists of
 
 void MeshData_calculate_normals(MeshData *mesh_data)
 {
+    float *normals = (float *) malloc(mesh_data->num_vertices * 3 * sizeof(float));
+    mem_check(normals);
+
     const int max_num_adjacent_triangles = 16; // If this becomes a problem, either change this number or allow the array to grow for rare cases.
     const int triangle_array_length = max_num_adjacent_triangles + 1;
     // First entry in each slot is the number of adjacent triangles.
@@ -45,16 +48,30 @@ void MeshData_calculate_normals(MeshData *mesh_data)
     }
     // For each vertex, calculate the normals of the adjacent triangles, and average these, then normalize this. This is the normal calculated at this vertex.
     for (int i = 0; i < mesh_data->num_vertices; i++) {
-        float total_x = 0;
-        float total_y = 0;
-        float total_z = 0;
+        vec3 total = vec3_zero();
         for (int j = 0; j < triangle_arrays[triangle_array_length * i]; j++) {
             uint32_t triangle_index = triangle_arrays[triangle_array_length * i + j + 1];
-            for (int k = 0; k < 3; k++) {
-
-            }
+            uint32_t a = mesh_data->triangles[3*triangle_index + 0];
+            uint32_t b = mesh_data->triangles[3*triangle_index + 1];
+            uint32_t c = mesh_data->triangles[3*triangle_index + 2];
+            vec3 u = *((vec3 *) &mesh_data->attribute_data[Position][3*a]);
+            vec3 v = *((vec3 *) &mesh_data->attribute_data[Position][3*b]);
+            vec3 w = *((vec3 *) &mesh_data->attribute_data[Position][3*c]);
+            vec3 tri_normal = vec3_normalize(vec3_cross(vec3_sub(v, u), vec3_sub(w, u)));
+            total = vec3_add(total, tri_normal);
         }
+        vec3 normal = vec3_mul(total, 1.0 / 3.0);
+        memcpy(&normals[3*i], &normal, sizeof(vec3));
     }
+    mesh_data->attribute_data[Normal] = normals;
+    mesh_data->attribute_data_sizes[Normal] = mesh_data->num_vertices * 3 * sizeof(float);
+    printf("Calculated normals:\n");
+    for (int i = 0; i < mesh_data->num_vertices; i++) {
+        printf("%.2f %.2f %.2f\n", ((float *) mesh_data->attribute_data[Normal])[3*i + 0],
+                                   ((float *) mesh_data->attribute_data[Normal])[3*i + 1],
+                                   ((float *) mesh_data->attribute_data[Normal])[3*i + 2]);
+    }
+    getchar();
 }
 
 void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file)

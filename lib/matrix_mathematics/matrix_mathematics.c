@@ -484,3 +484,17 @@ vec3 vec3_zero(void)
     static const vec3 zero = {{0,0,0}};
     return zero;
 }
+
+vec3 vec3_normalize(vec3 v)
+{
+    const float epsilon = 0.0001;
+    float length = vec3_length(v);
+    if (length < epsilon) return vec3_zero(); // just fail by returning 0.
+    float inv_length = 1/length;
+    return vec3_mul(v, inv_length);
+}
+
+float vec3_length(vec3 v)
+{
+    return sqrt(vec3_dot(v, v));
+}

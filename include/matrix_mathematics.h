@@ -28,7 +28,10 @@ vec3 vec3_sub(vec3 a, vec3 b);
 vec3 vec3_neg(vec3 a);
 float vec3_dot(vec3 a, vec3 b);
 vec3 vec3_cross(vec3 u, vec3 v);
+vec3 vec3_cross(vec3 u, vec3 v);
 vec3 vec3_zero(void);
+vec3 vec3_normalize(vec3 v);
+float vec3_length(vec3 v); 
 
 
 // Identity matrix

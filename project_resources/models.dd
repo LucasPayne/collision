@@ -27,6 +27,8 @@ stanford_bunny < Geometry (
     vertex_format: 3N;
     path: Meshes/stanford_bunny_low.ply;
     calculate_normals: true;
+    calculate_uv: orthographic;
+    calculate_uv_orthographic_direction: 0,0,1;
 );
 
 dolphins < Geometry (
@@ -34,4 +36,6 @@ dolphins < Geometry (
     vertex_format: 3N;
     path: Meshes/dolphins.ply;
     calculate_normals: true;
+    calculate_uv: orthographic;
+    calculate_uv_orthographic_direction: 0,0,1;
 );

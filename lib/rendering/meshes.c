@@ -54,17 +54,20 @@ void MeshData_calculate_normals(MeshData *mesh_data)
             uint32_t a = mesh_data->triangles[3*triangle_index + 0];
             uint32_t b = mesh_data->triangles[3*triangle_index + 1];
             uint32_t c = mesh_data->triangles[3*triangle_index + 2];
-            vec3 u = *((vec3 *) &mesh_data->attribute_data[Position][3*a]);
-            vec3 v = *((vec3 *) &mesh_data->attribute_data[Position][3*b]);
-            vec3 w = *((vec3 *) &mesh_data->attribute_data[Position][3*c]);
+            vec3 u = ((vec3 *) mesh_data->attribute_data[Position])[a];
+            vec3 v = ((vec3 *) mesh_data->attribute_data[Position])[b];
+            vec3 w = ((vec3 *) mesh_data->attribute_data[Position])[c];
             vec3 tri_normal = vec3_normalize(vec3_cross(vec3_sub(v, u), vec3_sub(w, u)));
             total = vec3_add(total, tri_normal);
         }
-        vec3 normal = vec3_mul(total, 1.0 / 3.0);
+        vec3 normal = vec3_normalize(total);
+        
         memcpy(&normals[3*i], &normal, sizeof(vec3));
     }
     mesh_data->attribute_data[Normal] = normals;
     mesh_data->attribute_data_sizes[Normal] = mesh_data->num_vertices * 3 * sizeof(float);
+#if 0
+    // Debugging
     printf("Calculated normals:\n");
     for (int i = 0; i < mesh_data->num_vertices; i++) {
         printf("%.2f %.2f %.2f\n", ((float *) mesh_data->attribute_data[Normal])[3*i + 0],
@@ -72,6 +75,7 @@ void MeshData_calculate_normals(MeshData *mesh_data)
                                    ((float *) mesh_data->attribute_data[Normal])[3*i + 2]);
     }
     getchar();
+#endif
 }
 
 void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file)

@@ -102,8 +102,12 @@ extern void close_program(void);
 extern void input_event(int key, int action, int mods);
 extern void cursor_move_event(double x, double y);
 
-#define SHADOW_MAP_TEXTURE_WIDTH 1024
-#define SHADOW_MAP_TEXTURE_HEIGHT 1024
+// This is probably smaller than both the horizontal and vertical resolution of the screen.
+// Apparently the back buffer is the screen size, and rendering to a texture larger than this just does not fill the texture.
+// Larger shadow maps could be done with multiple render passes on tiles, for example 512x512 may be trusted to be a working size,
+// then the light frustum split into tiles, each one rendering into a tile of the texture.
+#define SHADOW_MAP_TEXTURE_WIDTH 750
+#define SHADOW_MAP_TEXTURE_HEIGHT 750
 
 // Currently only doing directional light shadows.
 typedef struct ShadowMap_s {
@@ -157,10 +161,6 @@ static void init_shadows(void)
         }
         // Bind the depth texture to its reserved texture unit. --------------------------------
         set_uniform_texture(Lights, directional_light_shadow_maps[i], shadow_map->depth_texture);
-        //----for now connecting the color texture, for debugging.
-        // set_uniform_texture(Lights, directional_light_shadow_maps[i], shadow_map->color_texture);
-        //ResourceHandle dirt = new_resource_handle(Texture, "Textures/minecraft/dirt");
-        //set_uniform_texture(Lights, directional_light_shadow_maps[i], resource_data(Texture, dirt)->texture_id);
         // --------------------------------------------------------------------------------------
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -178,19 +178,25 @@ if (!g_freeze_shadows) { // toggleable for debugging.
         glClearDepth(1.0);
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        mat4x4 shadow_matrix;
-        //---rendering the shadow map from the camera
-        Camera *camera;
-        for_aspect(Camera, getting_camera)
-            camera = getting_camera;
-            break;
-        end_for_aspect()
-        Transform *camera_transform = get_sibling_aspect(camera, Transform);
-        mat4x4 view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
-        mat4x4 vp_matrix = camera->projection_matrix;
-        right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
-        shadow_matrix = vp_matrix;
+        // Form the matrix transforming points in world space to the UVD coordinates (UV + depth) of the shadowing volume of the directional light.
+        mat4x4 light_model_matrix = Transform_matrix(get_sibling_aspect(light, Transform));
+        mat4x4 model_to_uvd = {{
+            1/light->shadow_width, 0,                      0,                     0,
+            0,                     1/light->shadow_height, 0,                     0,
+            0,                     0,                      1/light->shadow_depth, 0,
+            0.5,                   0.5,                    0.5,                   1,
+        }};
+        mat4x4 shadow_matrix = model_to_uvd;
+        right_multiply_matrix4x4f(&shadow_matrix, &light_model_matrix);
         set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrix.vals, shadow_matrix.vals);
+
+        //---rendering the shadow map from the camera
+        //Camera *camera;
+        //for_aspect(Camera, getting_camera)
+        //    camera = getting_camera;
+        //    break;
+        //end_for_aspect()
+        //shadow_matrix = vp_matrix;
 
         for_aspect(Body, body)
             Transform *transform = get_sibling_aspect(body, Transform);
@@ -200,7 +206,7 @@ if (!g_freeze_shadows) { // toggleable for debugging.
                     model_matrix.vals[4*i + j] *= body->scale;
                 }
             }
-            mat4x4 mvp_matrix = vp_matrix;
+            mat4x4 mvp_matrix = shadow_matrix; // "model view projection", really transforming model coordinates into the UVD shadowing volume.
             right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
 
@@ -428,8 +434,11 @@ static void loop_base(void)
             fprintf(stderr, ERROR_ALERT "scene error: Too many directional lights have been created. The maximum number is set to %d.\n", MAX_NUM_DIRECTIONAL_LIGHTS);
             exit(EXIT_FAILURE);
         }
-        set_uniform_vec3(Lights, directional_lights[index].direction, DirectionalLight_direction(directional_light));
+        vec3 dir = DirectionalLight_direction(directional_light);
+        set_uniform_vec3(Lights, directional_lights[index].direction, dir);
         set_uniform_vec4(Lights, directional_lights[index].color, directional_light->color);
+        
+
         index ++;
     end_for_aspect()
     set_uniform_int(Lights, num_directional_lights, index);

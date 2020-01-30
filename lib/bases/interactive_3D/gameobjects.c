@@ -50,8 +50,40 @@ Matrix4x4f Transform_matrix(Transform *transform)
 }
 vec3 Transform_relative_direction(Transform *t, vec3 direction)
 {
+    // Transform a direction vector.
     return matrix_vec3(rotation_part_rigid_mat4x4(Transform_matrix(t)), direction);
 }
+vec3 Transform_relative_position(Transform *t, vec3 position)
+{
+    // Transform a point from model space to world space.
+    mat4x4 m = Transform_matrix(t);
+    return vec4_to_vec3(matrix_vec4(&m, vec3_to_vec4(position)));
+}
+vec3 Transform_up(Transform *t)
+{
+    return Transform_relative_direction(t, new_vec3(0,1,0));
+}
+vec3 Transform_down(Transform *t)
+{
+    return Transform_relative_direction(t, new_vec3(0,-1,0));
+}
+vec3 Transform_left(Transform *t)
+{
+    return Transform_relative_direction(t, new_vec3(-1,0,0));
+}
+vec3 Transform_right(Transform *t)
+{
+    return Transform_relative_direction(t, new_vec3(1,0,0));
+}
+vec3 Transform_forward(Transform *t)
+{
+    return Transform_relative_direction(t, new_vec3(0,0,1));
+}
+vec3 Transform_backward(Transform *t)
+{
+    return Transform_relative_direction(t, new_vec3(0,0,-1));
+}
+
 void Transform_move(Transform *t, vec3 translation)
 {
     //--idea: could make vectors structs with x,y,z[,w], and cast to an array when iteration is wanted.
@@ -104,9 +136,12 @@ void Input_init(Input *inp, uint8_t input_type, /* generic function pointer (no 
     Lights
 ================================================================================*/
 AspectType DirectionalLight_TYPE_ID;
-void DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca)
+void DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca, float shadow_width, float shadow_height, float shadow_depth)
 {
     directional_light->color = new_vec4(cr, cg, cb, ca);
+    directional_light->shadow_width = shadow_width;
+    directional_light->shadow_height = shadow_height;
+    directional_light->shadow_depth = shadow_depth;
 }
 vec3 DirectionalLight_direction(DirectionalLight *directional_light)
 {

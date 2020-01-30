@@ -36,6 +36,10 @@ void main(void)
         float intensity = (1 - ambient) * max(0, dot(fNormal, -directional_lights[i].direction));
         color += vec4(vec3(intensity), 0);
     }
+    for (int i = 0; i < num_point_lights; i++) {
+        float intensity = (1 - ambient) * max(0, dot(-normalize(fPosition.xyz - point_lights[i].position), fNormal));
+        color += vec4(vec3(intensity), 0);
+    }
 
     if (use_flat_color) color *= flat_color;
     else color *= texture(diffuse_map, fTexCoord);

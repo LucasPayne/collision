@@ -498,3 +498,17 @@ float vec3_length(vec3 v)
 {
     return sqrt(vec3_dot(v, v));
 }
+
+vec4 vec3_to_vec4(vec3 v)
+{
+    vec4 v4;
+    memcpy(&v4, &v, sizeof(float)*3);
+    v4.vals[3] = 1.0;
+    return v4;
+}
+vec3 vec4_to_vec3(vec4 v)
+{
+    vec3 v3;
+    memcpy(&v3, &v, sizeof(float)*3);
+    return v3;
+}

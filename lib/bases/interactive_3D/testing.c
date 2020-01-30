@@ -45,8 +45,7 @@ void test_directional_light_auto(void)
     Transform_set(entity_add_aspect(light, Transform), 0,0,0,  0,0,0);
     Logic *logic = entity_add_aspect(light, Logic);
     logic->update = test_directional_light_auto_update;
-    DirectionalLight *directional_light = entity_add_aspect(light, DirectionalLight);
-    directional_light->color = new_vec4(1,0.7,0.7,1);
+    DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,0.7,0.7,1,  1000,1000,1000);
 }
 // Directional light controlled with keys M and N.
 static void test_directional_light_controlled_key_input(Input *input, int key, int action, int mods)
@@ -60,9 +59,8 @@ static void test_directional_light_controlled_key_input(Input *input, int key, i
 void test_directional_light_controlled(void)
 {
     EntityID light = new_entity(4);
-    Transform_set(entity_add_aspect(light, Transform), 0,0,0,  3,-1,1);
-    DirectionalLight *directional_light = entity_add_aspect(light, DirectionalLight);
-    directional_light->color = new_vec4(1,1,0.1,1);
+    Transform_set(entity_add_aspect(light, Transform), 0,50,100,  0,M_PI,0);
+    DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,1,0.1,1,  100,100,200);
     Input_init(entity_add_aspect(light, Input), INPUT_KEY, test_directional_light_controlled_key_input, true);
 }
 // Point light with controls and model.

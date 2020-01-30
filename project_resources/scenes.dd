@@ -46,6 +46,28 @@ block_on_floor < (
             rotation: 1.5707963,0,0;
         );
     );
+    wall < GameObject (
+        body < Body (
+            scale: 50;
+            geometry: Resources/Models/quad;
+            material: Scenes/floor_material;
+        );
+        transform < Transform (
+            position: 0,50,-45;
+            rotation: 3.14159,0,0;
+        );
+    );
+    wall2 < GameObject (
+        body < Body (
+            scale: 50;
+            geometry: Resources/Models/quad;
+            material: Scenes/floor_material;
+        );
+        transform < Transform (
+            position: 45,50,0;
+            rotation: 3.14159,-1.57,0;
+        );
+    );
     stanford_bunny < GameObject (
         body < Body (
             scale: 150;
@@ -64,7 +86,7 @@ block_on_floor < (
             material: Scenes/stanford_bunny_material;
         );
         transform < Transform (
-            position: 0,70,-50;
+            position: 0,70,-20;
             rotation: -1.57,0,0;
         );
     );

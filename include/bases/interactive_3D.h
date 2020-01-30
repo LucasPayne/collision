@@ -70,8 +70,15 @@ void Transform_set(Transform *transform, float x, float y, float z, float theta_
 vec3 Transform_position(Transform *t);
 Matrix4x4f Transform_matrix(Transform *transform);
 vec3 Transform_relative_direction(Transform *t, vec3 direction);
+vec3 Transform_relative_position(Transform *t, vec3 position);
 void Transform_move(Transform *t, vec3 translation);
 void Transform_move_relative(Transform *t, vec3 translation);
+vec3 Transform_up(Transform *t);
+vec3 Transform_down(Transform *t);
+vec3 Transform_left(Transform *t);
+vec3 Transform_right(Transform *t);
+vec3 Transform_forward(Transform *t);
+vec3 Transform_backward(Transform *t);
 
 /*--------------------------------------------------------------------------------
 A Body is the seeable aspect of a gameobject. This gives information enough
@@ -185,8 +192,11 @@ extern AspectType DirectionalLight_TYPE_ID;
 typedef struct DirectionalLight_s {
 ASPECT_PROPERTIES()    
     vec4 color;
+    float shadow_width;
+    float shadow_height;
+    float shadow_depth;
 } DirectionalLight;
-void DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca);
+void DirectionalLight_init(DirectionalLight *directional_light, float cr, float cg, float cb, float ca, float shadow_width, float shadow_height, float shadow_depth);
 vec3 DirectionalLight_direction(DirectionalLight *directional_light);
 
 /*--------------------------------------------------------------------------------

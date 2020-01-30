@@ -129,4 +129,3 @@ flat_color_phong_outward_normals < MaterialType (
         vec4 flat_color;
     );
 );
-

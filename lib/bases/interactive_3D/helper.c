@@ -50,7 +50,7 @@ static void camera_mouse_move(Input *input, double dx, double dy)
 }
 
 // Create a camera man with mouse controls.
-void create_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z)
+EntityID create_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z)
 {
     EntityID camera_man = new_entity(4);
     Transform_set(entity_add_aspect(camera_man, Transform), x,y,z,  0,0,0);//--do lookat
@@ -60,8 +60,8 @@ void create_camera_man(float x, float y, float z, float lookat_x, float lookat_y
     logic->update = camera_controls;
     Input_init(entity_add_aspect(camera_man, Input), INPUT_MOUSE_MOVE, camera_mouse_move, true);
     Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
+    return camera_man;
 }
-
 
 static void camera_key_controls(Logic *logic)
 {
@@ -80,7 +80,7 @@ static void camera_key_controls(Logic *logic)
 }
 
 // Create a camera man controlled by keys.
-void create_key_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z)
+EntityID create_key_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z)
 {
     EntityID camera_man = new_entity(4);
     Transform_set(entity_add_aspect(camera_man, Transform), x,y,z,  0,0,0);//--do lookat
@@ -89,4 +89,5 @@ void create_key_camera_man(float x, float y, float z, float lookat_x, float look
     Logic *logic = entity_add_aspect(camera_man, Logic);
     logic->update = camera_key_controls;
     Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
+    return camera_man;
 }

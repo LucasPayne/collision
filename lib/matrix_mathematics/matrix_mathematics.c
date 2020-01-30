@@ -466,3 +466,21 @@ vec3 new_vec3(float x, float y, float z)
     return v;
 }
 
+
+// Cross product
+vec3 vec3_cross(vec3 u, vec3 v)
+{
+    // u x v = [ u2 v3 - u3 v2 ]
+    //         [ u3 v1 - u1 v3 ]
+    //         [ u1 v2 - u2 v1 ]
+    return new_vec3(u.vals[1]*v.vals[2] - u.vals[2]*v.vals[1],
+                    u.vals[2]*v.vals[0] - u.vals[0]*v.vals[2],
+                    u.vals[0]*v.vals[1] - u.vals[1]*v.vals[0]);
+}
+
+
+vec3 vec3_zero(void)
+{
+    static const vec3 zero = {{0,0,0}};
+    return zero;
+}

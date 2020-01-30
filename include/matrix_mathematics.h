@@ -27,6 +27,8 @@ vec3 vec3_add(vec3 a, vec3 b);
 vec3 vec3_sub(vec3 a, vec3 b);
 vec3 vec3_neg(vec3 a);
 float vec3_dot(vec3 a, vec3 b);
+vec3 vec3_cross(vec3 u, vec3 v);
+vec3 vec3_zero(void);
 
 
 // Identity matrix
@@ -99,6 +101,7 @@ mat4x4 invert_rigid_mat4x4(mat4x4 m);
 
 mat4x4 euler_angles_mat4x4(float theta_x, float theta_y, float theta_z);
 mat4x4 identity_mat4x4(void);
+
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

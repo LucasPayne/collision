@@ -204,8 +204,8 @@ void PointLight_init(PointLight *point_light, float linear_attenuation, float qu
 
 //================================================================================
 // Helper stuff. May separate this.
-void create_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z);
-void create_key_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z);
+EntityID create_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z);
+EntityID create_key_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z);
 
 //================================================================================
 // Testing stuff.

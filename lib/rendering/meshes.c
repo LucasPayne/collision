@@ -23,7 +23,7 @@ This module consists of
 
 void MeshData_calculate_normals(MeshData *mesh_data)
 {
-    const int max_num_adjacent_triangles = 6; // If this becomes a problem, either change this number or allow the array to grow for rare cases.
+    const int max_num_adjacent_triangles = 16; // If this becomes a problem, either change this number or allow the array to grow for rare cases.
     const int triangle_array_length = max_num_adjacent_triangles + 1;
     // First entry in each slot is the number of adjacent triangles.
     uint32_t *triangle_arrays = (uint32_t *) calloc(mesh_data->num_vertices * triangle_array_length, sizeof(uint32_t));
@@ -31,6 +31,7 @@ void MeshData_calculate_normals(MeshData *mesh_data)
 
     // Build up adjacent-triangle arrays for each vertex.
     for (int i = 0; i < mesh_data->num_triangles; i++) {
+        // For each vertex in the triangle, add the triangle index to that vertex's adjacent-triangle array.
         for (int j = 0; j < 3; j++) {
             uint32_t vertex_index = mesh_data->triangles[3*i + j];
             int num_triangles = triangle_arrays[triangle_array_length * vertex_index];
@@ -42,9 +43,18 @@ void MeshData_calculate_normals(MeshData *mesh_data)
             triangle_arrays[triangle_array_length * vertex_index] ++; // Up the count of triangles in this vertex's triangle array.
         }
     }
-
     // For each vertex, calculate the normals of the adjacent triangles, and average these, then normalize this. This is the normal calculated at this vertex.
+    for (int i = 0; i < mesh_data->num_vertices; i++) {
+        float total_x = 0;
+        float total_y = 0;
+        float total_z = 0;
+        for (int j = 0; j < triangle_arrays[triangle_array_length * i]; j++) {
+            uint32_t triangle_index = triangle_arrays[triangle_array_length * i + j + 1];
+            for (int k = 0; k < 3; k++) {
 
+            }
+        }
+    }
 }
 
 void load_mesh_ply(MeshData *mesh, VertexFormat vertex_format, FILE *file)

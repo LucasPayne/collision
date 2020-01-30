@@ -188,9 +188,13 @@ void paint_line(float ax, float ay, float az, float bx, float by, float bz, COLO
 void paint_line_c(float ax, float ay, float az, float bx, float by, float bz, char *color_str) {
     canvas_paint_line_v(Canvas3D, new_vec3(ax, ay, az), new_vec3(bx, by, bz), str_to_color_key(color_str));
 }
-void paint_line_v(float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS) {
-    canvas_paint_line_v(Canvas3D, new_vec3(ax, ay, az), new_vec3(bx, by, bz), new_vec4(cr, cg, cb, ca));
+void paint_line_v(vec3 a, vec3 b, COLOR_SCALARS) {
+    canvas_paint_line_v(Canvas3D, a, b, new_vec4(cr, cg, cb, ca));
 }
+void paint_line_cv(vec3 a, vec3 b, char *color_str) {
+    canvas_paint_line_v(Canvas3D, a, b, str_to_color_key(color_str));
+}
+
 // Standard 2D canvas line painting
 // --------------------------------
 void paint2d_line(float ax, float ay, float bx, float by, COLOR_SCALARS) {
@@ -312,6 +316,17 @@ void paint2d_loop_c(float vals[], int num_points, char *color_str) {
 --------------------------------------------------------------------------------*/
 // Generic canvas quad painting
 // ----------------------------
+void canvas_paint_quad_vm(int canvas, vec3 p1, vec3 p2, vec3 p3, vec3 p4, ResourceHandle material_handle)
+{
+    gm_triangles(VERTEX_FORMAT_3);
+    attribute_3f(Position, p1.vals[0], p1.vals[1], p1.vals[2]);
+    attribute_3f(Position, p2.vals[0], p2.vals[1], p2.vals[2]);
+    attribute_3f(Position, p3.vals[0], p3.vals[1], p3.vals[2]);
+    attribute_3f(Position, p4.vals[0], p4.vals[1], p4.vals[2]);
+    gm_index(0); gm_index(1); gm_index(2);
+    gm_index(0); gm_index(2); gm_index(3);
+    painting_add(canvas, gm_done(), material_handle);
+}
 void canvas_paint_quad(int canvas,
                        float p1x, float p1y, float p1z, 
                        float p2x, float p2y, float p2z, 
@@ -319,16 +334,9 @@ void canvas_paint_quad(int canvas,
                        float p4x, float p4y, float p4z,
                        COLOR_SCALARS)
 {
-    gm_triangles(VERTEX_FORMAT_3);
-    attribute_3f(Position, p1x, p1y, p1z);
-    attribute_3f(Position, p2x, p2y, p2z);
-    attribute_3f(Position, p3x, p3y, p3z);
-    attribute_3f(Position, p4x, p4y, p4z);
-    gm_index(0); gm_index(1); gm_index(2);
-    gm_index(0); gm_index(2); gm_index(3);
     ResourceHandle mat = Material_create("Painting/Materials/flat_color");
     material_set_property_vec4(resource_data(Material, mat), "flat_color", new_vec4(cr,cg,cb,ca));
-    painting_add(canvas, gm_done(), mat);
+    canvas_paint_quad_vm(canvas, new_vec3(p1x,p1y,p1z), new_vec3(p2x,p2y,p2z), new_vec3(p3x,p3y,p3z), new_vec3(p4x,p4y,p4z), mat);
 } 
 void canvas_paint_quad_v(int canvas, vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec4 color)
 {
@@ -369,6 +377,26 @@ void paint_quad_v(vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec4 color)
                p4.vals[0], p4.vals[1], p4.vals[2],
                UNPACK_COLOR(color));
 }
+void paint_quad_c(float p1x, float p1y, float p1z, 
+                float p2x, float p2y, float p2z, 
+                float p3x, float p3y, float p3z, 
+                float p4x, float p4y, float p4z,
+                char *color_str)
+{
+    vec4 color = str_to_color_key(color_str);
+    paint_quad(p1x,p1y,p1z, p2x,p2y,p2z, p3x,p3y,p3z, p4x,p4y,p4z, UNPACK_COLOR(color));
+}
+void paint_quad_cv(vec3 p1, vec3 p2, vec3 p3, vec3 p4, char *color_str)
+{
+    paint_quad_v(p1, p2, p3, p4, str_to_color_key(color_str));
+}
+
+void paint_quad_vm(vec3 p1, vec3 p2, vec3 p3, vec3 p4, ResourceHandle material_handle)
+{
+    canvas_paint_quad_vm(Canvas3D, p1, p2, p3, p4, material_handle);
+}
+
+
 // Standard 2D canvas quad painting
 // -------------------------------
 void paint2d_quad(float p1x, float p1y, float p2x, float p2y, float p3x, float p3y, float p4x, float p4y, COLOR_SCALARS) {

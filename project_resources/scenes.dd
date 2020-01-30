@@ -71,3 +71,21 @@ block_on_floor < (
 );
 
 
+
+just_floor_material < Material (
+    type: Resources/Materials/texture;
+    diffuse_map < Resources/Textures/marble_tile;
+);
+floor < (
+    floor < GameObject (
+        body < Body (
+            scale: 200;
+            geometry: Resources/Models/quad;
+            material: Scenes/just_floor_material;
+        );
+        transform < Transform (
+            position: 0,-50,-50;
+            rotation: 1.5707963,0,0;
+        );
+    );
+);

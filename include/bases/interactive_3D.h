@@ -79,6 +79,7 @@ vec3 Transform_left(Transform *t);
 vec3 Transform_right(Transform *t);
 vec3 Transform_forward(Transform *t);
 vec3 Transform_backward(Transform *t);
+vec3 Transform_angles(Transform *t);
 
 /*--------------------------------------------------------------------------------
 A Body is the seeable aspect of a gameobject. This gives information enough
@@ -234,5 +235,6 @@ void test_spawn_stars(int how_many);
 
 // Applications are not supposed to use this, but it is exposed here for testing.
 void ___render(void);
+
 
 #endif // HEADER_DEFINED_INTERACTIVE_3D

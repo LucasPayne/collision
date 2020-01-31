@@ -42,6 +42,10 @@ vec3 Transform_position(Transform *t)
 {
     return new_vec3(t->x, t->y, t->z);
 }
+vec3 Transform_angles(Transform *t)
+{
+    return new_vec3(t->theta_x, t->theta_y, t->theta_z);
+}
 Matrix4x4f Transform_matrix(Transform *transform)
 {
     Matrix4x4f mat;

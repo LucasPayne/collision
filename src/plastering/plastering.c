@@ -161,10 +161,15 @@ void create_plaster(Camera *camera, Body *body)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, PLASTER_WIDTH, PLASTER_HEIGHT);
     mat4x4 model_matrix = Transform_matrix(get_sibling_aspect(body, Transform));
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    model_matrix.vals[4*i + j] *= body->scale;
+                }
+            }
     mat4x4 mvp_matrix = Camera_vp_matrix(g_camera);
     right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
     set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
-    // gm_draw(*resource_data(Geometry, body->geometry), resource_data(Material, body->material));
+    gm_draw(*resource_data(Geometry, body->geometry), resource_data(Material, body->material));
 
     // Can't disable entities, just throw it up to the sky ...
     Transform_move(get_sibling_aspect(body, Transform), new_vec3(0,1000,0));

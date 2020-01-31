@@ -200,6 +200,8 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
 }
 mat4x4 Camera_vp_matrix(Camera *camera)
 {
-    Transform *t = get_sibling_aspect(camera, Transform);
-    
+    mat4x4 vp_matrix = camera->projection_matrix;
+    mat4x4 view_matrix = invert_rigid_mat4x4(Transform_matrix(get_sibling_aspect(camera, Transform)));
+    right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+    return vp_matrix;
 }

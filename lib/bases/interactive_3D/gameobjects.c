@@ -198,4 +198,8 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
     camera->plane_f = f;
     camera->projection_matrix = frustrum_matrix;
 }
-
+mat4x4 Camera_vp_matrix(Camera *camera)
+{
+    Transform *t = get_sibling_aspect(camera, Transform);
+    
+}

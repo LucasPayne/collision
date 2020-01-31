@@ -161,7 +161,7 @@ static void init_shadows(void)
         glReadBuffer(GL_COLOR_ATTACHMENT0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_map->depth_texture, 0);
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            fprintf(stderr, ERROR_ALERT "Incomplete framebuffer when initializing shadow maps.");
+            fprintf(stderr, ERROR_ALERT "Incomplete framebuffer when initializing shadow maps.\n");
             exit(EXIT_FAILURE);
         }
         // Bind the depth texture to its reserved texture unit. --------------------------------
@@ -218,8 +218,8 @@ if (!g_freeze_shadows) { // toggleable for debugging.
             gm_draw(*geometry, g_shadow_map_material);
         end_for_aspect()
 } // endif (!g_freeze_shadows)
-        float rect_size = 0.23;
-        paint2d_sprite_m(index*rect_size,0,  rect_size,rect_size,  shadow_map->depth_texture_material);
+        //float rect_size = 0.23;
+        //paint2d_sprite_m(index*rect_size,0,  rect_size,rect_size,  shadow_map->depth_texture_material);
         index ++;
     end_for_aspect()
     glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);

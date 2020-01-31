@@ -186,6 +186,7 @@ ASPECT_PROPERTIES()
     Matrix4x4f projection_matrix; // the lens
 } Camera;
 void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far);
+mat4x4 Camera_vp_matrix(Camera *camera);
 
 /*--------------------------------------------------------------------------------
     Lights

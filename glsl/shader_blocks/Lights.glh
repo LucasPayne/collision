@@ -5,8 +5,8 @@ definitions between glsl and C.
 #define MAX_NUM_DIRECTIONAL_LIGHTS 8
 #define MAX_NUM_POINT_LIGHTS 8
 
-uniform sampler2D directional_light_shadow_maps[8];
-uniform sampler2D point_light_shadow_maps[8];
+uniform sampler2DShadow directional_light_shadow_maps[8];
+uniform sampler2DShadow point_light_shadow_maps[8];
 struct DirectionalLight {
     mat4x4 shadow_matrix;
     vec3 half_vector;

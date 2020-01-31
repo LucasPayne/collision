@@ -30,11 +30,18 @@ void main(void)
     color = vec4(vec3(ambient), 1);
 
     for (int i = 0; i < num_directional_lights; i++) {
-        float depth = fDirectionalLightShadowCoord[i].z / fDirectionalLightShadowCoord[i].w;
-        float texture_depth = textureProj(directional_light_shadow_maps[i], fDirectionalLightShadowCoord[i]).r;
-        if (!in_light(texture_depth, depth)) continue;
-        float intensity = (1 - ambient) * max(0, dot(fNormal, -directional_lights[i].direction));
-        color += vec4(vec3(intensity), 0);
+        // float depth = fDirectionalLightShadowCoord[i].z / fDirectionalLightShadowCoord[i].w;
+        // float texture_depth = textureProj(directional_light_shadow_maps[i], fDirectionalLightShadowCoord[i]).r;
+        // texture depth 0 : outside of shadowing volume.
+        // if (texture_depth == 0) light_factor = 1.0;
+        float cos_theta = dot(fNormal, -directional_lights[i].direction); // cosine of angle between normal and light
+        vec3 uvd_coord = fDirectionalLightShadowCoord[i].xyz / fDirectionalLightShadowCoord[i].w;
+        // Shadow acne biasing. This is just a hack heuristic.
+        uvd_coord.z += -max((1 - abs(cos_theta)) * 0.05, 0.005);
+        float light_factor = texture(directional_light_shadow_maps[i], uvd_coord);
+        // if (texture_depth != 0 && !in_light(texture_depth, depth)) continue;
+        float intensity = (1 - ambient) * max(0, cos_theta);
+        color += light_factor * vec4(vec3(intensity), 0);
     }
     for (int i = 0; i < num_point_lights; i++) {
         float intensity = (1 - ambient) * max(0, dot(-normalize(fPosition.xyz - point_lights[i].position), fNormal));

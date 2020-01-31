@@ -21,7 +21,8 @@ extern void init_program(void)
 
     create_key_camera_man(0,50,100,  0,0,0);
     test_directional_light_controlled();
-    test_point_light_1();
+    test_directional_light_auto();
+    // test_point_light_1();
 }
 extern void loop_program(void)
 {

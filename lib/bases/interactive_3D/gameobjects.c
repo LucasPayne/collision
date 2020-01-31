@@ -112,6 +112,10 @@ void Body_init(Body *body, char *material_path, char *mesh_path)
     Logic
 ================================================================================*/
 AspectType Logic_TYPE_ID;
+void Logic_init(Logic *logic, LogicUpdate update)
+{
+    logic->update = update;
+}
 
 /*================================================================================
     Input

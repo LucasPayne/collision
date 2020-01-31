@@ -104,11 +104,15 @@ usage of the logic aspect.
 ---Should put standard logic loops here.
 --------------------------------------------------------------------------------*/
 extern AspectType Logic_TYPE_ID;
+struct Logic_s;
+typedef void (*LogicUpdate)(struct Logic_s *);
 typedef struct Logic_s {
 ASPECT_PROPERTIES()
-    void (*update)(struct Logic_s *);
+    LogicUpdate update;
     void *data;
 } Logic;
+void Logic_init(Logic *logic, LogicUpdate update);
+
 /* #define init_logic(LOGIC,OBJ_TYPE_NAME,UPDATE)\ */
 /* {\ */
 /*     ( LOGIC )->update = ( UPDATE );\ */

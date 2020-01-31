@@ -142,6 +142,10 @@ static void init_shadows(void)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        // float background_color[] = { 0,0,0,1 };
+        // glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, background_color);
         glBindTexture(GL_TEXTURE_2D, 0);
         shadow_map->depth_texture_material = Material_create("Materials/render_shadow_map");
         ResourceHandle depth_texture_handle;
@@ -178,16 +182,15 @@ if (!g_freeze_shadows) { // toggleable for debugging.
         glClearDepth(1.0);
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        // Form the matrix transforming points in world space to the UVD coordinates (UV + depth) of the shadowing volume of the directional light.
-        mat4x4 light_model_matrix = Transform_matrix(get_sibling_aspect(light, Transform));
-        mat4x4 model_to_uvd = {{
-            1/light->shadow_width, 0,                      0,                     0,
-            0,                     1/light->shadow_height, 0,                     0,
-            0,                     0,                      1/light->shadow_depth, 0,
-            0.5,                   0.5,                    0.5,                   1,
+        mat4x4 inverse_light_model_matrix = invert_rigid_mat4x4(Transform_matrix(get_sibling_aspect(light, Transform)));
+        mat4x4 model_to_ndc = {{
+            2/light->shadow_width,  0,                       0,                      0,
+            0,                      2/light->shadow_height,  0,                      0,
+            0,                      0,                       2/light->shadow_depth,  0,
+            0,                      0,                       -1,                      1,
         }};
-        mat4x4 shadow_matrix = model_to_uvd;
-        right_multiply_matrix4x4f(&shadow_matrix, &light_model_matrix);
+        mat4x4 shadow_matrix = model_to_ndc;
+        right_multiply_matrix4x4f(&shadow_matrix, &inverse_light_model_matrix);
         set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrix.vals, shadow_matrix.vals);
 
         //---rendering the shadow map from the camera
@@ -206,7 +209,7 @@ if (!g_freeze_shadows) { // toggleable for debugging.
                     model_matrix.vals[4*i + j] *= body->scale;
                 }
             }
-            mat4x4 mvp_matrix = shadow_matrix; // "model view projection", really transforming model coordinates into the UVD shadowing volume.
+            mat4x4 mvp_matrix = shadow_matrix;
             right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
 
@@ -437,7 +440,6 @@ static void loop_base(void)
         vec3 dir = DirectionalLight_direction(directional_light);
         set_uniform_vec3(Lights, directional_lights[index].direction, dir);
         set_uniform_vec4(Lights, directional_lights[index].color, directional_light->color);
-        
 
         index ++;
     end_for_aspect()

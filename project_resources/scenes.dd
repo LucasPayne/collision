@@ -90,6 +90,17 @@ block_on_floor < (
             rotation: -1.57,0,0;
         );
     );
+    big_floor < GameObject (
+        body < Body (
+            scale: 1000;
+            geometry: Resources/Models/quad;
+            material: Scenes/floor_material;
+        );
+        transform < Transform (
+            position: 0,-50,-50;
+            rotation: 1.5707963,0,0;
+        );
+    );
 );
 
 

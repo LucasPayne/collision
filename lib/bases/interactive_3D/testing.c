@@ -37,31 +37,39 @@ static void test_directional_light_auto_update(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
     // printf("Light is going.\n");
-    t->theta_y += 0.5 * dt;
+    t->theta_x += 2 * dt;
 }
 void test_directional_light_auto(void)
 {
     EntityID light = new_entity(4);
-    Transform_set(entity_add_aspect(light, Transform), 0,0,0,  0,0,0);
+    Transform_set(entity_add_aspect(light, Transform), 0,200,0,  0,0,0);
     Logic *logic = entity_add_aspect(light, Logic);
     logic->update = test_directional_light_auto_update;
-    DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,0.7,0.7,1,  1000,1000,1000);
+    DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,0.7,0.7,1,  400,400,500);
 }
 // Directional light controlled with keys M and N.
-static void test_directional_light_controlled_key_input(Input *input, int key, int action, int mods)
+// static void test_directional_light_controlled_key_input(Input *input, int key, int action, int mods)
+// {
+//     Transform *t = get_sibling_aspect(input, Transform);
+//     if (action == GLFW_PRESS) {
+//         if (key == GLFW_KEY_M) t->theta_x += 0.5;
+//         if (key == GLFW_KEY_N) t->theta_x -= 0.5;
+//     }
+// }
+static void test_directional_light_controlled_logic(Logic *logic)
 {
-    Transform *t = get_sibling_aspect(input, Transform);
-    if (action == GLFW_PRESS) {
-        if (key == GLFW_KEY_M) t->theta_x += 0.5;
-        if (key == GLFW_KEY_N) t->theta_x -= 0.5;
-    }
+    Transform *t = get_sibling_aspect(logic, Transform);
+    float speed = 2.0;
+    if (arrow_key_down(Up)) t->theta_y += dt * speed;
+    if (arrow_key_down(Down)) t->theta_y -= dt * speed;
 }
 void test_directional_light_controlled(void)
 {
     EntityID light = new_entity(4);
-    Transform_set(entity_add_aspect(light, Transform), 0,50,100,  0,M_PI,0);
-    DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,1,0.1,1,  100,100,200);
-    Input_init(entity_add_aspect(light, Input), INPUT_KEY, test_directional_light_controlled_key_input, true);
+    Transform_set(entity_add_aspect(light, Transform), 0,100,100,  -0.6,M_PI,0);
+    DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,1,0.1,1,  200,200,500);
+    // Input_init(entity_add_aspect(light, Input), INPUT_KEY, test_directional_light_controlled_key_input, true);
+    Logic_init(entity_add_aspect(light, Logic), test_directional_light_controlled_logic);
 }
 // Point light with controls and model.
 void test_point_light_1(void)

@@ -5,6 +5,7 @@ definitions between glsl and C.
 #define MAX_NUM_PLASTERS 8
 
 uniform sampler2D plaster[8];
+uniform sampler2D plaster_depth[8];
 struct Plaster {
     mat4x4 matrix;
 };

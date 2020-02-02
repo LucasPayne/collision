@@ -3,10 +3,13 @@ project_libs:
     + Engine
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
+#include "include/Plastering.h"
 
 // Should have these match the resolution.
 #define PLASTER_WIDTH 512
 #define PLASTER_HEIGHT 512
+
+#define APPLICATION_DIRECTORY "/home/lucas/collision/src/plastering/"
 
 static Camera *g_camera = NULL; // Intend only to have one camera.
 static Body *g_plastering_body = NULL; // testing. you should be able to change the object being plastered.
@@ -209,7 +212,10 @@ extern void cursor_move_event(double x, double y)
 }
 extern void init_program(void)
 {
-    open_scene(g_scenes, "block_on_floor");
+    glsl_include_path_add(APPLICATION_DIRECTORY "glsl");
+    add_shader_block(Plastering);
+
+    open_scene(g_scenes, "plastering_scene");
 
     EntityID camera_man = new_entity(4);
     Transform_set(entity_add_aspect(camera_man, Transform), -70,50,70,  0,M_PI/4,0);

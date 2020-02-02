@@ -15,11 +15,20 @@ static char *ShaderBlockSamplerNames_Plastering[] = {
     "plaster[5]",
     "plaster[6]",
     "plaster[7]",
+    "plaster_depth[0]",
+    "plaster_depth[1]",
+    "plaster_depth[2]",
+    "plaster_depth[3]",
+    "plaster_depth[4]",
+    "plaster_depth[5]",
+    "plaster_depth[6]",
+    "plaster_depth[7]",
 }; // ShaderBlockSamplerNames_Plastering
 
-#define ShaderBlockNumSamplers_Plastering 8
+#define ShaderBlockNumSamplers_Plastering 16
 struct ___ShaderBlockSamplers_Plastering {
     GLint plaster[8];
+    GLint plaster_depth[8];
 } ShaderBlockSamplers_Plastering;
 
 struct ShaderBlockStruct_Plastering_Plaster { //size: 64

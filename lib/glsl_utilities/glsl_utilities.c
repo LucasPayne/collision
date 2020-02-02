@@ -185,6 +185,13 @@ bool link_shader_program(GLuint shader_program_id)
     glsl include path
 --------------------------------------------------------------------------------*/
 static char *glsl_include_path = NULL;
+
+void print_glsl_include_path(void)
+{
+    printf("--------------------------------------------------------------------------------\n");
+    printf("glsl include path: %s\n", glsl_include_path);
+    printf("--------------------------------------------------------------------------------\n");
+}
 void glsl_include_path_add(char *directory)
 {
     if (glsl_include_path == NULL) {
@@ -196,7 +203,7 @@ void glsl_include_path_add(char *directory)
     }
     // Update the include path to be "/path/to/directory:/another/path", and so on.
     glsl_include_path = (char *) realloc(glsl_include_path, sizeof(char) * (strlen(glsl_include_path) + 1 + strlen(directory) + 1));
-    glsl_include_path[strlen(glsl_include_path) - 1] = ':';
+    glsl_include_path[strlen(glsl_include_path)] = ':';
     strcpy(strchr(glsl_include_path, '\0'), directory);
 }
 FILE *glsl_include_path_open(char *name)
@@ -224,8 +231,8 @@ FILE *glsl_include_path_open(char *name)
         strcpy(buf + (sep - p) + 1, name);
         // Now buf contains /path/to/directory/header_file_name.glh
         FILE *fd = fopen(buf, "r");
-        if (fd == NULL) continue;
-        else return fd;
+        if (fd != NULL) return fd;
+        p = sep + 1;
     } while (*sep != '\0');
     return NULL;
 }

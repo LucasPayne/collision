@@ -25,6 +25,7 @@ be added to the path at runtime.
 --------------------------------------------------------------------------------*/
 FILE *glsl_include_path_open(char *name);
 void glsl_include_path_add(char *directory);
+void print_glsl_include_path(void);
 
 
 #endif // HEADER_DEFINED_GLSL_UTILITIES

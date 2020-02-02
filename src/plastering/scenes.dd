@@ -1,0 +1,126 @@
+// variant of the block scene, but with plastered materials.
+
+block_material_plastered < Material (
+    type: Resources/Materials/plastering;
+    diffuse_map < Resources/Textures/mario/sand_bricks;
+    properties < (
+        bool use_flat_color: false;
+        vec4 flat_color: 0,0,0,1;
+    );
+);
+floor_material_plastered < Material (
+    type: Resources/Materials/plastering;
+    diffuse_map < Resources/Textures/marble_tile;
+    properties < (
+        bool use_flat_color: false;
+        vec4 flat_color: 0,0,0,1;
+    );
+);
+stanford_bunny_material_plastered < Material (
+    type: Resources/Materials/plastering;
+    diffuse_map < Resources/Textures/test_texture;
+    properties < (
+        bool use_flat_color: true;
+        vec4 flat_color: 0.3,1,0.8432,1;
+    );
+);
+
+plastering_scene < (
+    block < GameObject (
+        body < Body (
+            scale: 20;
+            geometry: Resources/Models/block;
+            material: Scenes/block_material_plastered;
+        );
+        transform < Transform (
+            position: 0,0,0;
+            rotation: 0,0,0;
+        );
+    );
+    floor < GameObject (
+        body < Body (
+            scale: 50;
+            geometry: Resources/Models/quad;
+            material: Scenes/floor_material_plastered;
+        );
+        transform < Transform (
+            position: 0,0,2;
+            rotation: 1.5707963,0,0;
+        );
+    );
+    wall < GameObject (
+        body < Body (
+            scale: 50;
+            geometry: Resources/Models/quad;
+            material: Scenes/floor_material_plastered;
+        );
+        transform < Transform (
+            position: 0,50,-45;
+            rotation: 3.14159,0,0;
+        );
+    );
+    wall2 < GameObject (
+        body < Body (
+            scale: 50;
+            geometry: Resources/Models/quad;
+            material: Scenes/floor_material_plastered;
+        );
+        transform < Transform (
+            position: 45,50,0;
+            rotation: 3.14159,-1.57,0;
+        );
+    );
+    stanford_bunny < GameObject (
+        body < Body (
+            scale: 150;
+            geometry: Resources/Models/stanford_bunny;
+            material: Scenes/stanford_bunny_material_plastered;
+        );
+        transform < Transform (
+            position: -18,-5,-10;
+            rotation: 0,0,0;
+        );
+    );
+    dolphins < GameObject (
+        body < Body (
+            scale: 0.1;
+            geometry: Resources/Models/dolphins;
+            material: Scenes/stanford_bunny_material_plastered;
+        );
+        transform < Transform (
+            position: 0,70,-20;
+            rotation: -1.57,0,0;
+        );
+    );
+    big_floor < GameObject (
+        body < Body (
+            scale: 1000;
+            geometry: Resources/Models/quad;
+            material: Scenes/floor_material_plastered;
+        );
+        transform < Transform (
+            position: 0,-50,-50;
+            rotation: 1.5707963,0,0;
+        );
+    );
+);
+
+
+
+just_floor_material < Material (
+    type: Resources/Materials/texture;
+    diffuse_map < Resources/Textures/marble_tile;
+);
+floor < (
+    floor < GameObject (
+        body < Body (
+            scale: 200;
+            geometry: Resources/Models/quad;
+            material: Scenes/just_floor_material;
+        );
+        transform < Transform (
+            position: 0,-50,-50;
+            rotation: 1.5707963,0,0;
+        );
+    );
+);

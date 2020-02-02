@@ -12,7 +12,7 @@ Camera
 DirectionalLight
 PointLight
 --------------------------------------------------------------------------------*/
-#include "bases/interactive_3D.h"
+#include "Engine.h"
 
 void init_aspects_gameobjects(void)
 {

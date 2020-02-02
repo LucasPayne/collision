@@ -1,8 +1,8 @@
 /*--------------------------------------------------------------------------------
 project_libs:
-    + bases/interactive_3D
+    + Engine
 --------------------------------------------------------------------------------*/
-#include "bases/interactive_3D.h"
+#include "Engine.h"
 
 extern void input_event(int key, int action, int mods)
 {

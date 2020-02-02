@@ -1,0 +1,11 @@
+
+block Plastering {
+    struct Plaster {
+        mat4x4 matrix;
+    };
+    
+    #define MAX_NUM_PLASTERS 8
+    sampler2D plaster[MAX_NUM_PLASTERS];
+    Plaster plasters[MAX_NUM_PLASTERS];
+};
+

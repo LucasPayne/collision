@@ -123,10 +123,16 @@ if ! $cc -o "$appobject" -c "$appsource" $cflags ; then
 fi
 
 bigecho "Linking application with libraries ..."
-if ! $cc -o $appexecutable "$appobject" $objects $cflags ; then
-    hugeecho "failed: Application failed to link with its libraries."
-    exit 1
+if [ -f $appdir/Makefile ] ; then
+    echo "This app has a Makefile, using this to build ..."
+    
+else
+    if ! $cc -o $appexecutable "$appobject" $objects $cflags ; then
+        hugeecho "failed: Application failed to link with its libraries."
+        exit 1
+    fi
 fi
+
 hugeecho "Successfully compiled application executable."
 exit 0
 

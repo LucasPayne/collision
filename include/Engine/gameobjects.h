@@ -1,38 +1,3 @@
-#ifndef HEADER_DEFINED_INTERACTIVE_3D
-#define HEADER_DEFINED_INTERACTIVE_3D
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
-#include "helper_definitions.h"
-#include "helper_gl.h"
-#include "helper_input.h"
-#include "memory.h"
-#include "data_dictionary.h"
-#include "ply.h"
-#include "rendering.h"
-#include "resources.h"
-#include "entity.h"
-#include "matrix_mathematics.h"
-#include "painting.h"
-#include "scenes.h"
-
-#include "shader_blocks/Standard3D.h"
-#include "shader_blocks/StandardLoopWindow.h"
-#include "shader_blocks/Lights.h"
-
-extern float time;
-extern float dt;
-
-extern float ASPECT_RATIO;
-extern DataDictionary *g_data;
-extern DataDictionary *g_scenes;
-
-//---
 /*================================================================================
 "Gameobject" aspects.
 Transform : 3D position, orientation, stored with Euler angles.
@@ -43,6 +8,8 @@ Input:
 DirectionalLight:
 PointLight:
 ================================================================================*/
+#ifndef HEADER_DEFINED_GAMEOBJECTS
+#define HEADER_DEFINED_GAMEOBJECTS
 void init_aspects_gameobjects(void);
 
 /*--------------------------------------------------------------------------------
@@ -187,6 +154,8 @@ ASPECT_PROPERTIES()
 } Camera;
 void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far);
 mat4x4 Camera_vp_matrix(Camera *camera);
+// Prepare the camera for rendering (upload uniform information, etc.) and return the view-projection matrix.
+mat4x4 Camera_prepare(Camera *camera);
 
 /*--------------------------------------------------------------------------------
     Lights
@@ -217,25 +186,4 @@ ASPECT_PROPERTIES()
     float cubic_attenuation;
 } PointLight;
 void PointLight_init(PointLight *point_light, float linear_attenuation, float quadratic_attenuation, float cubic_attenuation, float cr, float cg, float cb, float ca);
-
-//================================================================================
-// Helper stuff. May separate this.
-EntityID create_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z);
-EntityID create_key_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z);
-
-//================================================================================
-// Testing stuff.
-void test_spawn_cubes(int n);
-void test_floor(char *texture_path);
-void test_directional_light_auto(void);
-void test_directional_light_controlled(void);
-void test_point_light_1(void);
-void test_mass_objects(int number_of_them);
-void test_spawn_star(float x, float y, float z, float theta_x, float theta_y, float theta_z);
-void test_spawn_stars(int how_many);
-
-// Applications are not supposed to use this, but it is exposed here for testing.
-void ___render(void);
-
-
-#endif // HEADER_DEFINED_INTERACTIVE_3D
+#endif // HEADER_DEFINED_GAMEOBJECTS

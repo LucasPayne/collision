@@ -1,7 +1,7 @@
 
 plastering < MaterialType (
     vertex_format: 3NU;
-    vertex_shader: Shaders/textured_phong_shadows.vert;
+    vertex_shader: Shaders/plastering.vert;
     fragment_shader: Shaders/plastering.frag;
     num_blocks: 4;
     string block0: Standard3D;

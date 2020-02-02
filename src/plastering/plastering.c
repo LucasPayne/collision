@@ -26,7 +26,6 @@ typedef struct Plaster_s {
     vec3 camera_angles;
     mat4x4 matrix; // vp matrix of the camera when the plaster was made.
 } Plaster;
-#define MAX_NUM_PLASTERS 8
 Plaster g_plasters[MAX_NUM_PLASTERS] = { 0 };
 
 static void camera_update(Logic *logic)
@@ -113,11 +112,19 @@ void init_plasters(void)
 
 void update_plasters(void)
 {
-
     int num = 0;
     float size = 0.2;
     for (int i = 0; i < MAX_NUM_PLASTERS; i++) {
-        if (!g_plasters[i].active) continue;
+        if (!g_plasters[i].active) {
+	    set_uniform_bool(Plastering, plasters[i].is_active, false);
+            continue;
+        } else {
+	    set_uniform_bool(Plastering, plasters[i].is_active, true);
+        }
+        set_uniform_mat4x4(Plastering, plasters[i].matrix.vals, g_plasters[i].matrix.vals);
+        set_uniform_texture(Plastering, plaster_color[i], g_plasters[i].plaster_texture);
+        set_uniform_texture(Plastering, plaster_depth[i], g_plasters[i].depth_texture);
+
         paint2d_sprite(size * num, 0, size, size, g_plasters[i].plaster_texture_handle);
         num ++;
     }
@@ -140,9 +147,15 @@ void print_plasters(void)
 void create_plaster(Camera *camera, Body *body)
 {
     Plaster *plaster = NULL;
+#if 0
+    // choose next
     for (int i = 0; i < MAX_NUM_PLASTERS; i++) {
         if (!g_plasters[i].active) plaster = &g_plasters[i];
     }
+#else
+    // replace always
+    plaster = &g_plasters[0];
+#endif
     if (plaster == NULL) {
         fprintf(stderr, "made too many plasters\n");
         exit(EXIT_FAILURE);
@@ -151,8 +164,7 @@ void create_plaster(Camera *camera, Body *body)
     Transform *t = get_sibling_aspect(camera, Transform);
     plaster->camera_position = Transform_position(t);
     plaster->camera_angles = Transform_angles(t);
-    plaster->matrix = invert_rigid_mat4x4(Transform_matrix(t));
-    right_multiply_matrix4x4f(&plaster->matrix, &camera->projection_matrix);
+    plaster->matrix = Camera_vp_matrix(camera);
 
     // Fill the plaster texture.
 

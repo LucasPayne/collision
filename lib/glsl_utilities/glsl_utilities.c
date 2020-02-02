@@ -184,55 +184,45 @@ bool link_shader_program(GLuint shader_program_id)
 /*--------------------------------------------------------------------------------
     glsl include path
 --------------------------------------------------------------------------------*/
-static char *glsl_include_path = NULL;
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+// If too many are made, or a path is too long, bad things happen.
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+static char glsl_include_path[2048] = { 0 };
+static char *glsl_include_directories[32] = { 0 };
+static int glsl_include_path_count = 0;
 
 void print_glsl_include_path(void)
 {
     printf("--------------------------------------------------------------------------------\n");
-    printf("glsl include path: %s\n", glsl_include_path);
+    printf("glsl include path:\n");
+    for (int i = 0; i < glsl_include_path_count; i++) {
+        printf("    %s\n", glsl_include_directories[i]);
+    }
     printf("--------------------------------------------------------------------------------\n");
 }
 void glsl_include_path_add(char *directory)
 {
-    if (glsl_include_path == NULL) {
-        // Start the path up as "/path/to/directory".
-        glsl_include_path = (char *) malloc(sizeof(char) * (strlen(directory) + 1));
-        mem_check(glsl_include_path);
+    if (glsl_include_path_count == 0) {
         strcpy(glsl_include_path, directory);
+        glsl_include_directories[0] = glsl_include_path;
+	glsl_include_path_count ++;
         return;
     }
-    // Update the include path to be "/path/to/directory:/another/path", and so on.
-    glsl_include_path = (char *) realloc(glsl_include_path, sizeof(char) * (strlen(glsl_include_path) + 1 + strlen(directory) + 1));
-    glsl_include_path[strlen(glsl_include_path)] = ':';
-    strcpy(strchr(glsl_include_path, '\0'), directory);
+    char *pos = strchr(glsl_include_path, '\0') + 1;
+    strcpy(pos, directory);
+    glsl_include_directories[glsl_include_path_count] = pos;
+    glsl_include_path_count ++;
 }
 FILE *glsl_include_path_open(char *name)
 {
-    if (glsl_include_path == NULL || *glsl_include_path == '\0') {
-        fprintf(stderr, ERROR_ALERT "Attempted to open a glsl header file when no glsl include path has been initialized, or the path is empty.\n");
-        exit(EXIT_FAILURE);
-    }
     const int buf_size = 4096;
     char buf[buf_size];
-
-    char *p = glsl_include_path;
-    char *sep;
-    do {
-        sep = strchr(p + 1, ':');
-        if (sep == NULL) sep = strchr(glsl_include_path, '\0');
-
-        // Now p to sep is one entry in the glsl include path.
-        if (strlen(name) + (sep - p) > buf_size - 2) { //-2 for the / and null-terminator
-            fprintf(stderr, ERROR_ALERT "Directory in glsl include path is too long.\n");
-            exit(EXIT_FAILURE);
-        }
-        memcpy(buf, p, sep - p);
-        buf[sep - p] = '/';
-        strcpy(buf + (sep - p) + 1, name);
-        // Now buf contains /path/to/directory/header_file_name.glh
+    for (int i = 0; i < glsl_include_path_count; i++) {
+        snprintf(buf, buf_size, "%s/%s", glsl_include_directories[i], name);
         FILE *fd = fopen(buf, "r");
         if (fd != NULL) return fd;
-        p = sep + 1;
-    } while (*sep != '\0');
+    }
     return NULL;
 }

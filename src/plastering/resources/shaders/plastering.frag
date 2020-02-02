@@ -1,5 +1,6 @@
 /*--------------------------------------------------------------------------------
     Textured phong + shadows, and plastering.
+fragment shader
 --------------------------------------------------------------------------------*/
 #version 420
 
@@ -20,6 +21,8 @@ in vOut {
     vec3 fNormal;
 
     vec4 fDirectionalLightShadowCoord[MAX_NUM_DIRECTIONAL_LIGHTS];
+
+    vec4 fPlasterCoord[MAX_NUM_PLASTERS];
 };
 out vec4 color;
 
@@ -57,4 +60,12 @@ void main(void)
 
     if (use_flat_color) color *= flat_color;
     else color *= texture(diffuse_map, fTexCoord);
+
+    for (int i = 0; i < MAX_NUM_PLASTERS; i++) {
+        if (!plasters[i].is_active) continue;
+        vec4 got_color = textureProj(plaster_color[i], fPlasterCoord[i]);
+        if (got_color != vec4(1,0,1,1)) {
+            color = got_color;
+        }
+    }
 }

@@ -2,11 +2,12 @@
 block Plastering {
     struct Plaster {
         mat4x4 matrix;
+        bool is_active;
     };
     
-    #define MAX_NUM_PLASTERS 8
-    sampler2D plaster[MAX_NUM_PLASTERS];
-    sampler2D plaster_depth[MAX_NUM_PLASTERS];
+    #define MAX_NUM_PLASTERS 2
+    sampler2D plaster_color[MAX_NUM_PLASTERS];
+    sampler2DShadow plaster_depth[MAX_NUM_PLASTERS];
     Plaster plasters[MAX_NUM_PLASTERS];
 };
 

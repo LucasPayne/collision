@@ -117,10 +117,6 @@ appobjectsdir="build/applications/objects"
 appobject="$appobjectsdir/_$appname.o"
 appexecutable="build/applications/$appname"
 mkdir -p $appobjectsdir
-if ! $cc -o "$appobject" -c "$appsource" $cflags ; then
-    hugeecho "failed: Application source failed to compile."
-    exit 1
-fi
 
 bigecho "Linking application with libraries ..."
 
@@ -143,6 +139,10 @@ if [ -f $appdir/Makefile ] ; then
     fi
     PROJDIR=$projdir CC="$cc" CFLAGS="$cflags" SRC="$projdir/$appdir" LIB_OBJECTS="$objects" make -C build/applications -f $projdir/$appdir/Makefile
 else
+    if ! $cc -o "$appobject" -c "$appsource" $cflags ; then
+        hugeecho "failed: Application source failed to compile."
+        exit 1
+    fi
     if ! $cc -o $appexecutable "$appobject" $objects $cflags ; then
         hugeecho "failed: Application failed to link with its libraries."
         exit 1

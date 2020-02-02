@@ -4,40 +4,30 @@ definitions between glsl and C.
 --------------------------------------------------------------------------------*/
 #ifndef SHADER_BLOCK_HEADER_DEFINED_PLASTERING
 #define SHADER_BLOCK_HEADER_DEFINED_PLASTERING
-#define MAX_NUM_PLASTERS 8
+#define MAX_NUM_PLASTERS 2
 
 static char *ShaderBlockSamplerNames_Plastering[] = {
-    "plaster[0]",
-    "plaster[1]",
-    "plaster[2]",
-    "plaster[3]",
-    "plaster[4]",
-    "plaster[5]",
-    "plaster[6]",
-    "plaster[7]",
+    "plaster_color[0]",
+    "plaster_color[1]",
     "plaster_depth[0]",
     "plaster_depth[1]",
-    "plaster_depth[2]",
-    "plaster_depth[3]",
-    "plaster_depth[4]",
-    "plaster_depth[5]",
-    "plaster_depth[6]",
-    "plaster_depth[7]",
 }; // ShaderBlockSamplerNames_Plastering
 
-#define ShaderBlockNumSamplers_Plastering 16
+#define ShaderBlockNumSamplers_Plastering 4
 struct ___ShaderBlockSamplers_Plastering {
-    GLint plaster[8];
-    GLint plaster_depth[8];
+    GLint plaster_color[2];
+    GLint plaster_depth[2];
 } ShaderBlockSamplers_Plastering;
 
-struct ShaderBlockStruct_Plastering_Plaster { //size: 64
-    mat4x4 matrix;    //offset: 0, alignment: 16, C_type_size: 64
+struct ShaderBlockStruct_Plastering_Plaster { //size: 80
+    bool is_active;    //offset: 0, alignment: 1, C_type_size: 1
+    char ___std140_pad1[15];
+    mat4x4 matrix;    //offset: 16, alignment: 16, C_type_size: 64
 };
 
 ShaderBlockID ShaderBlockID_Plastering;
 typedef struct ShaderBlock_Plastering_s {
-    struct ShaderBlockStruct_Plastering_Plaster plasters[8];    //offset: 0, alignment: 16, C_type_size: 64
+    struct ShaderBlockStruct_Plastering_Plaster plasters[2];    //offset: 0, alignment: 16, C_type_size: 80
 } ShaderBlock_Plastering;
 
 #endif // SHADER_BLOCK_HEADER_DEFINED_PLASTERING

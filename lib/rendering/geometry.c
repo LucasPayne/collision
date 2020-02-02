@@ -12,7 +12,6 @@ This module is not for geometric math, only the "Geometry" resource.
 #include <stdbool.h>
 #include <ctype.h>
 #include <math.h>
-#include "bases/interactive_3D.h"
 #include "helper_definitions.h"
 #include "resources.h"
 #include "rendering.h"
@@ -381,14 +380,6 @@ void gm_draw(Geometry geometry, Material *material)
     }
 
     glUseProgram(mt->program_id);
-
-
-    ResourceHandle test_texture = new_resource_handle(Texture, "Textures/test_texture");
-    set_uniform_texture(Standard3D, test_texture, resource_data(Texture, test_texture)->texture_id);
-
-    ResourceHandle test_texture_2 = new_resource_handle(Texture, "Textures/test_texture_2");
-    set_uniform_texture(Standard3D, test_texture_2, resource_data(Texture, test_texture_2)->texture_id);
-
 
     // Bind the textures
     for (int i = 0; i < mt->num_textures; i++) {

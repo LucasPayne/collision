@@ -8,4 +8,7 @@ void render_body_with_material(mat4x4 vp_matrix, Body *body, Material *material)
 void render_body(mat4x4 vp_matrix, Body *body);
 void render(void);
 
+void init_shadows(void);
+void do_shadows(void);
+
 #endif // HEADER_DEFINED_GAMEOBJECTS

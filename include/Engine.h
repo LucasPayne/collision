@@ -36,5 +36,6 @@ extern DataDictionary *g_scenes;
 #include "Engine/game_renderer.h"
 #include "Engine/helper.h"
 #include "Engine/testing.h"
+#include "Engine/scenes.h"
 
 #endif // HEADER_DEFINED_ENGINE

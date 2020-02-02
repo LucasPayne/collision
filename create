@@ -125,7 +125,7 @@ fi
 bigecho "Linking application with libraries ..."
 if [ -f $appdir/Makefile ] ; then
     echo "This app has a Makefile, using this to build ..."
-    
+    CC="$cc" CFLAGS="$cflags" SRC="$appdir" LIB_OBJECTS="$objects" make -f $appdir/Makefile
 else
     if ! $cc -o $appexecutable "$appobject" $objects $cflags ; then
         hugeecho "failed: Application failed to link with its libraries."

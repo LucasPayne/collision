@@ -1,8 +1,8 @@
 /*--------------------------------------------------------------------------------
 project_libs:
-    + bases/interactive_3D
+    + Engine
 --------------------------------------------------------------------------------*/
-#include "bases/interactive_3D.h"
+#include "Engine.h"
 
 // Should have these match the resolution.
 #define PLASTER_WIDTH 512

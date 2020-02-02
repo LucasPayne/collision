@@ -1,5 +1,4 @@
 /*--------------------------------------------------------------------------------
-Application base.
 Add this as a library in an application, and it will provide a main function.
 The application must provide:
     Data
@@ -34,7 +33,6 @@ project_libs:
     + rendering
     + ply
     + painting
-    + scenes
 --------------------------------------------------------------------------------*/
 #define BASE_DIRECTORY "/home/lucas/collision/lib/Engine/"
 #define PROJECT_DIRECTORY "/home/lucas/collision/"

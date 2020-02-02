@@ -1,17 +1,7 @@
 /*--------------------------------------------------------------------------------
+    Scenes
 --------------------------------------------------------------------------------*/
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include "helper_definitions.h"
-#include "data_dictionary.h"
-#include "resources.h"
-#include "entity.h"
-#include "scenes.h"
-#include "bases/interactive_3D.h" //---...
-#include "matrix_mathematics.h"
-#include "rendering.h"
+#include "Engine.h"
 
 typedef bool (*AspectReader)(DataDictionary *, void *);
 #define new_reader(NAME) bool read_aspect_ ## NAME(DataDictionary *aspect_dd, void *data)

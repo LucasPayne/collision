@@ -512,3 +512,14 @@ vec3 vec4_to_vec3(vec4 v)
     memcpy(&v3, &v, sizeof(float)*3);
     return v3;
 }
+
+
+float vec3_square_dist(vec3 a, vec3 b)
+{
+    vec3 dif = vec3_sub(b, a);
+    return vec3_dot(dif, dif);
+}
+float vec3_dist(vec3 a, vec3 b)
+{
+    return sqrt(vec3_square_dist(a, b));
+}

@@ -108,6 +108,9 @@ mat4x4 identity_mat4x4(void);
 vec4 vec3_to_vec4(vec3 v);
 vec3 vec4_to_vec3(vec4 v);
 
+float vec3_square_dist(vec3 a, vec3 b);
+float vec3_dist(vec3 a, vec3 b);
+
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 
 

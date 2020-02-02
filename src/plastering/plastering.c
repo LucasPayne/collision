@@ -25,6 +25,7 @@ typedef struct Plaster_s {
     vec3 camera_position;
     vec3 camera_angles;
     mat4x4 matrix; // vp matrix of the camera when the plaster was made.
+    Body *body;
 } Plaster;
 Plaster g_plasters[MAX_NUM_PLASTERS] = { 0 };
 
@@ -144,6 +145,29 @@ void print_plasters(void)
     printf("--------------------------------------------------------------------------------\n");
 }
 
+void retrieve_plaster(Camera *camera)
+{
+    Transform *t = get_sibling_aspect(camera, Transform);
+    float max_dist = 5;
+    float max_angle_dist = 0.3;
+    for (int i = 0; i < MAX_NUM_PLASTERS; i++) {
+        if (!g_plasters[i].active) continue;
+        bool apart = false;
+        if (vec3_dist(g_plasters[i].camera_position, Transform_position(t)) > max_dist) apart = true;
+        for (int j = 0; j < 3; j++) {
+            float theta = abs(g_plasters[i].camera_angles.vals[j] - t->theta_x);
+            while (theta - 2 * M_PI > 0) theta -= 2 * M_PI;
+            if (theta > max_angle_dist) apart = true;
+        }
+        if (!apart) {
+            // pull the plaster back into an object.
+            g_plastering_body = g_plasters[i].body;
+            g_plasters[i].active = false;
+            break;
+        }
+    }
+}
+
 void create_plaster(Camera *camera, Body *body)
 {
     Plaster *plaster = NULL;
@@ -165,6 +189,7 @@ void create_plaster(Camera *camera, Body *body)
     plaster->camera_position = Transform_position(t);
     plaster->camera_angles = Transform_angles(t);
     plaster->matrix = Camera_vp_matrix(camera);
+    plaster->body = body;
 
     // Fill the plaster texture.
 
@@ -175,16 +200,8 @@ void create_plaster(Camera *camera, Body *body)
     glClearColor(1,0,1,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, PLASTER_WIDTH, PLASTER_HEIGHT);
-    mat4x4 model_matrix = Transform_matrix(get_sibling_aspect(body, Transform));
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    model_matrix.vals[4*i + j] *= body->scale;
-                }
-            }
-    mat4x4 mvp_matrix = Camera_vp_matrix(g_camera);
-    right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
-    set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
-    gm_draw(*resource_data(Geometry, body->geometry), resource_data(Material, body->material));
+    glCullFace(GL_NONE);
+    render_body(Camera_vp_matrix(g_camera), body);
 
     // Can't disable entities, just throw it up to the sky ...
     Transform_move(get_sibling_aspect(body, Transform), new_vec3(0,1000,0));
@@ -201,12 +218,23 @@ static void camera_key_input(Input *input, int key, int action, int mods)
         if (key == GLFW_KEY_SPACE) t->y += 5;
         if (key == GLFW_KEY_LEFT_SHIFT) t->y -= 5;
         if (key == GLFW_KEY_P && g_plastering_body != NULL) create_plaster(g_camera, g_plastering_body);
+        if (key == GLFW_KEY_F) {
+            retrieve_plaster(g_camera);
+        }
         if (key == GLFW_KEY_I) {
             EntityID e = new_entity(4);
             Body *body = entity_add_aspect(e, Body);
             body->scale = 10;
-            body->material = Material_create("Materials/red");
+            body->material = Material_create("Materials/texture");
             body->geometry = new_resource_handle(Geometry, "Models/block");
+            static const char *options[] = {
+                "Textures/minecraft/dirt",
+                "Textures/minecraft/stone_bricks",
+                "Textures/mario/sand_bricks",
+                "Textures/marble_tile",
+            };
+            static const int num_options = sizeof(options) / sizeof(char *);
+            material_set_texture_path(resource_data(Material, body->material), "diffuse_map", options[rand() % num_options]);
             entity_add_aspect(e, Transform);
             g_plastering_body = body;
         }
@@ -241,6 +269,8 @@ extern void init_program(void)
     EntityID light = new_entity(4);
     Transform_set(entity_add_aspect(light, Transform), 0,100,20,  M_PI/2+0.4,0,0);
     DirectionalLight_init(entity_add_aspect(light, DirectionalLight),  1,1,1,1,  200,200,400);
+
+    test_directional_light_auto();
     
     init_plasters();
 }

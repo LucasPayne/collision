@@ -28,7 +28,7 @@ out vec4 color;
 
 void main(void)
 {
-    float ambient = 0.05;
+    float ambient = 0.5;
     color = vec4(vec3(ambient), 1);
 
     for (int i = 0; i < num_directional_lights; i++) {

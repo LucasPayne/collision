@@ -1,0 +1,14 @@
+/*--------------------------------------------------------------------------------
+This code was generated with the gen_shader_blocks tool, for synchronizing
+definitions between glsl and C.
+--------------------------------------------------------------------------------*/
+#define MAX_NUM_PLASTERS 8
+
+uniform sampler2D plaster[8];
+struct Plaster {
+    mat4x4 matrix;
+};
+
+layout (std140) uniform Plastering {
+    Plaster plasters[8];
+};

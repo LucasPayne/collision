@@ -1,7 +1,7 @@
 #!/bin/bash
 
-PROJDIR=$(pwd)
-cc="gcc -rdynamic -I$PROJDIR/include -Wall"
+projdir=$(pwd)
+cc="gcc -rdynamic -I$projdir/include -Wall"
 cflags="-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng"
 
 # Everything that should happen before any compilation should be put here.
@@ -38,18 +38,18 @@ buildlib() {
         echo "failed: No \"$lib\" library found."
         exit 1
     fi
-    libmakefile="$PROJDIR/$libdir/Makefile"
+    libmakefile="$projdir/$libdir/Makefile"
     if [ ! -f $libmakefile ] ; then
         echo "failed: Library \"$lib\" has no Makefile."
         exit 1
     fi
-    ( cd $libbuilddir ; LIBNAME="$(basename $lib)" APPNAME=$appname CC=$cc CFLAGS=$cflags LIB=$PROJDIR/$libdir make -e --makefile=$libmakefile )
+    ( cd $libbuilddir ; LIBNAME="$(basename $lib)" APPNAME=$appname CC=$cc CFLAGS=$cflags LIB=$projdir/$libdir make -e --makefile=$libmakefile )
     # Uncomment for the defaulting behaviour instead of requiring a makefile.
     # if [ ! -f $libmakefile ] ; then
     #     # The default "making" assumes the library is a single C file with straightforward compilation.
     #     $cc -o $libbuilddir/$(basename $lib).o -c $libdir/$(basename $lib).c $cflags
     # else
-    #     ( cd $libbuilddir ; LIBNAME="$(basename $lib)" APPNAME=$appname CC=$cc CFLAGS=$cflags LIB=$PROJDIR/$libdir make -e --makefile=$libmakefile )
+    #     ( cd $libbuilddir ; LIBNAME="$(basename $lib)" APPNAME=$appname CC=$cc CFLAGS=$cflags LIB=$projdir/$libdir make -e --makefile=$libmakefile )
     # fi
 }
 buildlibs() {
@@ -102,7 +102,7 @@ mediumecho "Gathering dependencies ..."
 libs="$(gatherdependencies $appsource)"
 objects=""
 for lib in $libs ; do
-    objects="$objects build/lib/$lib/$(basename $lib).o"
+    objects="$objects $projdir/build/lib/$lib/$(basename $lib).o"
     mkdir -p "build/lib/$lib"
 done
 echo $libs
@@ -123,9 +123,25 @@ if ! $cc -o "$appobject" -c "$appsource" $cflags ; then
 fi
 
 bigecho "Linking application with libraries ..."
+
+
+# if [ -f $appdir/create ] ; then
+#     echo "This app has a create script, using this to build ..."
+#     # Remove the application to force a rebuild.
+#     # This is because if the create script uses a makefile, it might not depend on the libraries the application uses, meaning
+#     # it wouldn't be relinked from updated libraries.
+#     if [ -f build/applications/$appname ] ; then
+#         rm build/applications/$appname
+#     fi
+#     ( cd $appdir ; PROJDIR=$projdir CC="$cc" CFLAGS="$cflags" SRC="$projdir/$appdir" LIB_OBJECTS="$objects" BUILD_DIR="$projdir/build/applications" bash create )
+
 if [ -f $appdir/Makefile ] ; then
     echo "This app has a Makefile, using this to build ..."
-    CC="$cc" CFLAGS="$cflags" SRC="$appdir" LIB_OBJECTS="$objects" make -f $appdir/Makefile
+    # Remove the application to force a rebuild. This is because the makefile used does not depend on the libraries the application uses.
+    if [ -f build/applications/$appname ] ; then
+        rm build/applications/$appname
+    fi
+    PROJDIR=$projdir CC="$cc" CFLAGS="$cflags" SRC="$projdir/$appdir" LIB_OBJECTS="$objects" make -C build/applications -f $projdir/$appdir/Makefile
 else
     if ! $cc -o $appexecutable "$appobject" $objects $cflags ; then
         hugeecho "failed: Application failed to link with its libraries."

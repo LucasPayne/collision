@@ -266,6 +266,7 @@ int main(void)
 {
     DD *base_config = dd_fopen(BASE_DIRECTORY "Engine.dd");
     if (base_config == NULL) {
+        printf("Base directory: " BASE_DIRECTORY "\n");
         fprintf(stderr, ERROR_ALERT "Application base is missing its .dd file.\n");
         exit(EXIT_FAILURE);
     }

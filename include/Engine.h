@@ -32,6 +32,9 @@ extern float ASPECT_RATIO;
 extern DataDictionary *g_data;
 extern DataDictionary *g_scenes;
 
+extern float mouse_x;
+extern float mouse_y;
+
 #include "Engine/gameobjects.h"
 #include "Engine/game_renderer.h"
 #include "Engine/helper.h"

@@ -17,6 +17,7 @@ The application must provide:
     void close_program(void);
     void input_event(int key, int action, int mods);
     void cursor_move_event(double x, double y);
+    void mouse_button_event(int button, int action, int mods);
 
 project_libs:
     + glad
@@ -43,6 +44,8 @@ static GLFWwindow *window;
 DataDictionary *g_scenes;
 DataDictionary *g_data; // Global data dictionary for the application.
 float ASPECT_RATIO;
+float mouse_x;
+float mouse_y;
 
 static const int g_glfw_sma_debug_overlay_key = GLFW_KEY_F11; // debugging small memory allocator.
 static bool g_sma_debug_overlay = false;
@@ -64,15 +67,20 @@ static void toggle_raw_mouse(void)
     }
     g_raw_mouse = !g_raw_mouse;
 }
+
+static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+{
+    // Call the application's mouse button event handler.
+    mouse_button_event(button, action, mods);
+}
+
 static void cursor_position_callback(GLFWwindow *window, double x, double y)
 {
     static bool set_last = false;
-    static double last_x;
-    static double last_y;
     if (!set_last) { // so that the first relative position is 0,0.
         set_last = true;
-        last_x = x;
-        last_y = y;
+        mouse_x = x;
+        mouse_y = y;
     }
 
     // Send input events to Input aspects listening for mouse absolute or relative movements.
@@ -80,15 +88,15 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
         if (inp->input_type == INPUT_MOUSE_POSITION) {
             inp->callback.mouse_position(inp, x, y);
         } else if (inp->input_type == INPUT_MOUSE_MOVE) {
-            inp->callback.mouse_move(inp, x - last_x, y - last_y);
+            inp->callback.mouse_move(inp, x - mouse_x, y - mouse_y);
         }
     end_for_aspect()
 
-    // Call the application's move event handler.
+    // Call the application's mouse movement event handler.
     cursor_move_event(x, y);
 
-    last_x = x;
-    last_y = y;
+    mouse_x = x;
+    mouse_y = y;
 }
 
 float time = 0;
@@ -99,6 +107,7 @@ extern void loop_program(void);
 extern void close_program(void);
 extern void input_event(int key, int action, int mods);
 extern void cursor_move_event(double x, double y);
+extern void mouse_button_event(int button, int action, int mods);
 
 static void reshape(GLFWwindow *window, int width, int height)
 {
@@ -319,7 +328,10 @@ int main(void)
     gladLoadGL();
     glfwSwapInterval(1);
     glfwSetFramebufferSizeCallback(window, reshape);
+    // GLFW input callbacks
     glfwSetKeyCallback(window, key_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
 
     GLbitfield clear_mask = GL_COLOR_BUFFER_BIT; // To be |='d if another buffer is being used.
     float fg_color[4]; // Clear color in the rectangle being rendered onto.
@@ -371,7 +383,6 @@ int main(void)
     } else {
         g_raw_mouse = false;
     } 
-    glfwSetCursorPosCallback(window, cursor_position_callback);
 
     init_base();
 

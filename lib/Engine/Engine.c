@@ -75,8 +75,7 @@ vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, fl
 
     // First, convert to the floating point "screen coordinates".
     float sx = ((pixel_x - subwindow_blx) * 1.0) / (subwindow_trx - subwindow_blx);
-    float sy = 1 - ((pixel_y - subwindow_bly) * 1.0) / (subwindow_try - subwindow_bly);
-    printf("sx,sy: %.2f %.2f\n", sx, sy);
+    float sy = ((pixel_y - subwindow_bly) * 1.0) / (subwindow_try - subwindow_bly);
     
     // Next, convert to the rectangle coordinates.
     float x = -(blx - sx) / (trx - blx);

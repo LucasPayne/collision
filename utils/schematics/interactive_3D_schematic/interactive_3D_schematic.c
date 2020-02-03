@@ -7,6 +7,9 @@ project_libs:
 extern void input_event(int key, int action, int mods)
 {
 }
+extern void mouse_button_event(int button, int action, int mods)
+{
+}
 extern void cursor_move_event(double x, double y)
 {
 }

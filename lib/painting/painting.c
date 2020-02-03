@@ -422,8 +422,7 @@ void paint2d_triangle_m(float ax, float ay, float bx, float by, float cx, float 
     attribute_3f(Position, bx, by, paint2d_depth);
     attribute_3f(Position, cx, cy, paint2d_depth);
     gm_index(0); gm_index(1); gm_index(2);
-    Geometry triangle = gm_done();
-    painting_add(Canvas2D, triangle, material_handle);
+    painting_add(Canvas2D, gm_done(), material_handle);
 }
 
 // Standard 2D canvas sprite painting

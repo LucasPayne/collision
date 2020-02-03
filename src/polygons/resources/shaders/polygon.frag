@@ -10,6 +10,5 @@ out vec4 color;
 
 void main(void)
 {
-    // color = vec4(1,1,1,1) - textureProj(tex, uvd);
-    color = vec4(1,0,1,1);
+    color = vec4(1,1,1,1) - textureProj(tex, uvd);
 }

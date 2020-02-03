@@ -29,6 +29,10 @@ typedef struct Plaster_s {
 } Plaster;
 Plaster g_plasters[MAX_NUM_PLASTERS] = { 0 };
 
+extern void mouse_button_event(int button, int action, int mods)
+{
+}
+
 static void camera_update(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);

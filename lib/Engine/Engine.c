@@ -47,6 +47,43 @@ float ASPECT_RATIO;
 float mouse_x;
 float mouse_y;
 
+static int window_width = 1;
+static int window_height = 1;
+static int subwindow_blx = 0;
+static int subwindow_bly = 0;
+static int subwindow_trx = 1;
+static int subwindow_try = 1;
+//---
+vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, float try)
+{    
+    // This mapping takes into account the subrectangle of the window that the aspect ratio forces.
+
+    // Given integer pixel coordinates measured from the top-left of the screen, (0,0), map these
+    // to floating point coordinates where (blx, bly) is the bottom left-corner of a rectangle
+    // in screen coordinates (0.0,0.0) at bottom left and (1.0,1.0) at top right, and (trx, try) is the top
+    // right corner.
+    // Example:
+    //    pixel_x: 100, pixel_y: 100, blx: 0.1, bly: 0.1, trx: 0.9, try: 0.9.
+    //    Say the window resolution is 1000x1000, then the pixel is 90 percent up and to the left
+    //    of the screen. In rectangle coordinates, this is (0,1), since those range from (0.1,0.1),
+    //    a point 90 percent to the left and 10 percent up, to (0.9,0.9), a point 90 percent to the right
+    //    and 90 percent up.
+    if (blx == trx || bly == try) {
+        fprintf(stderr, ERROR_ALERT "Gave pixel_to_rect a degenerate rectangle. This causes a division by zero.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // First, convert to the floating point "screen coordinates".
+    float sx = ((pixel_x - subwindow_blx) * 1.0) / (subwindow_trx - subwindow_blx);
+    float sy = 1 - ((pixel_y - subwindow_bly) * 1.0) / (subwindow_try - subwindow_bly);
+    printf("sx,sy: %.2f %.2f\n", sx, sy);
+    
+    // Next, convert to the rectangle coordinates.
+    float x = -(blx - sx) / (trx - blx);
+    float y = -(bly - sy) / (try - bly);
+    return new_vec2(x, y);
+}
+
 static const int g_glfw_sma_debug_overlay_key = GLFW_KEY_F11; // debugging small memory allocator.
 static bool g_sma_debug_overlay = false;
 static bool g_raw_mouse = false; // If enabled in config, a meta-key will toggle this.
@@ -111,6 +148,8 @@ extern void mouse_button_event(int button, int action, int mods);
 
 static void reshape(GLFWwindow *window, int width, int height)
 {
+    window_width = width;
+    window_height = height;
     force_aspect_ratio(window, width, height, ASPECT_RATIO);
 }
 static void key_callback(GLFWwindow *window, int key,
@@ -406,6 +445,10 @@ int main(void)
         glGetIntegerv(GL_VIEWPORT, viewport);
         glEnable(GL_SCISSOR_TEST);
         glScissor(viewport[0], viewport[1], viewport[2], viewport[3]);
+        subwindow_blx = viewport[0];
+        subwindow_bly = viewport[1];
+        subwindow_trx = viewport[0] + viewport[2];
+        subwindow_try = viewport[1] + viewport[3];
         glClearColor(fg_color[0], fg_color[1], fg_color[2], fg_color[3]);
         glClear(clear_mask);
 

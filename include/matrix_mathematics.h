@@ -4,6 +4,7 @@
 #ifndef HEADER_DEFINED_MATRIX_MATHEMATICS
 #define HEADER_DEFINED_MATRIX_MATHEMATICS
 
+
 typedef struct Matrix3x3f_s {
     float vals[3 * 3];
 } Matrix3x3f;
@@ -22,6 +23,9 @@ typedef struct vec4_s {
 typedef struct vec3_s {
     float vals[3];
 } vec3;
+typedef struct vec2_s {
+    float vals[2];
+} vec2;
 vec3 vec3_mul(vec3 a, float x);
 vec3 vec3_add(vec3 a, vec3 b);
 vec3 vec3_sub(vec3 a, vec3 b);
@@ -112,6 +116,8 @@ vec3 vec4_to_vec3(vec4 v);
 
 float vec3_square_dist(vec3 a, vec3 b);
 float vec3_dist(vec3 a, vec3 b);
+
+vec2 new_vec2(float x, float y);
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

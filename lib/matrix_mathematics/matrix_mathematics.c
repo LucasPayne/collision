@@ -528,3 +528,12 @@ float vec3_dist(vec3 a, vec3 b)
 {
     return sqrt(vec3_square_dist(a, b));
 }
+
+
+vec2 new_vec2(float x, float y)
+{
+    vec2 v;
+    v.vals[0] = x; 
+    v.vals[1] = y; 
+    return v;
+}

@@ -35,6 +35,8 @@ extern DataDictionary *g_scenes;
 extern float mouse_x;
 extern float mouse_y;
 
+vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, float try); //---
+
 #include "Engine/gameobjects.h"
 #include "Engine/game_renderer.h"
 #include "Engine/helper.h"

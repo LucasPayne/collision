@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include "helper_input.h"
 
-
 // Dual hjkl and arrow keys
 bool is_down(int key)
 {   // DOWN

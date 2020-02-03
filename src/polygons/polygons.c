@@ -17,19 +17,17 @@ static float polygon[max_points];
 void add_point(float x, float y)
 {
     printf("Adding point at (%.2f, %.2f)\n", x, y);
-    polygon[2*n] = x * 0.01;
-    polygon[2*n+1] = y * 0.01;
+    polygon[2*n] = x;
+    polygon[2*n+1] = y;
     n ++;
 
     GLint prev_viewport[4];
     glGetIntegerv(GL_VIEWPORT, prev_viewport);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
     glViewport(0, 0, width, height);
-    glClearColor(0,0,0,1);
+    glClearColor(0,0,1,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    printf("-\n");
     for (int i = 0; i < n; i++) {
-        printf("drawing\n");
         int j = (i + 1) % n;
         paint2d_triangle_m(0,0,  polygon[2*i],polygon[2*i+1],  polygon[2*j],polygon[2*j+1],  material_handle);
         render_paint2d();
@@ -48,7 +46,8 @@ extern void mouse_button_event(int button, int action, int mods)
 {
     if (action == GLFW_PRESS) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
-            add_point(mouse_x, mouse_y);
+            vec2 pos = pixel_to_rect(mouse_x,mouse_y,  0,0,  1,1);
+            add_point(pos.vals[0], pos.vals[1]);
         }
     }
 }

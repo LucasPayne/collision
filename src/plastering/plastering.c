@@ -154,11 +154,11 @@ void retrieve_plaster(Camera *camera)
         if (!g_plasters[i].active) continue;
         bool apart = false;
         if (vec3_dist(g_plasters[i].camera_position, Transform_position(t)) > max_dist) apart = true;
-        for (int j = 0; j < 3; j++) {
-            float theta = abs(g_plasters[i].camera_angles.vals[j] - t->theta_x);
-            while (theta - 2 * M_PI > 0) theta -= 2 * M_PI;
-            if (theta > max_angle_dist) apart = true;
-        }
+        // for (int j = 0; j < 3; j++) {
+        //     float theta = abs(g_plasters[i].camera_angles.vals[j] - t->theta_x);
+        //     while (theta - 2 * M_PI > 0) theta -= 2 * M_PI;
+        //     if (theta > max_angle_dist) apart = true;
+        // }
         if (!apart) {
             // pull the plaster back into an object.
             g_plastering_body = g_plasters[i].body;

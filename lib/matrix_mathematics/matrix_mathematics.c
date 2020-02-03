@@ -484,6 +484,11 @@ vec3 vec3_zero(void)
     static const vec3 zero = {{0,0,0}};
     return zero;
 }
+vec4 vec4_zero(void)
+{
+    static const vec4 zero = {{0,0,0,0}};
+    return zero;
+}
 
 vec3 vec3_normalize(vec3 v)
 {

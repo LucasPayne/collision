@@ -33,6 +33,8 @@ vec3 vec3_zero(void);
 vec3 vec3_normalize(vec3 v);
 float vec3_length(vec3 v); 
 
+vec4 vec4_zero(void);
+
 
 // Identity matrix
 //================================================================================

@@ -95,6 +95,7 @@ void render(void)
     painting_flush(Canvas3D);
 
     render_paint2d();
+    painting_flush(Canvas2D);
 }
 void render_paint2d()
 {

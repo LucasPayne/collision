@@ -31,22 +31,27 @@ vec2 bezier_point(float t)
 
 void draw_bezier_curve(void)
 {
-    if (n < 2) return;
-    const int num_points = 100;
+    if (n >= 2) {
+        const int num_points = 100;
 
-    float curve[num_points * 2];
-    for (int i = 0; i < num_points; i++) {
-        vec2 p = bezier_point(i * 1.0 / num_points);
-        ((vec2 *) curve)[i] = p;
+        float curve[num_points * 2];
+        for (int i = 0; i < num_points; i++) {
+            vec2 p = bezier_point(i * 1.0 / num_points);
+            ((vec2 *) curve)[i] = p;
+        }
+        paint2d_chain_c(curve, num_points, "g");
     }
-    paint2d_chain_c(curve, num_points, "g");
-}
 
+    float quad_size = 0.02;
+    for (int i = 0; i < n; i++) {
+        paint2d_rect_c(points[2*i]-quad_size/2, points[2*i+1]-quad_size/2, quad_size,quad_size, "r");
+    }
+}
 
 extern void input_event(int key, int action, int mods)
 {
     if (action == GLFW_PRESS && key == GLFW_KEY_B) {
-        draw_bezier_curve();
+        n = 0;
     }
 }
 extern void cursor_move_event(double x, double y)
@@ -65,7 +70,7 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-    
+    draw_bezier_curve();
 }
 extern void close_program(void)
 {

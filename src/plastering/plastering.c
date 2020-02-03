@@ -198,8 +198,8 @@ void create_plaster(Camera *camera, Body *body)
 
     glBindFramebuffer(GL_FRAMEBUFFER, plaster->plaster_framebuffer);
     glClearColor(1,0,1,1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, PLASTER_WIDTH, PLASTER_HEIGHT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_NONE);
     render_body(Camera_vp_matrix(g_camera), body);
 

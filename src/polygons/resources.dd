@@ -1,0 +1,33 @@
+
+Materials < (
+    #include(/home/lucas/collision/project_resources/materials); // project-wide materials.
+    #include(resources/materials);                               // application-specific materials.
+);
+
+Textures < (
+    #include(/home/lucas/collision/project_resources/textures);  // project-wide textures.
+    #include(resources/textures);                                // application-specific textures.
+);
+
+Models < (
+    #include(/home/lucas/collision/project_resources/models);    // project-wide models.
+    #include(resources/models);                                  // application-specific models.
+);
+
+// Required for the painting module. Need a better way to do this.
+Painting < (
+    #include(/home/lucas/collision/lib/painting/painting_resources);
+);
+
+
+Polygons < (
+    polygon < MaterialType (
+        vertex_format: 3;
+        vertex_shader: Shaders/polygon.vert;
+        fragment_shader: Shaders/polygon.frag;
+        num_blocks: 1;
+        string block0: Standard3D;
+        num_textures: 1;
+        string texture0: tex;
+    );
+);

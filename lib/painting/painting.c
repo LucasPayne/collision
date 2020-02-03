@@ -413,6 +413,19 @@ void paint2d_rect_c(float x, float y, float width, float height, char *color_str
     paint2d_quad_c(x,y,  x+width,y,  x+width,y+height,  x,y+height,  color_str);
 }
 
+// Standard 2D canvas triangle painting
+// ------------------------------------
+void paint2d_triangle_m(float ax, float ay, float bx, float by, float cx, float cy, ResourceHandle material_handle)
+{
+    gm_triangles(VERTEX_FORMAT_3);
+    attribute_3f(Position, ax, ay, paint2d_depth);
+    attribute_3f(Position, bx, by, paint2d_depth);
+    attribute_3f(Position, cx, cy, paint2d_depth);
+    gm_index(0); gm_index(1); gm_index(2);
+    Geometry triangle = gm_done();
+    painting_add(Canvas2D, triangle, material_handle);
+}
+
 // Standard 2D canvas sprite painting
 // ----------------------------------
 // Variants:

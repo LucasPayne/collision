@@ -89,4 +89,6 @@ void paint2d_sprite_mv(float blx, float bly, float width, float height, Resource
 void paint2d_sprite(float blx, float bly, float width, float height, ResourceHandle texture_handle);
 void paint2d_sprite_p(float blx, float bly, float width, float height, char *texture_path);
 
+void paint2d_triangle_m(float ax, float ay, float bx, float by, float cx, float cy, ResourceHandle material_handle);
+
 #endif // HEADER_DEFINED_PAINTING

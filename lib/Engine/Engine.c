@@ -398,6 +398,7 @@ int main(void)
         glClearColor(fg_color[0], fg_color[1], fg_color[2], fg_color[3]);
         glClear(clear_mask);
 
+        glDisable(GL_SCISSOR_TEST);
         loop_base();
 
         glFlush();

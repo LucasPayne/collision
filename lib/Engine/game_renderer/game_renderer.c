@@ -94,6 +94,10 @@ void render(void)
     // Flush the standard 3D paint canvas.
     painting_flush(Canvas3D);
 
+    render_paint2d();
+}
+void render_paint2d()
+{
     // Draw the 2D overlay paint. ----make this an actual overlay.
     bool culling;
     glGetIntegerv(GL_CULL_FACE, &culling);
@@ -103,4 +107,3 @@ void render(void)
     painting_draw(Canvas2D);
     if (culling) glEnable(GL_CULL_FACE);
 }
-

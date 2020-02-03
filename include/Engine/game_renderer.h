@@ -11,4 +11,6 @@ void render(void);
 void init_shadows(void);
 void do_shadows(void);
 
+void render_paint2d();
+
 #endif // HEADER_DEFINED_GAMEOBJECTS

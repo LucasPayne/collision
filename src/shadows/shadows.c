@@ -4,6 +4,9 @@ project_libs:
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
 
+extern void mouse_button_event(int button, int action, int mods)
+{
+}
 extern void input_event(int key, int action, int mods)
 {
     if (action == GLFW_PRESS) {

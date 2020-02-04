@@ -15,17 +15,12 @@ https://www.freetype.org/freetype2/docs/tutorial/step1.html
 #include <unistd.h>
 #include <stdint.h>
 
-#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-#define MAX(X,Y) ((X) < (Y) ? (Y) : (X))
-#define ABS(X) ((X) < 0 ? -(X) : (X))
-
 FT_Library ft_lib;
 #define FT_ERROR(STR)\
 {\
     fprintf(stderr, "FT_ERROR: " STR "\n");\
     exit(EXIT_FAILURE);\
 }
-#define mem_check(THING) if (( THING ) == NULL) { fprintf(stderr, "malloc failed\n"); exit(1); }
 
 const int sdf_supersample = 8; // Scale-up N times when created monochrome bitmap for computing sdf for lower resolution grayscale.
 
@@ -33,18 +28,17 @@ void make_sdf(char *font_filename, int size_x, int size_y, int reach)
 {
     FT_Face super_face; // At supersampling resolution, used for brute-force computation of signed-distance field for normal resolution.
     FT_Face sdf_face;   // Normal resolution rasterized font, determines the points at which the sdf is computed.
-    if (FT_New_Face(ft_lib, font_filename, 0, &super_face) || FT_New_Face(ft_lib, font_filename, 0, &sdf_face)) {
+    if (FT_New_Face(ft_lib, font_filename, 0, &super_face)) {
         FT_ERROR("Failed loading font face.");
     }
     // Calculate in terms of pixel dimensions.
     // FT_Set_Pixel_Sizes(face, pixel_width, pixel_height);
     if (FT_Set_Pixel_Sizes(super_face, size_x * sdf_supersample, size_y * sdf_supersample)) {
-        FT_ERROR("Failed to set character size information for supersampled font face.");
+        FT_ERROR("Failed to set character size information for super-sampled font face.");
     }
     if (FT_Set_Pixel_Sizes(sdf_face, size_x, size_y)) {
         FT_ERROR("Failed to set character size information for sdf-sized font face.");
     }
-    printf("Computing signed-distance field dimensions for each glyph ...\n");
     // Compute the glyph dimensions, in the sdf resolution.
     uint16_t glyph_dimensions[('z' - 'A' + 1) * 2] = { 0 };
     for (char c = 'A'; c <= 'z'; c++) {
@@ -53,70 +47,19 @@ void make_sdf(char *font_filename, int size_x, int size_y, int reach)
             printf("Could not find glyph \'%c\'\n.", c);
             exit(1);
         }
-        if (FT_Load_Glyph(sdf_face, glyph_index, FT_LOAD_DEFAULT)) {
+        if (FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT)) {
             printf("Could not load glyph \'%c\'\n.", c);
             exit(1);
         }
-        if (sdf_face->glyph->format != FT_GLYPH_FORMAT_BITMAP && FT_Render_Glyph(sdf_face->glyph, FT_RENDER_MODE_NORMAL)) {
-            printf("Could not render glyph \'%c\'\n.", c);
-            exit(1);
-        }
-        FT_Bitmap bitmap = sdf_face->glyph->bitmap;
-        glyph_dimensions[2*('z' - 'A' + c) + 0] = (uint16_t) bitmap.width;
-        glyph_dimensions[2*('z' - 'A' + c) + 1] = (uint16_t) bitmap.rows;
-        printf("%c: %u, %u\n", c, (uint16_t) bitmap.width, (uint16_t) bitmap.rows);
-    }
-    // Rasterize each glyph at the supersampling resolution.
-    for (char c = 'A'; c <= 'z'; c++) {
-        FT_UInt glyph_index = FT_Get_Char_Index(super_face, c);
-        if (glyph_index == 0) {
-            printf("Could not find glyph \'%c\'\n.", c);
-            exit(1);
-        }
-        if (FT_Load_Glyph(super_face, glyph_index, FT_LOAD_DEFAULT)) {
-            printf("Could not load glyph \'%c\'\n.", c);
-            exit(1);
-        }
-        if (super_face->glyph->format != FT_GLYPH_FORMAT_BITMAP && FT_Render_Glyph(super_face->glyph, FT_RENDER_MODE_NORMAL)) {
-            printf("Could not render glyph \'%c\'\n.", c);
-            exit(1);
-        }
-        int super_width = super_face->glyph->bitmap.width;
-        int super_height = super_face->glyph->bitmap.rows;
-        uint8_t *super_image = malloc(sizeof(uint8_t) * super_width * super_height);
-        mem_check(super_image);
-        for (int i = 0; i < super_height; i++) {
-            for (int j = 0; j < super_width; j++) {
-                super_image[i * super_width + j] = super_face->glyph->bitmap.buffer[i * super_width + j] > 0 ? 1 : 0;
+        if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
+            if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL)) {
+                printf("Could not render glyph \'%c\'\n.", c);
+                exit(1);
             }
         }
-        int sdf_width = glyph_dimensions[2*('z' - 'A' + c) + 0];
-        int sdf_height = glyph_dimensions[2*('z' - 'A' + c) + 1];
-        for (int sdf_i = 0; sdf_i < sdf_width; sdf_i++) {
-            for (int sdf_j = 0; sdf_j < sdf_height; sdf_j++) {
-                int super_i = sdf_i / sdf_supersample;
-                int super_j = sdf_j / sdf_supersample;
-                // check against a square determined by the value of reach.
-                unsigned int min_square_dist = -1;
-                int tlx, tly, brx, bry;
-                tlx = MAX(0, super_i - reach);
-                tly = MAX(0, super_j - reach);
-                brx = MIN(super_width - 1, super_i + reach);
-                bry = MIN(super_height - 1, super_j + reach);
-                for (int square_i = tlx; square_i <= brx; square_i++) {
-                    for (int square_j = tly; square_j <= bry; square_j++) {
-                        if (
-                        ABS(square_i 
-                    }
-                }
-            }
-        }
-        
-        free(super_image);
     }
-    
 
-#if 0
+
     for (char c = 'A'; c <= 'z'; c++) {
         FT_UInt glyph_index = FT_Get_Char_Index(face, c);
         if (glyph_index == 0) {
@@ -206,7 +149,6 @@ void make_sdf(char *font_filename, int size_x, int size_y, int reach)
         }
         png_free(png_ptr, row_pointers);
     }
-#endif
 }
 
 int main(int argc, char *argv[])

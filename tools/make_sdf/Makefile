@@ -8,7 +8,7 @@ make_sdf: make_sdf.c
 .PHONY: t1
 t1:
 	make make_sdf
-	./make_sdf -f fonts/cmunbi.ttf -s 32x0 -r 5
+	./make_sdf -f fonts/cmunbi.ttf -s 16x0 -r 5
 .PHONY: clean
 clean:
 	rm make_sdf

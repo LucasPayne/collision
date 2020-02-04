@@ -18,6 +18,7 @@ void add_point(float x, float y)
 
 vec2 bezier_point(float t)
 {
+    // This is called De Casteljau's algorithm.
     float bezier_points[max_points * 2];
     memcpy(bezier_points, points, sizeof(float) * 2 * n);
     for (int i = n - 1; i >= 0; --i) {

@@ -237,10 +237,12 @@ static void init_base(void)
     resource_path_add("Meshes", "/home/lucas/collision/project_resources/meshes");
     resource_path_add("Images", "/home/lucas/collision/project_resources/images");
     resource_path_add("Shaders", "/home/lucas/collision/project_resources/shaders");
+    resource_path_add("Fonts", "/home/lucas/collision/project_resources/fonts");
     // Application-specific source/asset directories (these directories need not exist.)
     resource_path_add("Meshes", "resources/meshes");
     resource_path_add("Images", "resources/images");
     resource_path_add("Shaders", "resources/shaders");
+    resource_path_add("Fonts", "resources/fonts");
 
     init_game_renderer();
 

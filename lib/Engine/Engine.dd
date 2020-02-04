@@ -40,6 +40,12 @@ Texture < (
     // Could have generic build-directives here, like image resizing and grayscale.
 );
 
+
+Font < (
+    string sdf_texture;
+    string sdf_metadata;
+);
+
 // "GameObject" schematics, entity and aspect system data-definitions.
 GameObject < (
     bool active: true;

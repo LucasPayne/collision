@@ -19,3 +19,7 @@ Painting < (
     #include(/home/lucas/collision/lib/painting/painting_resources);
 );
 
+Fonts < (
+    #include(/home/lucas/collision/project_resources/fonts);
+);
+

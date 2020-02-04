@@ -1,6 +1,6 @@
 
 CC=gcc -I/usr/local/include/freetype2 -I/usr/include/libpng16
-CFLAGS=-lfreetype -lpng
+CFLAGS=-lm -lfreetype -lpng
 
 make_sdf: make_sdf.c
 	$(CC) -o $@ $^ $(CFLAGS)

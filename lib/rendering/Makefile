@@ -1,4 +1,4 @@
-rendering.o: _rendering.o geometry.o shaders.o materials.o textures.o meshes.o
+rendering.o: _rendering.o geometry.o shaders.o materials.o textures.o meshes.o fonts.o
 	ld -relocatable -o $@ $^
 _rendering.o: $(LIB)/rendering.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
@@ -11,4 +11,6 @@ materials.o: $(LIB)/materials.c
 shaders.o: $(LIB)/shaders.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
 geometry.o: $(LIB)/geometry.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
+fonts.o: $(LIB)/fonts.c
 	$(CC) -o $@ -c $^ $(CFLAGS)

@@ -53,6 +53,7 @@ void Geometry_load(void *resource, char *path)
     char *vertex_format_string;
     if (!dd_get(dd, "vertex_format", "string", &vertex_format_string)) manifest_error("vertex_format_string");
     VertexFormat vertex_format = string_to_VertexFormat(vertex_format_string);
+    free(vertex_format_string);
     if (vertex_format == VERTEX_FORMAT_NONE) load_error("Invalid vertex format given.");
     char *type;
     if (!dd_get(dd, "type", "string", &type)) manifest_error("type"); //- if not doing a fatal error, remember to free the queried strings.
@@ -118,6 +119,7 @@ void Geometry_load(void *resource, char *path)
         if (mesh_data.triangles != NULL) free(mesh_data.triangles);
     } else load_error("Invalid geometry-loading type given.");
 
+    free(type);
     Geometry *geometry_out = (Geometry *) resource;
     memcpy(geometry_out, &geometry, sizeof(Geometry));
     #undef load_error

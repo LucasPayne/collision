@@ -369,6 +369,33 @@ typedef struct /* Resource */ Texture_s {
 } Texture;
 void Texture_load(void *resource, char *path);
 
+//---May be better somewhere else.
+bool load_image_png(ImageData *image_data, FILE *file);
+
+/*--------------------------------------------------------------------------------
+    Fonts (implemented with signed distance fields for vector rendering with low resolution glyph textures).
+--- This may be better separated.
+--------------------------------------------------------------------------------*/
+typedef struct Glyph_s {
+    char character;
+    float uvs[4]; // uv coordinates on the sdf glyph map of the sdf cell. Top-left, then bottom-right.
+    float glyph_uvs[4]; // uv coordinates of the subrectangle containing the actual glyph extents, with no added reach.
+    int width;
+    int height; // Width and height of the glyph's bounding box, in pixels.
+    int bearing_x;
+    int bearing_y;
+    int advance; // in 1/64ths of pixels, as retrieved with freetype.
+} Glyph;
+
+ResourceType Font_RTID;
+typedef struct /* Resource */ Font_s {
+    GLuint sdf_glyph_map;
+//---should rather be an actual map.
+    int num_glyphs;
+    Glyph *glyphs;
+} Font;
+void Font_load(void *resource, char *path);
+
 //--------------------------------------------------------------------------------
 // Working on currently
 //--------------------------------------------------------------------------------

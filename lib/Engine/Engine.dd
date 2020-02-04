@@ -40,10 +40,9 @@ Texture < (
     // Could have generic build-directives here, like image resizing and grayscale.
 );
 
-
 Font < (
-    string sdf_texture;
-    string sdf_metadata;
+    string sdf_glyph_map; // png image file with the signed distance fields of glyphs.
+    string sdf_metadata; // text file of glyph metadata.
 );
 
 // "GameObject" schematics, entity and aspect system data-definitions.

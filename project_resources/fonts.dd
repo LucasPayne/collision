@@ -1,8 +1,12 @@
 
 
+computer_modern_sdf < Texture (
+    type: png;
+    path: Fonts/computer_modern_sdf.png;
+);
 computer_modern < Font (
-    sdf_texture: Fonts/computer_modern_sdf.png;
-    sdf_metadata: Fonts/computer_modern_metadata.txt;
+    sdf_glyph_map: Fonts/computer_modern_sdf.png;
+    sdf_metadata: Fonts/computer_modern_sdf.txt;
 );
 
 

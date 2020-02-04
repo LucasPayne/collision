@@ -256,8 +256,8 @@ void make_sdf(char *font_filename, int size_x, int size_y, int reach, bool separ
         fprintf(metadata_file, "    bearing_x: %d\n", cur_glyph->bearing_x);
         fprintf(metadata_file, "    bearing_y: %d\n", cur_glyph->bearing_y);
         fprintf(metadata_file, "    advance: %d\n", cur_glyph->advance);
-        fprintf(metadata_file, "    uvs: %.2f,%.2f,%.2f,%.2f\n", cur_glyph->uvs[0], cur_glyph->uvs[1],cur_glyph->uvs[2],cur_glyph->uvs[3]);
-        fprintf(metadata_file, "    glyph_uvs: %.2f,%.2f,%.2f,%.2f\n", cur_glyph->glyph_uvs[0], cur_glyph->glyph_uvs[1],cur_glyph->glyph_uvs[2],cur_glyph->glyph_uvs[3]);
+        fprintf(metadata_file, "    uvs: %.6f,%.6f,%.6f,%.6f\n", cur_glyph->uvs[0], cur_glyph->uvs[1],cur_glyph->uvs[2],cur_glyph->uvs[3]);
+        fprintf(metadata_file, "    glyph_uvs: %.6f,%.6f,%.6f,%.6f\n", cur_glyph->glyph_uvs[0], cur_glyph->glyph_uvs[1],cur_glyph->glyph_uvs[2],cur_glyph->glyph_uvs[3]);
 
 
         // Go to the next cell position.

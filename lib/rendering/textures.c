@@ -21,10 +21,6 @@ libpng
                     // A typical use of setjmp/longjmp is implementation of an exception mechanism that exploits the ability
                     // of longjmp to reestablish program or thread state, even across multiple levels of function calls.
                     // A less common use of setjmp is to create syntax similar to coroutines.
-/*--------------------------------------------------------------------------------
-  Static declarations
---------------------------------------------------------------------------------*/
-static bool load_image_png(ImageData *image_data, FILE *file);
 
 ResourceType Texture_RTID;
 /*--------------------------------------------------------------------------------
@@ -93,7 +89,7 @@ void Texture_load(void *resource, char *path)
 }
 
 
-static bool load_image_png(ImageData *image_data, FILE *file)
+bool load_image_png(ImageData *image_data, FILE *file)
 {
     // Using libpng: Official reference implementation and tools for the PNG format.
     if (file == NULL) {

@@ -7,11 +7,13 @@ https://www.freetype.org/freetype2/docs/tutorial/step1.html
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <png.h>
+#include <setjmp.h>
 //--------------------------------------------------------------------------------
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdint.h>
 
 FT_Library ft_lib;
 #define FT_ERROR(STR)\
@@ -48,6 +50,7 @@ void make_sdf(char *font_filename, int size_x, int size_y, int reach)
         FT_ERROR("Failed to set character size information.");
     }
 #endif
+    uint16_t glyph_dimensions[('z' - 'A' + 1) * 2] = { 0 };
 
     for (char c = 'A'; c <= 'z'; c++) {
         FT_UInt glyph_index = FT_Get_Char_Index(face, c);
@@ -64,7 +67,8 @@ void make_sdf(char *font_filename, int size_x, int size_y, int reach)
             // FT_Render_Glyph(glyph, render_mode in {FT_RENDER_MODE_MONO,FT_RENDER_MODE_NORMAL});
             // FT_RENDER_MODE_NORMAL is an 8-bit grayscale anti-aliased (coverage-based) rasterization
             // of the glyph.
-            if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_MONO)) {
+            if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL)) {
+            //if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_MONO)) {
                 printf("Could not render glyph \'%c\'\n.", c);
                 exit(1);
             }
@@ -84,10 +88,12 @@ void make_sdf(char *font_filename, int size_x, int size_y, int reach)
 
             } FT_Bitmap;
         --------------------------------------------------------------------------------*/
-        printf("Computing sdf for glyph \'%c\' ...\n", c);
+        printf("Computing signed-distance field for glyph \'%c\' ...\n", c);
         printf("--------------------------------------------------------------------------------\n");
-        printf("rows: %u\nwidth: %u\n", bitmap.rows, bitmap.width);
+        printf("width: %u\nrows: %u\n", bitmap.width, bitmap.rows);
         printf("--------------------------------------------------------------------------------\n");
+        glyph_dimensions[2*('z' - 'A' + c) + 0] = (uint16_t) bitmap.width;
+        glyph_dimensions[2*('z' - 'A' + c) + 1] = (uint16_t) bitmap.rows;
 
         const int buf_size = 4096;
         char buf[buf_size];
@@ -97,7 +103,40 @@ void make_sdf(char *font_filename, int size_x, int size_y, int reach)
             printf("Failed to create PNG file for glyph \'%c\'\n.", c);
             exit(1);
         }
-    
+        // https://www.lemoda.net/c/write-png/
+#define libpng_error(STR) { fprintf(stderr, "libpng error: " STR "\n"); exit(1); }
+        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        if (png_ptr == NULL) libpng_error("Failed to create a PNG struct.");
+        png_infop info_ptr = png_create_info_struct(png_ptr);
+        if (info_ptr == NULL) libpng_error("Failed to create PNG info struct.");
+        // <setjmp.h>
+        // $man setjmp
+        if (setjmp(png_jmpbuf(png_ptr))) libpng_error("setjmp failed.");
+        png_set_IHDR(png_ptr, info_ptr, bitmap.width, bitmap.rows, 8, // depth
+                     PNG_COLOR_TYPE_GRAY,
+                     PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_DEFAULT,
+                     PNG_FILTER_TYPE_DEFAULT);
+        png_byte **row_pointers = png_malloc(png_ptr, bitmap.rows * sizeof(png_byte *));
+        if (row_pointers == NULL) libpng_error("Failed to allocate for row_pointers.");
+        for (int i = 0; i < bitmap.rows; i++) {
+            png_byte *row = png_malloc(png_ptr, sizeof(png_byte) * bitmap.width * 1);
+            row_pointers[i] = row;
+            if (row == NULL) libpng_error("Failed to allocate for row.");
+            for (int j = 0; j < bitmap.width; j++) {
+                // row[j] = (png_byte) bitmap.buffer[i * bitmap.width + j];
+            }
+        }
+        png_init_io(png_ptr, glyph_png);
+        png_set_rows(png_ptr, info_ptr, row_pointers);
+        printf("----\n");
+        png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+        printf("----\n");
+        for (int i = 0; i < bitmap.rows; i++) {
+            png_free(png_ptr, row_pointers[i]);
+        }
+        png_free(png_ptr, row_pointers);
+        
     }
 }
 

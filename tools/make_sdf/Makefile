@@ -9,5 +9,7 @@ make_sdf: make_sdf.c
 t1:
 	make make_sdf
 	./make_sdf -f fonts/cmunbi.ttf -s 32x0 -r 5
-
+.PHONY: clean
+clean:
+	rm make_sdf
 

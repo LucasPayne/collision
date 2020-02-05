@@ -10,10 +10,13 @@ out vec4 color;
 
 void main(void)
 {
-    color = texture(sdf_texture, fTexCoord).r < 0.5 ? vec4(1,0,1,1) : vec4(0,0,0,1);
-    // color = vec4(1,0,1,1);
+    float outline_width = 0.083;
 
-    // float val = texture(sdf_texture, fTexCoord).r;
-    // color = vec4(0,0,0,0);
-    // if (val < 0.5) color = vec4(1,1,1,1);
+    vec4 border_color = vec4(0,0,0,1);
+    vec4 text_color = vec4(1,1,1,1);
+    vec4 background_color = vec4(0,1,0,1);
+
+    float val = texture(sdf_texture, fTexCoord).r;
+    color = val < 0.5 ? background_color : text_color;
+    if (0.5 < val && val < 0.5 + outline_width) color = border_color;
 }

@@ -36,6 +36,9 @@ void Text_bake(Text *text)
 {
     gm_free(text->geometry);
 
+    float global_offset_x = 0;
+    float global_offset_y = -40;
+
     Font *font = resource_data(Font, text->font);
     int len = strlen(text->string);
     gm_triangles(VERTEX_FORMAT_3U);
@@ -47,8 +50,8 @@ void Text_bake(Text *text)
         float glyph_y_offset = -(glyph->height - glyph->bearing_y); 
         float quad_x_offset = -glyph->width * (glyph->glyph_uvs[2] - glyph->uvs[0]) * 1.0 / (glyph->glyph_uvs[2] - glyph->glyph_uvs[0]);
         float quad_y_offset = glyph->height * (glyph->glyph_uvs[3] - glyph->uvs[1]) * 1.0 / (glyph->glyph_uvs[3] - glyph->glyph_uvs[1]);
-        float x_offset = glyph_x_offset + quad_x_offset;
-        float y_offset = glyph_y_offset + quad_y_offset;
+        float x_offset = glyph_x_offset + quad_x_offset + global_offset_x;
+        float y_offset = glyph_y_offset + quad_y_offset + global_offset_y;
 
         // Add this glyph's geometry.
         attribute_3f(Position, cur_x + x_offset, y_offset, 0);
@@ -73,10 +76,11 @@ void Text_bake(Text *text)
     text->geometry = gm_done();
 }
 
-void Text_init(Text *text, TextType type, char *font_path, char *string)
+void Text_init(Text *text, TextType type, char *font_path, char *string, float scale)
 {
     text->type = type;
     text->font = new_resource_handle(Font, font_path);
+    text->scale = scale;
     Text_set(text, string);
 }
 

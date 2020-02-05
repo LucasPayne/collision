@@ -21,12 +21,13 @@ extern void init_program(void)
     font = resource_data(Font, font_handle);
 
     EntityID text_entity = new_entity(3);
-    Transform_set(entity_add_aspect(text_entity, Transform),  0,0,-100,  0,0,0);
-    Text_init(entity_add_aspect(text_entity, Text), Text2D, "Fonts/computer_modern", "HELLOWORLD");
+    Transform_set(entity_add_aspect(text_entity, Transform),  0,0,-200,  0,0,0);
+    Text_init(entity_add_aspect(text_entity, Text), Text2D, "Fonts/computer_modern", "This is a block", 0.2);
     Body *body = entity_add_aspect(text_entity, Body);
     body->scale = 100;
     body->geometry = new_resource_handle(Geometry, "Models/block");
-    body->material = Material_create("Materials/red");
+    body->material = Material_create("Materials/texture");
+    material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/mario/sand_bricks");
 
     create_key_camera_man(0,0,0,  0,0,0);
 }

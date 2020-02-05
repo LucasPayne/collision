@@ -203,11 +203,12 @@ ASPECT_PROPERTIES()
     TextType type;
     char *string;
     ResourceHandle font; // Resource: Font
+    float scale;
     // implementation
     Geometry geometry;
 } Text;
 void Text_bake(Text *text);
-void Text_init(Text *text, TextType type, char *font_path, char *string);
+void Text_init(Text *text, TextType type, char *font_path, char *string, float scale);
 void Text_set(Text *text, char *string);
 void Text_render(mat4x4 matrix, Text *text);
 

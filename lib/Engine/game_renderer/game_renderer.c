@@ -100,22 +100,26 @@ void render(void)
     for_aspect(Camera, camera)
         float aspect_ratio = (camera->plane_t - camera->plane_b) / (camera->plane_r - camera->plane_l);
         for_aspect(Text, text)
-
-            float scale = 0.003;
-
             vec3 position = Transform_position(get_sibling_aspect(text, Transform));
             mat4x4 vp_matrix = Camera_prepare(camera);
             vec4 transformed = matrix_vec4(&vp_matrix, vec3_to_vec4(position));
-            print_vec4(transformed);
             float screen_x = transformed.vals[0] / transformed.vals[3];
             float screen_y = transformed.vals[1] / transformed.vals[3];
-            printf("(%.2f, %.2f)\n", screen_x, screen_y);
+            float depth = transformed.vals[2];
+            printf("(%.2f, %.2f, depth: %.2f)\n", screen_x, screen_y, depth);
+            if (depth <= 0) continue;
+            float scale = text->scale / depth;
 
+            float test_quad_size = 0.05;
+            // paint2d_quad_c(0.5*(screen_x-test_quad_size)+0.5,0.5*(screen_y-test_quad_size)+0.5,
+            //                0.5*(screen_x+test_quad_size)+0.5,0.5*(screen_y-test_quad_size)+0.5,
+            //                0.5*(screen_x+test_quad_size)+0.5,0.5*(screen_y+test_quad_size)+0.5,
+            //                0.5*(screen_x-test_quad_size)+0.5,0.5*(screen_y+test_quad_size)+0.5, "b");
             mat4x4 text_matrix = {{
-                scale,    0,      0,      0,
-                0,        scale,  0,      0,
-                0,        0,      1,      0,
-                screen_x,        screen_y,      0,      1,
+                scale,    0,                    0, 0,
+                0,        scale / aspect_ratio, 0, 0,
+                0,        0,                    1, 0,
+                screen_x, screen_y,             0, 1,
             }};
 
             Text_render(text_matrix, text);

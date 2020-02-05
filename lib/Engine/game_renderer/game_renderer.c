@@ -96,6 +96,20 @@ void render(void)
 
     render_paint2d();
     painting_flush(Canvas2D);
+
+    for_aspect(Camera, camera)
+        float aspect_ratio = (camera->plane_t - camera->plane_b) / (camera->plane_r - camera->plane_l);
+        for_aspect(Text, text)
+            vec3 position = Transform_position(get_sibling_aspect(text, Transform));
+            mat4x4 vp_matrix = Camera_prepare(camera);
+            vec4 transformed = matrix_vec4(&vp_matrix, vec3_to_vec4(position));
+            float screen_x = transformed.vals[0] / transformed.vals[3];
+            float screen_y = transformed.vals[1] / transformed.vals[3];
+            printf("(%.2f, %.2f)\n", screen_x, screen_y);
+            Text_render(text);
+        end_for_aspect()
+    end_for_aspect()
+
 }
 void render_paint2d()
 {

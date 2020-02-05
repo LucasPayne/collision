@@ -386,6 +386,7 @@ typedef struct Glyph_s {
     int bearing_y;
     int advance; // in 1/64ths of pixels, as retrieved with freetype.
 } Glyph;
+void print_glyph(Glyph *glyph);
 
 ResourceType Font_RTID;
 typedef struct /* Resource */ Font_s {

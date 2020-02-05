@@ -129,3 +129,13 @@ flat_color_phong_outward_normals < MaterialType (
         vec4 flat_color;
     );
 );
+
+sdf_text < MaterialType (
+    vertex_format: 3U;
+    vertex_shader: Shaders/text/sdf_text.vert;
+    fragment_shader: Shaders/text/sdf_text.frag;
+    num_blocks: 1;
+    string block0: Standard3D;
+    num_textures: 1;
+    string texture0: sdf_texture;
+);

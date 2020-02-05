@@ -15,6 +15,17 @@
 #include "resources.h"
 #include "rendering.h"
 
+void print_glyph(Glyph *glyph)
+{
+    printf("%c:\n", glyph->character);
+    printf("    width: %d\n", glyph->width);
+    printf("    height: %d\n", glyph->height);
+    printf("    bearing_x: %d\n", glyph->bearing_x);
+    printf("    bearing_y: %d\n", glyph->bearing_y);
+    printf("    advance: %d\n", glyph->advance);
+    printf("    uvs: %.6f,%.6f,%.6f,%.6f\n", glyph->uvs[0], glyph->uvs[1],glyph->uvs[2],glyph->uvs[3]);
+    printf("    glyph_uvs: %.6f,%.6f,%.6f,%.6f\n", glyph->glyph_uvs[0], glyph->glyph_uvs[1],glyph->glyph_uvs[2],glyph->glyph_uvs[3]);
+}
 
 void Font_load(void *resource, char *path)
 {
@@ -86,15 +97,8 @@ void Font_load(void *resource, char *path)
 #if 0
     // Test if it is reading the text file correctly.
     for (int i = 0; i < font.num_glyphs; i++) {
-        Glyph *cur_glyph = &glyphs[i];
-        printf("%c:\n", cur_glyph->character);
-        printf("    width: %d\n", cur_glyph->width);
-        printf("    height: %d\n", cur_glyph->height);
-        printf("    bearing_x: %d\n", cur_glyph->bearing_x);
-        printf("    bearing_y: %d\n", cur_glyph->bearing_y);
-        printf("    advance: %d\n", cur_glyph->advance);
-        printf("    uvs: %.6f,%.6f,%.6f,%.6f\n", cur_glyph->uvs[0], cur_glyph->uvs[1],cur_glyph->uvs[2],cur_glyph->uvs[3]);
-        printf("    glyph_uvs: %.6f,%.6f,%.6f,%.6f\n", cur_glyph->glyph_uvs[0], cur_glyph->glyph_uvs[1],cur_glyph->glyph_uvs[2],cur_glyph->glyph_uvs[3]);
+        print_glyph(&glyphs[i]);
+        getchar();
     }
 #endif
     
@@ -130,6 +134,7 @@ void Font_load(void *resource, char *path)
     font.glyphs = (Glyph *) malloc(sizeof(Glyph) * font.num_glyphs);
     mem_check(font.glyphs);
     memcpy(font.glyphs, &glyphs, sizeof(Glyph) * font.num_glyphs);
+
     memcpy(resource, &font, sizeof(Font));
 }
 

@@ -15,9 +15,11 @@ Lights.o: $(LIB)/gameobjects/Lights.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
 Camera.o: $(LIB)/gameobjects/Camera.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
+Text.o: $(LIB)/gameobjects/Text.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
 _gameobjects.o: $(LIB)/gameobjects/gameobjects.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
-gameobjects.o: _gameobjects.o Transform.o Body.o Logic.o Input.o Lights.o Camera.o
+gameobjects.o: _gameobjects.o Transform.o Body.o Logic.o Input.o Lights.o Camera.o Text.o
 	ld -relocatable -o $@ $^
 
 shadows.o: $(LIB)/game_renderer/shadows.c

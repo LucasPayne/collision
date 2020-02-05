@@ -187,7 +187,6 @@ ASPECT_PROPERTIES()
 } PointLight;
 void PointLight_init(PointLight *point_light, float linear_attenuation, float quadratic_attenuation, float cubic_attenuation, float cr, float cg, float cb, float ca);
 
-#if 0
 /*--------------------------------------------------------------------------------
     Text
 --------------------------------------------------------------------------------*/
@@ -205,60 +204,12 @@ ASPECT_PROPERTIES()
     char *string;
     ResourceHandle font; // Resource: Font
     // implementation
-    int _width;
-    int _height;
-    GLuint _texture;
-    GLuint _framebuffer;
+    Geometry geometry;
 } Text;
+void Text_bake(Text *text);
+void Text_init(Text *text, TextType type, char *font_path, char *string);
+void Text_set(Text *text, char *string);
+void Text_render(Text *text);
 
-static void Text_init(Text *text, TextType type, char *string)
-{
-    text->type = type;
-
-    Text_set(text, string);
-
-    glGenTextures(1, &text->_texture);
-    glBindTexture(GL_TEXTURE_2D, text->_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glGenFramebuffers(1, &text->_framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, text->_framebuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, text->_texture, 0);
-    glDrawBuffer(GL_COLOR_ATTACHMENT0);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-static void Text_bake(Text *text)
-{
-    if (text->string == NULL) {
-        fprintf(stderr, ERROR_ALERT "Attempted to bake Text aspect which has no string initialized.\n");
-        exit(EXIT_FAILURE);
-    }
-    float width = text->_width * text->character_width;
-    float height = text->_height * text->character_height;
-    
-    glBindTexture(GL_TEXTURE_2D, text->_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 
-}
-
-void Text_set(Text *text, char *string)
-{
-    // Count the number of lines and find the maximum line length.
-    int num_lines = 0;
-    int max_line_length = 0;
-    int line_length_so_far = 0;
-    for (char *p = string; *p != '\0'; p++) {
-        if (*p == '\n') {
-            num_lines ++;
-            if (line_length_so_far > max_line_length) max_line_length = line_length_so_far;
-            line_length_so_far = 0;
-        } else line_length_so_far ++;
-    }
-    text->_width = max_line_length;
-    text->_height = num_lines;
-    text->string = string;
-}
-#endif
 
 #endif // HEADER_DEFINED_GAMEOBJECTS

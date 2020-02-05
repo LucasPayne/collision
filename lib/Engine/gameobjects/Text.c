@@ -5,7 +5,7 @@
 
 AspectType Text_TYPE_ID;
 
-void Text_render(Text *text)
+void Text_render(mat4x4 matrix, Text *text)
 {
     Font *font = resource_data(Font, text->font);
     // assuming Text2D
@@ -15,11 +15,6 @@ void Text_render(Text *text)
     ResourceHandle material = Material_create("Materials/sdf_text");
     material_set_texture(resource_data(Material, material), "sdf_texture", texture_handle);
 
-    mat4x4 matrix;
-    identity_matrix4x4f(&matrix);
-    float scale = 0.01;
-    matrix.vals[0 + 4*0] = scale;
-    matrix.vals[1 + 4*1] = scale;
     set_uniform_mat4x4(Standard3D, mvp_matrix.vals, matrix.vals);
 
     gm_draw(text->geometry, resource_data(Material, material));

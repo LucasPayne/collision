@@ -20,9 +20,13 @@ extern void init_program(void)
     ResourceHandle font_handle = new_resource_handle(Font, "Fonts/computer_modern");
     font = resource_data(Font, font_handle);
 
-    EntityID text_entity = new_entity(2);
-    Transform_set(entity_add_aspect(text_entity, Transform),  0,0,0,  0,0,0);
+    EntityID text_entity = new_entity(3);
+    Transform_set(entity_add_aspect(text_entity, Transform),  0,0,-100,  0,0,0);
     Text_init(entity_add_aspect(text_entity, Text), Text2D, "Fonts/computer_modern", "HELLOWORLD");
+    Body *body = entity_add_aspect(text_entity, Body);
+    body->scale = 100;
+    body->geometry = new_resource_handle(Geometry, "Models/block");
+    body->material = Material_create("Materials/red");
 
     create_key_camera_man(0,0,0,  0,0,0);
 }

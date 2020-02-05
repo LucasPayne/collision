@@ -26,6 +26,10 @@ extern void init_program(void)
     test_directional_light_controlled();
     test_directional_light_auto();
     // test_point_light_1();
+
+    EntityID text_entity = new_entity(3);
+    Transform_set(entity_add_aspect(text_entity, Transform),  0,160,-50,  0,0,0);
+    Text_init(entity_add_aspect(text_entity, Text), TextOriented, "Fonts/computer_modern", "Shadow testing arena", 0.5);
 }
 extern void loop_program(void)
 {

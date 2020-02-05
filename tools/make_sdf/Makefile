@@ -8,7 +8,7 @@ make_sdf: make_sdf.c
 .PHONY: t1
 t1:
 	make make_sdf
-	./make_sdf -f fonts/cmunbi.ttf -s 32x0 -r 32 -i
+	./make_sdf -f fonts/arial_regular.ttf -s 32x0 -r 32 -i
 .PHONY: clean
 clean:
 	rm make_sdf

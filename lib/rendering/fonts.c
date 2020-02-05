@@ -105,6 +105,7 @@ void Font_load(void *resource, char *path)
     ImageData image_data;
     if (!load_image_png(&image_data, sdf_glyph_map)) load_error("Failed to decode signed distance field png.");
 
+#if 0
     ResourceHandle tex_handle = new_resource_handle(Texture, "Fonts/computer_modern_sdf");
     Texture *tex = resource_data(Texture, tex_handle);
     font.sdf_glyph_map = tex->texture_id;
@@ -112,12 +113,12 @@ void Font_load(void *resource, char *path)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
+#endif
 
-#if 0
     GLuint glyph_map_texture;
     glGenTextures(1, &glyph_map_texture);
     glBindTexture(GL_TEXTURE_2D, glyph_map_texture);
-    glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGB, image_data.width, image_data.height);
+    glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGBA8, image_data.width, image_data.height);
     glTexSubImage2D(GL_TEXTURE_2D,
                     0,    // First mipmap level
                     0, 0, // x and y offset
@@ -129,7 +130,6 @@ void Font_load(void *resource, char *path)
     glBindTexture(GL_TEXTURE_2D, 0);
     free(image_data.data);
     font.sdf_glyph_map = glyph_map_texture;
-#endif
 
     font.glyphs = (Glyph *) malloc(sizeof(Glyph) * font.num_glyphs);
     mem_check(font.glyphs);

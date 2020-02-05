@@ -9,5 +9,8 @@ computer_modern < Font (
     sdf_metadata: Fonts/computer_modern_sdf.txt;
 );
 
-
+arial_regular < Font (
+    sdf_glyph_map: Fonts/arial_regular_sdf.png;
+    sdf_metadata: Fonts/arial_regular_sdf.txt;
+);
 

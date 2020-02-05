@@ -194,6 +194,7 @@ typedef uint8_t TextType;
 enum TextTypes {
     TextPlaced,   // a quad in 3D which the text is placed onto.
     TextOriented, // a quad which is oriented toward the camera and projected orthographically, where the text is rendered is an overlay.
+    TextOrientedFixed, // the same as above except the text does not scale due to the depth.
     Text2D,       // the transform aspect is interpreted as 2D coordinates, placing the text as a GUI overlay.
 };
 extern AspectType Text_TYPE_ID;

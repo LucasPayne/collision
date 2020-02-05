@@ -101,26 +101,51 @@ void render(void)
         float aspect_ratio = (camera->plane_t - camera->plane_b) / (camera->plane_r - camera->plane_l);
         for_aspect(Text, text)
             vec3 position = Transform_position(get_sibling_aspect(text, Transform));
-            mat4x4 vp_matrix = Camera_prepare(camera);
-            vec4 transformed = matrix_vec4(&vp_matrix, vec3_to_vec4(position));
-            float screen_x = transformed.vals[0] / transformed.vals[3];
-            float screen_y = transformed.vals[1] / transformed.vals[3];
-            float depth = transformed.vals[2];
-            printf("(%.2f, %.2f, depth: %.2f)\n", screen_x, screen_y, depth);
-            if (depth <= 0) continue;
-            float scale = text->scale / depth;
+            mat4x4 text_matrix;
+            if (text->type == TextOriented || text->type == TextOrientedFixed) {
+                // Oriented text is rendered toward the camera, either of a fixed size or size up to the depth the text is at.
+                mat4x4 vp_matrix = Camera_prepare(camera);
+                vec4 transformed = matrix_vec4(&vp_matrix, vec3_to_vec4(position));
+                float screen_x = transformed.vals[0] / transformed.vals[3];
+                float screen_y = transformed.vals[1] / transformed.vals[3];
+                float depth = transformed.vals[2];
+                // printf("(%.2f, %.2f, depth: %.2f)\n", screen_x, screen_y, depth);
+                float scale = text->scale;
+                if (text->type == TextOriented) {
+                    if (depth <= 0.0001) continue;
+                    scale /= depth;
+                }
 
-            float test_quad_size = 0.05;
-            // paint2d_quad_c(0.5*(screen_x-test_quad_size)+0.5,0.5*(screen_y-test_quad_size)+0.5,
-            //                0.5*(screen_x+test_quad_size)+0.5,0.5*(screen_y-test_quad_size)+0.5,
-            //                0.5*(screen_x+test_quad_size)+0.5,0.5*(screen_y+test_quad_size)+0.5,
-            //                0.5*(screen_x-test_quad_size)+0.5,0.5*(screen_y+test_quad_size)+0.5, "b");
-            mat4x4 text_matrix = {{
-                scale,    0,                    0, 0,
-                0,        scale / aspect_ratio, 0, 0,
-                0,        0,                    1, 0,
-                screen_x, screen_y,             0, 1,
-            }};
+                // float test_quad_size = 0.05;
+                // paint2d_quad_c(0.5*(screen_x-test_quad_size)+0.5,0.5*(screen_y-test_quad_size)+0.5,
+                //                0.5*(screen_x+test_quad_size)+0.5,0.5*(screen_y-test_quad_size)+0.5,
+                //                0.5*(screen_x+test_quad_size)+0.5,0.5*(screen_y+test_quad_size)+0.5,
+                //                0.5*(screen_x-test_quad_size)+0.5,0.5*(screen_y+test_quad_size)+0.5, "b");
+                mat4x4 M = {{
+                    scale,    0,                    0, 0,
+                    0,        scale / aspect_ratio, 0, 0,
+                    0,        0,                    1, 0,
+                    screen_x, screen_y,             0, 1,
+                }};
+                text_matrix = M;
+            } else if (text->type == Text2D) {
+                // Text2D text uses the x and y components of the transform to determine the screen position, in terms of 2D coordinates (0,0) at bottom-left to (1,1) at top-right.
+                float scale = text->scale;
+                mat4x4 M = {{
+                    scale,    0,                        0, 0,
+                    0,        scale / aspect_ratio,     0, 0,
+                    0,        0,                        1, 0,
+                    2*position.vals[0]-1, 2*position.vals[1]-1, 0, 1,
+                }};
+                text_matrix = M;
+            } else {
+                fprintf(stderr, ERROR_ALERT "Attempted to render text which does not have a text-type which is accounted for.\n");
+                exit(EXIT_FAILURE);
+            }
+            
+           // else if (text->type == TextPlaced) {
+           //     // "Placed" text has an orientation determined by its transform.
+           // }
 
             Text_render(text_matrix, text);
         end_for_aspect()

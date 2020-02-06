@@ -529,6 +529,11 @@ float vec3_dist(vec3 a, vec3 b)
     return sqrt(vec3_square_dist(a, b));
 }
 
+vec3 mat4x4_vec3(mat4x4 *matrix, vec3 v)
+{
+    return vec4_to_vec3(matrix_vec4(matrix, vec3_to_vec4(v)));
+}
+
 
 vec2 new_vec2(float x, float y)
 {

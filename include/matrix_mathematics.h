@@ -119,6 +119,8 @@ float vec3_dist(vec3 a, vec3 b);
 
 vec2 new_vec2(float x, float y);
 
+vec3 mat4x4_vec3(mat4x4 *matrix, vec3 v);
+
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 
 

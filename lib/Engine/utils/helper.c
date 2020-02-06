@@ -65,7 +65,7 @@ EntityID create_camera_man(float x, float y, float z, float lookat_x, float look
 static void camera_key_controls(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
-    float speed = 100;
+    float speed = 300;
     float move_x = 0, move_z = 0;
     if (alt_arrow_key_down(Right)) move_x += speed * dt;
     if (alt_arrow_key_down(Left)) move_x -= speed * dt;
@@ -84,7 +84,7 @@ EntityID create_key_camera_man(float x, float y, float z, float lookat_x, float 
     EntityID camera_man = new_entity(4);
     Transform_set(entity_add_aspect(camera_man, Transform), x,y,z,  0,0,0);//--do lookat
     Camera *camera = entity_add_aspect(camera_man, Camera);
-    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 10);
+    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 30);
     Logic_init(entity_add_aspect(camera_man, Logic), camera_key_controls);
     Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
     return camera_man;

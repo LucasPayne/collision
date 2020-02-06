@@ -21,7 +21,12 @@ void draw_frustum(Camera *camera)
     paint_line_cv(pos, near_p, "b");
     paint_line_cv(near_p, far_p, "r");
 
-    char *colors[] = {"r", "g", "b", "y"};
+    vec4 colors[] = {   
+        new_vec4(1,0,0,1),
+        new_vec4(0,1,0,1),
+        new_vec4(0,0,1,1),
+        new_vec4(0,1,1,1),
+    };
 
     for (int segment = 0; segment < 4; segment++) {
         float along = -n - (f - n) * segment/4.0 * f/n;
@@ -43,9 +48,9 @@ void draw_frustum(Camera *camera)
             vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0),  along_to/n))),
         };
         for (int i = 0; i < 4; i++) {
-            paint_line_cv(near_quad[i], near_quad[(i+1)%4], colors[segment]);
-            paint_line_cv(far_quad[i], far_quad[(i+1)%4], colors[segment]);
-            paint_line_cv(near_quad[i], far_quad[i], colors[segment]);
+            paint_line_v(near_quad[i], near_quad[(i+1)%4], colors[segment]);
+            paint_line_v(far_quad[i], far_quad[(i+1)%4], colors[segment]);
+            paint_line_v(near_quad[i], far_quad[i], colors[segment]);
         }
     
         for_aspect(DirectionalLight, light)
@@ -72,9 +77,9 @@ void draw_frustum(Camera *camera)
                 for (int j = 0; j < 2; j++) {
                     for (int k = 0; k < 2; k++) {
                         box_points[p] = new_vec3(box_corners[i].vals[0], box_corners[j].vals[1], box_corners[k].vals[2]);
+                        p++;
                     }
                 }
-                p++;
             }
             // Transform this box to world space.
 	    mat4x4 light_to_world = Transform_matrix(get_sibling_aspect(light, Transform));
@@ -82,13 +87,14 @@ void draw_frustum(Camera *camera)
                 box_points[i] = mat4x4_vec3(&light_to_world, box_points[i]);
             }
             // Draw the box.
-            for (int j = 0; j < 2; j++) {
-                for (int i = 0; i < 4; i++) {
-                    paint_line_cv(box_points[4*j + i], box_points[4*j + i%4], "k");
-                }
-            }
             for (int i = 0; i < 4; i++) {
-                paint_line_cv(box_points[i], box_points[i + 4], "k");
+                paint_line_v(box_points[2*i], box_points[2*i+1], color_mul(colors[segment], 0.5));
+                paint_line_v(box_points[i], box_points[i+4], color_mul(colors[segment], 0.5));
+            }
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    paint_line_v(box_points[i + 4*j], box_points[i + 4*j + 2], color_mul(colors[segment], 0.5));
+                }
             }
         end_for_aspect()
     }

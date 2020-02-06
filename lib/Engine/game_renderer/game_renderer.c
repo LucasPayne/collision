@@ -74,7 +74,7 @@ mat4x4 Camera_prepare(Camera *camera)
     // Upload the camera position and direction, and other information.
     set_uniform_vec3(Standard3D, camera_position, new_vec3(camera_transform->x, camera_transform->y, camera_transform->z));
     vec4 camera_forward_vector = matrix_vec4(&view_matrix, new_vec4(0,0,1,1));
-    set_uniform_vec3(Standard3D, camera_direction, *((vec3 *) &camera_forward_vector)); //... get better matrix/vector routines.
+    set_uniform_vec3(Standard3D, camera_direction, vec4_to_vec3(camera_forward_vector));
     // Upload camera parameters.
     set_uniform_float(Standard3D, near_plane, camera->plane_n);
     set_uniform_float(Standard3D, far_plane, camera->plane_f);

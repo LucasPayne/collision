@@ -188,8 +188,8 @@ void paint_line(float ax, float ay, float az, float bx, float by, float bz, COLO
 void paint_line_c(float ax, float ay, float az, float bx, float by, float bz, char *color_str) {
     canvas_paint_line_v(Canvas3D, new_vec3(ax, ay, az), new_vec3(bx, by, bz), str_to_color_key(color_str));
 }
-void paint_line_v(vec3 a, vec3 b, COLOR_SCALARS) {
-    canvas_paint_line_v(Canvas3D, a, b, new_vec4(cr, cg, cb, ca));
+void paint_line_v(vec3 a, vec3 b, vec4 color) {
+    canvas_paint_line_v(Canvas3D, a, b, color);
 }
 void paint_line_cv(vec3 a, vec3 b, char *color_str) {
     canvas_paint_line_v(Canvas3D, a, b, str_to_color_key(color_str));

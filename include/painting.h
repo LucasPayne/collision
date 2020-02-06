@@ -33,7 +33,7 @@ void canvas_paint_line_c(int canvas, float ax, float ay, float az, float bx, flo
 void canvas_paint_line_cv(int canvas, vec3 a, vec3 b, char *color_str);
 void paint_line(float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS);
 void paint_line_c(float ax, float ay, float az, float bx, float by, float bz, char *color_str);
-void paint_line_v(vec3 a, vec3 b, COLOR_SCALARS);
+void paint_line_v(vec3 a, vec3 b, vec4 color);
 void paint_line_cv(vec3 a, vec3 b, char *color_str);
 void paint2d_line(float ax, float ay, float bx, float by, COLOR_SCALARS);
 void paint2d_line_c(float ax, float ay, float bx, float by, char *color_str);

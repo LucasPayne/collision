@@ -8,6 +8,13 @@ out vOut {
     vec4 fPosition;
     vec3 fNormal;
 
+    // With cascading, this will be
+    // vec4 fDirectionalLightShadowCoord[MAX_NUM_DIRECTIONAL_LIGHTS * 4];
+    // The matrices for these shadow coordinates would transform to a quadrant of the UV coordinates of the shadow map instead of the full one.
+    // Only one texture will be used per directional light.
+    // But if there is one texture, you won't be able to just account for the earliest (highest density) map, since out of bounds UV coordinates will
+    // look up the other parts of the texture ...
+
     vec4 fDirectionalLightShadowCoord[MAX_NUM_DIRECTIONAL_LIGHTS];
 };
 

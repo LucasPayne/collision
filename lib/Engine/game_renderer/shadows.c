@@ -7,8 +7,8 @@
 // Apparently the back buffer is the screen size, and rendering to a texture larger than this just does not fill the texture.
 // Larger shadow maps could be done with multiple render passes on tiles, for example 512x512 may be trusted to be a working size,
 // then the light frustum split into tiles, each one rendering into a tile of the texture.
-#define SHADOW_MAP_TEXTURE_WIDTH 750
-#define SHADOW_MAP_TEXTURE_HEIGHT 750
+#define SHADOW_MAP_TEXTURE_WIDTH 2048
+#define SHADOW_MAP_TEXTURE_HEIGHT 2048
 // Currently only doing directional light shadows.
 typedef struct ShadowMap_s {
     GLuint framebuffer;

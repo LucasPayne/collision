@@ -19,14 +19,15 @@ static void camera_controls(Logic *logic)
 }
 static void camera_key_input(Input *input, int key, int action, int mods)
 {
+    int jump_height = 30;
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_SPACE) {
             Transform *t = get_sibling_aspect(input, Transform);
-            t->y += 5;
+            t->y += jump_height;
         }
         if (key == GLFW_KEY_LEFT_SHIFT) {
             Transform *t = get_sibling_aspect(input, Transform);
-            t->y -= 5;
+            t->y -= jump_height;
         }
     }
 }
@@ -84,7 +85,7 @@ EntityID create_key_camera_man(float x, float y, float z, float lookat_x, float 
     EntityID camera_man = new_entity(4);
     Transform_set(entity_add_aspect(camera_man, Transform), x,y,z,  0,0,0);//--do lookat
     Camera *camera = entity_add_aspect(camera_man, Camera);
-    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 30);
+    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 68);
     Logic_init(entity_add_aspect(camera_man, Logic), camera_key_controls);
     Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
     return camera_man;

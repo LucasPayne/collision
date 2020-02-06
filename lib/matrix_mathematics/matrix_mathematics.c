@@ -542,3 +542,10 @@ vec2 new_vec2(float x, float y)
     v.vals[1] = y; 
     return v;
 }
+
+vec4 color_mul(vec4 color, float x)
+{
+    vec4 color_out;
+    for (int i = 0; i < 3; i++) color_out.vals[i] = x * color.vals[i];
+    return color_out;
+}

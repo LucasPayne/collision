@@ -121,6 +121,9 @@ vec2 new_vec2(float x, float y);
 
 vec3 mat4x4_vec3(mat4x4 *matrix, vec3 v);
 
+// multiply only the first three components.
+vec4 color_mul(vec4 color, float x);
+
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 
 

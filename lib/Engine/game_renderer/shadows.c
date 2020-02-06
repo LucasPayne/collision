@@ -3,10 +3,6 @@
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
 
-// This is probably smaller than both the horizontal and vertical resolution of the screen.
-// Apparently the back buffer is the screen size, and rendering to a texture larger than this just does not fill the texture.
-// Larger shadow maps could be done with multiple render passes on tiles, for example 512x512 may be trusted to be a working size,
-// then the light frustum split into tiles, each one rendering into a tile of the texture.
 #define SHADOW_MAP_TEXTURE_WIDTH 2048
 #define SHADOW_MAP_TEXTURE_HEIGHT 2048
 // Currently only doing directional light shadows.
@@ -18,7 +14,7 @@ typedef struct ShadowMap_s {
     // This won't be destroyed, and can be used to render the depth map to a quad.
     ResourceHandle depth_texture_material; // Resource: Material
 } ShadowMap;
-static ShadowMap g_directional_light_shadow_maps[MAX_NUM_DIRECTIONAL_LIGHTS];
+ShadowMap g_directional_light_shadow_maps[MAX_NUM_DIRECTIONAL_LIGHTS];
 static Material *g_shadow_map_material = NULL;
 
 void init_shadows(void)
@@ -35,7 +31,8 @@ void init_shadows(void)
         ShadowMap *shadow_map = &g_directional_light_shadow_maps[i];
         glGenTextures(1, &shadow_map->color_texture);
         glBindTexture(GL_TEXTURE_2D, shadow_map->color_texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL); glGenTextures(1, &shadow_map->depth_texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glGenTextures(1, &shadow_map->depth_texture);
         glBindTexture(GL_TEXTURE_2D, shadow_map->depth_texture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -92,22 +89,25 @@ void do_shadows(void)
         set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrix.vals, shadow_matrix.vals);
 
         for_aspect(Body, body)
-            Transform *transform = get_sibling_aspect(body, Transform);
-            mat4x4 model_matrix = Transform_matrix(transform);
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    model_matrix.vals[4*i + j] *= body->scale;
-                }
-            }
-            mat4x4 mvp_matrix = shadow_matrix;
-            right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
-            set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
-
-            Geometry *geometry = resource_data(Geometry, body->geometry);
-            gm_draw(*geometry, g_shadow_map_material);
+            render_body_with_material(shadow_matrix, body, g_shadow_map_material);
         end_for_aspect()
         index ++;
+        if (index == MAX_NUM_DIRECTIONAL_LIGHTS) break;
     end_for_aspect()
     glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#if 0
+    index = 0;
+    for_aspect(DirectionalLight, light)
+        // View the depth maps
+        ResourceHandle material = Material_create("Materials/render_shadow_map");
+        ResourceHandle texture;
+        Texture *tex = oneoff_resource(Texture, texture);
+        tex->texture_id = g_directional_light_shadow_maps[index].depth_texture;
+        material_set_texture(resource_data(Material, material), "shadow_map", texture);
+        paint2d_sprite_m(0.1 * index,0,0.1,0.1, material);
+        destroy_resource_handle(&texture);
+        index ++;
+    end_for_aspect();
+#endif
 }

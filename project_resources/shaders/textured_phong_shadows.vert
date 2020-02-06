@@ -22,8 +22,8 @@ layout (location = 3) in vec2 vTexCoord;
 
 void main(void)
 {
-    gl_Position = mvp_matrix * vPosition; // Interpolate the position of the fragment in the canonical view volume.
-    fPosition = model_matrix * vPosition; // Interpolate the position of the fragment in global coordinates.
+    gl_Position = mvp_matrix * vPosition;
+    fPosition = model_matrix * vPosition;
     fTexCoord = vTexCoord;
     fNormal = (normal_matrix * vec4(vNormal, 1)).xyz;
 

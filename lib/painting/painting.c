@@ -123,7 +123,7 @@ void painting_flush(int canvas_id)
     Canvas *canvas = painting_canvas(canvas_id);
     for (int i = 0; i < canvas->paint_count; i++) {
         gm_free(canvas->paint_buffer[i].geometry);
-        destroy_resource_handle(&canvas->paint_buffer[i].material);
+        // destroy_resource_handle(&canvas->paint_buffer[i].material); ////////////////////////////////////////////////////////////////////////////////...
     }
     canvas->paint_count = 0;
 }

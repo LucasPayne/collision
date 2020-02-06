@@ -66,7 +66,7 @@ EntityID create_camera_man(float x, float y, float z, float lookat_x, float look
 static void camera_key_controls(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
-    float speed = 300;
+    float speed = 1000;
     float move_x = 0, move_z = 0;
     if (alt_arrow_key_down(Right)) move_x += speed * dt;
     if (alt_arrow_key_down(Left)) move_x -= speed * dt;

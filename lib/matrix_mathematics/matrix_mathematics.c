@@ -444,7 +444,11 @@ vec3 matrix4_vec3_normal(Matrix4x4f *matrix, vec3 v)
 
 void print_vec4(vec4 v)
 {
-    printf("[%f, %f, %f, %f]\n", v.vals[0], v.vals[1], v.vals[2], v.vals[3]);
+    printf("(%f, %f, %f, %f)\n", v.vals[0], v.vals[1], v.vals[2], v.vals[3]);
+}
+void print_vec3(vec3 v)
+{
+    printf("(%f, %f, %f)\n", v.vals[0], v.vals[1], v.vals[2]);
 }
 
 vec4 new_vec4(float x, float y, float z, float w)

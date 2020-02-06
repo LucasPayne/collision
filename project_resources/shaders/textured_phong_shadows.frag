@@ -23,18 +23,6 @@ void main(void)
     float ambient = 0.05;
     color = vec4(vec3(ambient), 1);
 
-    vec4 segment_colors[] = {
-        vec4(1,0,0,1),
-        vec4(0,1,0,1),
-        vec4(0,0,1,1),
-        vec4(1,0,1,1),
-    };
-    for (int i = 0; i < NUM_FRUSTUM_SEGMENTS; i++) {
-        if (dot(fPosition.xyz - camera_position, camera_direction) > shadow_map_segment_depths[i]) {
-        // if (dot(fPosition.xyz - camera_position, camera_direction) > 50 * i) {
-            color = segment_colors[i];
-        }
-    }
 
 #if 0
     for (int i = 0; i < num_directional_lights; i++) {
@@ -71,4 +59,19 @@ void main(void)
     if (use_flat_color) color *= flat_color;
     else color *= texture(diffuse_map, fTexCoord);
 #endif
+
+    vec4 segment_colors[] = {
+        vec4(1,0,0,1),
+        vec4(0,1,0,1),
+        vec4(0,0,1,1),
+        vec4(1,0,1,1),
+    };
+    vec4 add_color = vec4(0,0,0,1);
+    for (int i = 0; i < NUM_FRUSTUM_SEGMENTS; i++) {
+        if (dot(fPosition.xyz - camera_position, camera_direction) > shadow_map_segment_depths[i]) {
+        // if (dot(fPosition.xyz - camera_position, camera_direction) > 50 * i) {
+            add_color = segment_colors[i];
+        }
+    }
+    color += add_color;
 }

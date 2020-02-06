@@ -29,8 +29,8 @@ void draw_frustum(Camera *camera)
     };
 
     for (int segment = 0; segment < 4; segment++) {
-        float along = -n - (f - n) * segment/4.0 * f/n;
-        float along_to = -n - (f - n) * (segment + 1)/4.0 * f/n;
+        float along = -n - (f - n) * segment/4.0;
+        float along_to = -n - (f - n) * (segment + 1)/4.0;
 
         near_p = vec3_add(pos, vec3_mul(Transform_forward(transform), along));
         far_p =  vec3_add(pos, vec3_mul(Transform_forward(transform), along_to));
@@ -133,6 +133,7 @@ extern void cursor_move_event(double x, double y)
 extern void init_program(void)
 {
     Camera *camera_1 = get_aspect_type(create_key_camera_man(0,0,0,  0,0,0), Camera);
+#if 0
     camera_1->override_bg_color = true;
     camera_1->bg_color = new_vec4(0.8,1,0.8,1);
     camera_1->bly = 0.25;
@@ -144,6 +145,7 @@ extern void init_program(void)
     camera_2->blx = 0.5;
     camera_2->bly = 0.25;
     camera_2->try = 0.75;
+#endif
 
 #if 0
     EntityID e = new_entity(4);
@@ -162,10 +164,6 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-    for_aspect(Camera, camera)
-        draw_frustum(camera);
-        break;
-    end_for_aspect()
 }
 extern void close_program(void)
 {

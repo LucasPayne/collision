@@ -23,8 +23,7 @@ extern void init_program(void)
     open_scene(g_scenes, "block_on_floor");
 
     Camera *camera = get_aspect_type(create_key_camera_man(0,50,100,  0,0,0), Camera);
-
-#if 0
+#if 1
 {
     Camera *camera = get_aspect_type(create_key_camera_man(0,50,100,  0,0,0), Camera);
     camera->trx = 0.5;
@@ -38,7 +37,7 @@ extern void init_program(void)
 #endif
 
     test_directional_light_controlled();
-    test_directional_light_auto();
+    // test_directional_light_auto();
     // test_point_light_1();
 
     EntityID text_entity = new_entity(3);

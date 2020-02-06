@@ -8,14 +8,11 @@ out vOut {
     vec4 fPosition;
     vec3 fNormal;
 
-    // With cascading, this will be
-    // vec4 fDirectionalLightShadowCoord[MAX_NUM_DIRECTIONAL_LIGHTS * 4];
     // The matrices for these shadow coordinates would transform to a quadrant of the UV coordinates of the shadow map instead of the full one.
     // Only one texture will be used per directional light.
     // But if there is one texture, you won't be able to just account for the earliest (highest density) map, since out of bounds UV coordinates will
     // look up the other parts of the texture ...
-
-    vec4 fDirectionalLightShadowCoord[MAX_NUM_DIRECTIONAL_LIGHTS];
+    vec4 fDirectionalLightShadowCoord[MAX_NUM_DIRECTIONAL_LIGHTS * NUM_FRUSTUM_SEGMENTS];
 };
 
 // #vertex_format 3NU
@@ -30,14 +27,15 @@ void main(void)
     fTexCoord = vTexCoord;
     fNormal = (normal_matrix * vec4(vNormal, 1)).xyz;
 
+    // Normalized device coordinates to UV texture coordinates + depth.
+    mat4x4 ndc_to_uvd_matrix = mat4x4(0.5, 0,   0,   0,
+                                      0,   0.5, 0,   0,
+                                      0,   0,   0.5, 0,
+                                      0.5, 0.5, 0.5, 1);
     for (int i = 0; i < num_directional_lights; i++) {
-        mat4x4 model_shadow_matrix = directional_lights[i].shadow_matrix * model_matrix;
-        // Normalized device coordinates to UV texture coordinates + depth.
-        mat4x4 ndc_to_uvd_matrix = mat4x4(0.5, 0,   0,   0,
-                                          0,   0.5, 0,   0,
-                                          0,   0,   0.5, 0,
-                                          0.5, 0.5, 0.5, 1);
-        fDirectionalLightShadowCoord[i] = ndc_to_uvd_matrix * model_shadow_matrix * vPosition;
-        // fDirectionalLightShadowCoord[i] = model_shadow_matrix * vPosition;
+        for (int j = 0; j < NUM_FRUSTUM_SEGMENTS; j++) {
+            mat4x4 model_shadow_matrix = directional_lights[i].shadow_matrices[j] * model_matrix;
+            fDirectionalLightShadowCoord[4*i + j] = ndc_to_uvd_matrix * model_shadow_matrix * vPosition;
+        }
     }
 }

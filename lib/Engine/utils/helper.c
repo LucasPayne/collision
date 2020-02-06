@@ -56,7 +56,7 @@ EntityID create_camera_man(float x, float y, float z, float lookat_x, float look
     EntityID camera_man = new_entity(4);
     Transform_set(entity_add_aspect(camera_man, Transform), x,y,z,  0,0,0);//--do lookat
     Camera *camera = entity_add_aspect(camera_man, Camera);
-    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 10);
+    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 2500);
     Logic_init(entity_add_aspect(camera_man, Logic), camera_controls);
     Input_init(entity_add_aspect(camera_man, Input), INPUT_MOUSE_MOVE, camera_mouse_move, true);
     Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
@@ -85,7 +85,7 @@ EntityID create_key_camera_man(float x, float y, float z, float lookat_x, float 
     EntityID camera_man = new_entity(4);
     Transform_set(entity_add_aspect(camera_man, Transform), x,y,z,  0,0,0);//--do lookat
     Camera *camera = entity_add_aspect(camera_man, Camera);
-    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 68);
+    Camera_init(camera, ASPECT_RATIO, 1, 0.9, 1200);
     Logic_init(entity_add_aspect(camera_man, Logic), camera_key_controls);
     Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
     return camera_man;

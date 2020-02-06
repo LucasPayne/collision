@@ -2,8 +2,6 @@
 This code was generated with the gen_shader_blocks tool, for synchronizing
 definitions between glsl and C.
 --------------------------------------------------------------------------------*/
-uniform sampler2D test_texture;
-uniform sampler2D test_texture_2;
 layout (std140) uniform Standard3D {
     bool test_toggle;
     float near_plane;

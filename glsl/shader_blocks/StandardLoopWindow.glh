@@ -5,5 +5,4 @@ definitions between glsl and C.
 layout (std140) uniform StandardLoopWindow {
     float aspect_ratio;
     float time;
-    float TEST_VALUE;
 };

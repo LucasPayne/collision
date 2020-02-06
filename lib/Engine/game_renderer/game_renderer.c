@@ -73,8 +73,7 @@ mat4x4 Camera_prepare(Camera *camera)
     
     // Upload the camera position and direction, and other information.
     set_uniform_vec3(Standard3D, camera_position, new_vec3(camera_transform->x, camera_transform->y, camera_transform->z));
-    vec4 camera_forward_vector = matrix_vec4(&view_matrix, new_vec4(0,0,1,1));
-    set_uniform_vec3(Standard3D, camera_direction, vec4_to_vec3(camera_forward_vector));
+    set_uniform_vec3(Standard3D, camera_direction, vec3_neg(Transform_forward(camera_transform)));
     // Upload camera parameters.
     set_uniform_float(Standard3D, near_plane, camera->plane_n);
     set_uniform_float(Standard3D, far_plane, camera->plane_f);
@@ -85,9 +84,10 @@ mat4x4 Camera_prepare(Camera *camera)
     for_aspect(DirectionalLight, directional_light)
         vec3 direction = DirectionalLight_direction(directional_light);
         // Both the directional light direction and the camera forward vector are unit length, so their sum gives a half vector, then this is normalized.
-        float hx = camera_forward_vector.vals[0] + direction.vals[0];
-        float hy = camera_forward_vector.vals[1] + direction.vals[1];
-        float hz = camera_forward_vector.vals[2] + direction.vals[2];
+        vec3 forward = vec3_neg(Transform_forward(camera_transform));
+        float hx = forward.vals[0] + direction.vals[0];
+        float hy = forward.vals[1] + direction.vals[1];
+        float hz = forward.vals[2] + direction.vals[2];
         float inv_length = 1/sqrt(hx*hx + hy*hy + hz*hz);
         hx *= inv_length;
         hy *= inv_length;
@@ -103,8 +103,8 @@ void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
 
-    do_shadows();
     for_aspect(Camera, camera)
+        do_shadows(camera);
         mat4x4 vp_matrix = Camera_prepare(camera);
         // Render each body.
         for_aspect(Body, body)

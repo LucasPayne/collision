@@ -10,25 +10,22 @@ block Standard3D {
     vec3 camera_direction;
     vec3 camera_position;
     mat4x4 normal_matrix;
-    sampler2D test_texture;
-    sampler2D test_texture_2;
 };
 
 block StandardLoopWindow {
     float aspect_ratio;
     float time;
-// testing
-    float TEST_VALUE;
 };
 
 block Lights {
     #define MAX_NUM_DIRECTIONAL_LIGHTS 8
     #define MAX_NUM_POINT_LIGHTS 8
+    #define NUM_FRUSTUM_SEGMENTS 4
     struct DirectionalLight {
         vec4 color;
         vec3 direction;
         vec3 half_vector;
-        mat4x4 shadow_matrix;
+        mat4x4 shadow_matrices[NUM_FRUSTUM_SEGMENTS];
     };
     struct PointLight {
         vec4 color;
@@ -37,11 +34,13 @@ block Lights {
         float quadratic_attenuation;
         float cubic_attenuation;
     };
+//---this is a vec4 since currently float arrays do not work in genshaderblocks ---fix this.
+    vec4 shadow_map_segment_depths;
     mat4x4 active_shadow_matrix;
     int num_directional_lights;
-    int num_point_lights;
     DirectionalLight directional_lights[MAX_NUM_DIRECTIONAL_LIGHTS];
     sampler2DShadow directional_light_shadow_maps[MAX_NUM_DIRECTIONAL_LIGHTS];
+    int num_point_lights;
     PointLight point_lights[MAX_NUM_POINT_LIGHTS];
     sampler2DShadow point_light_shadow_maps[MAX_NUM_POINT_LIGHTS];
 };

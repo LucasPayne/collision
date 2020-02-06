@@ -252,11 +252,6 @@ static void init_base(void)
 
     init_game_renderer();
 
-    // Initialize global test textures that shaders can access.
-    ResourceHandle test_texture = new_resource_handle(Texture, "Textures/test_texture");
-    set_uniform_texture(Standard3D, test_texture, resource_data(Texture, test_texture)->texture_id);
-    ResourceHandle test_texture_2 = new_resource_handle(Texture, "Textures/test_texture_2");
-    set_uniform_texture(Standard3D, test_texture_2, resource_data(Texture, test_texture_2)->texture_id);
     // Initialize global test toggle bool to false. This is switched with a meta-key, and can be used in shaders for testing.
     g_test_toggle = false; //---currently can not read back the written uniform values.
     set_uniform_bool(Standard3D, test_toggle, false);

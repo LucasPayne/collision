@@ -6,6 +6,7 @@ definitions between glsl and C.
 #define SHADER_BLOCK_HEADER_DEFINED_LIGHTS
 #define MAX_NUM_DIRECTIONAL_LIGHTS 8
 #define MAX_NUM_POINT_LIGHTS 8
+#define NUM_FRUSTUM_SEGMENTS 4
 
 static char *ShaderBlockSamplerNames_Lights[] = {
     "directional_light_shadow_maps[0]",
@@ -33,7 +34,7 @@ struct ___ShaderBlockSamplers_Lights {
 } ShaderBlockSamplers_Lights;
 
 struct ShaderBlockStruct_Lights_DirectionalLight { //size: 112
-    mat4x4 shadow_matrix;    //offset: 0, alignment: 16, C_type_size: 64
+    mat4x4 shadow_matrices[4];    //offset: 0, alignment: 64, C_type_size: 64
     vec3 half_vector;    //offset: 64, alignment: 16, C_type_size: 12
     char ___std140_pad2[4];
     vec3 direction;    //offset: 80, alignment: 16, C_type_size: 12
@@ -52,12 +53,14 @@ struct ShaderBlockStruct_Lights_PointLight { //size: 48
 
 ShaderBlockID ShaderBlockID_Lights;
 typedef struct ShaderBlock_Lights_s {
-    mat4x4 active_shadow_matrix;    //offset: 0, alignment: 16, C_type_size: 64
-    int num_directional_lights;    //offset: 64, alignment: 4, C_type_size: 4
-    int num_point_lights;    //offset: 68, alignment: 4, C_type_size: 4
-    char ___std140_pad3[8];
-    struct ShaderBlockStruct_Lights_DirectionalLight directional_lights[8];    //offset: 80, alignment: 16, C_type_size: 112
-    struct ShaderBlockStruct_Lights_PointLight point_lights[8];    //offset: 192, alignment: 16, C_type_size: 48
+    vec4 shadow_map_segment_depths;    //offset: 0, alignment: 16, C_type_size: 16
+    mat4x4 active_shadow_matrix;    //offset: 16, alignment: 16, C_type_size: 64
+    int num_directional_lights;    //offset: 80, alignment: 4, C_type_size: 4
+    char ___std140_pad3[12];
+    struct ShaderBlockStruct_Lights_DirectionalLight directional_lights[8];    //offset: 96, alignment: 16, C_type_size: 112
+    int num_point_lights;    //offset: 208, alignment: 4, C_type_size: 4
+    char ___std140_pad6[12];
+    struct ShaderBlockStruct_Lights_PointLight point_lights[8];    //offset: 224, alignment: 16, C_type_size: 48
 } ShaderBlock_Lights;
 
 #endif // SHADER_BLOCK_HEADER_DEFINED_LIGHTS

@@ -4,11 +4,12 @@ definitions between glsl and C.
 --------------------------------------------------------------------------------*/
 #define MAX_NUM_DIRECTIONAL_LIGHTS 8
 #define MAX_NUM_POINT_LIGHTS 8
+#define NUM_FRUSTUM_SEGMENTS 4
 
 uniform sampler2DShadow directional_light_shadow_maps[8];
 uniform sampler2DShadow point_light_shadow_maps[8];
 struct DirectionalLight {
-    mat4x4 shadow_matrix;
+    mat4x4 shadow_matrices[4];
     vec3 half_vector;
     vec3 direction;
     vec4 color;
@@ -22,9 +23,10 @@ struct PointLight {
 };
 
 layout (std140) uniform Lights {
+    vec4 shadow_map_segment_depths;
     mat4x4 active_shadow_matrix;
     int num_directional_lights;
-    int num_point_lights;
     DirectionalLight directional_lights[8];
+    int num_point_lights;
     PointLight point_lights[8];
 };

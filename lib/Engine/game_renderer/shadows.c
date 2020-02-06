@@ -65,32 +65,106 @@ void init_shadows(void)
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-void do_shadows(void)
+void do_shadows(Camera *camera)
 {
+    // Render to the cascaded shadow maps.
+    // -----------------------------------
+    float n, f, b, t, l, r;
+    n = camera->plane_n;
+    f = camera->plane_f;
+    b = camera->plane_b;
+    t = camera->plane_t;
+    l = camera->plane_l;
+    r = camera->plane_r;
+    Transform *transform = get_sibling_aspect(camera, Transform);
+    vec3 pos = Transform_position(transform);
+    // Upload the frustum-segment depths so fragment shaders can test which segment the fragment is in, for visualization.
+    // float segment_depths[4] = {
+    //     n,
+    //     n + 0.25 * (f - n),
+    //     n + 0.5  * (f - n),
+    //     n + 0.75 * (f - n),
+    // };
+    vec4 segment_depths = new_vec4(
+        n,
+        n + 0.25 * (f - n),
+        n + 0.5  * (f - n),
+        n + 0.75 * (f - n)
+    );
+    set_uniform_vec4(Lights, shadow_map_segment_depths, segment_depths);
+
+    // Set the viewport to align to the shadow map textures. 
     GLint prev_viewport[4];
     glGetIntegerv(GL_VIEWPORT, prev_viewport);
     glViewport(0, 0, SHADOW_MAP_TEXTURE_WIDTH, SHADOW_MAP_TEXTURE_HEIGHT);
+
+    // For each directional light, render to each quadrant of the shadow texture, one for each frustum segment.
     int index = 0;
     for_aspect(DirectionalLight, light)
         ShadowMap *shadow_map = &g_directional_light_shadow_maps[index];
+        // Clear the shadow texture.
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
         glClearDepth(1.0);
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        mat4x4 inverse_light_model_matrix = invert_rigid_mat4x4(Transform_matrix(get_sibling_aspect(light, Transform)));
-        mat4x4 model_to_ndc = {{
-            2/light->shadow_width,  0,                       0,                      0,
-            0,                      2/light->shadow_height,  0,                      0,
-            0,                      0,                       2/light->shadow_depth,  0,
-            0,                      0,                       -1,                      1,
-        }};
-        mat4x4 shadow_matrix = model_to_ndc;
-        right_multiply_matrix4x4f(&shadow_matrix, &inverse_light_model_matrix);
-        set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrix.vals, shadow_matrix.vals);
+        for (int segment = 0; segment < 4; segment++) {
+            // along:    near plane z offset from this frustum segment.
+            // along_to: far plane z offset from this frustum segment.
+            float along = -n - (f - n) * segment/4.0 * f/n;
+            float along_to = -n - (f - n) * (segment + 1)/4.0 * f/n;
+            vec3 near_p = vec3_add(pos, vec3_mul(Transform_forward(transform), along));
+            vec3 far_p =  vec3_add(pos, vec3_mul(Transform_forward(transform), along_to));
+            // Calculate the points of the frustum segment, on the near plane and far plane.
+            vec3 near_quad[] = {
+                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0), along/n))),
+                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0), along/n))),
+                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0), along/n))),
+                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0), along/n))),
+            };
+            vec3 far_quad[] = {
+                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0),  along_to/n))),
+                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0),  along_to/n))),
+                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0),  along_to/n))),
+                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0),  along_to/n))),
+            };
+            mat4x4 light_matrix = invert_rigid_mat4x4(Transform_matrix(get_sibling_aspect(light, Transform)));
+            // Transform frustum segment to light space.
+            vec3 light_frustum[8];
+            for (int i = 0; i < 4; i++) {
+                light_frustum[i] = mat4x4_vec3(&light_matrix, near_quad[i]);
+                light_frustum[i + 4] = mat4x4_vec3(&light_matrix, far_quad[i]);
+            }
+            // Find the axis-aligned bounding box of the frustum segment in light coordinates.
+            // Find the minimum and maximum corners.
+            vec3 box_corners[2] = { light_frustum[0], light_frustum[0] };
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 3; j++) {
+                    if (light_frustum[i].vals[j] < box_corners[0].vals[j]) box_corners[0].vals[j] = light_frustum[i].vals[j];
+                    if (light_frustum[i].vals[j] > box_corners[1].vals[j]) box_corners[1].vals[j] = light_frustum[i].vals[j];
+                }
+            }
+            // light_to_box:
+            // This matrix is a scale and translation matrix which transforms the frustum-segment bounding box to the canonical view volume.
+            float w = box_corners[1].vals[0] - box_corners[0].vals[0];
+            float h = box_corners[1].vals[1] - box_corners[0].vals[1];
+            float d = box_corners[1].vals[2] - box_corners[0].vals[2];
+            float x = box_corners[0].vals[0];
+            float y = box_corners[0].vals[1];
+            float z = box_corners[0].vals[2];
+            mat4x4 light_to_box = {{
+                2/w,  0,    0,   0,
+                0,    2/h,  0,   0,
+                0,    0,    1/d, 0,
+                -x-1, -y-1, -z,  1,
+            }};
+            mat4x4 shadow_matrix = light_to_box;
+            right_multiply_matrix4x4f(&shadow_matrix, &light_matrix);
+            set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrices[segment].vals, shadow_matrix.vals);
 
-        for_aspect(Body, body)
-            render_body_with_material(shadow_matrix, body, g_shadow_map_material);
-        end_for_aspect()
+            for_aspect(Body, body)
+                render_body_with_material(shadow_matrix, body, g_shadow_map_material);
+            end_for_aspect()
+        }
         index ++;
         if (index == MAX_NUM_DIRECTIONAL_LIGHTS) break;
     end_for_aspect()

@@ -15,30 +15,40 @@ void draw_frustum(Camera *camera)
     r = camera->plane_r;
 
     Transform *transform = get_sibling_aspect(camera, Transform);
-    vec3 near_p = vec3_mul(Transform_forward(transform), n);
-    vec3 far_p = vec3_mul(Transform_forward(transform), f);
+    vec3 pos = Transform_position(transform);
+    vec3 near_p = vec3_add(pos, vec3_mul(Transform_forward(transform), -n));
+    vec3 far_p =  vec3_add(pos, vec3_mul(Transform_forward(transform), -f));
+    paint_line_cv(pos, near_p, "b");
+    paint_line_cv(near_p, far_p, "r");
 
+    // vec3 near_p = vec3_mul(Transform_relative_position(transform, new_vec3(0,0,-1)), n);
+    // vec3 far_p = vec3_mul(Transform_relative_position(transform, new_vec3(0,0,-1)), f);
+    // paint_line_cv(Transform_position(transform), near_p, "b");
+    // paint_line_cv(near_p, far_p, "r");
+
+#if 1
     vec3 near_quad[] = {
-        vec3_add(near_p, Transform_relative_direction(transform, new_vec3(-l, t, 0))),
-        vec3_add(near_p, Transform_relative_direction(transform, new_vec3(-l, -b, 0))),
-        vec3_add(near_p, Transform_relative_direction(transform, new_vec3(r, -b, 0))),
+        vec3_add(near_p, Transform_relative_direction(transform, new_vec3(l, t, 0))),
+        vec3_add(near_p, Transform_relative_direction(transform, new_vec3(l, b, 0))),
+        vec3_add(near_p, Transform_relative_direction(transform, new_vec3(r, b, 0))),
         vec3_add(near_p, Transform_relative_direction(transform, new_vec3(r, t, 0))),
     };
     vec3 far_quad[] = {
-        vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(-l, t, 0),  f/n))),
-        vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(-l, -b, 0), f/n))),
-        vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, -b, 0),  f/n))),
+        vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0),  f/n))),
+        vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0), f/n))),
+        vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0),  f/n))),
         vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0),   f/n))),
     };
     for (int i = 0; i < 4; i++) {
-        paint_line_cv(near_quad[i], near_quad[(i+1)%4], "r");
+        paint_line_cv(near_quad[i], near_quad[(i+1)%4], "g");
     }
     for (int i = 0; i < 4; i++) {
-        paint_line_cv(far_quad[i], far_quad[(i+1)%4], "r");
+        paint_line_cv(far_quad[i], far_quad[(i+1)%4], "g");
     }
     for (int i = 0; i < 4; i++) {
-        paint_line_cv(near_quad[i], far_quad[i], "r");
+        paint_line_cv(near_quad[i], far_quad[i], "g");
     }
+#endif
 }
 void swap_camera(void)
 {

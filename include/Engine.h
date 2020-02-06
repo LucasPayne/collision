@@ -25,6 +25,14 @@
 #include "shader_blocks/StandardLoopWindow.h"
 #include "shader_blocks/Lights.h"
 
+extern float g_bg_color[]; //[4]
+extern int g_window_width;
+extern int g_window_height;
+extern int g_subwindow_blx;
+extern int g_subwindow_bly;
+extern int g_subwindow_trx;
+extern int g_subwindow_try;
+
 extern float time;
 extern float dt;
 

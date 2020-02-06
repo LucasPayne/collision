@@ -29,7 +29,18 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
     camera->plane_b = b;
     camera->plane_n = n;
     camera->plane_f = f;
+
+    camera->aspect_ratio = aspect_ratio;
+    // By default, the camera renders to the entire screen.
+    camera->blx = 0;
+    camera->bly = 0;
+    camera->trx = 1;
+    camera->try = 1;
+
     camera->projection_matrix = frustrum_matrix;
+
+    camera->override_bg_color = false;
+    camera->bg_color = new_vec4(0,0,0,1);
 }
 mat4x4 Camera_vp_matrix(Camera *camera)
 {

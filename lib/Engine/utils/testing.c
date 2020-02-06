@@ -43,8 +43,7 @@ void test_directional_light_auto(void)
 {
     EntityID light = new_entity(4);
     Transform_set(entity_add_aspect(light, Transform), 0,200,0,  0,0,0);
-    Logic *logic = entity_add_aspect(light, Logic);
-    logic->update = test_directional_light_auto_update;
+    Logic_init(entity_add_aspect(light, Logic), test_directional_light_auto_update);
     DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,0.7,0.7,1,  400,400,500);
 }
 // Directional light controlled with keys M and N.
@@ -77,8 +76,7 @@ void test_point_light_1(void)
     EntityID light = new_entity(4);
     Transform_set(entity_add_aspect(light, Transform), 1,3,0,  0,0,0);
     PointLight_init(entity_add_aspect(light, PointLight),  0.07,0,0,  1,1,1,1);
-    Logic *logic = entity_add_aspect(light, Logic);
-    logic->update = test_controls_1;
+    Logic_init(entity_add_aspect(light, Logic), test_controls_1);
 
     Body *body = entity_add_aspect(light, Body);
     body->scale = 0.003;
@@ -101,9 +99,6 @@ void test_spawn_cubes(int n)
         body->material = Material_create("Materials/textured_phong_shadows");
         material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/mario/sand_bricks");
         body->geometry = new_resource_handle(Geometry, "Models/block");
-        // Logic *logic = entity_add_aspect(quad, Logic);
-        // logic->update = quad_test_update;
-        // Input_init(entity_add_aspect(quad, Input), INPUT_KEY, input_test_1, true);
     }
 }
 // Create a floor with a given texture.
@@ -180,8 +175,7 @@ void test_spawn_star(float x, float y, float z, float theta_x, float theta_y, fl
 {
     EntityID entity = new_entity(4);
     Transform_set(entity_add_aspect(entity, Transform), x,y,z,  theta_x,theta_y,theta_z);
-    Logic *logic = entity_add_aspect(entity, Logic);
-    logic->update = test_star_update;
+    Logic_init(entity_add_aspect(entity, Logic), test_star_update);
 }
 void test_spawn_stars(int how_many)
 {

@@ -47,12 +47,14 @@ float ASPECT_RATIO;
 float mouse_x;
 float mouse_y;
 
-static int window_width = 1;
-static int window_height = 1;
-static int subwindow_blx = 0;
-static int subwindow_bly = 0;
-static int subwindow_trx = 1;
-static int subwindow_try = 1;
+
+float g_bg_color[4];
+int g_window_width = 1;
+int g_window_height = 1;
+int g_subwindow_blx = 0;
+int g_subwindow_bly = 0;
+int g_subwindow_trx = 1;
+int g_subwindow_try = 1; // bounds of the actual "screen", the minimal centered rectangle with the correct aspect ratio.
 //---
 vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, float try)
 {    
@@ -74,8 +76,8 @@ vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, fl
     }
 
     // First, convert to the floating point "screen coordinates".
-    float sx = ((pixel_x - subwindow_blx) * 1.0) / (subwindow_trx - subwindow_blx);
-    float sy = 1 - ((pixel_y - subwindow_bly) * 1.0) / (subwindow_try - subwindow_bly);
+    float sx = ((pixel_x - g_subwindow_blx) * 1.0) / (g_subwindow_trx - g_subwindow_blx);
+    float sy = 1 - ((pixel_y - g_subwindow_bly) * 1.0) / (g_subwindow_try - g_subwindow_bly);
     
     // Next, convert to the rectangle coordinates.
     float x = -(blx - sx) / (trx - blx);
@@ -121,10 +123,12 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
 
     // Send input events to Input aspects listening for mouse absolute or relative movements.
     for_aspect(Input, inp)
-        if (inp->input_type == INPUT_MOUSE_POSITION) {
-            inp->callback.mouse_position(inp, x, y);
-        } else if (inp->input_type == INPUT_MOUSE_MOVE) {
-            inp->callback.mouse_move(inp, x - mouse_x, y - mouse_y);
+        if (inp->listening) {
+            if (inp->input_type == INPUT_MOUSE_POSITION) {
+                inp->callback.mouse_position(inp, x, y);
+            } else if (inp->input_type == INPUT_MOUSE_MOVE) {
+                inp->callback.mouse_move(inp, x - mouse_x, y - mouse_y);
+            }
         }
     end_for_aspect()
 
@@ -147,8 +151,8 @@ extern void mouse_button_event(int button, int action, int mods);
 
 static void reshape(GLFWwindow *window, int width, int height)
 {
-    window_width = width;
-    window_height = height;
+    g_window_width = width;
+    g_window_height = height;
     force_aspect_ratio(window, width, height, ASPECT_RATIO);
 }
 static void key_callback(GLFWwindow *window, int key,
@@ -176,8 +180,10 @@ static void key_callback(GLFWwindow *window, int key,
 
     // Send input events to Input aspects listening for keys.
     for_aspect(Input, inp)
-        if (inp->input_type == INPUT_KEY) {
-            inp->callback.key(inp, key, action, mods);
+        if (inp->listening) {
+            if (inp->input_type == INPUT_KEY) {
+                inp->callback.key(inp, key, action, mods);
+            }
         }
     end_for_aspect()
 
@@ -260,7 +266,7 @@ static void loop_base(void)
 {
     // Update entity logic
     for_aspect(Logic, logic)
-        logic->update(logic);
+        if (logic->updating) logic->update(logic);
     end_for_aspect()
 
     // Handle lights
@@ -378,6 +384,8 @@ int main(void)
     if (!dd_get(app_config, "fg_color", "vec4", fg_color)) config_error("fg_color");
     float bg_color[4]; // Background behind rectangle, visible if the window proportions do not match the aspect ratio.
     if (!dd_get(app_config, "bg_color", "vec4", bg_color)) config_error("bg_color");
+    // make this a global.
+    memcpy(g_bg_color, bg_color, sizeof(bg_color));
 
     if (!dd_get(app_config, "aspect_ratio", "float", &ASPECT_RATIO)) config_error("aspect_ratio");
 
@@ -441,7 +449,7 @@ int main(void)
 
         // Clearing: window clear to background color, viewport clear to the foreground color.
         
-        glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+        glClearColor(g_bg_color[0], g_bg_color[1], g_bg_color[2], g_bg_color[3]);
         glDisable(GL_SCISSOR_TEST);
         glClear(clear_mask);
 
@@ -449,10 +457,10 @@ int main(void)
         glGetIntegerv(GL_VIEWPORT, viewport);
         glEnable(GL_SCISSOR_TEST);
         glScissor(viewport[0], viewport[1], viewport[2], viewport[3]);
-        subwindow_blx = viewport[0];
-        subwindow_bly = viewport[1];
-        subwindow_trx = viewport[0] + viewport[2];
-        subwindow_try = viewport[1] + viewport[3];
+        g_subwindow_blx = viewport[0];
+        g_subwindow_bly = viewport[1];
+        g_subwindow_trx = viewport[0] + viewport[2];
+        g_subwindow_try = viewport[1] + viewport[3];
         glClearColor(fg_color[0], fg_color[1], fg_color[2], fg_color[3]);
         glClear(clear_mask);
 

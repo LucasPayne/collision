@@ -42,11 +42,33 @@ void render_body(mat4x4 vp_matrix, Body *body)
 mat4x4 Camera_prepare(Camera *camera)
 {
     // Prepare the rendering context for rendering with this camera.
-
+    glEnable(GL_SCISSOR_TEST);
+    float camera_viewport[4];
+    camera_viewport[0] = g_subwindow_blx + camera->blx * g_window_width;
+    camera_viewport[1] = g_subwindow_bly + camera->bly * g_window_height;
+    camera_viewport[2] = (camera->trx - camera->blx) * g_window_width;
+    camera_viewport[3] = (camera->try - camera->bly) * g_window_height;
+    glScissor(camera_viewport[0], camera_viewport[1], camera_viewport[2], camera_viewport[3]);
+    if (camera->override_bg_color) {
+        glClearColor(camera->bg_color.vals[0], camera->bg_color.vals[1], camera->bg_color.vals[2], camera->bg_color.vals[3]);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(g_bg_color[0], g_bg_color[1], g_bg_color[2], g_bg_color[3]);
+    }
     // Form the view-projection matrix.
     Transform *camera_transform = get_sibling_aspect(camera, Transform);
-    Matrix4x4f view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
-    Matrix4x4f vp_matrix = camera->projection_matrix;
+    // Account for the camera's target rectangle.
+    float x_scale = camera->trx - camera->blx;
+    float y_scale = camera->try - camera->bly;
+    float x_shift = 2*camera->blx - 1 + x_scale;
+    float y_shift = 2*camera->bly - 1 + y_scale;
+    mat4x4 vp_matrix = {{
+        x_scale, 0,       0, 0,
+        0,       y_scale, 0, 0,
+        0,       0,       1, 0,
+        x_shift, y_shift, 0, 1,
+    }};
+    mat4x4 view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
+    right_multiply_matrix4x4f(&vp_matrix, &camera->projection_matrix);
     right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
     
     // Upload the camera position and direction, and other information.
@@ -73,6 +95,7 @@ mat4x4 Camera_prepare(Camera *camera)
         set_uniform_vec3(Lights, directional_lights[directional_light_index].half_vector, new_vec3(hx, hy, hz));
         directional_light_index ++;
     end_for_aspect()
+
     return vp_matrix;
 }
 
@@ -97,6 +120,7 @@ void render(void)
     render_paint2d();
     painting_flush(Canvas2D);
 
+    // Render text.
     for_aspect(Camera, camera)
         float aspect_ratio = (camera->plane_t - camera->plane_b) / (camera->plane_r - camera->plane_l);
         for_aspect(Text, text)
@@ -147,6 +171,11 @@ void render(void)
            //     // "Placed" text has an orientation determined by its transform.
            // }
 
+            float test_quad_size = 0.05;
+            // paint2d_quad_c(0.5*(screen_x-test_quad_size)+0.5,0.5*(screen_y-test_quad_size)+0.5,
+            //                0.5*(screen_x+test_quad_size)+0.5,0.5*(screen_y-test_quad_size)+0.5,
+            //                0.5*(screen_x+test_quad_size)+0.5,0.5*(screen_y+test_quad_size)+0.5,
+            //                0.5*(screen_x-test_quad_size)+0.5,0.5*(screen_y+test_quad_size)+0.5, "b");
             Text_render(text_matrix, text);
         end_for_aspect()
     end_for_aspect()

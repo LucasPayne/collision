@@ -22,7 +22,21 @@ extern void init_program(void)
 {
     open_scene(g_scenes, "block_on_floor");
 
-    create_key_camera_man(0,50,100,  0,0,0);
+    Camera *camera = get_aspect_type(create_key_camera_man(0,50,100,  0,0,0), Camera);
+
+#if 0
+{
+    Camera *camera = get_aspect_type(create_key_camera_man(0,50,100,  0,0,0), Camera);
+    camera->trx = 0.5;
+    camera->try = 0.5;
+}
+{
+    Camera *camera = get_aspect_type(create_key_camera_man(-20,80,30,  0,0,0), Camera);
+    camera->blx = 0.5;
+    camera->bly = 0.5;
+}
+#endif
+
     test_directional_light_controlled();
     test_directional_light_auto();
     // test_point_light_1();

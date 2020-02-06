@@ -135,6 +135,13 @@ Manager *_new_manager(AspectType *type_pointer,
         g_managers = (Manager *) realloc(g_managers, g_managers_length * sizeof(Manager));
         mem_check(g_managers);
     }
+
+#if 0
+    printf("Creating new %s manager with size %zu\n", type_name, size);
+    printf("aspect properties size: %zu\n", sizeof(AspectProperties));
+    getchar();
+#endif
+
     // Initialize the manager information.
     Manager *manager = &g_managers[g_num_aspect_types];
     manager->new_aspect = new_aspect;

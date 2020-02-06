@@ -76,6 +76,7 @@ struct Logic_s;
 typedef void (*LogicUpdate)(struct Logic_s *);
 typedef struct Logic_s {
 ASPECT_PROPERTIES()
+    bool updating;
     LogicUpdate update;
     void *data;
 } Logic;
@@ -150,6 +151,13 @@ ASPECT_PROPERTIES()
     float plane_b;
     float plane_n;
     float plane_f;
+    float aspect_ratio;
+    float blx;
+    float bly;
+    float trx;
+    float try; // screen subrectangle in screen coordinates, bottom-left (0,0) to top-right (1,1).
+    bool override_bg_color;
+    vec4 bg_color;
     Matrix4x4f projection_matrix; // the lens
 } Camera;
 void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far);

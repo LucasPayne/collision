@@ -2,8 +2,6 @@
 ================================================================================*/
 #ifndef HEADER_DEFINED_PAINTING
 #define HEADER_DEFINED_PAINTING
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include "matrix_mathematics.h"
 #include "resources.h"
 

@@ -19,7 +19,7 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-    
+    paint_line(Canvas3D,  0,0,0, 50,50,50, 1,0,0,1,  100);
 }
 extern void close_program(void)
 {

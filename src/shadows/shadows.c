@@ -70,8 +70,6 @@ extern void loop_program(void)
         
     end_for_aspect()
 
-
-
     // printf("getting. ...\n");
     // getchar();
     // ResourceHandle mat = Material_create("Materials/test_texture");

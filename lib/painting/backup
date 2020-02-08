@@ -1,3 +1,4 @@
+
 /*--------------------------------------------------------------------------------
 notes
 -----
@@ -56,7 +57,7 @@ static Canvas g_canvases[NUM_CANVASES]; // Currently, there is a fixed set of ca
                                         // There chould be standard canvases with their own function calls,
                                         // which call the canvas-selecting functions.
 
-#define painting_canvas(CANVAS_ID) ( &g_canvases[( CANVAS_ID )] )
+#define painting_canvas(CANVAS_ID) ( &g_canvases[( CANVAS_ID )]; )
 
 
 static bool painting_module_initialized = false;
@@ -96,13 +97,46 @@ void painting_init(void)
         exit(EXIT_FAILURE);\
     }
 
+static void ___painting_add(int canvas_id, Geometry geometry, PaintType paint_type, void *data, size_t size)
+{
+    Canvas *canvas = painting_canvas(canvas_id);
+    paint_buffer_check(canvas);
+    canvas->paint_buffer[canvas->paint_count].type = paint_type;
+    canvas->paint_buffer[canvas->paint_count].geometry = geometry;
+    memcpy(&canvas->paint_buffer[canvas->paint_count].contents.flat, data, size);
+    canvas->paint_count ++;
+}
+static void painting_add_flat(int canvas_id, Geometry geometry, vec4 color) {
+    PaintPropertiesFlat props;
+    props.color = color;
+    ___painting_add(canvas_id, geometry, PAINT_FLAT, &props, sizeof(struct PaintPropertiesFlat));
+}
+static void painting_add_dashed(int canvas_id, Geometry geometry, vec4 color, float on_amount, float length) {
+    if (on_amount < 0) on_amount = 0;
+    if (on_amount > 1) on_amount = 1;
+    if (length < 0) length = 0;
+    if (length > 1) length = 1;
+    struct PaintPropertiesDashed props;
+    props.on_amount = (uint8_t) (on_amount * 256);
+    props.length = (uint8_t) (length * 256); // on_amount and length are given as floats 0..1, and converted to unsigned bytes.
+    ___painting_add(canvas_id, geometry, PAINT_DASHED, &props, sizeof(struct PaintPropertiesDashed));
+}
+static void painting_add_sprite(int canvas_id, Geometry geometry, ResourceHandle texture) {
+    PaintPropertiesSprite props;
+    props.texture = texture;
+    ___painting_add(canvas_id, geometry, PAINT_SPRITE, &texture, sizeof(struct PaintPropertiesSprite));
+}
+static void painting_add_custom_material(int canvas_id, Geometry geometry, ResourceHandle material) {
+    PaintPropertiesCustomMaterial props;
+    props.material = material;
+    ___painting_add(canvas_id, geometry, PAINT_CUSTOM_MATERIAL, &material, sizeof(struct PaintPropertiesCustomMaterials));
+}
 
 void painting_draw(int canvas_id)
 {
     Canvas *canvas = painting_canvas(canvas_id);
     for (int i = 0; i < canvas->paint_count; i++) {
         Paint *paint = &canvas->paint_buffer[i];
-        #if 0
         switch (paint->type) {
             case PAINT_FLAT:
                 material_set_property_vec4(flat_color_material, "flat_color", paint->contents.flat.color);
@@ -120,7 +154,6 @@ void painting_draw(int canvas_id)
                 gm_draw(paint->geometry, resource_data(Material, paint->contents.custom_material.material));
                 break;
         }
-        #endif
     }
 }
 void painting_flush(int canvas_id)
@@ -128,6 +161,7 @@ void painting_flush(int canvas_id)
     Canvas *canvas = painting_canvas(canvas_id);
     for (int i = 0; i < canvas->paint_count; i++) {
         Paint *paint = &canvas->paint_buffer[i];
+        gm_free(paint->geometry);
         if (paint->type == PAINT_SPRITE && paint->contents.sprite.destroy) {
             destroy_resource_handle(&paint->contents.sprite.texture);
         }
@@ -187,13 +221,12 @@ static Paint *strokes_line(Canvas *canvas, vec3 a, vec3 b, float width)
     vec3 *vp = (vec3 *) offset_buffer(canvas);
     vp[0] = a;
     vp[1] = b;
-    paint->offset = canvas->current_offset;
-    canvas->current_offset += sizeof(float) * 3 * 2;
+    paint->offset = g_canvases[canvas].current_offset;
+    canvas->offset += sizeof(float) * 3 * 2;
     paint->shape_contents.line.width = width;
     return paint;
 }
 static Paint *strokes_sprite(Canvas *canvas, float blx, float bly, float width, float height, bool horiz_flip, int rotate)
-{
     // 3U: 2D rectangle with UV coordinates.
     Paint *paint = next_paint(canvas);
     float vertices[3 * 4 + 2 * 4] = {
@@ -238,7 +271,7 @@ static Paint *strokes_loop(Canvas *canvas, float vals[], int num_points, float w
 static Paint *strokes_quad(Canvas *canvas, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color)
 {
     Paint *paint = next_paint(canvas);
-    vec3 *vp = (vec3 *) offset_buffer(canvas);
+    vec3 *vp = (vec3 *) &offset_buffer(canvas);
     vp[0] = a;
     vp[1] = b;
     vp[2] = c;
@@ -256,23 +289,22 @@ void paint2d_loop(float vals[], int num_points, COLOR_SCALARS) {
 --------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
+
 void paint_line(int canvas_id, float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS, float width)
 {
     Paint *paint = strokes_line(painting_canvas(canvas_id), new_vec3(ax, ay, az), new_vec3(bx, by, bz), width);
-    paint->shape = PAINT_SHAPE_LINES;
-    paint->type = PAINT_FLAT;
     paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
 }
-void paint_chain(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width)
+
+void paint_chain(int canvas, float vals[], int num_points, COLOR_SCALARS, float width)
 {
     Paint *paint = strokes_chain(painting_canvas(canvas_id), vals, num_points, width);
-    paint->shape = PAINT_SHAPE_LINES;
-    paint->type = PAINT_FLAT;
-    paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
+
+    painting_add_flat(canvas, gm_done(), new_vec4(cr, cg, cb, ca));
 }
 
 
-#if 0
+
 // Generic canvas line painting
 // ----------------------------
 void canvas_paint_line_v(int canvas, vec3 a, vec3 b, vec4 color)
@@ -588,7 +620,7 @@ void paint2d_sprite_p(float blx, float bly, float width, float height, char *tex
     ResourceHandle texture_handle = new_resource_handle(Texture, texture_path);
     paint2d_sprite(blx, bly, width, height, texture_handle);
 }
-#endif
+
 
 
 

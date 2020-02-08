@@ -34,25 +34,25 @@ void draw_frustum(Camera *camera)
 
         near_p = vec3_add(pos, vec3_mul(Transform_forward(transform), along));
         far_p =  vec3_add(pos, vec3_mul(Transform_forward(transform), along_to));
-
+        //---2* ?
         vec3 near_quad[] = {
-            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0), along/n))),
-            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0), along/n))),
-            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0), along/n))),
-            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0), along/n))),
+            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0), along + n))),
+            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0), along + n))),
+            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0), along + n))),
+            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0), along + n))),
         };
         vec3 far_quad[] = {
-            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0),  along_to/n))),
-            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0),  along_to/n))),
-            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0),  along_to/n))),
-            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0),  along_to/n))),
+            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0),  along_to + n))),
+            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0),  along_to + n))),
+            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0),  along_to + n))),
+            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0),  along_to + n))),
         };
         for (int i = 0; i < 4; i++) {
             paint_line_v(near_quad[i], near_quad[(i+1)%4], colors[segment]);
             paint_line_v(far_quad[i], far_quad[(i+1)%4], colors[segment]);
             paint_line_v(near_quad[i], far_quad[i], colors[segment]);
         }
-    
+    #if 0
         for_aspect(DirectionalLight, light)
             mat4x4 light_matrix = invert_rigid_mat4x4(Transform_matrix(get_sibling_aspect(light, Transform)));
             // Transform frustum segment to light space.
@@ -97,6 +97,7 @@ void draw_frustum(Camera *camera)
                 }
             }
         end_for_aspect()
+#endif
     }
 }
 void swap_camera(void)
@@ -133,7 +134,7 @@ extern void cursor_move_event(double x, double y)
 extern void init_program(void)
 {
     Camera *camera_1 = get_aspect_type(create_key_camera_man(0,0,0,  0,0,0), Camera);
-#if 0
+#if 1
     camera_1->override_bg_color = true;
     camera_1->bg_color = new_vec4(0.8,1,0.8,1);
     camera_1->bly = 0.25;
@@ -164,6 +165,36 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
+#if 0
+    for_aspect(Camera, camera)
+        draw_frustum(camera);
+        break;
+    end_for_aspect()
+#endif
+
+    for_aspect(DirectionalLight, light)
+        Transform *t = get_sibling_aspect(light, Transform);
+        vec3 dir = DirectionalLight_direction(light);
+        vec3 pos = Transform_position(t);
+        paint_line_cv(pos, vec3_add(pos, vec3_mul(dir, 10)), "r");
+
+        vec3 near_plane[] = {
+            Transform_relative_position(t, new_vec3(-light->shadow_width/2,-light->shadow_height/2,0)),
+            Transform_relative_position(t, new_vec3(light->shadow_width/2,-light->shadow_height/2,0)),
+            Transform_relative_position(t, new_vec3(light->shadow_width/2,light->shadow_height/2,0)),
+            Transform_relative_position(t, new_vec3(-light->shadow_width/2,light->shadow_height/2,0)),
+        };
+        vec3 far_plane[] = {
+            Transform_relative_position(t, new_vec3(-light->shadow_width/2,-light->shadow_height/2,light->shadow_depth)),
+            Transform_relative_position(t, new_vec3(light->shadow_width/2,-light->shadow_height/2,light->shadow_depth)),
+            Transform_relative_position(t, new_vec3(light->shadow_width/2,light->shadow_height/2,light->shadow_depth)),
+            Transform_relative_position(t, new_vec3(-light->shadow_width/2,light->shadow_height/2,light->shadow_depth)),
+        };
+        paint_loop_c((float *) near_plane, 4, "y");
+        paint_loop_c((float *) far_plane, 4, "y");
+        for (int i = 0; i < 4; i++) paint_line_cv(near_plane[i], far_plane[i], "g");
+        
+    end_for_aspect()
 }
 extern void close_program(void)
 {

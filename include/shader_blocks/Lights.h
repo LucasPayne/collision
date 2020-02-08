@@ -4,8 +4,8 @@ definitions between glsl and C.
 --------------------------------------------------------------------------------*/
 #ifndef SHADER_BLOCK_HEADER_DEFINED_LIGHTS
 #define SHADER_BLOCK_HEADER_DEFINED_LIGHTS
-#define MAX_NUM_DIRECTIONAL_LIGHTS 8
-#define MAX_NUM_POINT_LIGHTS 8
+#define MAX_NUM_DIRECTIONAL_LIGHTS 4
+#define MAX_NUM_POINT_LIGHTS 4
 #define NUM_FRUSTUM_SEGMENTS 4
 
 static char *ShaderBlockSamplerNames_Lights[] = {
@@ -13,24 +13,16 @@ static char *ShaderBlockSamplerNames_Lights[] = {
     "directional_light_shadow_maps[1]",
     "directional_light_shadow_maps[2]",
     "directional_light_shadow_maps[3]",
-    "directional_light_shadow_maps[4]",
-    "directional_light_shadow_maps[5]",
-    "directional_light_shadow_maps[6]",
-    "directional_light_shadow_maps[7]",
     "point_light_shadow_maps[0]",
     "point_light_shadow_maps[1]",
     "point_light_shadow_maps[2]",
     "point_light_shadow_maps[3]",
-    "point_light_shadow_maps[4]",
-    "point_light_shadow_maps[5]",
-    "point_light_shadow_maps[6]",
-    "point_light_shadow_maps[7]",
 }; // ShaderBlockSamplerNames_Lights
 
-#define ShaderBlockNumSamplers_Lights 16
+#define ShaderBlockNumSamplers_Lights 8
 struct ___ShaderBlockSamplers_Lights {
-    GLint directional_light_shadow_maps[8];
-    GLint point_light_shadow_maps[8];
+    GLint directional_light_shadow_maps[4];
+    GLint point_light_shadow_maps[4];
 } ShaderBlockSamplers_Lights;
 
 struct ShaderBlockStruct_Lights_DirectionalLight { //size: 112
@@ -57,10 +49,10 @@ typedef struct ShaderBlock_Lights_s {
     mat4x4 active_shadow_matrix;    //offset: 16, alignment: 16, C_type_size: 64
     int num_directional_lights;    //offset: 80, alignment: 4, C_type_size: 4
     char ___std140_pad3[12];
-    struct ShaderBlockStruct_Lights_DirectionalLight directional_lights[8];    //offset: 96, alignment: 16, C_type_size: 112
+    struct ShaderBlockStruct_Lights_DirectionalLight directional_lights[4];    //offset: 96, alignment: 16, C_type_size: 112
     int num_point_lights;    //offset: 208, alignment: 4, C_type_size: 4
     char ___std140_pad6[12];
-    struct ShaderBlockStruct_Lights_PointLight point_lights[8];    //offset: 224, alignment: 16, C_type_size: 48
+    struct ShaderBlockStruct_Lights_PointLight point_lights[4];    //offset: 224, alignment: 16, C_type_size: 48
 } ShaderBlock_Lights;
 
 #endif // SHADER_BLOCK_HEADER_DEFINED_LIGHTS

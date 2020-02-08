@@ -22,43 +22,7 @@ void main(void)
 {
     float ambient = 0.05;
     color = vec4(vec3(ambient), 1);
-
-
-#if 0
-    for (int i = 0; i < num_directional_lights; i++) {
-
-        float cos_theta = dot(fNormal, -directional_lights[i].direction); // cosine of angle between normal and light
-
-        vec3 uvd_coord = fDirectionalLightShadowCoord[i].xyz / fDirectionalLightShadowCoord[i].w;
-
-        // Shadow acne biasing. This is just a hack heuristic.
-        uvd_coord.z += -max((1 - abs(cos_theta)) * 0.005, 0.0005);
-        float light_factor = 0.0;
-#if 0
-	float val = texture(directional_light_shadow_maps[i], uvd_coord);
-        light_factor = val;
-#else
-        vec2 texel_size = 1 / textureSize(directional_light_shadow_maps[i], 0);
-        const int outward = 0;
-        for (int horiz = -outward; horiz <= outward; horiz++) {
-            for (int vert = -outward; vert <= outward; vert++) {
-                float val = texture(directional_light_shadow_maps[i], vec3(uvd_coord.x + texel_size.x * horiz, uvd_coord.y + texel_size.y * vert, uvd_coord.z));
-                light_factor += val;
-            }
-        }
-        light_factor /= (outward + 1) * (outward + 1);
-#endif
-        float intensity = (1 - ambient) * max(0, cos_theta);
-        color += light_factor * vec4(vec3(intensity), 0);
-    }
-    for (int i = 0; i < num_point_lights; i++) {
-        float intensity = (1 - ambient) * max(0, dot(-normalize(fPosition.xyz - point_lights[i].position), fNormal));
-        color += vec4(vec3(intensity), 0);
-    }
-
-    if (use_flat_color) color *= flat_color;
-    else color *= texture(diffuse_map, fTexCoord);
-#endif
+    vec4 add_color = vec4(0,0,0,1);
 
     vec4 segment_colors[] = {
         vec4(1,0,0,1),
@@ -66,12 +30,39 @@ void main(void)
         vec4(0,0,1,1),
         vec4(1,0,1,1),
     };
-    vec4 add_color = vec4(0,0,0,1);
+    int segment_index = 0;
     for (int i = 0; i < NUM_FRUSTUM_SEGMENTS; i++) {
         if (dot(fPosition.xyz - camera_position, camera_direction) > shadow_map_segment_depths[i]) {
-        // if (dot(fPosition.xyz - camera_position, camera_direction) > 50 * i) {
-            add_color = segment_colors[i];
+            add_color = 0.1 * segment_colors[i];
+            segment_index = i;
         }
     }
+    
+    for (int i = 0; i < num_directional_lights; i++) {
+        vec4 shadow_coord = fDirectionalLightShadowCoord[4*i + segment_index];
+#if 1
+        float cos_theta = dot(fNormal, -directional_lights[i].direction); // cosine of angle between normal and light
+        vec3 uvd_coord = shadow_coord.xyz / shadow_coord.w; // perspective. ---probably doesn't matter for directional lights.
+
+        // Shadow acne biasing. This is just a hack heuristic.
+        uvd_coord.z += -max((1 - abs(cos_theta)) * 0.005, 0.0005);
+
+        float light_factor = texture(directional_light_shadow_maps[i], uvd_coord.xyz);
+
+        float intensity = (1 - ambient) * max(0, cos_theta);
+        color += light_factor * vec4(vec3(intensity), 0);
+#endif
+    }
+
+    // Point lights.
+    for (int i = 0; i < num_point_lights; i++) {
+        float intensity = (1 - ambient) * max(0, dot(-normalize(fPosition.xyz - point_lights[i].position), fNormal));
+        color += vec4(vec3(intensity), 0);
+    }
+
+    // Modulate by the texture color or the flat color.
+    if (use_flat_color) color *= flat_color;
+    else color *= texture(diffuse_map, fTexCoord);
+    // Add the tinting color (this can be used for visualization and testing).
     color += add_color;
 }

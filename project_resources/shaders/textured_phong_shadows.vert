@@ -27,15 +27,10 @@ void main(void)
     fTexCoord = vTexCoord;
     fNormal = (normal_matrix * vec4(vNormal, 1)).xyz;
 
-    // Normalized device coordinates to UV texture coordinates + depth.
-    mat4x4 ndc_to_uvd_matrix = mat4x4(0.5, 0,   0,   0,
-                                      0,   0.5, 0,   0,
-                                      0,   0,   0.5, 0,
-                                      0.5, 0.5, 0.5, 1);
     for (int i = 0; i < num_directional_lights; i++) {
         for (int j = 0; j < NUM_FRUSTUM_SEGMENTS; j++) {
             mat4x4 model_shadow_matrix = directional_lights[i].shadow_matrices[j] * model_matrix;
-            fDirectionalLightShadowCoord[4*i + j] = ndc_to_uvd_matrix * model_shadow_matrix * vPosition;
+            fDirectionalLightShadowCoord[4*i + j] = model_shadow_matrix * vPosition;
         }
     }
 }

@@ -134,6 +134,8 @@ void test_mass_objects(int number_of_them)
         body->geometry = new_resource_handle(Geometry, "Models/block");
     }
 }
+
+#if 0
 // Test painted stars.
 static void test_star_update(Logic *logic)
 {
@@ -181,3 +183,4 @@ void test_spawn_stars(int how_many)
 {
     for (int i = 0; i < how_many; i++) test_spawn_star(frand()*50-25, frand()*50-25,frand()*50-25,  2*M_PI*frand(),2*M_PI*frand(),2*M_PI*frand());
 }
+#endif

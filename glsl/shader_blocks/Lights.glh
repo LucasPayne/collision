@@ -2,12 +2,12 @@
 This code was generated with the gen_shader_blocks tool, for synchronizing
 definitions between glsl and C.
 --------------------------------------------------------------------------------*/
-#define MAX_NUM_DIRECTIONAL_LIGHTS 8
-#define MAX_NUM_POINT_LIGHTS 8
+#define MAX_NUM_DIRECTIONAL_LIGHTS 4
+#define MAX_NUM_POINT_LIGHTS 4
 #define NUM_FRUSTUM_SEGMENTS 4
 
-uniform sampler2DShadow directional_light_shadow_maps[8];
-uniform sampler2DShadow point_light_shadow_maps[8];
+uniform sampler2DShadow directional_light_shadow_maps[4];
+uniform sampler2DShadow point_light_shadow_maps[4];
 struct DirectionalLight {
     mat4x4 shadow_matrices[4];
     vec3 half_vector;
@@ -26,7 +26,7 @@ layout (std140) uniform Lights {
     vec4 shadow_map_segment_depths;
     mat4x4 active_shadow_matrix;
     int num_directional_lights;
-    DirectionalLight directional_lights[8];
+    DirectionalLight directional_lights[4];
     int num_point_lights;
-    PointLight point_lights[8];
+    PointLight point_lights[4];
 };

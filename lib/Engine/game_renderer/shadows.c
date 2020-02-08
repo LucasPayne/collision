@@ -101,6 +101,13 @@ void do_shadows(Camera *camera)
         glClear(GL_DEPTH_BUFFER_BIT);
         glEnable(GL_SCISSOR_TEST);
 
+        // Colors for frustum-segment / cascade visualizations.
+        vec4 colors[] = {   
+            new_vec4(1,0,0,1),
+            new_vec4(0,1,0,1),
+            new_vec4(0,0,1,1),
+            new_vec4(0,1,1,1),
+        };
         for (int segment = 0; segment < 4; segment++) {
         //for (int segment = 0; segment < 4; segment++) {
             // along:    near plane z offset from this frustum segment.
@@ -111,17 +118,25 @@ void do_shadows(Camera *camera)
             vec3 far_p =  vec3_add(pos, vec3_mul(Transform_forward(transform), along_to));
             // Calculate the points of the frustum segment, on the near plane and far plane.
             vec3 near_quad[] = {
-                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0), along/n))),
-                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0), along/n))),
-                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0), along/n))),
-                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0), along/n))),
+                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0), -2 * along / n))),
+                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0), -2 * along / n))),
+                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0), -2 * along / n))),
+                vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0), -2 * along / n))),
             };
             vec3 far_quad[] = {
-                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0),  along_to/n))),
-                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0),  along_to/n))),
-                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0),  along_to/n))),
-                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0),  along_to/n))),
+                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0), -2 * along_to / n))),
+                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0), -2 * along_to / n))),
+                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0), -2 * along_to / n))),
+                vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0), -2 * along_to / n))),
             };
+#if 0
+            // Draw the frustum.
+            for (int i = 0; i < 4; i++) {
+                paint_line_v(near_quad[i], near_quad[(i+1)%4], colors[segment]);
+                paint_line_v(far_quad[i], far_quad[(i+1)%4], colors[segment]);
+                paint_line_v(near_quad[i], far_quad[i], colors[segment]);
+            }
+#endif
             mat4x4 light_matrix = invert_rigid_mat4x4(Transform_matrix(get_sibling_aspect(light, Transform)));
             // Transform frustum segment to light space.
             vec3 light_frustum[8];
@@ -146,12 +161,6 @@ void do_shadows(Camera *camera)
             float x = box_corners[0].vals[0];
             float y = box_corners[0].vals[1];
             float z = box_corners[0].vals[2];
-            // mat4x4 light_to_box = {{
-            //     2/w,  0,    0,   0,
-            //     0,    2/h,  0,   0,
-            //     0,    0,    -1/d, 0,
-            //     -x-1, -y-1, -z,  1,
-            // }};
             mat4x4 light_to_box = {{
                 1,     0,    0,     0,
                 0,     1,    0,     0,
@@ -172,31 +181,80 @@ void do_shadows(Camera *camera)
             }};
             right_multiply_matrix4x4f(&light_to_box, &light_to_box_2);
             right_multiply_matrix4x4f(&light_to_box, &light_to_box_3);
-#if 0
-            vec3 c1 = mat4x4_vec3(&light_to_box, box_corners[0]);
-            vec3 c2 = mat4x4_vec3(&light_to_box, box_corners[1]);
-            printf("vectors\n");
-            print_vec3(c1);
-            print_vec3(c2);
-#endif
 
             // box_to_quadrant:
             // This matrix transforms the box to the relevant quadrant.
-            float quadrant_x_shift = -0.25 + 0.5 * (segment % 2);
-            float quadrant_y_shift = -0.25 + 0.5 * (segment / 2);
+            float quadrant_x_shift = 0.5 * (segment % 2);
+            float quadrant_y_shift = 0.5 * (segment / 2);
             // printf("quadrant shift: (%.2f, %.2f)\n", quadrant_x_shift, quadrant_y_shift);
             mat4x4 box_to_quadrant = {{
                 0.5,              0,                0, 0,
                 0,                0.5,              0, 0,
                 0,                0,                1, 0,
-                quadrant_x_shift, quadrant_y_shift, 0, 1,
+                0,                0,                0, 1,
             }};
+            mat4x4 box_to_quadrant_2 = {{
+                1,                0,                0, 0,
+                0,                1,                0, 0,
+                0,                0,                1, 0,
+                -1 + 2 * (segment % 2),                -1 + 2 * (segment / 2), 0, 1,
+            }};
+            right_multiply_matrix4x4f(&box_to_quadrant, &box_to_quadrant_2);
+
             mat4x4 shadow_matrix = box_to_quadrant;
             right_multiply_matrix4x4f(&shadow_matrix, &light_to_box);
-            right_multiply_matrix4x4f(&shadow_matrix, &light_matrix);
-            set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrices[segment].vals, shadow_matrix.vals);
-
 #if 1
+{
+            vec3 c1 = mat4x4_vec3(&shadow_matrix, box_corners[0]);
+            vec3 c2 = mat4x4_vec3(&shadow_matrix, box_corners[1]);
+            printf("light to quadrant\n");
+            print_vec3(c1);
+            print_vec3(c2);
+}
+#endif
+            right_multiply_matrix4x4f(&shadow_matrix, &light_matrix);
+
+            // The shadow matrices uploaded transform to uvd (UV + depth coordinates) for the quadrant.
+            mat4x4 light_to_uvd = {{
+                0.5/w,  0,    0,   0,
+                0,    0.5/h,  0,   0,
+                0,    0,    1/d,   0,
+                0,    0,    0,     1,
+            }};
+            mat4x4 light_to_uvd_2 = {{
+                1,    0,    0,     0,
+                0,    1,    0,     0,
+                0,    0,    1,     0,
+                -x,   -y,   -z,    1,
+            }};
+            right_multiply_matrix4x4f(&light_to_uvd, &light_to_uvd_2);
+            mat4x4 uvd_to_quadrant = {{
+                1,    0,    0,     0,
+                0,    1,    0,     0,
+                0,    0,    1,     0,
+                0.5 * (segment % 2), 0.5 * (segment / 2), 0, 1,
+            }};
+            mat4x4 uvd_to_quadrant_2 = {{
+                1,    0,    0,     0,
+                0,    1,    0,     0,
+                0,    0,    1,     0,
+                0,    0,    0,     1,
+            }};
+            right_multiply_matrix4x4f(&uvd_to_quadrant, &uvd_to_quadrant_2);
+            mat4x4 uvd_shadow_matrix = uvd_to_quadrant;
+            right_multiply_matrix4x4f(&uvd_shadow_matrix, &light_to_uvd);
+#if 1
+{
+            vec3 c1 = mat4x4_vec3(&uvd_shadow_matrix, box_corners[0]);
+            vec3 c2 = mat4x4_vec3(&uvd_shadow_matrix, box_corners[1]);
+            printf("light to uvd\n");
+            print_vec3(c1);
+            print_vec3(c2);
+}
+#endif
+            right_multiply_matrix4x4f(&uvd_shadow_matrix, &light_matrix);
+            set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrices[segment].vals, uvd_shadow_matrix.vals);
+
             // Render to this frustum-segment's quadrant of the shadow map.
             float quadrant[4] = {
                 SHADOW_MAP_TEXTURE_WIDTH  * 0.5 * (segment % 2),
@@ -205,21 +263,14 @@ void do_shadows(Camera *camera)
                 SHADOW_MAP_TEXTURE_HEIGHT * 0.5,
             };
             glScissor(quadrant[0], quadrant[1], quadrant[2], quadrant[3]);
-#endif
+
             for_aspect(Body, body)
                 render_body_with_material(shadow_matrix, body, g_shadow_map_material);
                 // render_body(shadow_matrix, body);
             end_for_aspect()
 
-
 #if 0
             // Draw the frustum-segment bounding box.
-            vec4 colors[] = {   
-                new_vec4(1,0,0,1),
-                new_vec4(0,1,0,1),
-                new_vec4(0,0,1,1),
-                new_vec4(0,1,1,1),
-            };
             // Use these to form all points of the box.
             vec3 box_points[8];
             int p = 0;
@@ -254,7 +305,7 @@ void do_shadows(Camera *camera)
     end_for_aspect()
     glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-#if 1
+#if 0
     index = 0;
     for_aspect(DirectionalLight, light)
         float size = 0.23;

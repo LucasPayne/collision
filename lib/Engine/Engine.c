@@ -279,6 +279,7 @@ static void loop_base(void)
 
         index ++;
     end_for_aspect()
+    // printf("dir lights: %d\n", index);
     set_uniform_int(Lights, num_directional_lights, index);
 }
 {   

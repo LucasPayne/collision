@@ -120,6 +120,9 @@ void painting_draw(int canvas_id)
     last_num_vertices = canvas->current_index;
     // printf("%d\n", canvas->current_index);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // Draw paint with Position-only vertex format.
     glBindVertexArray(canvas->position_vao);
     for (int i = 0; i < canvas->paint_count; i++) {
@@ -292,6 +295,7 @@ void paint2d_loop(float vals[], int num_points, COLOR_SCALARS) {
 --------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
+
 void paint_line(int canvas_id, float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS, float width)
 {
     Paint *paint = strokes_line(painting_canvas(canvas_id), new_vec3(ax, ay, az), new_vec3(bx, by, bz), width);
@@ -311,324 +315,21 @@ void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color)
     paint->type = PAINT_FLAT_TRIANGLES;
     paint->contents.flat.color = color;
 }
-
-#if 0
-// Generic canvas line painting
-// ----------------------------
-void canvas_paint_line_v(int canvas, vec3 a, vec3 b, vec4 color)
+void paint_loop(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width)
 {
-    gm_lines(VERTEX_FORMAT_3);
-    attribute_3f(Position, a.vals[0],a.vals[1],a.vals[2]);
-    attribute_3f(Position, b.vals[0],b.vals[1],b.vals[2]);
-    painting_add_flat(canvas, gm_done(), color);
-}
-void canvas_paint_line(int canvas, float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS) {
-    canvas_paint_line_v(canvas, new_vec3(ax, ay, az), new_vec3(bx, by, bz), new_vec4(cr, cg, cb, ca));
-}
-void canvas_paint_line_c(int canvas, float ax, float ay, float az, float bx, float by, float bz, char *color_str) {
-    canvas_paint_line_v(canvas, new_vec3(ax, ay, az), new_vec3(bx, by, bz), str_to_color_key(color_str));
-}
-void canvas_paint_line_cv(int canvas, vec3 a, vec3 b, char *color_str) {
-    canvas_paint_line_v(canvas, a, b, str_to_color_key(color_str));
-}
-// Standard 3D canvas line painting
-// --------------------------------
-void paint_line(float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS) {
-    canvas_paint_line_v(Canvas3D, new_vec3(ax, ay, az), new_vec3(bx, by, bz), new_vec4(cr, cg, cb, ca));
-}
-void paint_line_c(float ax, float ay, float az, float bx, float by, float bz, char *color_str) {
-    canvas_paint_line_v(Canvas3D, new_vec3(ax, ay, az), new_vec3(bx, by, bz), str_to_color_key(color_str));
-}
-void paint_line_v(vec3 a, vec3 b, vec4 color) {
-    canvas_paint_line_v(Canvas3D, a, b, color);
-}
-void paint_line_cv(vec3 a, vec3 b, char *color_str) {
-    canvas_paint_line_v(Canvas3D, a, b, str_to_color_key(color_str));
+    Paint *paint = strokes_loop(painting_canvas(canvas_id), vals, num_points, width);
+    paint->type = PAINT_FLAT_LINES;
+    paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
 }
 
-// Standard 2D canvas line painting
-// --------------------------------
-void paint2d_line(float ax, float ay, float bx, float by, COLOR_SCALARS) {
-    canvas_paint_line_v(Canvas2D, new_vec3(ax, ay, paint2d_depth), new_vec3(bx, by, paint2d_depth), new_vec4(cr, cg, cb, ca));
-}
-void paint2d_line_c(float ax, float ay, float bx, float by, char *color_str) {
-    canvas_paint_line_v(Canvas2D, new_vec3(ax, ay, paint2d_depth), new_vec3(bx, by, paint2d_depth), str_to_color_key(color_str));
-}
-
-/*--------------------------------------------------------------------------------
-    Chain painting
-    (a chain of connected line segments).
---------------------------------------------------------------------------------*/
-// Generic canvas chain painting
-// -----------------------------
-void canvas_paint_chain(int canvas, float vals[], int num_points, COLOR_SCALARS) // vals length: num_points * 3
+void paint_box_v(int canvas_id, vec3 corners[], vec4 color)
 {
-    gm_lines(VERTEX_FORMAT_3);
-    for (int i = 0; i < num_points - 1; i++) {
-        int j = i + 1;
-        float x = vals[3*i + 0];
-        float y = vals[3*i + 1];
-        float z = vals[3*i + 2];
-        attribute_3f(Position, x,y,z);
-    }
-    painting_add_flat(canvas, gm_done(), new_vec4(cr, cg, cb, ca));
+    // can also be used to paint a frustum, parallelepiped, etc.
+    paint_quad_v(canvas_id, corners[0], corners[1], corners[2], corners[3], color);
+    paint_quad_v(canvas_id, corners[4], corners[5], corners[6], corners[7], color);
+    paint_quad_v(canvas_id, corners[0], corners[1], corners[5], corners[4], color);
+    paint_quad_v(canvas_id, corners[2], corners[3], corners[7], corners[6], color);
+    paint_quad_v(canvas_id, corners[1], corners[2], corners[6], corners[5], color);
+    paint_quad_v(canvas_id, corners[0], corners[3], corners[7], corners[4], color);
 }
-void canvas_paint_chain_c(int canvas, float vals[], int num_points, char *color_str)
-{
-    vec4 color = str_to_color_key(color_str);
-    canvas_paint_chain(canvas, vals, num_points, UNPACK_COLOR(color));
-}
-// Standard 3D canvas chain painting
-// ---------------------------------
-void paint_chain(float vals[], int num_points, COLOR_SCALARS) {
-    canvas_paint_chain(Canvas3D, vals, num_points, cr,cg,cb,ca);
-}
-void paint_chain_c(float vals[], int num_points, char *color_str) {
-    canvas_paint_chain_c(Canvas3D, vals, num_points, color_str);
-}
-// Standard 2D canvas chain painting
-// ---------------------------------
-void paint2d_chain(float vals[], int num_points, COLOR_SCALARS) // vals length: num_points * 2
-{
-    // Fill in the z values to pass to the 3D chain painter.
-    float vals3d[num_points * 3];
-    for (int i = 0; i < num_points; i++) {
-        vals3d[3*i + 0] = vals[2*i + 0];
-        vals3d[3*i + 1] = vals[2*i + 1];
-        vals3d[3*i + 2] = paint2d_depth;
-    }
-    canvas_paint_chain(Canvas2D, vals3d, num_points, cr,cg,cb,ca);
-}
-void paint2d_chain_c(float vals[], int num_points, char *color_str) {
-    vec4 color = str_to_color_key(color_str);
-    paint2d_chain(vals, num_points, UNPACK_COLOR(color));
-}
-/*--------------------------------------------------------------------------------
-    Loop painting
-    (same as chain except the opposite ends are connected by a line segment.)
---------------------------------------------------------------------------------*/
-// Generic canvas loop painting
-// ----------------------------
-void canvas_paint_loop(int canvas, float vals[], int num_points, COLOR_SCALARS) // vals length: num_points * 3
-{
-    gm_lines(VERTEX_FORMAT_3);
-    for (int i = 0; i < num_points + 1; i++) {
-        int j = (i + 1) % num_points;
-        float x = vals[3*j + 0];
-        float y = vals[3*j + 1];
-        float z = vals[3*j + 2];
-        attribute_3f(Position, x,y,z);
-    }
-    painting_add_flat(canvas, gm_done(), new_vec4(cr, cg, cb, ca));
-}
-void canvas_paint_loop_c(int canvas, float vals[], int num_points, char *color_str) {
-    vec4 color = str_to_color_key(color_str);
-    canvas_paint_loop(canvas, vals, num_points, UNPACK_COLOR(color));
-}
-void canvas_paint_loop_v(int canvas, float vals[], int num_points, vec4 color) {
-    canvas_paint_loop(canvas, vals, num_points, UNPACK_COLOR(color));
-}
-// Standard 3D canvas loop painting
-// --------------------------------
-void paint_loop(float vals[], int num_points, COLOR_SCALARS) {
-    canvas_paint_loop(Canvas3D, vals, num_points, cr,cg,cb,ca);
-}
-void paint_loop_c(float vals[], int num_points, char *color_str) {
-    canvas_paint_loop_c(Canvas3D, vals, num_points, color_str);
-}
-void paint_loop_v(float vals[], int num_points, vec4 color) {
-    canvas_paint_loop_v(Canvas3D, vals, num_points, color);
-}
-// Standard 2D canvas loop painting
-// --------------------------------
-void paint2d_loop(float vals[], int num_points, COLOR_SCALARS) {
-    // Fill in the z values to pass to the 3D loop painter.
-    float vals3d[num_points * 3];
-    for (int i = 0; i < num_points; i++) {
-        vals3d[3*i + 0] = vals[2*i + 0];
-        vals3d[3*i + 1] = vals[2*i + 1];
-        vals3d[3*i + 2] = paint2d_depth;
-    }
-    canvas_paint_loop(Canvas2D, vals3d, num_points, cr,cg,cb,ca);
-}
-void paint2d_loop_c(float vals[], int num_points, char *color_str) {
-    vec4 color = str_to_color_key(color_str);
-    paint2d_loop(vals, num_points, UNPACK_COLOR(color));
-}
-
-/*--------------------------------------------------------------------------------
-    Quad painting
-    These are given by the four corners,
-    instead of some encoding guaranteeing a correct quad.
---------------------------------------------------------------------------------*/
-// Generic canvas quad painting
-// ----------------------------
-void canvas_paint_quad(int canvas,
-                       float p1x, float p1y, float p1z, 
-                       float p2x, float p2y, float p2z, 
-                       float p3x, float p3y, float p3z, 
-                       float p4x, float p4y, float p4z,
-                       COLOR_SCALARS)
-{
-    gm_triangles(VERTEX_FORMAT_3);
-    attribute_3f(Position, p1x, p1y, p1z);
-    attribute_3f(Position, p2x, p2y, p2z);
-    attribute_3f(Position, p3x, p3y, p3z);
-    attribute_3f(Position, p4x, p4y, p4z);
-    gm_index(0); gm_index(1); gm_index(2);
-    gm_index(0); gm_index(2); gm_index(3);
-    painting_add_flat(canvas, gm_done(), new_vec4(cr, cg, cb, ca));
-} 
-void canvas_paint_quad_v(int canvas, vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec4 color)
-{
-    canvas_paint_quad(canvas,
-               p1.vals[0], p1.vals[1], p1.vals[2],
-               p2.vals[0], p2.vals[1], p2.vals[2],
-               p3.vals[0], p3.vals[1], p3.vals[2],
-               p4.vals[0], p4.vals[1], p4.vals[2],
-               UNPACK_COLOR(color));
-}
-void canvas_paint_quad_c(int canvas,
-                         float p1x, float p1y, float p1z, 
-                         float p2x, float p2y, float p2z, 
-                         float p3x, float p3y, float p3z, 
-                         float p4x, float p4y, float p4z,
-                         char *color_str)
-{
-    vec4 color = str_to_color_key(color_str);
-    canvas_paint_quad(canvas, p1x,p1y,p1z, p2x,p2y,p2z, p3x,p3y,p3z, p4x,p4y,p4z, UNPACK_COLOR(color));
-}
-
-// Standard 3D canvas quad painting
-// --------------------------------
-void paint_quad(float p1x, float p1y, float p1z, 
-                float p2x, float p2y, float p2z, 
-                float p3x, float p3y, float p3z, 
-                float p4x, float p4y, float p4z,
-                COLOR_SCALARS)
-{
-    canvas_paint_quad(Canvas3D, p1x,p1y,p1z, p2x,p2y,p2z, p3x,p3y,p3z, p4x,p4y,p4z, cr,cg,cb,ca);
-}
-void paint_quad_v(vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec4 color)
-{
-    canvas_paint_quad(Canvas3D,
-               p1.vals[0], p1.vals[1], p1.vals[2],
-               p2.vals[0], p2.vals[1], p2.vals[2],
-               p3.vals[0], p3.vals[1], p3.vals[2],
-               p4.vals[0], p4.vals[1], p4.vals[2],
-               UNPACK_COLOR(color));
-}
-void paint_quad_c(float p1x, float p1y, float p1z, 
-                float p2x, float p2y, float p2z, 
-                float p3x, float p3y, float p3z, 
-                float p4x, float p4y, float p4z,
-                char *color_str)
-{
-    vec4 color = str_to_color_key(color_str);
-    paint_quad(p1x,p1y,p1z, p2x,p2y,p2z, p3x,p3y,p3z, p4x,p4y,p4z, UNPACK_COLOR(color));
-}
-void paint_quad_cv(vec3 p1, vec3 p2, vec3 p3, vec3 p4, char *color_str)
-{
-    paint_quad_v(p1, p2, p3, p4, str_to_color_key(color_str));
-}
-
-
-// Standard 2D canvas quad painting
-// -------------------------------
-void paint2d_quad(float p1x, float p1y, float p2x, float p2y, float p3x, float p3y, float p4x, float p4y, COLOR_SCALARS) {
-    canvas_paint_quad(Canvas2D,  p1x,p1y,paint2d_depth,  p2x,p2y,paint2d_depth,  p3x,p3y,paint2d_depth,  p4x,p4y,paint2d_depth,  cr,cg,cb,ca);
-}
-void paint2d_quad_c(float p1x, float p1y, float p2x, float p2y, float p3x, float p3y, float p4x, float p4y, char *color_str) {
-    canvas_paint_quad_c(Canvas2D,  p1x,p1y,paint2d_depth,  p2x,p2y,paint2d_depth,  p3x,p3y,paint2d_depth,  p4x,p4y,paint2d_depth,  color_str);
-}
-// Standard 2D canvas rectangle printing. This is more convenient formulated in 2D, so these functions are specific to 2D.
-void paint2d_rect(float x, float y, float width, float height, COLOR_SCALARS) {
-    paint2d_quad(x,y,  x+width,y,  x+width,y+height,  x,y+height,  cr,cg,cb,ca);
-}
-void paint2d_rect_c(float x, float y, float width, float height, char *color_str) {
-    paint2d_quad_c(x,y,  x+width,y,  x+width,y+height,  x,y+height,  color_str);
-}
-
-// Standard 2D canvas sprite painting
-// ----------------------------------
-// Variants:
-// p: The texture is from a path
-// h: Horizontal flip
-// v: vertical flip
-
-// Geometry for a 2-dimensional sprite. This is given in 2D-world coordinates.
-static Geometry sprite_geometry(float blx, float bly, float width, float height, bool horiz_flip, int rotate)
-{
-    gm_triangles(VERTEX_FORMAT_3U);
-    attribute_3f(Position, blx, bly, paint2d_depth);
-    attribute_3f(Position, blx+width, bly, paint2d_depth);
-    attribute_3f(Position, blx+width, bly+height, paint2d_depth);
-    attribute_3f(Position, blx, bly+height, paint2d_depth);
-    // remember, flip * rotate = rotate^-1 * flip
-    static float coords[2 * 8] = {
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
-    };
-    for (int i = 0; i < 4; i++) {
-        int index = ((horiz_flip ? -i : i) + rotate) % 4;
-        attribute_2f(TexCoord, coords[2*index], coords[2*index + 1]);
-    }
-    gm_index(0); gm_index(1); gm_index(2);
-    gm_index(0); gm_index(2); gm_index(3);
-    return gm_done();
-}
-
-static void _paint2d_sprite_m(float blx, float bly, float width, float height, ResourceHandle material_handle, bool horiz_flip, int rotate)
-{
-    // horiz_flip and rotate generate D8, so variant functions can be based off of this.
-    gm_triangles(VERTEX_FORMAT_3U);
-    attribute_3f(Position, blx, bly, paint2d_depth);
-    attribute_3f(Position, blx+width, bly, paint2d_depth);
-    attribute_3f(Position, blx+width, bly+height, paint2d_depth);
-    attribute_3f(Position, blx, bly+height, paint2d_depth);
-    // remember, flip * rotate = rotate^-1 * flip
-    static float coords[2 * 8] = {
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
-    };
-    for (int i = 0; i < 4; i++) {
-        int index = ((horiz_flip ? -i : i) + rotate) % 4;
-        attribute_2f(TexCoord, coords[2*index], coords[2*index + 1]);
-    }
-    gm_index(0); gm_index(1); gm_index(2);
-    gm_index(0); gm_index(2); gm_index(3);
-    painting_add(Canvas2D, gm_done(), material_handle);
-}
-void paint2d_sprite_m(float blx, float bly, float width, float height, ResourceHandle material_handle)
-{
-    _paint2d_sprite_m(blx, bly, width, height, material_handle, false, 0);
-}
-void paint2d_sprite_mv(float blx, float bly, float width, float height, ResourceHandle material_handle)
-{
-    _paint2d_sprite_m(blx, bly, width, height, material_handle, true, 2);
-}
-void paint2d_sprite_mh(float blx, float bly, float width, float height, ResourceHandle material_handle)
-{
-    _paint2d_sprite_m(blx, bly, width, height, material_handle, true, 0);
-}
-
-void paint2d_sprite(float blx, float bly, float width, float height, ResourceHandle texture_handle)
-{
-    // Render a regular sprite with a single texture.
-    painting_add(Canvas2D, sprite_geometry(blx, bly, width, height, false, 0), texture_handle);
-}
-void paint2d_sprite_p(float blx, float bly, float width, float height, char *texture_path)
-{
-    // Render a regular sprite with a single texture, the texture being given by its resource path.
-
-    ResourceHandle texture_handle = new_resource_handle(Texture, texture_path);
-    paint2d_sprite(blx, bly, width, height, texture_handle);
-}
-#endif
-
-
 

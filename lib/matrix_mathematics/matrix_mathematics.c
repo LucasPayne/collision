@@ -549,7 +549,14 @@ vec2 new_vec2(float x, float y)
 
 vec4 color_mul(vec4 color, float x)
 {
-    vec4 color_out;
-    for (int i = 0; i < 3; i++) color_out.vals[i] = x * color.vals[i];
-    return color_out;
+    // multiply non-alpha.
+    for (int i = 0; i < 3; i++) color.vals[i] = x * color.vals[i];
+    return color;
 }
+vec4 color_fade(vec4 color, float x)
+{
+    // multiply alpha only.
+    color.vals[3] *= x;
+    return color;
+}
+

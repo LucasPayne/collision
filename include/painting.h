@@ -89,91 +89,34 @@ enum Canvases {
 //--------------------------------------------------------------------------------
 void paint_line(int canvas_id, float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS, float width);
 #define paint_line_c(CANVAS_ID,AX,AY,AZ,BX,BY,BZ,COLOR_STR,WIDTH)\
-    paint_line(CANVAS_ID,AX,AY,AZ,BX,BY,BZ,str_to_color_key(COLOR_STR),WIDTH)
+{\
+    vec4 color = str_to_color_key(COLOR_STR);\
+    paint_line(CANVAS_ID,AX,AY,AZ,BX,BY,BZ,UNPACK_COLOR(color),WIDTH);\
+}
 #define paint_line_v(CANVAS_ID,A,B,COLOR,WIDTH)\
     paint_line(CANVAS_ID,UNPACK_VEC3(( A )),UNPACK_VEC3(( B )),UNPACK_COLOR(( COLOR )),WIDTH)
 #define paint_line_cv(CANVAS_ID,A,B,COLOR_STR,WIDTH)\
-    paint_line(CANVAS_ID,UNPACK_VEC3(( A )),UNPACK_VEC3(( B )),str_to_color_key(COLOR_STR),WIDTH)
+{\
+    vec4 color = str_to_color_key(COLOR_STR);\
+    paint_line(CANVAS_ID,UNPACK_VEC3(( A )),UNPACK_VEC3(( B )),UNPACK_COLOR(color),WIDTH);\
+}
+void paint_loop(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width);
+#define paint_loop_c(CANVAS_ID,VALS,NUM_POINTS,COLOR_STR,WIDTH)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint_loop(CANVAS_ID,VALS,NUM_POINTS,UNPACK_COLOR(color),WIDTH);\
+}
+#define paint_loop_v(CANVAS_ID,VALS,NUM_POINTS,COLOR,WIDTH)\
+    paint_loop(CANVAS_ID,VALS,NUM_POINTS,COLOR,WIDTH);
+
 
 void paint_chain(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width);
 
 void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color);
+
+void paint_box_v(int canvas_id, vec3 corners[], vec4 color);
+
 //--------------------------------------------------------------------------------
 
-#if 0
-/*--------------------------------------------------------------------------------
-    Painting variants.
---------------------------------------------------------------------------------*/
-// Lines
-void canvas_paint_line_v(int canvas, vec3 a, vec3 b, vec4 color);
-void canvas_paint_line(int canvas, float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS);
-void canvas_paint_line_c(int canvas, float ax, float ay, float az, float bx, float by, float bz, char *color_str);
-void canvas_paint_line_cv(int canvas, vec3 a, vec3 b, char *color_str);
-void paint_line(float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS);
-void paint_line_c(float ax, float ay, float az, float bx, float by, float bz, char *color_str);
-void paint_line_v(vec3 a, vec3 b, vec4 color);
-void paint_line_cv(vec3 a, vec3 b, char *color_str);
-void paint2d_line(float ax, float ay, float bx, float by, COLOR_SCALARS);
-void paint2d_line_c(float ax, float ay, float bx, float by, char *color_str);
-
-// Chains
-void canvas_paint_chain(int canvas, float vals[], int num_points, COLOR_SCALARS);
-void canvas_paint_chain_c(int canvas, float vals[], int num_points, char *color_str);
-void paint_chain(float vals[], int num_points, COLOR_SCALARS);
-void paint_chain_c(float vals[], int num_points, char *color_str);
-void paint2d_chain(float vals[], int num_points, COLOR_SCALARS);
-void paint2d_chain_c(float vals[], int num_points, char *color_str);
-
-// Loops
-void canvas_paint_loop(int canvas, float vals[], int num_points, COLOR_SCALARS);
-void canvas_paint_loop_c(int canvas, float vals[], int num_points, char *color_str);
-void canvas_paint_loop_v(int canvas, float vals[], int num_points, vec4 color);
-void paint_loop(float vals[], int num_points, COLOR_SCALARS);
-void paint_loop_c(float vals[], int num_points, char *color_str);
-void paint_loop_v(float vals[], int num_points, vec4 color);
-void paint2d_loop(float vals[], int num_points, COLOR_SCALARS);
-void paint2d_loop_c(float vals[], int num_points, char *color_str);
-
-// Quads
-void canvas_paint_quad(int canvas,
-                       float p1x, float p1y, float p1z, 
-                       float p2x, float p2y, float p2z, 
-                       float p3x, float p3y, float p3z, 
-                       float p4x, float p4y, float p4z,
-                       COLOR_SCALARS);
-void canvas_paint_quad_v(int canvas, vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec4 color);
-void canvas_paint_quad_c(int canvas,
-                         float p1x, float p1y, float p1z, 
-                         float p2x, float p2y, float p2z, 
-                         float p3x, float p3y, float p3z, 
-                         float p4x, float p4y, float p4z,
-                         char *color_str);
-void paint_quad(float p1x, float p1y, float p1z, 
-                float p2x, float p2y, float p2z, 
-                float p3x, float p3y, float p3z, 
-                float p4x, float p4y, float p4z,
-                COLOR_SCALARS);
-void paint_quad_v(vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec4 color);
-void paint_quad_c(float p1x, float p1y, float p1z, 
-                float p2x, float p2y, float p2z, 
-                float p3x, float p3y, float p3z, 
-                float p4x, float p4y, float p4z,
-                char *color_str);
-void paint_quad_cv(vec3 p1, vec3 p2, vec3 p3, vec3 p4, char *color_str);
-void paint_quad_vm(vec3 p1, vec3 p2, vec3 p3, vec3 p4, ResourceHandle material_handle);
-void paint2d_quad(float p1x, float p1y, float p2x, float p2y, float p3x, float p3y, float p4x, float p4y, COLOR_SCALARS);
-void paint2d_quad_c(float p1x, float p1y, float p2x, float p2y, float p3x, float p3y, float p4x, float p4y, char *color_str);
-
-// Rectangles
-void paint2d_rect(float x, float y, float width, float height, COLOR_SCALARS);
-void paint2d_rect_c(float x, float y, float width, float height, char *color_str);
-
-// Sprites
-void paint2d_sprite_m(float blx, float bly, float width, float height, ResourceHandle material_handle);
-void paint2d_sprite_mh(float blx, float bly, float width, float height, ResourceHandle material_handle);
-void paint2d_sprite_mv(float blx, float bly, float width, float height, ResourceHandle material_handle);
-void paint2d_sprite(float blx, float bly, float width, float height, ResourceHandle texture_handle);
-void paint2d_sprite_p(float blx, float bly, float width, float height, char *texture_path);
-#endif
 
 #endif // HEADER_DEFINED_PAINTING

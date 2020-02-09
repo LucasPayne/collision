@@ -20,13 +20,16 @@ extern void init_program(void)
     test_directional_light_controlled();
     open_scene(g_scenes, "block_on_floor");
 
-    EntityID e = new_entity(4);
-    Transform_set(add_aspect(e, Transform), 0,0,0,  0,0,0);
-    Body *body = add_aspect(e, Body);
-    body->scale = 100;
-    body->geometry = new_resource_handle(Geometry, "Models/quad");
-    body->material = Material_create("Materials/cutout_texture");
-    material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/grass");
+
+    for (int i = 0; i < 100; i++) {
+        EntityID e = new_entity(4);
+        Transform_set(add_aspect(e, Transform), 0,50,-50+ i*10,  0,0,0);
+        Body *body = add_aspect(e, Body);
+        body->scale = 50;
+        body->geometry = new_resource_handle(Geometry, "Models/quad");
+        body->material = Material_create("Materials/cutout_texture");
+        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/grass");
+    }
 }
 
 extern void loop_program(void)

@@ -79,6 +79,8 @@ void *get_aspect_data(AspectID aspect);
 
 #define entity_add_aspect(ENTITY_ID,ASPECT_TYPE_NAME)\
     ( (ASPECT_TYPE_NAME *) get_aspect_data(_entity_add_aspect(( ENTITY_ID ), ASPECT_TYPE_NAME ## _TYPE_ID)) )
+// just shorthand
+#define add_aspect(ENTITY_ID,ASPECT_TYPE_NAME) entity_add_aspect(ENTITY_ID,ASPECT_TYPE_NAME)
 AspectID _entity_add_aspect(EntityID entity, AspectType type);
 void init_entity_model(void);
 

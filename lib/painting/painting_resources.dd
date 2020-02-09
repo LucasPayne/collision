@@ -4,9 +4,8 @@ Materials < (
         vertex_format: 3;
         vertex_shader: Painting/shaders/passthrough.vert;
         fragment_shader: Painting/shaders/flat_color.frag;
-        num_blocks: 2;
+        num_blocks: 1;
         string block0: Standard3D;
-        string block1: MaterialProperties;
     );
     sprite < MaterialType (
         vertex_format: 3U;

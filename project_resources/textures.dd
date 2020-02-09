@@ -21,14 +21,17 @@ minecraft < (
     dirt < Texture (
         type: png;
         path: Images/minecraft/dirt.png;
+        nearest: true;
     );
     ladder < Texture (
         type: png;
         path: Images/minecraft/ladder.png;
+        nearest: true;
     );
     stone_bricks < Texture (
         type: png;
         path: Images/minecraft/stone_bricks.png;
+        nearest: true;
     );
 );
 
@@ -39,3 +42,8 @@ mario < (
     sand_bricks < Texture ( type: png; path: Images/mario/sand_bricks.png; );
 );
 
+grass < Texture (
+    type: png;
+    path: Images/grass.png;
+    cutout: true;
+);

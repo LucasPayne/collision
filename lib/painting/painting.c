@@ -1,4 +1,3 @@
-
 /*--------------------------------------------------------------------------------
 notes
 -----
@@ -35,6 +34,7 @@ for further separate buffers or "canvases".
 --------------------------------------------------------------------------------*/
 
 Material *flat_color_material;
+GLint flat_color_material_uniform_location_flat_color;
 Material *sprite_material;
 
 // Matrix used for 2d painting.
@@ -86,14 +86,19 @@ void painting_init(void)
     for (int i = 0; i < NUM_CANVASES; i++) { // initialize the canvases.
         g_canvases[i].paint_buffer_size = g_paint_buffer_size;
         glGenBuffers(1, &g_canvases[i].vbo);
-        for (int j = 0; j < g_paint_buffer_size; j++) {
-            glGenVertexArrays(1, &g_canvases[i].paint_buffer[j].vao);
-        }
+        glGenVertexArrays(1, &g_canvases[i].position_vao);
+        glBindVertexArray(g_canvases[i].position_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, g_canvases[i].vbo);
+        glVertexAttribPointer(Position, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+        glEnableVertexAttribArray(Position);
     }
     // Cache the standard painting materials.
     ResourceHandle flat_color_material_handle = Material_create("Painting/Materials/flat_color");
     ResourceHandle sprite_material_handle = Material_create("Painting/Materials/sprite");
     flat_color_material = resource_data(Material, flat_color_material_handle);
+    // Currently, the material properties system has too much overhead for setting and uploading properties, so this is accessed more directly.
+    MaterialType *mt = resource_data(MaterialType, flat_color_material->material_type);
+    flat_color_material_uniform_location_flat_color = glGetUniformLocation(mt->program_id, "flat_color");
     sprite_material = resource_data(Material,  sprite_material_handle);
 }
 
@@ -106,30 +111,40 @@ void painting_init(void)
 
 void painting_draw(int canvas_id)
 {
+    static int last_num_vertices = 0; // The buffer is invalidated calculating the size from this.
     Canvas *canvas = painting_canvas(canvas_id);
 
     glBindBuffer(GL_ARRAY_BUFFER, canvas->vbo);
-    glBufferData(GL_ARRAY_BUFFER, canvas->current_offset, canvas->vertex_buffer, GL_STREAM_DRAW);
-    
+    glBufferData(GL_ARRAY_BUFFER, last_num_vertices, NULL, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, canvas->current_index * sizeof(float) * 3, canvas->vertex_buffer, GL_STREAM_DRAW);
+    last_num_vertices = canvas->current_index;
+    // printf("%d\n", canvas->current_index);
+
+    // Draw paint with Position-only vertex format.
+    glBindVertexArray(canvas->position_vao);
     for (int i = 0; i < canvas->paint_count; i++) {
         Paint *paint = &canvas->paint_buffer[i];
-        glBindVertexArray(paint->vao);
         switch (paint->type) {
             case PAINT_FLAT_LINES:
-                printf("painting a flat line\n");
-                material_set_property_vec4(flat_color_material, "flat_color", paint->contents.flat.color);
-                glVertexAttribPointer(Position, 3, GL_FLOAT, GL_FALSE, 0, (void *) paint->offset);
-                vertex_array_draw(paint->vao, 2, GL_LINES, false, 0, flat_color_material);
+                material_prepare(flat_color_material);
+                glUniform4f(flat_color_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
+                glLineWidth(paint->shape.line.width);
+                glDrawArrays(GL_LINE_STRIP, paint->index, 2);
+                break;
+            case PAINT_FLAT_TRIANGLES:
+                material_prepare(flat_color_material);
+                glUniform4f(flat_color_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
+                glDrawArrays(GL_TRIANGLES, paint->index, 6);
                 break;
             case PAINT_DASHED_LINES:
                 fprintf(stderr, "not implemented\n");
                 exit(EXIT_FAILURE);
                 break;
-            case PAINT_SPRITE:
-                material_set_texture(sprite_material, "diffuse_map", paint->contents.sprite.texture);
-                break;
-            case PAINT_CUSTOM_MATERIAL:
-                break;
+            // case PAINT_SPRITE:
+            //     material_set_texture(sprite_material, "diffuse_map", paint->contents.sprite.texture);
+            //     break;
+            // case PAINT_CUSTOM_MATERIAL:
+            //     break;
             default:
                 fprintf(stderr, "Invalid paint type given.\n");
                 exit(EXIT_FAILURE);
@@ -149,6 +164,7 @@ void painting_flush(int canvas_id)
         }
     }
     canvas->paint_count = 0;
+    canvas->current_index = 0;
 }
 
 
@@ -157,8 +173,10 @@ void painting_flush(int canvas_id)
 --------------------------------------------------------------------------------*/
 vec4 str_to_color_key(char *color)
 {
-    #define col(STR1,STR2,R,G,B,A) if (strcmp(color, ( STR1 )) == 0 || strcmp(color, ( STR2 )) == 0) return new_vec4((R),(G),(B),(A));
-    col("g", "green", 0,1,0,1);
+    // transparent variant: t{g,} or transparent_{green,}.
+    #define col(STR1,STR2,R,G,B,A)if (strcmp(color, ( STR1 )) == 0 || strcmp(color, ( STR2 )) == 0) return new_vec4((R),(G),(B),(A));\
+                                  if (strcmp(color, ( "t" STR1 )) == 0 || strcmp(color, ( "transparent_" STR2 )) == 0) return new_vec4((R),(G),(B),(A) / 2.0);
+    col("g", "green", 0,1,0,1); 
     col("r", "red", 1,0,0,1);
     col("y", "yellow", 1,1,0,1);
     col("b", "blue", 0,0,1,1);
@@ -191,20 +209,22 @@ Variants can be combined.
 
 // remember that this increments the paint count as well.
 #define next_paint(CANVAS_POINTER) ( &( CANVAS_POINTER )->paint_buffer[( CANVAS_POINTER )->paint_count ++] )
-#define offset_buffer(CANVAS_POINTER) ( &canvas->vertex_buffer[canvas->current_offset] )
+#define index_buffer(CANVAS_POINTER) (((vec3 *) &canvas->vertex_buffer) + ( CANVAS_POINTER )->current_index)
 
 static Paint *strokes_line(Canvas *canvas, vec3 a, vec3 b, float width)
 {
     // 3: line from a to b.
     Paint *paint = next_paint(canvas);
-    vec3 *vp = (vec3 *) offset_buffer(canvas);
+    vec3 *vp = (vec3 *) index_buffer(canvas);
     vp[0] = a;
     vp[1] = b;
-    paint->offset = canvas->current_offset;
-    canvas->current_offset += sizeof(float) * 3 * 2;
+    paint->index = canvas->current_index;
+    canvas->current_index += 2;
     paint->shape.line.width = width;
     return paint;
 }
+#if 0
+//---To use this, canvases may need to have separate vertex arrays for different vertex formats.
 static Paint *strokes_sprite(Canvas *canvas, float blx, float bly, float width, float height, bool horiz_flip, int rotate)
 {
     // 3U: 2D rectangle with UV coordinates.
@@ -221,18 +241,19 @@ static Paint *strokes_sprite(Canvas *canvas, float blx, float bly, float width, 
         1, 0,
         0, 0,
     };
-    memcpy(offset_buffer(canvas), vertices, sizeof(vertices));
-    paint->offset = canvas->current_offset;
-    canvas->current_offset += sizeof(vertices);
+    memcpy(index_buffer(canvas), vertices, sizeof(vertices));
+    paint->index = canvas->current_index;
+    canvas->current_index += 
     return paint;
 }
+#endif
 static Paint *strokes_chain(Canvas *canvas, float vals[], int num_points, float width)
 {
     Paint *paint = next_paint(canvas);
     size_t vals_size = sizeof(float) * 3 * num_points;
-    memcpy(offset_buffer(canvas), vals, vals_size);
-    paint->offset = canvas->current_offset;
-    canvas->current_offset += vals_size;
+    memcpy(index_buffer(canvas), vals, vals_size);
+    paint->index = canvas->current_index;
+    canvas->current_index += num_points;
     paint->shape.line.width = width;
     return paint;
 }
@@ -241,23 +262,25 @@ static Paint *strokes_loop(Canvas *canvas, float vals[], int num_points, float w
     //-Can't create a loop of length 0.
     Paint *paint = next_paint(canvas);
     size_t vals_size = sizeof(float) * 3 * num_points;
-    memcpy(offset_buffer(canvas), vals, vals_size);
-    memcpy(offset_buffer(canvas) + vals_size, &vals[0], sizeof(float) * 3);
-    paint->offset = canvas->current_offset;
-    canvas->current_offset += sizeof(float) * 3 * (num_points + 1);
+    memcpy(index_buffer(canvas), vals, vals_size);
+    memcpy(index_buffer(canvas) + vals_size, &vals[0], sizeof(float) * 3);
+    paint->index = canvas->current_index;
+    canvas->current_index += num_points + 1;
     paint->shape.line.width = width;
     return paint;
 }
-static Paint *strokes_quad(Canvas *canvas, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color)
+static Paint *strokes_quad(Canvas *canvas, vec3 a, vec3 b, vec3 c, vec3 d)
 {
     Paint *paint = next_paint(canvas);
-    vec3 *vp = (vec3 *) offset_buffer(canvas);
+    vec3 *vp = (vec3 *) index_buffer(canvas);
     vp[0] = a;
     vp[1] = b;
     vp[2] = c;
-    vp[3] = d;
-    paint->offset = canvas->current_offset;
-    canvas->current_offset += sizeof(float) * 3 * 4;
+    vp[3] = a;
+    vp[4] = c;
+    vp[5] = d;
+    paint->index = canvas->current_index;
+    canvas->current_index += 6;
     return paint;
 }
 /*--------------------------------------------------------------------------------
@@ -275,13 +298,19 @@ void paint_line(int canvas_id, float ax, float ay, float az, float bx, float by,
     paint->type = PAINT_FLAT_LINES;
     paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
 }
+
 void paint_chain(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width)
 {
     Paint *paint = strokes_chain(painting_canvas(canvas_id), vals, num_points, width);
     paint->type = PAINT_FLAT_LINES;
     paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
 }
-
+void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color)
+{
+    Paint *paint = strokes_quad(painting_canvas(canvas_id), a, b, c, d);
+    paint->type = PAINT_FLAT_TRIANGLES;
+    paint->contents.flat.color = color;
+}
 
 #if 0
 // Generic canvas line painting

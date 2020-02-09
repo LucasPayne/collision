@@ -10,11 +10,14 @@
 // Helper in definitions (since there will be many).
 #define COLOR_SCALARS float cr, float cg, float cb, float ca
 #define UNPACK_COLOR(color) color.vals[0],color.vals[1],color.vals[2],color.vals[3]
+#define UNPACK_VEC3(vector) vector.vals[0],vector.vals[1],vector.vals[2]
 
 typedef uint8_t PaintType;
+
 enum PaintTypes {
     PAINT_NONE,
     PAINT_FLAT_LINES,
+    PAINT_FLAT_TRIANGLES,
     PAINT_DASHED_LINES,
     PAINT_SPRITE,
     PAINT_CUSTOM_MATERIAL,
@@ -22,7 +25,7 @@ enum PaintTypes {
 };
 typedef struct Paint_s {
     PaintType type;
-    uint32_t offset; // location of the vertices in the vertex buffer.
+    uint32_t index; // the index of the vertex in the vertex buffer.
     // Paint buffers should be filled correctly. The number of vertices, and the offsets of each attribute, are inferred
     // from a calculation with offsets (exception being the last paint, comparing against the current_offset in the canvas's vertex buffer).
     union {
@@ -49,22 +52,20 @@ typedef struct Paint_s {
             float width;
         } line;
     } shape;
-
-    // OpenGL stuff
-    GLuint vao;
 } Paint;
 
 // right now, canvases have a fixed amount of paint.
-#define g_paint_buffer_size 4096
-#define g_paint_vertex_buffer_size ( 4096 * 4 * 3 * 16 )
+#define g_paint_buffer_size (1 << 13)
+#define g_paint_vertex_buffer_size ( g_paint_buffer_size * 4 * 3 * 16 )
 typedef struct Canvas_s {
     int paint_count;
     int paint_buffer_size;
     Paint paint_buffer[g_paint_buffer_size];
-    int current_offset; // current offset in the vertex buffer, where new paint will store its vertices.
+    int current_index;
     uint8_t vertex_buffer[g_paint_vertex_buffer_size];
     // OpenGL stuff
-    GLuint vbo;
+    GLuint vbo; //--rename position_vbo. There should be a buffer for each vertex format. (?)
+    GLuint position_vao;
 } Canvas;
 
 void painting_init(void);
@@ -87,7 +88,16 @@ enum Canvases {
 
 //--------------------------------------------------------------------------------
 void paint_line(int canvas_id, float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS, float width);
+#define paint_line_c(CANVAS_ID,AX,AY,AZ,BX,BY,BZ,COLOR_STR,WIDTH)\
+    paint_line(CANVAS_ID,AX,AY,AZ,BX,BY,BZ,str_to_color_key(COLOR_STR),WIDTH)
+#define paint_line_v(CANVAS_ID,A,B,COLOR,WIDTH)\
+    paint_line(CANVAS_ID,UNPACK_VEC3(( A )),UNPACK_VEC3(( B )),UNPACK_COLOR(( COLOR )),WIDTH)
+#define paint_line_cv(CANVAS_ID,A,B,COLOR_STR,WIDTH)\
+    paint_line(CANVAS_ID,UNPACK_VEC3(( A )),UNPACK_VEC3(( B )),str_to_color_key(COLOR_STR),WIDTH)
+
 void paint_chain(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width);
+
+void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color);
 //--------------------------------------------------------------------------------
 
 #if 0

@@ -421,7 +421,7 @@ void material_set_texture(Material *material, char *texture_name, ResourceHandle
 
 //////////////////////////////////////////////////////////////////////////////////
 // working on
-void vertex_array_draw(GLuint vao, int num_vertices, GLenum primitive_type, bool indexed, int num_indices, Material *material);
+void material_prepare(Material *material);
 
 
 #endif // HEADER_DEFINED_RENDERING

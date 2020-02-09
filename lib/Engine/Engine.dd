@@ -38,6 +38,8 @@ Texture < (
     string type; // Types: png
     string path; // Principle path of the asset.
     // Could have generic build-directives here, like image resizing and grayscale.
+    bool cutout: false; // If cutout is set, options are set in the texture to make it work more nicely for cutout textured quads.
+    bool nearest: false; // If nearest is set, then texture values are clamped to the nearest texel instead of linearly interpolated.
 );
 
 Font < (

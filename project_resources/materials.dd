@@ -52,6 +52,9 @@ texture < MaterialType (
     num_textures: 1;
     string texture0: diffuse_map;
 );
+cutout_texture < texture (
+    fragment_shader: Shaders/cutout_texture.frag;
+);
 
 textured_phong < MaterialType (
     vertex_format: 3NU;
@@ -139,3 +142,5 @@ sdf_text < MaterialType (
     num_textures: 1;
     string texture0: sdf_texture;
 );
+
+

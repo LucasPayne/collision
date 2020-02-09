@@ -371,13 +371,14 @@ Geometry gm_done(void)
     return g_geometry;
 }
 
-// Rendering a Geometry+Material pair.
 
-
-void vertex_array_draw(GLuint vao, int num_vertices, GLenum primitive_type, bool indexed, int num_indices, Material *material)
+//--move to materials
+// prepare the material for rendering
+void material_prepare(Material *material)
 {
     MaterialType *mt = resource_data(MaterialType, material->material_type);
     glUseProgram(mt->program_id);
+
     // Bind the textures
     for (int i = 0; i < mt->num_textures; i++) {
         glActiveTexture(GL_TEXTURE0 + i + g_num_reserved_samplers); // Shift up a certain amount according to the number of shaderblock-defined samplers taking up texture units.
@@ -401,16 +402,9 @@ void vertex_array_draw(GLuint vao, int num_vertices, GLenum primitive_type, bool
             glBindTexture(GL_TEXTURE_2D, block_info->samplers[j]);
         }
     }
-    
-    glBindVertexArray(vao);
-    if (indexed) {
-        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry.indices_id);
-        glDrawElements(primitive_type, num_indices, GL_UNSIGNED_INT, (void *) 0);
-    } else {
-        glDrawArrays(primitive_type, 0, num_vertices);
-    }
-
 }
+
+// Rendering a Geometry+Material pair.
 void gm_draw(Geometry geometry, Material *material)
 {
     // Check that the vertex formats are compatible, that is, there are no attributes required by the material that the geometry doesn't have.
@@ -419,6 +413,8 @@ void gm_draw(Geometry geometry, Material *material)
         fprintf(stderr, ERROR_ALERT "Attempted to render geometry which does not have enough of the required attributes for the material it is being rendered with.\n");
         exit(EXIT_FAILURE);
     }
+
+    material_prepare(material);
     GLenum gl_primitive_type;
     switch(geometry.primitive_type) {
         case Triangles: gl_primitive_type = GL_TRIANGLES; break;
@@ -427,7 +423,13 @@ void gm_draw(Geometry geometry, Material *material)
             fprintf(stderr, ERROR_ALERT "Have not accounted for the primitive type of a piece of geometry passed into gm_draw.\n");
             exit(EXIT_FAILURE);
     }
-    vertex_array_draw(geometry.vao_id, geometry.num_vertices, gl_primitive_type, geometry.is_indexed, geometry.num_indices, material);
+    glBindVertexArray(geometry.vao_id);
+    if (geometry.is_indexed) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry.indices_id);
+        glDrawElements(gl_primitive_type, geometry.num_indices, GL_UNSIGNED_INT, (void *) 0);
+    } else {
+        glDrawArrays(gl_primitive_type, 0, geometry.num_vertices);
+    }
 }
 
 // Destroying the geometry (freeing the vram buffers).

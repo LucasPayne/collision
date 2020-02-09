@@ -51,6 +51,26 @@ void Texture_load(void *resource, char *path)
         if (file == NULL) load_error("Could not open png file.");
         if (!load_image_png(&image_data, file)) load_error("Failed to decode png.");
     }
+    GLenum mag_filter = GL_LINEAR;
+    GLenum min_filter = GL_LINEAR;
+    GLenum texture_wrap_s = GL_REPEAT;
+    GLenum texture_wrap_t = GL_REPEAT;
+    bool cutout;
+    if (!dd_get(dd, "cutout", "bool", &cutout)) load_error("No cutout.");
+    if (cutout) {
+        // Removes visual artifacts when repeating a texture combined with linear interpolation, which makes opaqueness wrap around where it shouldn't.
+        texture_wrap_s = GL_CLAMP_TO_EDGE;
+        texture_wrap_t = GL_CLAMP_TO_EDGE;
+    }
+    bool nearest;
+    if (!dd_get(dd, "nearest", "bool", &nearest)) load_error("No nearest.");
+    if (nearest) {
+        printf("Making %s nearest\n", path);getchar();
+        // For example, low-resolution minecraft-block textures should use this flag.
+        mag_filter = GL_NEAREST;
+        min_filter = GL_NEAREST;
+    }
+
     // free(type);
     // free(filename);
 
@@ -80,8 +100,10 @@ void Texture_load(void *resource, char *path)
     // printf("GOT DEPTH\n");
 
     // Set the texture defaults.
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_wrap_s);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_wrap_t);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 

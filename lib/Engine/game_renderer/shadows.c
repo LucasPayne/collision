@@ -142,7 +142,7 @@ void do_shadows(Camera *camera)
                 1,     0,    0,     0,
                 0,     1,    0,     0,
                 0,     0,    1,     0,
-                1,   1,    0,     1,
+                1,   1,      0,     1, ///////depth
             }};
             mat4x4 light_to_box_2 = {{
                 -2/w,  0,    0,     0,
@@ -178,34 +178,34 @@ void do_shadows(Camera *camera)
             mat4x4 shadow_matrix = box_to_quadrant;
             right_multiply_matrix4x4f(&shadow_matrix, &light_to_box);
 /*--------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 light to quadrant 0
 (0.000000, 0.000000, 0.000000)
 (-1.000000, -1.000000, 1.000000)
 light to uvd 0
-(0.000000, 0.000000, 0.000000)
-(0.500000, 0.500000, 1.000000)
+(0.500000, 0.500000, -0.000000)
+(0.000000, 0.000000, 1.000000)
 --------------------------------------------------------------------------------
 light to quadrant 1
 (1.000000, 0.000000, 0.000000)
 (0.000000, -1.000000, 1.000000)
 light to uvd 1
-(0.500000, 0.000000, 0.000000)
-(1.000000, 0.500000, 1.000000)
+(1.000000, 0.500000, -0.000000)
+(0.500000, -0.000000, 1.000000)
 --------------------------------------------------------------------------------
 light to quadrant 2
 (0.000000, 1.000000, 0.000000)
-(-1.000000, 0.000000, 1.000000)
+(-1.000000, -0.000000, 1.000000)
 light to uvd 2
-(0.000000, 0.500000, 0.000000)
-(0.500000, 1.000000, 1.000000)
+(0.500000, 1.000000, 0.000000)
+(0.000000, 0.500000, 1.000000)
 --------------------------------------------------------------------------------
 light to quadrant 3
 (1.000000, 1.000000, 0.000000)
-(0.000000, 0.000000, 1.000000)
+(-0.000000, 0.000000, 1.000000)
 light to uvd 3
-(0.500000, 0.500000, 0.000000)
-(1.000000, 1.000000, 1.000000)
+(1.000000, 1.000000, -0.000000)
+(0.500000, 0.500000, 1.000000)
+
 --------------------------------------------------------------------------------*/
 
 
@@ -227,6 +227,40 @@ light to uvd 3
             right_multiply_matrix4x4f(&shadow_matrix, &light_matrix);
             //--------------------------------------------------------------------------------
             // The shadow matrices uploaded transform to uvd (UV + depth coordinates) for the quadrant.
+
+
+            mat4x4 light_to_uvd_quadrant = {{
+                1,0,0,0,
+                0,1,0,0,
+                0,0,1,0,
+                0.5,0.5,0.5,1
+            }};
+            mat4x4 light_to_uvd_quadrant_2 = {{
+                0.5,0,0,0,
+                0,0.5,0,0,
+                0,0,0.5,0,
+                0,0,0,1,
+            }};
+            right_multiply_matrix4x4f(&light_to_uvd_quadrant, &light_to_uvd_quadrant_2);
+            mat4x4 uvd_shadow_matrix = light_to_uvd_quadrant;
+            // these extra operations prepend the operations the shadow matrix is composed of
+            // (they happen afterward, mapping the view-volume quadrant to its UV quadrant).
+            right_multiply_matrix4x4f(&uvd_shadow_matrix, &shadow_matrix);
+            set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrices[segment].vals, uvd_shadow_matrix.vals);
+#if 1
+{
+            printf("light to uvd %d\n", segment);
+            mat4x4 light_model_matrix = Transform_matrix(get_sibling_aspect(light, Transform));
+            vec3 box_corner1_worldspace = mat4x4_vec3(&light_model_matrix, box_corners[0]);
+            vec3 box_corner2_worldspace = mat4x4_vec3(&light_model_matrix, box_corners[1]);
+            vec3 c1 = mat4x4_vec3(&uvd_shadow_matrix, box_corner1_worldspace);
+            vec3 c2 = mat4x4_vec3(&uvd_shadow_matrix, box_corner2_worldspace);
+            print_vec3(c1);
+            print_vec3(c2);
+}
+#endif
+
+#if 0
             mat4x4 uvd_to_quadrant = {{
                 1,    0,    0,     0,
                 0,    1,    0,     0,
@@ -257,17 +291,8 @@ light to uvd 3
 
             mat4x4 uvd_shadow_matrix = uvd_to_quadrant;
             right_multiply_matrix4x4f(&uvd_shadow_matrix, &light_to_uvd);
-#if 1
-{
-            vec3 c1 = mat4x4_vec3(&uvd_shadow_matrix, box_corners[0]);
-            vec3 c2 = mat4x4_vec3(&uvd_shadow_matrix, box_corners[1]);
-            printf("light to uvd %d\n", segment);
-            print_vec3(c1);
-            print_vec3(c2);
-}
-#endif
             right_multiply_matrix4x4f(&uvd_shadow_matrix, &light_matrix);
-            set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrices[segment].vals, uvd_shadow_matrix.vals);
+#endif
 
             // Render to this frustum-segment's quadrant of the shadow map.
             glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);

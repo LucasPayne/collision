@@ -46,6 +46,7 @@ void main(void)
         float cos_theta = dot(fNormal, -directional_lights[i].direction); // cosine of angle between normal and light
         vec3 uvd_coord = shadow_coord.xyz / shadow_coord.w; // perspective. ---probably doesn't matter for directional lights.
 
+
         // Shadow acne biasing. This is just a hack heuristic.
         uvd_coord.z += -max((1 - abs(cos_theta)) * 0.005, 0.0005);
 

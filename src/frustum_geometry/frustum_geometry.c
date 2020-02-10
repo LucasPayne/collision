@@ -4,6 +4,12 @@ project_libs:
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
 
+void show_axes(Logic *logic)
+{
+    Transform *t = get_sibling_aspect(logic, Transform);
+    Transform_draw_axes(t, 50, 6);
+}
+
 void draw_frustum(Camera *camera)
 {
     float n, f, b, t, l, r;
@@ -18,8 +24,8 @@ void draw_frustum(Camera *camera)
     vec3 pos = Transform_position(transform);
     vec3 near_p = vec3_add(pos, vec3_mul(Transform_forward(transform), -n));
     vec3 far_p =  vec3_add(pos, vec3_mul(Transform_forward(transform), -f));
-    paint_line_cv(Canvas3D, pos, near_p, "b", 4);
-    paint_line_cv(Canvas3D, near_p, far_p, "r", 4);
+    // paint_line_cv(Canvas3D, pos, near_p, "b", 4);
+    // paint_line_cv(Canvas3D, near_p, far_p, "y", 4);
 
     vec4 colors[] = {   
         new_vec4(1,0,0,1),
@@ -34,16 +40,19 @@ void draw_frustum(Camera *camera)
 
         near_p = vec3_add(pos, vec3_mul(Transform_forward(transform), along));
         far_p =  vec3_add(pos, vec3_mul(Transform_forward(transform), along_to));
-        //---2* ?
+        paint_line_v(Canvas3D, near_p, far_p, colors[segment], (segment + 3) * 3);
+
+        // printf("%.2f %.2f %.2f %.2f %.2f %.2f\n", n, f, l, r, t, b);
+
         vec3 frustum_points[] = {
-            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0), along + n))),
-            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0), along + n))),
-            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0), along + n))),
-            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0), along + n))),
-            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0),  along_to + n))),
-            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0),  along_to + n))),
-            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0),  along_to + n))),
-            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0),  along_to + n))),
+            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0), 2.2 * along / n))),
+            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0), 2.2 * along / n))),
+            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0), 2.2 * along / n))),
+            vec3_add(near_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0), 2.2 * along / n))),
+            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, t, 0),  2.2 * along_to / n ))),
+            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(l, b, 0),  2.2 * along_to / n ))),
+            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, b, 0),  2.2 * along_to / n ))),
+            vec3_add(far_p, Transform_relative_direction(transform, vec3_mul(new_vec3(r, t, 0),  2.2 * along_to / n ))),
         };
         vec3 *near_quad = frustum_points;
         vec3 *far_quad = frustum_points + 4;
@@ -162,8 +171,32 @@ extern void init_program(void)
 #endif
 
     open_scene(g_scenes, "block_on_floor");
-    test_directional_light_controlled();
+    Transform_set(get_sibling_aspect(test_directional_light_controlled(), Transform), 800,500,650,  12,-13,0.321);
     
+
+    for (int i = 0; i < 100; i++) {
+        EntityID e = new_entity(4);
+        Transform_set(add_aspect(e, Transform), -50+frand()*100,10,-50+frand()*100,  0,2*M_PI*frand(),0);
+        Body *body = add_aspect(e, Body);
+        body->scale = 20;
+        body->geometry = new_resource_handle(Geometry, "Models/quad");
+        body->material = Material_create("Materials/cutout_texture");
+        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/grass");
+    }
+
+{
+    EntityID e = new_entity(4);
+    Transform_set(add_aspect(e, Transform), 300,50,250,  0,M_PI/2,0);
+    Body *body = add_aspect(e, Body);
+    body->scale = 100;
+    body->material = g_directional_light_shadow_maps[0].depth_texture_material;
+    body->geometry = new_resource_handle(Geometry, "Models/quad");
+    Logic_init(entity_add_aspect(e, Logic), show_axes);
+}
+    // EntityID text_entity = new_entity(3);
+    // Transform_set(entity_add_aspect(text_entity, Transform),  0,160,-50,  0,0,0);
+    // Text_init(entity_add_aspect(text_entity, Text), TextOriented, "Fonts/computer_modern", "Hello world", 0.5);
+
     swap_camera();
 }
 extern void loop_program(void)
@@ -171,6 +204,8 @@ extern void loop_program(void)
 #if 1
     for_aspect(Camera, camera)
         draw_frustum(camera);
+        Transform *t = get_sibling_aspect(camera, Transform);
+        paint_line_cv(Canvas3D, Transform_position(t), Transform_relative_position(t, new_vec3(0,0,-100)), "r", 10);
         break;
     end_for_aspect()
 #endif
@@ -178,24 +213,22 @@ extern void loop_program(void)
     for_aspect(DirectionalLight, light)
         Transform *t = get_sibling_aspect(light, Transform);
         vec3 dir = DirectionalLight_direction(light);
+        vec3 up = Transform_up(t);
+        vec3 right = Transform_right(t);
         vec3 pos = Transform_position(t);
-        paint_line_cv(Canvas3D, pos, vec3_add(pos, vec3_mul(dir, 10)), "r", 2);
+        Transform_draw_axes(t, light->shadow_height/2.0, 6);
 
-        vec3 near_plane[] = {
+        vec3 box_points[] = {
             Transform_relative_position(t, new_vec3(-light->shadow_width/2,-light->shadow_height/2,0)),
             Transform_relative_position(t, new_vec3(light->shadow_width/2,-light->shadow_height/2,0)),
             Transform_relative_position(t, new_vec3(light->shadow_width/2,light->shadow_height/2,0)),
             Transform_relative_position(t, new_vec3(-light->shadow_width/2,light->shadow_height/2,0)),
-        };
-        vec3 far_plane[] = {
             Transform_relative_position(t, new_vec3(-light->shadow_width/2,-light->shadow_height/2,light->shadow_depth)),
             Transform_relative_position(t, new_vec3(light->shadow_width/2,-light->shadow_height/2,light->shadow_depth)),
             Transform_relative_position(t, new_vec3(light->shadow_width/2,light->shadow_height/2,light->shadow_depth)),
             Transform_relative_position(t, new_vec3(-light->shadow_width/2,light->shadow_height/2,light->shadow_depth)),
         };
-        // paint_loop_c(Canvas3D, (float *) near_plane, 4, "y");
-        // paint_loop_c(Canvas3D, (float *) far_plane, 4, "y");
-        for (int i = 0; i < 4; i++) paint_line_cv(Canvas3D, near_plane[i], far_plane[i], "g", 2);
+        paint_box_c(Canvas3D, box_points, "ty");
         
     end_for_aspect()
 }

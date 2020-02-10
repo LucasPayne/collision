@@ -15,8 +15,8 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
     f = far;
 
     Matrix4x4f frustrum_matrix = {0};
-    frustrum_matrix.vals[4*0 + 0] = (2*n)/(r-l);
-    frustrum_matrix.vals[4*1 + 1] = (2*n)/(t-b);
+    frustrum_matrix.vals[4*0 + 0] = (2*n*n)/(r-l);
+    frustrum_matrix.vals[4*1 + 1] = (2*n*n)/(t-b);
     frustrum_matrix.vals[4*2 + 2] = -(f+n)/(f-n);
     frustrum_matrix.vals[4*0 + 2] = (r+l)/(r-l);
     frustrum_matrix.vals[4*1 + 2] = (t+b)/(t-b);

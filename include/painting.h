@@ -115,6 +115,11 @@ void paint_chain(int canvas_id, float vals[], int num_points, COLOR_SCALARS, flo
 void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color);
 
 void paint_box_v(int canvas_id, vec3 corners[], vec4 color);
+#define paint_box_c(CANVAS_ID,CORNERS,COLOR_STR)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint_box_v(CANVAS_ID,CORNERS,color);\
+}
 
 //--------------------------------------------------------------------------------
 

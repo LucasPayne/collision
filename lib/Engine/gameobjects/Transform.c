@@ -74,3 +74,11 @@ void Transform_move_relative(Transform *t, vec3 translation)
 {
     Transform_move(t, Transform_relative_direction(t, translation));
 }
+
+void Transform_draw_axes(Transform *t, float length, float width)
+{
+    vec3 pos = Transform_position(t);
+    paint_line_cv(Canvas3D, pos, vec3_add(pos, vec3_mul(Transform_forward(t), length)), "b", width);
+    paint_line_cv(Canvas3D, pos, vec3_add(pos, vec3_mul(Transform_up(t), length)), "g", width);
+    paint_line_cv(Canvas3D, pos, vec3_add(pos, vec3_mul(Transform_right(t), length)), "r", width);
+}

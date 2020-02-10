@@ -93,6 +93,9 @@ static bool g_freeze_shadows = false; // can toggle this for debugging.
 static const int g_glfw_freeze_shadows_key = GLFW_KEY_F10;
 static bool g_test_toggle = false;
 static const int g_glfw_test_toggle_key = GLFW_KEY_F9;
+static const int g_glfw_pause_key = GLFW_KEY_F1;
+static bool g_paused = false;
+
 static void toggle_raw_mouse(void)
 {
     ///////--- Why does it only toggle once?
@@ -175,6 +178,9 @@ static void key_callback(GLFWwindow *window, int key,
             // toggleable bool for testing shaders.
             g_test_toggle = !g_test_toggle;
             set_uniform_bool(Standard3D, test_toggle, g_test_toggle);
+        }
+        if (key == g_glfw_pause_key) {
+            g_paused = !g_paused;
         }
     }
 
@@ -442,6 +448,8 @@ int main(void)
         last_time = time;
         time = glfwGetTime();
         dt = time - last_time;
+
+        if (g_paused) continue;
 
         // Clearing: window clear to background color, viewport clear to the foreground color.
         

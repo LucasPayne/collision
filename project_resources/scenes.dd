@@ -92,7 +92,7 @@ block_on_floor < (
     );
     big_floor < GameObject (
         body < Body (
-            scale: 1000;
+            scale: 10000;
             geometry: Resources/Models/quad;
             material: Scenes/floor_material;
         );

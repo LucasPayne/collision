@@ -103,8 +103,9 @@ void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
 
+    int index = 0; ////////testing
     for_aspect(Camera, camera)
-        do_shadows(camera);
+        if (index++ == 0) do_shadows(camera); ////////testing
         mat4x4 vp_matrix = Camera_prepare(camera);
         // Render each body.
         for_aspect(Body, body)

@@ -33,13 +33,15 @@ void main(void)
     int segment_index = 0;
     for (int i = 0; i < NUM_FRUSTUM_SEGMENTS; i++) {
         if (dot(fPosition.xyz - camera_position, camera_direction) > shadow_map_segment_depths[i]) {
-            add_color = 0.1 * segment_colors[i];
+            add_color = 0.5 * segment_colors[i];
             segment_index = i;
         }
     }
     
     for (int i = 0; i < num_directional_lights; i++) {
         vec4 shadow_coord = fDirectionalLightShadowCoord[4*i + segment_index];
+        // shadow_coord.y = 1 - shadow_coord.y;
+
 #if 1
         float cos_theta = dot(fNormal, -directional_lights[i].direction); // cosine of angle between normal and light
         vec3 uvd_coord = shadow_coord.xyz / shadow_coord.w; // perspective. ---probably doesn't matter for directional lights.

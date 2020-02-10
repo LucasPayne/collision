@@ -47,6 +47,7 @@ vec3 Transform_right(Transform *t);
 vec3 Transform_forward(Transform *t);
 vec3 Transform_backward(Transform *t);
 vec3 Transform_angles(Transform *t);
+void Transform_draw_axes(Transform *t, float length, float width);
 
 /*--------------------------------------------------------------------------------
 A Body is the seeable aspect of a gameobject. This gives information enough

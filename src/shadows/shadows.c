@@ -23,7 +23,7 @@ extern void init_program(void)
     open_scene(g_scenes, "block_on_floor");
 
     Camera *camera = get_aspect_type(create_key_camera_man(0,50,100,  0,0,0), Camera);
-#if 1
+#if 0
 {
     Camera *camera = get_aspect_type(create_key_camera_man(0,50,100,  0,0,0), Camera);
     camera->trx = 0.5;
@@ -39,6 +39,27 @@ extern void init_program(void)
     test_directional_light_controlled();
     // test_directional_light_auto();
     // test_point_light_1();
+    for (int i = 0; i < 600; i++) {
+        EntityID e = new_entity(4);
+        Transform_set(add_aspect(e, Transform), -50+frand()*100,10,-50+frand()*100,  0,2*M_PI*frand(),0);
+        Body *body = add_aspect(e, Body);
+        body->scale = 5;
+        body->geometry = new_resource_handle(Geometry, "Models/quad");
+        body->material = Material_create("Materials/textured_phong_shadows");
+        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/grass");
+    }
+
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            EntityID e = new_entity(4);
+            Transform_set(add_aspect(e, Transform), 200+i*70,-10,200+j*70, 0,0,0);
+            Body *body = add_aspect(e, Body);
+            body->scale = 400;
+            body->geometry = new_resource_handle(Geometry, "Models/stanford_bunny");
+            body->material = Material_create("Materials/textured_phong_shadows");
+            material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/marble_tile");
+        }
+    }
 
     EntityID text_entity = new_entity(3);
     Transform_set(entity_add_aspect(text_entity, Transform),  0,160,-50,  0,0,0);
@@ -46,29 +67,6 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-    for_aspect(DirectionalLight, light)
-        Transform *t = get_sibling_aspect(light, Transform);
-        vec3 dir = DirectionalLight_direction(light);
-        vec3 pos = Transform_position(t);
-        paint_line_cv(pos, vec3_add(pos, vec3_mul(dir, 10)), "r");
-
-        vec3 near_plane[] = {
-            Transform_relative_position(t, new_vec3(-light->shadow_width/2,-light->shadow_height/2,0)),
-            Transform_relative_position(t, new_vec3(light->shadow_width/2,-light->shadow_height/2,0)),
-            Transform_relative_position(t, new_vec3(light->shadow_width/2,light->shadow_height/2,0)),
-            Transform_relative_position(t, new_vec3(-light->shadow_width/2,light->shadow_height/2,0)),
-        };
-        vec3 far_plane[] = {
-            Transform_relative_position(t, new_vec3(-light->shadow_width/2,-light->shadow_height/2,light->shadow_depth)),
-            Transform_relative_position(t, new_vec3(light->shadow_width/2,-light->shadow_height/2,light->shadow_depth)),
-            Transform_relative_position(t, new_vec3(light->shadow_width/2,light->shadow_height/2,light->shadow_depth)),
-            Transform_relative_position(t, new_vec3(-light->shadow_width/2,light->shadow_height/2,light->shadow_depth)),
-        };
-        paint_loop_c((float *) near_plane, 4, "y");
-        paint_loop_c((float *) far_plane, 4, "y");
-        for (int i = 0; i < 4; i++) paint_line_cv(near_plane[i], far_plane[i], "g");
-        
-    end_for_aspect()
 
     // printf("getting. ...\n");
     // getchar();

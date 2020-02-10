@@ -178,7 +178,7 @@ extern void init_program(void)
         EntityID e = new_entity(4);
         Transform_set(add_aspect(e, Transform), -50+frand()*100,10,-50+frand()*100,  0,2*M_PI*frand(),0);
         Body *body = add_aspect(e, Body);
-        body->scale = 20;
+        body->scale = 5;
         body->geometry = new_resource_handle(Geometry, "Models/quad");
         body->material = Material_create("Materials/cutout_texture");
         material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/grass");

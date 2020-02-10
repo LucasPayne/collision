@@ -20,7 +20,7 @@ out vec4 color;
 
 void main(void)
 {
-    float ambient = 0.05;
+    float ambient = 0.2;
     color = vec4(vec3(ambient), 1);
     vec4 add_color = vec4(0,0,0,1);
 
@@ -65,7 +65,10 @@ void main(void)
 
     // Modulate by the texture color or the flat color.
     if (use_flat_color) color *= flat_color;
-    else color *= texture(diffuse_map, fTexCoord);
+    else {
+        color *= texture(diffuse_map, fTexCoord);
+        if (color.a < 0.1) discard; // for cutout textures.
+    }
     // Add the tinting color (this can be used for visualization and testing).
     color += add_color;
 }

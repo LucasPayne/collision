@@ -65,7 +65,6 @@ void Texture_load(void *resource, char *path)
     bool nearest;
     if (!dd_get(dd, "nearest", "bool", &nearest)) load_error("No nearest.");
     if (nearest) {
-        printf("Making %s nearest\n", path);getchar();
         // For example, low-resolution minecraft-block textures should use this flag.
         mag_filter = GL_NEAREST;
         min_filter = GL_NEAREST;

@@ -97,7 +97,7 @@ block_on_floor < (
             material: Scenes/floor_material;
         );
         transform < Transform (
-            position: 0,-50,-50;
+            position: 0,0,-50;
             rotation: 1.5707963,0,0;
         );
     );

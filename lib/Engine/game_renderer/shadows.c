@@ -209,7 +209,7 @@ light to uvd 3
 --------------------------------------------------------------------------------*/
 
 
-#if 1
+#if 0
 {
             vec3 c1 = mat4x4_vec3(&shadow_matrix, box_corners[0]);
             vec3 c2 = mat4x4_vec3(&shadow_matrix, box_corners[1]);
@@ -218,8 +218,6 @@ light to uvd 3
             mat4x4 light_model_matrix = Transform_matrix(get_sibling_aspect(light, Transform));
             vec3 box_corner1_worldspace = mat4x4_vec3(&light_model_matrix, box_corners[0]);
             vec3 box_corner2_worldspace = mat4x4_vec3(&light_model_matrix, box_corners[1]);
-            paint_line_cv(Canvas3D, box_corner1_worldspace, vec3_zero(), "k", 10);
-            paint_line_cv(Canvas3D, box_corner2_worldspace, vec3_zero(), "gr", 10);
             print_vec3(c1);
             print_vec3(c2);
 }

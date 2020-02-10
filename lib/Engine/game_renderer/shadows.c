@@ -31,8 +31,8 @@ void init_shadows(void)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
         //---Setting a border color does not seem to work.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glBindTexture(GL_TEXTURE_2D, 0);
         shadow_map->depth_texture_material = Material_create("Materials/render_shadow_map");
         ResourceHandle depth_texture_handle;
@@ -70,11 +70,15 @@ void do_shadows(Camera *camera)
     Transform *transform = get_sibling_aspect(camera, Transform);
     vec3 pos = Transform_position(transform);
     // Upload the frustum-segment depths so fragment shaders can test which segment the fragment is in, for visualization.
+    // Seems easier to hardcode distances rather than calculate them due to some mathematical formula.
+    // As general guidelines, the earliest segment should be large enough to encompass what is generally in the foreground, while
+    // small enough to give high resolution and room for the other segments to also contribute when the camera is on ground level.
+    // Then, further segments should get longer, so they occupy roughly the same amount of screen-space.
     vec4 segment_depths = new_vec4(
         n,
-        n + 0.25 * (f - n),
-        n + 0.5  * (f - n),
-        n + 0.75 * (f - n)
+        n + 0.1  * (f - n),
+        n + 0.3  * (f - n),
+        n + 0.6  * (f - n)
     );
     set_uniform_vec4(Lights, shadow_map_segment_depths, segment_depths);
 
@@ -99,8 +103,8 @@ void do_shadows(Camera *camera)
         //for (int segment = 0; segment < 4; segment++) {
             // along:    near plane z offset from this frustum segment.
             // along_to: far plane z offset from this frustum segment.
-            float along = -n - (f - n) * segment/4.0;
-            float along_to = -n - (f - n) * (segment + 1)/4.0;
+            float along = -segment_depths.vals[segment];
+            float along_to = segment == 3 ? -f : -segment_depths.vals[segment + 1];
             vec3 near_p = vec3_add(pos, vec3_mul(Transform_forward(transform), along));
             vec3 far_p =  vec3_add(pos, vec3_mul(Transform_forward(transform), along_to));
             // Calculate the points of the frustum segment, on the near plane and far plane.
@@ -117,7 +121,7 @@ void do_shadows(Camera *camera)
             };
             vec3 *near_quad = frustum_points;
             vec3 *far_quad = frustum_points + 4;
-#if 1
+#if 0
             // paint_box_v(Canvas3D, frustum_points, color_fade(colors[segment], 0.5));
             for (int i = 0; i < 4; i++) {
                 paint_line_v(Canvas3D, near_quad[i], near_quad[(i+1)%4], colors[segment], 2);
@@ -283,7 +287,7 @@ light to uvd 3
             // (they happen afterward, mapping the view-volume quadrant to its UV quadrant).
             right_multiply_matrix4x4f(&uvd_shadow_matrix, &shadow_matrix);
             set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrices[segment].vals, uvd_shadow_matrix.vals);
-#if 1
+#if 0
 {
             printf("light to uvd %d\n", segment);
             mat4x4 light_model_matrix = Transform_matrix(get_sibling_aspect(light, Transform));
@@ -316,7 +320,7 @@ light to uvd 3
                 // render_body(shadow_matrix, body);
             end_for_aspect()
 
-#if 1
+#if 0
             // Draw the frustum-segment bounding box.
             // Use these to form all points of the box.
             vec3 box_points[8];

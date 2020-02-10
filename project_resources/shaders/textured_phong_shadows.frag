@@ -51,6 +51,9 @@ void main(void)
         uvd_coord.z += -max((1 - abs(cos_theta)) * 0.005, 0.0005);
 
         float light_factor = texture(directional_light_shadow_maps[i], uvd_coord.xyz);
+        if (uvd_coord.x < 0.5 * (segment_index % 2) || uvd_coord.x > 0.5 * (segment_index % 2) + 0.5) light_factor = 1;
+        if (uvd_coord.y < 0.5 * (segment_index / 2) || uvd_coord.y > 0.5 * (segment_index / 2) + 0.5) light_factor = 1;
+        
 
         float intensity = (1 - ambient) * max(0, cos_theta);
         color += light_factor * vec4(vec3(intensity), 0);

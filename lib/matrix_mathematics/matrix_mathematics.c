@@ -503,6 +503,11 @@ vec3 vec3_normalize(vec3 v)
     return vec3_mul(v, inv_length);
 }
 
+float vec3_square_length(vec3 v)
+{
+    return vec3_dot(v, v);
+}
+
 float vec3_length(vec3 v)
 {
     return sqrt(vec3_dot(v, v));

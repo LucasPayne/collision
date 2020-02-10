@@ -32,6 +32,9 @@ new_reader(Body) {
     char *material_path;
     if (!dd_get(aspect_dd, "material", "string", &material_path)) return false;
     body->material = new_resource_handle(Material, material_path);
+    bool is_ground; // "ground" doesn't cast shadows, so shadow maps can have increased resolution up to the non-ground scene.
+    if (!dd_get(aspect_dd, "is_ground", "bool", &is_ground)) return false;
+    body->is_ground = is_ground;
     
     //----dummy for now
     // Material *mat = oneoff_resource(Material, body->material);

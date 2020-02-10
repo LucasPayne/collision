@@ -62,6 +62,7 @@ Body < Aspect (
     float scale;
     string geometry;
     string material;
+    bool is_ground: false;
 );
 
 //--------------------------------------------------------------------------------

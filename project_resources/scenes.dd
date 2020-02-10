@@ -92,6 +92,7 @@ block_on_floor < (
     );
     big_floor < GameObject (
         body < Body (
+            is_ground: true; // "is_ground": don't cast shadows. To look right, the ground should be mostly level.
             scale: 10000;
             geometry: Resources/Models/quad;
             material: Scenes/floor_material;

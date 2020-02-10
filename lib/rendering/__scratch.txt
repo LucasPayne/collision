@@ -1,0 +1,26 @@
+
+            vec3 scene_corners[2] = { light_frustum[0], light_frustum[0] };
+            for_aspect(Body, body)
+                float radius = Body_radius(body);
+                vec3 position = mat4x4_vec3(&light_matrix, Transform_position(get_sibling_aspect(body, Transform)));
+                for (int i = 0; i < 3; i++) {
+		    float min_val = position.vals[i] - radius;
+		    float max_val = position.vals[i] + radius;
+                    if (min_val < scene_corners[0].vals[i]) scene_corners[0].vals[i] = min_val;
+                    if (max_val > scene_corners[1].vals[i]) scene_corners[1].vals[i] = max_val;
+                }
+            end_for_aspect()
+
+            // Now if this box is larger than the frustum-segment, winnow it down to the frustum-segment, since shadow-casters outside of it do not matter.
+            vec3 box_corners[2] = { light_frustum[0], light_frustum[0] };
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 3; j++) {
+                    if (light_frustum[i].vals[j] < box_corners[0].vals[j]) box_corners[0].vals[j] = light_frustum[i].vals[j];
+                    if (light_frustum[i].vals[j] > box_corners[1].vals[j]) box_corners[1].vals[j] = light_frustum[i].vals[j];
+                }
+            }
+            Now take the minimum-extent (so, minimum maximums) of each of these pairs of corners.
+            for (int i = 0; i < 3; i++) {
+                box_corners[0].vals[i] = MAX(box_corners[0].vals[i], scene_corners[0].vals[i]);
+                box_corners[1].vals[i] = MIN(box_corners[1].vals[i], scene_corners[1].vals[i]);
+            }

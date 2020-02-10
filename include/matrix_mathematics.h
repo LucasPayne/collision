@@ -36,6 +36,7 @@ vec3 vec3_cross(vec3 u, vec3 v);
 vec3 vec3_zero(void);
 vec3 vec3_normalize(vec3 v);
 float vec3_length(vec3 v); 
+float vec3_square_length(vec3 v);
 
 vec4 vec4_zero(void);
 
@@ -126,6 +127,7 @@ vec3 mat4x4_vec3(mat4x4 *matrix, vec3 v);
 vec4 color_mul(vec4 color, float x);
 // multiply only the last component.
 vec4 color_fade(vec4 color, float x);
+
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

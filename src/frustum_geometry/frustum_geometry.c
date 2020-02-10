@@ -58,7 +58,6 @@ void draw_frustum(Camera *camera)
         vec3 *far_quad = frustum_points + 4;
 
         paint_box_v(Canvas3D, frustum_points, color_fade(colors[segment], 0.5));
-        
         for (int i = 0; i < 4; i++) {
             paint_line_v(Canvas3D, near_quad[i], near_quad[(i+1)%4], colors[segment], 2);
             paint_line_v(Canvas3D, far_quad[i], far_quad[(i+1)%4], colors[segment], 2);
@@ -201,7 +200,7 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-#if 1
+#if 0
     for_aspect(Camera, camera)
         draw_frustum(camera);
         Transform *t = get_sibling_aspect(camera, Transform);

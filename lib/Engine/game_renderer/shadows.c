@@ -3,6 +3,9 @@
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
 
+#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
+#define MAX(X,Y) ((X) < (Y) ? (Y) : (X))
+
 static Material *g_shadow_map_material = NULL;
 ShadowMap g_directional_light_shadow_maps[MAX_NUM_DIRECTIONAL_LIGHTS];
 
@@ -114,6 +117,14 @@ void do_shadows(Camera *camera)
             };
             vec3 *near_quad = frustum_points;
             vec3 *far_quad = frustum_points + 4;
+#if 1
+            // paint_box_v(Canvas3D, frustum_points, color_fade(colors[segment], 0.5));
+            for (int i = 0; i < 4; i++) {
+                paint_line_v(Canvas3D, near_quad[i], near_quad[(i+1)%4], colors[segment], 2);
+                paint_line_v(Canvas3D, far_quad[i], far_quad[(i+1)%4], colors[segment], 2);
+                paint_line_v(Canvas3D, near_quad[i], far_quad[i], colors[segment], 2);
+            }
+#endif
             mat4x4 light_matrix = invert_rigid_mat4x4(Transform_matrix(get_sibling_aspect(light, Transform)));
             // Transform frustum segment to light space.
             vec3 light_frustum[8];
@@ -121,8 +132,28 @@ void do_shadows(Camera *camera)
                 light_frustum[i] = mat4x4_vec3(&light_matrix, near_quad[i]);
                 light_frustum[i + 4] = mat4x4_vec3(&light_matrix, far_quad[i]);
             }
+            //--------------------------------------------------------------------------------
             // Find the axis-aligned bounding box of the frustum segment in light coordinates.
             // Find the minimum and maximum corners.
+            //--------------------------------------------------------------------------------
+            // Scene awareness: winnow the box down so that it more tightly (but not perfectly) encloses the shadow-casting models in the scene.
+            // This uses the radius of each body, being the maximal distance from the model-origin of a vertex, to create a bounding box aligned to light space.
+            //--------------------------------------------------------------------------------
+            vec3 scene_corners[2] = { light_frustum[0], light_frustum[0] };
+            for_aspect(Body, body)
+                if (body->is_ground) continue; // The is_ground flag can be set on a body so that shadow maps can be made higher resolution,
+                                               // since the ground is large but probably won't cast shadows.
+                float radius = Body_radius(body);
+                vec3 position = mat4x4_vec3(&light_matrix, Transform_position(get_sibling_aspect(body, Transform)));
+                for (int i = 0; i < 3; i++) {
+		    float min_val = position.vals[i] - radius;
+		    float max_val = position.vals[i] + radius;
+                    if (min_val < scene_corners[0].vals[i]) scene_corners[0].vals[i] = min_val;
+                    if (max_val > scene_corners[1].vals[i]) scene_corners[1].vals[i] = max_val;
+                }
+            end_for_aspect()
+
+            // Now if this box is larger than the frustum-segment, winnow it down to the frustum-segment, since shadow-casters outside of it do not matter.
             vec3 box_corners[2] = { light_frustum[0], light_frustum[0] };
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 3; j++) {
@@ -130,6 +161,13 @@ void do_shadows(Camera *camera)
                     if (light_frustum[i].vals[j] > box_corners[1].vals[j]) box_corners[1].vals[j] = light_frustum[i].vals[j];
                 }
             }
+            // Now take the minimum-extent (so, minimum maximums) of each of these pairs of corners.
+            for (int i = 0; i < 3; i++) {
+                box_corners[0].vals[i] = MAX(box_corners[0].vals[i], scene_corners[0].vals[i]);
+                box_corners[1].vals[i] = MIN(box_corners[1].vals[i], scene_corners[1].vals[i]);
+            }
+            //--------------------------------------------------------------------------------
+
             // light_to_box:
             // This matrix is a scale and translation matrix which transforms the frustum-segment bounding box to the canonical view volume.
             float w = box_corners[1].vals[0] - box_corners[0].vals[0];
@@ -257,41 +295,6 @@ light to uvd 3
             print_vec3(c2);
 }
 #endif
-
-#if 0
-            mat4x4 uvd_to_quadrant = {{
-                1,    0,    0,     0,
-                0,    1,    0,     0,
-                0,    0,    1,     0,
-                0.5 * (((segment % 2) + 1) % 2), 0.5 * (((segment / 2) + 1) % 2), 0, 1,
-            }};
-            mat4x4 uvd_to_quadrant_2 = {{
-                0.5,    0,    0,     0,
-                0,    0.5,    0,     0,
-                0,    0,    1,     0,
-                0,    0,    0,     1,
-            }};
-            right_multiply_matrix4x4f(&uvd_to_quadrant, &uvd_to_quadrant_2);
-
-            mat4x4 light_to_uvd = {{
-                1/w,  0,    0,   0,
-                0,    1/h,  0,   0,
-                0,    0,    1/d,   0,
-                0,    0,    0,     1,
-            }};
-            mat4x4 light_to_uvd_2 = {{
-                1,    0,    0,     0,
-                0,    1,    0,     0,
-                0,    0,    1,     0,
-                -x,   -y,   -z,    1,
-            }};
-            right_multiply_matrix4x4f(&light_to_uvd, &light_to_uvd_2);
-
-            mat4x4 uvd_shadow_matrix = uvd_to_quadrant;
-            right_multiply_matrix4x4f(&uvd_shadow_matrix, &light_to_uvd);
-            right_multiply_matrix4x4f(&uvd_shadow_matrix, &light_matrix);
-#endif
-
             // Render to this frustum-segment's quadrant of the shadow map.
             glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->framebuffer);
             glClearDepth(1.0);
@@ -313,7 +316,7 @@ light to uvd 3
                 // render_body(shadow_matrix, body);
             end_for_aspect()
 
-#if 0
+#if 1
             // Draw the frustum-segment bounding box.
             // Use these to form all points of the box.
             vec3 box_points[8];
@@ -333,12 +336,12 @@ light to uvd 3
             }
             // Draw the box.
             for (int i = 0; i < 4; i++) {
-                paint_line_v(box_points[2*i], box_points[2*i+1], color_mul(colors[segment], 0.5));
-                paint_line_v(box_points[i], box_points[i+4], color_mul(colors[segment], 0.5));
+                paint_line_v(Canvas3D, box_points[2*i], box_points[2*i+1], color_mul(colors[segment], 0.5), 1);
+                paint_line_v(Canvas3D, box_points[i], box_points[i+4], color_mul(colors[segment], 0.5), 1);
             }
             for (int i = 0; i < 2; i++) {
                 for (int j = 0; j < 2; j++) {
-                    paint_line_v(box_points[i + 4*j], box_points[i + 4*j + 2], color_mul(colors[segment], 0.5));
+                    paint_line_v(Canvas3D, box_points[i + 4*j], box_points[i + 4*j + 2], color_mul(colors[segment], 0.5), 1);
                 }
             }
 #endif

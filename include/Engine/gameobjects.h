@@ -62,8 +62,10 @@ ASPECT_PROPERTIES()
     float scale;
     ResourceHandle material; /* Resource: Material */
     ResourceHandle geometry; /* Resource: Geometry */
+    bool is_ground;
 } Body;
 void Body_init(Body *body, char *material_path, char *mesh_path);
+float Body_radius(Body *body);
 
 /*--------------------------------------------------------------------------------
 Logic is the behavioral aspect of a gameobject. It holds an update routine

@@ -113,6 +113,18 @@ void Geometry_load(void *resource, char *path)
         }
 
         geometry = upload_mesh(&mesh_data);
+
+        // Calculate the radius, being the maximum distance of a vertex from the model origin.
+        // This is used for a simple bounding sphere.
+        float max_sq_dist = 0;
+        for (int i = 0; i < mesh_data.num_vertices; i++) {
+            vec3 vertex = ((vec3 *) mesh_data.attribute_data[Position])[i];
+            if (vec3_square_length(vertex) > max_sq_dist) max_sq_dist = vec3_square_length(vertex);
+        }
+        geometry.radius = sqrt(max_sq_dist);
+        // printf("calculated %.2f for radius of model %s\n", geometry.radius, path);
+        // getchar();
+
         // Destroy the mesh data.
         for (int i = 0; i < NUM_ATTRIBUTE_TYPES; i++) {
             if (mesh_data.attribute_data[i] != NULL) free(mesh_data.attribute_data[i]);

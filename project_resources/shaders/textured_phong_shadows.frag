@@ -33,7 +33,7 @@ void main(void)
     int segment_index = 0;
     for (int i = 0; i < NUM_FRUSTUM_SEGMENTS; i++) {
         if (dot(fPosition.xyz - camera_position, camera_direction) > shadow_map_segment_depths[i]) {
-            add_color = 0.5 * segment_colors[i];
+            // add_color = 0.5 * segment_colors[i];
             segment_index = i;
         }
     }

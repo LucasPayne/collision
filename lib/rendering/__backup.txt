@@ -1,3 +1,5 @@
+
+
 /*--------------------------------------------------------------------------------
     "Geometry" resource and geometry-specification component of the rendering module.
     The Geometry resource, immediate-mode-style geometry definition, and attribute buffer uploading is in this module.

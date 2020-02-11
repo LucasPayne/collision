@@ -46,7 +46,7 @@ DataDictionary *dd_open(DataDictionary *dict, char *path)
 {
     // Recursive opening. Follow the /-separated path. Each scope is checked, starting with the deepest.
     DD *scope_dict = dict;
-    printf("Opening %s\n", path);
+    printf("Opening \"%s\"\n", path);
 
     int c = 0;
     while (scope_dict != NULL) {

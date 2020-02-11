@@ -130,8 +130,12 @@ Manager *manager_of_type(AspectType type);
 // Get data from aspect type
 #define get_aspect_type(ENTITY_ID,ASPECT_TYPE_NAME)\
     ((ASPECT_TYPE_NAME *) _get_aspect_type(( ENTITY_ID ), ASPECT_TYPE_NAME ## _TYPE_ID))
+
+
 #define get_sibling_aspect(ASPECT,ASPECT_TYPE_NAME)\
     ((ASPECT_TYPE_NAME *) _get_aspect_type(( ASPECT )->entity_id, ASPECT_TYPE_NAME ## _TYPE_ID))
+// just a shorter alias for the above.
+#define other_aspect(ASPECT,ASPECT_TYPE_NAME) get_sibling_aspect(ASPECT,ASPECT_TYPE_NAME)
 void *_get_aspect_type(EntityID entity, AspectType type);
 
 /* Macro'd syntax for using manager's iterators (managers are really containers)

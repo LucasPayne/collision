@@ -1,0 +1,10 @@
+
+texture_normal < MaterialType (
+    vertex_format: 3NU;
+    vertex_shader: Shaders/texture_normal.vert;
+    fragment_shader: Shaders/texture_normal.frag;
+    num_blocks: 1;
+    string block0: Standard3D;
+    num_textures: 1;
+    string texture0: diffuse_map;
+);

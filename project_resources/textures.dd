@@ -47,3 +47,12 @@ grass < Texture (
     path: Images/grass.png;
     cutout: true;
 );
+
+brick_wall < Texture (
+    type: png;
+    path: Images/brick_wall.png;
+);
+brick_wall_normal < Texture (
+    type: png;
+    path: Images/brick_wall_normal.png;
+);

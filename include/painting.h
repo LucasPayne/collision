@@ -55,7 +55,7 @@ typedef struct Paint_s {
 } Paint;
 
 // right now, canvases have a fixed amount of paint.
-#define g_paint_buffer_size (1 << 13)
+#define g_paint_buffer_size (1 << 15)
 #define g_paint_vertex_buffer_size ( g_paint_buffer_size * 4 * 3 * 16 )
 typedef struct Canvas_s {
     int paint_count;

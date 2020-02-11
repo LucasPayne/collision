@@ -323,6 +323,8 @@ typedef struct /* Resource */ Geometry_s {
     int num_indices;
     int num_vertices;
     float radius;
+
+    MeshData *mesh_data; // if this is null, it has been freed from application memory. This is the default.
 } Geometry;
 // Like all resources, this structure does not need to be used as a shared resource or loaded with this function.
 // This is for instancing and file-backed mesh rendering.

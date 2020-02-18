@@ -26,7 +26,7 @@ const AttributeInfo g_attribute_info[NUM_ATTRIBUTE_TYPES] = {
     { ATTRIBUTE_TYPE_COLOR, "vColor", GL_FLOAT, 3 },
     { ATTRIBUTE_TYPE_NORMAL, "vNormal", GL_FLOAT, 3},
     { ATTRIBUTE_TYPE_UV, "vTexCoord", GL_FLOAT, 2},
-    { ATTRIBUTE_TYPE_INDEX, "vIndex", GL_UNSIGNED_INT, 1},
+    { ATTRIBUTE_TYPE_TANGENT, "vTangent", GL_FLOAT, 3},
 };
 
 /*--------------------------------------------------------------------------------
@@ -69,7 +69,6 @@ void Geometry_load(void *resource, char *_path)
     if (strcmp(flags, "-a") == 0) { //--just so it works, only one flag right now anyway.
         keep_mesh_data = true;
     }
-
 
     #define load_error(STRING) { fprintf(stderr, ERROR_ALERT "Error loading geometry: %s\n", ( STRING )); exit(EXIT_FAILURE); }
     #define manifest_error(str) load_error("Geometry manifest file has missing or malformed " str " entry.\n")
@@ -115,6 +114,7 @@ void Geometry_load(void *resource, char *_path)
         VertexFormat calculating_attributes = VERTEX_FORMAT_NONE;
         if (calculate_normals) calculating_attributes |= VERTEX_FORMAT_N;
         if (calculate_uv) calculating_attributes |= VERTEX_FORMAT_U;
+        if ((vertex_format & VERTEX_FORMAT_T) != 0) calculating_attributes |= VERTEX_FORMAT_T; // Tangents are not queried for, even if available, but calculated.
 
         // Mask the vertex format for the PLY query so that calculated attributes aren't queried for.
         VertexFormat query_vertex_format = vertex_format & ~calculating_attributes;
@@ -126,14 +126,24 @@ void Geometry_load(void *resource, char *_path)
             MeshData_calculate_normals(&mesh_data);
         }
         if (calculate_uv && (vertex_format & VERTEX_FORMAT_U) != 0) {
+            float scale;
+	    if (!dd_get(dd, "calculate_uv_scale", "float", &scale)) manifest_error("calculate_uv_scale");
             if (calculate_uv_type == UVOrthographic) {
                 vec3 direction;
                 if (!dd_get(dd, "calculate_uv_orthographic_direction", "vec3", &direction)) manifest_error("calculate_uv_orthographic_direction");
-                MeshData_calculate_uv_orthographic(&mesh_data, direction);
+                MeshData_calculate_uv_orthographic(&mesh_data, direction, scale);
             } else {
                 fprintf(stderr, ERROR_ALERT "Something went wrong. Attempted to calculate UV coordinates for mesh with invalid projection type.\n");
                 exit(EXIT_FAILURE);
             }
+        }
+        // Calculate tangents only after UV coordinates and normals, because they used in the construction.
+        if ((vertex_format & VERTEX_FORMAT_T) != 0) {
+            if ((vertex_format & VERTEX_FORMAT_U) == 0 || (vertex_format & VERTEX_FORMAT_N) == 0) {
+                fprintf(stderr, ERROR_ALERT "geomety error: Tangent vectors cannot be contained in a vertex format without both normals and UV coordinates.");
+                exit(EXIT_FAILURE);
+            }
+            MeshData_calculate_tangents(&mesh_data);
         }
 
         geometry = upload_mesh(&mesh_data);
@@ -462,6 +472,7 @@ void gm_draw(Geometry geometry, Material *material)
     switch(geometry.primitive_type) {
         case Triangles: gl_primitive_type = GL_TRIANGLES; break;
         case Lines: gl_primitive_type = GL_LINE_STRIP; break; // GL_LINES treats each two vertices as a separate line, so use this for a contiguous chain.
+        case Patches: gl_primitive_type = GL_PATCHES; break;
         default:
             fprintf(stderr, ERROR_ALERT "Have not accounted for the primitive type of a piece of geometry passed into gm_draw.\n");
             exit(EXIT_FAILURE);

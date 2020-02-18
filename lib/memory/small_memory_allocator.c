@@ -205,8 +205,8 @@ void small_memory_allocator_debug_overlay(void)
             for (int k = 0; k < square_side; k++) {
                 int cell_index = j*square_side + k;
                 if (cell_index >= pool->count) continue;
-                if (cell_states[cell_index])
-                    paint2d_rect(pool_blx+cell_width*j,pool_bly+cell_height*k,  cell_width,cell_height,  0,j*1.0/square_side,k*1.0/square_side,1);
+                //if (cell_states[cell_index])
+                    //paint2d_rect(pool_blx+cell_width*j,pool_bly+cell_height*k,  cell_width,cell_height,  0,j*1.0/square_side,k*1.0/square_side,1);
                 // else
                 //     paint2d_loop(pool_blx,pool_bly,  pool_blx+cell_width,pool_bly,  pool_blx+cell_width,pool_blx+cell_height,  pool_blx,pool_bly+cell_height,  0,0,1,1);
             }

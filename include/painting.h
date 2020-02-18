@@ -111,8 +111,18 @@ void paint_loop(int canvas_id, float vals[], int num_points, COLOR_SCALARS, floa
 
 
 void paint_chain(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width);
+#define paint_chain_c(CANVAS_ID,VALS,NUM_POINTS,COLOR_STR,WIDTH)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint_chain(CANVAS_ID,VALS,NUM_POINTS,UNPACK_COLOR(color),WIDTH);\
+}
 
 void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color);
+#define paint_quad_cv(CANVAS_ID,A,B,C,D,COLOR_STR)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint_quad_v(CANVAS_ID,A,B,C,D,color);\
+}
 
 void paint_box_v(int canvas_id, vec3 corners[], vec4 color);
 #define paint_box_c(CANVAS_ID,CORNERS,COLOR_STR)\
@@ -120,6 +130,9 @@ void paint_box_v(int canvas_id, vec3 corners[], vec4 color);
     vec4 color = str_to_color_key(( COLOR_STR ));\
     paint_box_v(CANVAS_ID,CORNERS,color);\
 }
+
+void paint2d_rect(int canvas_id, float x, float y, float width, float height, vec4 color, int layer);
+void paint2d_rect_bordered(int canvas_id, float x, float y, float width, float height, vec4 color, float line_width, vec4 line_color, int layer);
 
 //--------------------------------------------------------------------------------
 

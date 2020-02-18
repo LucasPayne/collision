@@ -44,7 +44,7 @@ VertexFormat string_to_VertexFormat(char *string)
             casemap('C', VERTEX_FORMAT_C);
             casemap('N', VERTEX_FORMAT_N);
             casemap('U', VERTEX_FORMAT_U);
-            casemap('I', (1 << ATTRIBUTE_TYPE_INDEX));
+            casemap('T', VERTEX_FORMAT_T);
             default:
                 return VERTEX_FORMAT_NONE;
         }
@@ -59,7 +59,6 @@ void init_resources_rendering(void)
     add_resource_type_no_unload(Geometry);
     add_resource_type_no_unload(Texture);
     add_resource_type_no_unload(Font);
-
     add_resource_type_no_unload(MaterialType);
     add_resource_type(Material);
 }

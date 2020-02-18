@@ -21,9 +21,5 @@ GLFWwindow *gl_core_standard_window(char *name, void (*init_function)(void), voi
 /* double dt(void); */
 void loop_time(GLFWwindow *window, void (*inner_func)(void), GLbitfield clear_mask);
 
-//================================================================================
-// GL types, definitions, values, ...
-//================================================================================
-size_t gl_type_size(GLenum gl_type);
 
 #endif // HEADER_DEFINED_HELPER_GL

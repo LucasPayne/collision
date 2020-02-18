@@ -333,3 +333,18 @@ void paint_box_v(int canvas_id, vec3 corners[], vec4 color)
     paint_quad_v(canvas_id, corners[0], corners[3], corners[7], corners[4], color);
 }
 
+#define num_layers 256
+#define layer2d(LAYER) ( -( LAYER ) * 1.0 / num_layers)
+
+void paint2d_rect(int canvas_id, float x, float y, float width, float height, vec4 color, int layer)
+{
+    paint_quad_v(canvas_id, new_vec3(x,y,layer2d(layer)), new_vec3(x+width,y,layer2d(layer)), new_vec3(x+width,y+height,layer2d(layer)), new_vec3(x,y+height,layer2d(layer)), color);
+}
+void paint2d_rect_bordered(int canvas_id, float x, float y, float width, float height, vec4 color, float line_width, vec4 line_color, int layer)
+{
+    paint_line(canvas_id, x, y, layer2d(layer), x + width, y, layer2d(layer), UNPACK_COLOR(line_color), line_width);
+    paint_line(canvas_id, x, y, layer2d(layer), x, y + height, layer2d(layer), UNPACK_COLOR(line_color), line_width);
+    paint_line(canvas_id, x + width, y + height, layer2d(layer), x + width, y, layer2d(layer), UNPACK_COLOR(line_color), line_width);
+    paint_line(canvas_id, x + width, y + height, layer2d(layer), x, y + height, layer2d(layer), UNPACK_COLOR(line_color), line_width);
+    paint2d_rect(canvas_id, x, y, width, height, color, layer);
+}

@@ -71,23 +71,42 @@ void MaterialType_load(void *resource, char *path)
     if (mt.num_textures > MATERIAL_MAX_TEXTURES) load_error("Too many textures declared in num_textures.");
 
     // Attempt to find/load the Shader resources, and then link them.
+    // Vertex and fragment shaders are required.
     char *vertex_shader;
-    if (!dd_get(dd, "vertex_shader", "string", &vertex_shader)) load_error("No vertex_shader.");
     char *fragment_shader;
+    if (!dd_get(dd, "vertex_shader", "string", &vertex_shader)) load_error("No vertex_shader.");
     if (!dd_get(dd, "fragment_shader", "string", &fragment_shader)) load_error("No fragment_shader.");
-    mt.program_type = GRAPHICS_PROGRAM_VF; // Only handling vertex+fragment programs currently.
+    mt.program_type = GRAPHICS_PROGRAM_VF;
     mt.shaders[Vertex] = new_resource_handle(Shader, vertex_shader);
     mt.shaders[Fragment] = new_resource_handle(Shader, fragment_shader);
+    // Optional tesselation shaders (evaluation or control+evaluation).
+    char *te_shader;
+    if (dd_get(dd, "tesselation_evaluation_shader", "string", &te_shader)) {
+        mt.program_type = GRAPHICS_PROGRAM_VTF;
+        mt.shaders[TesselationEvaluation] = new_resource_handle(Shader, te_shader);
+    }
+    char *tc_shader;
+    if (dd_get(dd, "tesselation_control_shader", "string", &tc_shader)) {
+        if ((mt.program_type & (1 << TesselationEvaluation)) == 0) {
+            load_error("If there is a tesselation control shader, there must be a tesselation evaluation shader.");
+        }
+        mt.program_type = GRAPHICS_PROGRAM_VTTF;
+        mt.shaders[TesselationControl] = new_resource_handle(Shader, tc_shader);
+    }
 
     mt.program_id = glCreateProgram();
     // Attach the shaders. If they aren't loaded resources, then this loads and tries to compile them.
-    glAttachShader(mt.program_id, resource_data(Shader, mt.shaders[Vertex])->shader_id);
-    glAttachShader(mt.program_id, resource_data(Shader, mt.shaders[Fragment])->shader_id);
+    for (int i = 0; i < NUM_SHADER_TYPES; i++) {
+        if ((mt.program_type & (1 << i)) == 0) continue;
+        glAttachShader(mt.program_id, resource_data(Shader, mt.shaders[i])->shader_id);
+    }
     // Link the program, and do error-checking.
     link_shader_program(mt.program_id);
     // Detach the shaders so they can be deleted if needed.
-    glDetachShader(mt.program_id, resource_data(Shader, mt.shaders[Vertex])->shader_id);
-    glDetachShader(mt.program_id, resource_data(Shader, mt.shaders[Fragment])->shader_id);
+    for (int i = 0; i < NUM_SHADER_TYPES; i++) {
+        if ((mt.program_type & (1 << i)) == 0) continue;
+        glDetachShader(mt.program_id, resource_data(Shader, mt.shaders[i])->shader_id);
+    }
 
     // A file-backed material instance of this material-type defines its textures from their names given in this material type text-file. Collate these
     // names, and attach texture{i}'s declared texture name to texture unit GL_TEXTURE{i}.

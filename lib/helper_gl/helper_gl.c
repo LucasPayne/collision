@@ -71,16 +71,6 @@ void force_aspect_ratio(GLFWwindow *window, GLsizei width, GLsizei height, doubl
     }
 }
 
-//--- Flesh this out and make sure it is correct.
-size_t gl_type_size(GLenum gl_type)
-{
-    switch(gl_type) {
-        case GL_FLOAT: return sizeof(float);
-    }
-    fprintf(stderr, ERROR_ALERT "Either invalid GL type %d was size checked, or gl_type_size does not yet map this type to its size.\n", gl_type);
-    exit(EXIT_FAILURE);
-}
-
 
 GLFWwindow *gl_core_standard_window(char *name, void (*init_function)(void), void (*loop_function)(void), void (*close_function)(void))
 {

@@ -43,7 +43,7 @@ enum AttributeTypes {
     ATTRIBUTE_TYPE_COLOR,
     ATTRIBUTE_TYPE_NORMAL,
     ATTRIBUTE_TYPE_UV,
-    ATTRIBUTE_TYPE_INDEX,
+    ATTRIBUTE_TYPE_TANGENT,
     NUM_ATTRIBUTE_TYPES
 };
 enum AttributeTypes2 { // better names, don't use this capitalization otherwise.
@@ -51,7 +51,7 @@ enum AttributeTypes2 { // better names, don't use this capitalization otherwise.
     Color,
     Normal,
     TexCoord,
-    Index,
+    Tangent,
 };
 // Attribute types are associated to an AttributeInfo structure by their value as an index.
 // This attribute information is stored in a global array.
@@ -72,6 +72,7 @@ typedef uint32_t VertexFormat;
 #define VERTEX_FORMAT_C (1 << ATTRIBUTE_TYPE_COLOR)
 #define VERTEX_FORMAT_N (1 << ATTRIBUTE_TYPE_NORMAL)
 #define VERTEX_FORMAT_U (1 << ATTRIBUTE_TYPE_UV)
+#define VERTEX_FORMAT_T (1 << ATTRIBUTE_TYPE_TANGENT)
 #define VERTEX_FORMAT_3C (VERTEX_FORMAT_3 | VERTEX_FORMAT_C)
 #define VERTEX_FORMAT_3N (VERTEX_FORMAT_3 | VERTEX_FORMAT_N)
 #define VERTEX_FORMAT_3U (VERTEX_FORMAT_3 | VERTEX_FORMAT_U)
@@ -97,6 +98,7 @@ enum ShaderTypes {
 typedef uint8_t GraphicsProgramType;
 #define GRAPHICS_PROGRAM_VF ((1 << Vertex) | (1 << Fragment))
 #define GRAPHICS_PROGRAM_VGF ((1 << Vertex) | (1 << Geom) | (1 << Fragment))
+#define GRAPHICS_PROGRAM_VTF ((1 << Vertex) | (1 << TesselationEvaluation) | (1 << Fragment))
 #define GRAPHICS_PROGRAM_VTTF ((1 << Vertex) | (1 << TesselationControl) | (1 << TesselationEvaluation) | (1 << Fragment))
 #define GRAPHICS_PROGRAM_VGTTF ((1 << Vertex) | (1 << Geom) | (1 << TesselationControl) | (1 << TesselationEvaluation) | (1 << Fragment))
 
@@ -104,7 +106,7 @@ typedef uint8_t PrimitiveType;
 enum PrimitiveTypes {
     Triangles,
     Lines,
-    //--- and more...
+    Patches,
 };
 /*--------------------------------------------------------------------------------
     Shader resources
@@ -234,7 +236,7 @@ typedef struct /* Resource */ MaterialType_s {
 
     int num_textures;
     // The texture unit to bind to is the index.
-    char texture_names[MATERIAL_MAX_TEXTURE_NAME_LENGTH + 1][MATERIAL_MAX_TEXTURES];
+    char texture_names[MATERIAL_MAX_TEXTURES][MATERIAL_MAX_TEXTURE_NAME_LENGTH + 1];
 
     size_t properties_size;
     int num_properties;
@@ -309,7 +311,9 @@ typedef struct MeshData_s {
 // This function allows the creation or replacement of normals in a MeshData, calculated from the mesh.
 void MeshData_calculate_normals(MeshData *mesh_data);
 // MeshData can be loaded optionally with the generation of UV coordinates.
-void MeshData_calculate_uv_orthographic(MeshData *mesh_data, vec3 direction);
+void MeshData_calculate_uv_orthographic(MeshData *mesh_data, vec3 direction, float scale);
+// Tangents are always calculated, when in the vertex format, from normals and uv coordinates.
+void MeshData_calculate_tangents(MeshData *mesh_data);
 
 extern ResourceType Geometry_RTID;
 typedef struct /* Resource */ Geometry_s {
@@ -409,22 +413,11 @@ void material_set_property_vec4(Material *material, char *property_name, vec4 v)
 void material_set_texture_path(Material *material, char *texture_name, char *texture_resource_path);
 void material_set_texture(Material *material, char *texture_name, ResourceHandle texture_resource_handle);
 
-#define gl_shader_type(SHADER_TYPE)\
-	((( SHADER_TYPE ) == Vertex) ? GL_VERTEX_SHADER\
-	:((( SHADER_TYPE ) == Fragment) ? GL_FRAGMENT_SHADER\
-	  :((( SHADER_TYPE ) == Geom) ? GL_GEOMETRY_SHADER\
-	    : 0)))
-
-//----------Define more
-#define gl_type_size(GL_TYPE)\
-	((( GL_TYPE ) == GL_FLOAT) ? sizeof(float)\
-	:((( GL_TYPE ) == GL_UNSIGNED_INT) ? sizeof(uint32_t)\
-	  :((( GL_TYPE ) == GL_INT) ? sizeof(int32_t)\
-	    : 0)))
 
 //////////////////////////////////////////////////////////////////////////////////
 // working on
 void material_prepare(Material *material);
 
+GLenum gl_shader_type(ShaderType shader_type);
 
 #endif // HEADER_DEFINED_RENDERING

@@ -10,15 +10,16 @@ Geometry < (
     bool calculate_normals: false; // With this option, normals are calculated for each vertex as unit length averages of the normals of adjacent triangles.
     string calculate_uv: none; // This is a string so there can be multiple options for projections used to generate UV coordinates.
     vec3 calculate_uv_orthographic_direction: 0,0,1; // Projection-type parameters.
+    float calculate_uv_scale: 1.0; // scale the calculated UV coordinates. (might only make sense for certain projections).
 );
 MaterialType < (
     string vertex_format;
     string vertex_shader;
     string fragment_shader;
+    string tesselation_control_shader;
+    string tesselation_evaluation_shader;
     uint num_blocks: 0;
-    blocks < (); // Queried for string block{n}.
     uint num_textures: 0;
-    textures < (); // Queried for string texture{n}.
     bool has_properties: false;
     properties < ();
     // A Material instance has its own properties.

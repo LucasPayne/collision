@@ -18,7 +18,7 @@ void add_point(float x, float y)
 
 vec2 bezier_point(float t)
 {
-    // This is called De Casteljau's algorithm.
+    // This is called de Casteljau's algorithm.
     float bezier_points[max_points * 2];
     memcpy(bezier_points, points, sizeof(float) * 2 * n);
     for (int i = n - 1; i >= 0; --i) {
@@ -40,12 +40,12 @@ void draw_bezier_curve(void)
             vec2 p = bezier_point(i * 1.0 / num_points);
             ((vec2 *) curve)[i] = p;
         }
-        paint2d_chain_c(curve, num_points, "g");
+        paint_chain_c(Canvas2D, curve, num_points, "g", 3);
     }
 
     float quad_size = 0.02;
     for (int i = 0; i < n; i++) {
-        paint2d_rect_c(points[2*i]-quad_size/2, points[2*i+1]-quad_size/2, quad_size,quad_size, "r");
+        // paint2d_rect_c(points[2*i]-quad_size/2, points[2*i+1]-quad_size/2, quad_size,quad_size, "r");
     }
 }
 

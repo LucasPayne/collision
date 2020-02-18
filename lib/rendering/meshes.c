@@ -20,6 +20,68 @@ This module consists of
 #include "ply.h"
 #include "rendering.h"
 
+void MeshData_calculate_tangents(MeshData *mesh_data)
+{
+    if ((mesh_data->vertex_format & VERTEX_FORMAT_U) == 0 || (mesh_data->vertex_format & VERTEX_FORMAT_N) == 0) {
+        fprintf(stderr, ERROR_ALERT "MeshData_calculate_tangents: Vertex format must contain UV coordinates (U) and normals (N).");
+        exit(EXIT_FAILURE);
+    }
+    vec3 *positions = (vec3 *) mesh_data->attribute_data[Position];
+    vec3 *normals = (vec3 *) mesh_data->attribute_data[Normal];
+    vec2 *tex_coords = (vec2 *) mesh_data->attribute_data[TexCoord];
+
+    vec3 *tangents = (vec3 *) calloc(1, sizeof(vec3) * mesh_data->num_vertices);
+    mem_check(tangents);
+    // vec3 *binormals = (vec3 *) calloc(1, sizeof(vec3) * mesh_data->num_vertices);
+    // mem_check(binormals);
+
+    // Reference:
+    // Eric Lengyl, Foundations of Game Engine Development book 2, rendering
+    // Generate tangents.
+    for (int i = 0; i < mesh_data->num_triangles; i++) {
+        uint32_t a = mesh_data->triangles[3*i + 0];
+        uint32_t b = mesh_data->triangles[3*i + 1];
+        uint32_t c = mesh_data->triangles[3*i + 2];
+        vec3 p0 = positions[a];
+        vec3 p1 = positions[b];
+        vec3 p2 = positions[c];
+        float u0 = tex_coords[a].vals[0];
+        float v0 = tex_coords[a].vals[1];
+        float u1 = tex_coords[b].vals[0];
+        float v1 = tex_coords[b].vals[1];
+        float u2 = tex_coords[c].vals[0];
+        float v2 = tex_coords[c].vals[1];
+        float dx1 = u1 - u0;
+        float dy1 = v1 - v0;
+        float dx2 = u2 - u0;
+        float dy2 = v2 - v0;
+        
+        float inverse_det = 1.0 / (dx1 * dy2 - dy1 * dx2);
+
+        vec3 e1 = vec3_sub(p1, p0);
+        vec3 e2 = vec3_sub(p2, p0);
+        
+        vec3 tangent = vec3_mul(vec3_add(vec3_mul(e1, dy2), vec3_mul(e2, -dx2)), inverse_det);
+        // vec3 binormal = vec3_mul(vec3_add(vec3_mul(e1, -dy1), vec3_mul(e2, dx1)), inverse_det);
+        tangents[a]  = vec3_add(tangents[a],  tangent);
+        // binormals[a] = vec3_add(binormals[a], binormal);
+        tangents[b]  = vec3_add(tangents[b],  tangent);
+        // binormals[b] = vec3_add(binormals[b], binormal);
+        tangents[c]  = vec3_add(tangents[c],  tangent);
+        // binormals[c] = vec3_add(binormals[c], binormal);
+    }
+    for (int i = 0; i < mesh_data->num_vertices; i++) {
+        // Gram-Schmidt orthonormalization
+        tangents[i] = vec3_sub(tangents[i], vec3_mul(normals[i], vec3_dot(tangents[i], normals[i])));
+        tangents[i] = vec3_normalize(tangents[i]);
+        // binormals[i] = vec3_sub(binormals[i], vec3_mul(normals[i], vec3_dot(binormals[i], normals[i])));
+        // binormals[i] = vec3_sub(binormals[i], vec3_mul(tangents[i], vec3_dot(binormals[i], tangents[i])));
+        // binormals[i] = vec3_normalize(binormals[i]);
+    }
+    mesh_data->attribute_data[Tangent] = tangents;
+    mesh_data->attribute_data_sizes[Tangent] = sizeof(vec3) * mesh_data->num_vertices;
+    
+}
 
 void MeshData_calculate_normals(MeshData *mesh_data)
 {
@@ -78,7 +140,7 @@ void MeshData_calculate_normals(MeshData *mesh_data)
 #endif
 }
 
-void MeshData_calculate_uv_orthographic(MeshData *mesh_data, vec3 direction)
+void MeshData_calculate_uv_orthographic(MeshData *mesh_data, vec3 direction, float scale)
 {
     direction = vec3_normalize(direction);
     // Use Gram-Schmidt and the cross product to create two vectors forming an orthonormal basis with the normalized direction.
@@ -90,8 +152,8 @@ void MeshData_calculate_uv_orthographic(MeshData *mesh_data, vec3 direction)
     mem_check(uvs);
     for (int i = 0; i < mesh_data->num_vertices; i++) {
         vec3 pos = ((vec3 *) mesh_data->attribute_data[Position])[i];
-        uvs[2*i + 0] = vec3_dot(pos, orth_a);
-        uvs[2*i + 1] = vec3_dot(pos, orth_b);
+        uvs[2*i + 0] = vec3_dot(pos, orth_a) * scale;
+        uvs[2*i + 1] = vec3_dot(pos, orth_b) * scale;
     }
     mesh_data->attribute_data[TexCoord] = (void *) uvs;
     mesh_data->attribute_data_sizes[TexCoord] = mesh_data->num_vertices * 2 * sizeof(float);
@@ -199,6 +261,7 @@ list int vertex_index|vertex_indices|indices|triangle_indices|tri_indices|index_
     free(face_data); // this is not stored in the mesh
 #undef BASE_VERTEX_QUERY
 }
+
 
 
 Geometry upload_mesh(MeshData *mesh_data)

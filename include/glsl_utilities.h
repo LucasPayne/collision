@@ -27,5 +27,7 @@ FILE *glsl_include_path_open(char *name);
 void glsl_include_path_add(char *directory);
 void print_glsl_include_path(void);
 
+size_t gl_type_size(GLenum gl_shader_type);
+
 
 #endif // HEADER_DEFINED_GLSL_UTILITIES

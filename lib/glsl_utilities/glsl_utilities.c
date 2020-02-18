@@ -226,3 +226,17 @@ FILE *glsl_include_path_open(char *name)
     }
     return NULL;
 }
+
+size_t gl_type_size(GLenum gl_shader_type)
+{
+    switch (gl_shader_type) {
+        case GL_FLOAT: return sizeof(float);
+        case GL_UNSIGNED_INT: return sizeof(uint32_t);
+        case GL_INT: return sizeof(int32_t);
+        default:
+            fprintf(stderr, ERROR_ALERT "gl_type_size: Invalid/unaccounted-for gl type given.\n");
+            exit(EXIT_FAILURE);
+    }
+}
+
+

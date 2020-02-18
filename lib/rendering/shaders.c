@@ -36,12 +36,16 @@ void Shader_load(void *resource, char *path)
         shader_type = Fragment;
     } else if (strcmp(suffix + 1, "geom") == 0) {
         shader_type = Geom;
+    } else if (strcmp(suffix + 1, "tcs") == 0) {
+        shader_type = TesselationControl;
+    } else if (strcmp(suffix + 1, "tes") == 0) {
+        shader_type = TesselationEvaluation;
     } else {
         return NULL;
     }
-    GLenum gl_shader_type = gl_shader_type(shader_type);
-    if (gl_shader_type == 0) return NULL;
-    GLuint shader_id = glCreateShader(gl_shader_type);
+    GLenum gl_type = gl_shader_type(shader_type);
+    if (gl_type == 0) return NULL;
+    GLuint shader_id = glCreateShader(gl_type);
     printf("created id: %d\n", shader_id);
     // Load the shader source from the physical path, and attempt to compile it.
     char shader_path_buffer[1024];
@@ -86,4 +90,18 @@ bool Shader_reload(ResourceHandle handle)
     /* // The compilation was successful on the test ID, so give this to the resource handle. */
     /* shader->shader_id = test_id; */
     /* return true; */
+}
+
+GLenum gl_shader_type(ShaderType shader_type)
+{
+    switch (shader_type) {
+        case Vertex: return GL_VERTEX_SHADER;
+        case Fragment: return GL_FRAGMENT_SHADER;
+        case Geom: return GL_GEOMETRY_SHADER;
+        case TesselationControl: return GL_TESS_CONTROL_SHADER;
+        case TesselationEvaluation: return GL_TESS_EVALUATION_SHADER;
+        default:
+            fprintf(stderr, ERROR_ALERT "gl_shader_type: Invalid/unaccounted-for ShaderType given.\n");
+            exit(EXIT_FAILURE);
+    }
 }

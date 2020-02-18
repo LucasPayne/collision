@@ -9,6 +9,8 @@
 
 // Quick double-precision random number [0, 1). From K&R.
 #define frand() ((double) rand() / (RAND_MAX+1.0))
+// crand, circular-rand: random number in [0, 2PI)
+#define crand() ( frand() * 2 * M_PI )
 
 //================================================================================
 // File system, files and directories

@@ -1,0 +1,18 @@
+/*--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------*/
+#version 420
+
+layout (vertices = 3) out;
+
+void main(void)
+{
+    const float tesselation_level = 8.0;
+
+    gl_TessLevelOuter[0] = tesselation_level;
+    gl_TessLevelOuter[1] = tesselation_level;
+    gl_TessLevelOuter[2] = tesselation_level;
+    gl_TessLevelInner[0] = tesselation_level;
+    gl_TessLevelInner[1] = tesselation_level;
+
+    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+}

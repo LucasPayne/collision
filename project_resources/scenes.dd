@@ -15,11 +15,11 @@ floor_material < Material (
     );
 );
 stanford_bunny_material < Material (
-    type: Resources/Materials/textured_phong_shadows;
+    type: Resources/Materials/textured_phong_shadows_phong_tesselated;
     diffuse_map < Resources/Textures/test_texture;
     properties < (
         bool use_flat_color: true;
-        vec4 flat_color: 0.3,1,0.8432,1;
+        vec4 flat_color: 0.74323,0.313,0.2111,1;
     );
 );
 

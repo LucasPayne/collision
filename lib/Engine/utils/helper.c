@@ -7,7 +7,7 @@
 static void camera_controls(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
-    float speed = 100;
+    float speed = 35;
     float move_x = 0;
     float move_y = 0;
     float move_z = 0;
@@ -19,7 +19,7 @@ static void camera_controls(Logic *logic)
 }
 static void camera_key_input(Input *input, int key, int action, int mods)
 {
-    int jump_height = 100;
+    int jump_height = 10;
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_SPACE) {
             Transform *t = get_sibling_aspect(input, Transform);
@@ -66,7 +66,7 @@ EntityID create_camera_man(float x, float y, float z, float lookat_x, float look
 static void camera_key_controls(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
-    float speed = 1000;
+    float speed = 123;
     float move_x = 0, move_z = 0;
     if (alt_arrow_key_down(Right)) move_x += speed * dt;
     if (alt_arrow_key_down(Left)) move_x -= speed * dt;

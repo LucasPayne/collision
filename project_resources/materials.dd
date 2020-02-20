@@ -92,10 +92,11 @@ textured_phong_shadows_normal_mapped < MaterialType (
     vertex_format: 3NUT;
     vertex_shader: Shaders/textured_phong_shadows_normal_mapped.vert;
     fragment_shader: Shaders/textured_phong_shadows_normal_mapped.frag;
-    num_blocks: 3;
+    num_blocks: 4;
     string block0: Standard3D;
     string block1: MaterialProperties;
     string block2: Lights;
+    string block3: StandardLoopWindow;
     num_textures: 2;
     string texture0: diffuse_map;
     string texture1: normal_map;
@@ -180,3 +181,7 @@ test_tesselation < MaterialType (
     string block0: Standard3D;
 );
 
+textured_phong_shadows_phong_tesselated < textured_phong_shadows (
+    tesselation_control_shader: Shaders/phong_tesselation.tcs;
+    tesselation_evaluation_shader: Shaders/phong_tesselation.tes;
+);

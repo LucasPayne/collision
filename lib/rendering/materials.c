@@ -379,6 +379,10 @@ void material_set_property_float(Material *material, char *property_name, float 
 {
     ___material_set_property(material, property_name, (void *) &val, sizeof(float));
 }
+void material_set_property_bool(Material *material, char *property_name, bool val)
+{
+    ___material_set_property(material, property_name, (void *) &val, sizeof(bool));
+}
 void material_set_property_vec4(Material *material, char *property_name, vec4 v)
 {
     ___material_set_property(material, property_name, (void *) &v, sizeof(vec4));

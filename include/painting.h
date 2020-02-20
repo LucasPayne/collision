@@ -132,6 +132,11 @@ void paint_box_v(int canvas_id, vec3 corners[], vec4 color);
 }
 
 void paint2d_rect(int canvas_id, float x, float y, float width, float height, vec4 color, int layer);
+#define paint2d_rect_c(CANVAS_ID,X,Y,WIDTH,HEIGHT,COLOR_STR,LAYER)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint2d_rect(CANVAS_ID,X,Y,WIDTH,HEIGHT,color,LAYER);\
+}
 void paint2d_rect_bordered(int canvas_id, float x, float y, float width, float height, vec4 color, float line_width, vec4 line_color, int layer);
 
 //--------------------------------------------------------------------------------

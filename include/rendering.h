@@ -410,6 +410,7 @@ void Font_load(void *resource, char *path);
 //--------------------------------------------------------------------------------
 void material_set_property_float(Material *material, char *property_name, float val);
 void material_set_property_vec4(Material *material, char *property_name, vec4 v);
+void material_set_property_bool(Material *material, char *property_name, bool val);
 void material_set_texture_path(Material *material, char *texture_name, char *texture_resource_path);
 void material_set_texture(Material *material, char *texture_name, ResourceHandle texture_resource_handle);
 

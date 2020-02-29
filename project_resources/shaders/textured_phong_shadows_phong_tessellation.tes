@@ -16,7 +16,7 @@ in controlled_vertex {
     vec2 tTexCoord;
     vec4 tModelPosition;
     vec3 tModelNormal;
-} vertex_outputs[];
+} vertex_inputs[];
 out vOut {
     vec2 fTexCoord;
     vec4 fPosition;
@@ -30,9 +30,9 @@ void main(void)
     float t2 = gl_TessCoord[1];
     float t3 = gl_TessCoord[2];
 
-    vec3 a = vertex_inputs[0].tModelPosition;
-    vec3 b = vertex_inputs[1].tModelPosition;
-    vec3 c = vertex_inputs[2].tModelPosition;
+    vec3 a = vertex_inputs[0].tModelPosition.xyz;
+    vec3 b = vertex_inputs[1].tModelPosition.xyz;
+    vec3 c = vertex_inputs[2].tModelPosition.xyz;
     vec3 na = normalize(vertex_inputs[0].tModelNormal);
     vec3 nb = normalize(vertex_inputs[1].tModelNormal);
     vec3 nc = normalize(vertex_inputs[2].tModelNormal);
@@ -46,7 +46,7 @@ void main(void)
     vec3 pos = (t1*ap + t2*bp + t3*cp) / (t1 + t2 + t3);
 
     // Tessellate world-space positions.
-    fPosition = model_matrix * pos;
+    fPosition = model_matrix * vec4(pos, 1);
 
     // Tessellate texture coordinates.
     //   Since patch triangles should be already relatively small at first, taking the barycentric
@@ -64,16 +64,16 @@ void main(void)
     //     form differentiated, then this could be used to give the normal as the normalized cross product
     //     of the partial derivatives. Could the derivative be inferred directly without transforming
     //     it to a Bezier surface formulation?
-    fNormal_a = (normal_matrix * vec4(na, 1)).xyz;
-    fNormal_b = (normal_matrix * vec4(nb, 1)).xyz;
-    fNormal_c = (normal_matrix * vec4(nc, 1)).xyz;
+    vec3 fNormal_a = (normal_matrix * vec4(na, 1)).xyz;
+    vec3 fNormal_b = (normal_matrix * vec4(nb, 1)).xyz;
+    vec3 fNormal_c = (normal_matrix * vec4(nc, 1)).xyz;
     fNormal = (t1*fNormal_a + t2*fNormal_b + t3*fNormal_c) / (t1 + t2 + t3);
 
     // Tessellate shadow coordinates.
     for (int i = 0; i < num_directional_lights; i++) {
         for (int j = 0; j < NUM_FRUSTUM_SEGMENTS; j++) {
             mat4x4 model_shadow_matrix = directional_lights[i].shadow_matrices[j] * model_matrix;
-            fDirectionalLightShadowCoord[4*i + j] = model_shadow_matrix * pos;
+            fDirectionalLightShadowCoord[4*i + j] = model_shadow_matrix * vec4(pos, 1);
 
             // fDirectionalLightShadowCoord[4*i + j] = ((t1 * model_shadow_matrix * vertex_inputs[0].tPosition)
             //                                        + (t2 * model_shadow_matrix * vertex_inputs[1].tPosition)

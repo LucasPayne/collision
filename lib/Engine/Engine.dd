@@ -17,8 +17,8 @@ MaterialType < (
     string vertex_format;
     string vertex_shader;
     string fragment_shader;
-    string tesselation_control_shader;
-    string tesselation_evaluation_shader;
+    string tessellation_control_shader;
+    string tessellation_evaluation_shader;
     uint num_blocks: 0;
     uint num_textures: 0;
     bool has_properties: false;

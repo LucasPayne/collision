@@ -23,7 +23,13 @@ stanford_bunny_material < Material (
     );
 );
 test_phong_tessellation_material < Material (
-    type: Resources/Materials/red_phong_tessellation;
+    // type: Resources/Materials/red_phong_tessellation;
+    type: Resources/Materials/textured_phong_shadows_phong_tessellation;
+    diffuse_map < Resources/Textures/mario/sand_bricks;
+    properties < (
+        bool use_flat_color: false;
+        vec4 flat_color: 0,0,0,1;
+    );
 );
 
 block_on_floor < (

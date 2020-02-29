@@ -1,0 +1,86 @@
+/*--------------------------------------------------------------------------------
+Phong-tessellation extension to the textured_phong_shadows material.
+
+This shader does what the regular textured_phong_shadows vertex shader does, except
+generates the vertex attributes to be interpolated by the fragment shader from the minimally
+vertex-shaded patches.
+
+tessellation evaluation shader
+--------------------------------------------------------------------------------*/
+#version 420
+#block Standard3D
+#block Lights
+layout (triangles, equal_spacing, ccw) in;
+
+in controlled_vertex {
+    vec2 tTexCoord;
+    vec4 tModelPosition;
+    vec3 tModelNormal;
+} vertex_outputs[];
+out vOut {
+    vec2 fTexCoord;
+    vec4 fPosition;
+    vec3 fNormal;
+    vec4 fDirectionalLightShadowCoord[MAX_NUM_DIRECTIONAL_LIGHTS * NUM_FRUSTUM_SEGMENTS];
+};
+
+void main(void)
+{
+    float t1 = gl_TessCoord[0];
+    float t2 = gl_TessCoord[1];
+    float t3 = gl_TessCoord[2];
+
+    vec3 a = vertex_inputs[0].tModelPosition;
+    vec3 b = vertex_inputs[1].tModelPosition;
+    vec3 c = vertex_inputs[2].tModelPosition;
+    vec3 na = normalize(vertex_inputs[0].tModelNormal);
+    vec3 nb = normalize(vertex_inputs[1].tModelNormal);
+    vec3 nc = normalize(vertex_inputs[2].tModelNormal);
+
+    vec3 p = (t1*a + t2*b + t3*c) / (t1 + t2 + t3);
+    vec3 ap = p - na * dot(p - a, na);
+    vec3 bp = p - nb * dot(p - b, nb);
+    vec3 cp = p - nc * dot(p - c, nc);
+
+    // Compute this point on the patch in model coordinates.
+    vec3 pos = (t1*ap + t2*bp + t3*cp) / (t1 + t2 + t3);
+
+    // Tessellate world-space positions.
+    fPosition = model_matrix * pos;
+
+    // Tessellate texture coordinates.
+    //   Since patch triangles should be already relatively small at first, taking the barycentric
+    //   interpolation of the texture coordinates on the patch triangle for each tesselated vertex
+    //   should be fine, giving an orthographic projection in the direction of the patch normal, locally
+    //   for this patch.
+    fTexCoord = (t1*vertex_inputs[0].tTexCoord + t2*vertex_inputs[1].tTexCoord + t3*vertex_inputs[2].tTexCoord) / (t1 + t2 + t3);
+
+    // Tessellate world-space normals.
+    //   Here, the normalized barycentric interpolation of the triangle patch normals is taken.
+    //   This is not the actual normal of the tesselated surface. What artifacts could this have?
+    //   This means that the internal shading is not improved except due to geometric distortion,
+    //   yet the silhouette will be visibly improved.
+    //     To get an analytic normal, if a Bezier form is found from the definition, then that
+    //     form differentiated, then this could be used to give the normal as the normalized cross product
+    //     of the partial derivatives. Could the derivative be inferred directly without transforming
+    //     it to a Bezier surface formulation?
+    fNormal_a = (normal_matrix * vec4(na, 1)).xyz;
+    fNormal_b = (normal_matrix * vec4(nb, 1)).xyz;
+    fNormal_c = (normal_matrix * vec4(nc, 1)).xyz;
+    fNormal = (t1*fNormal_a + t2*fNormal_b + t3*fNormal_c) / (t1 + t2 + t3);
+
+    // Tessellate shadow coordinates.
+    for (int i = 0; i < num_directional_lights; i++) {
+        for (int j = 0; j < NUM_FRUSTUM_SEGMENTS; j++) {
+            mat4x4 model_shadow_matrix = directional_lights[i].shadow_matrices[j] * model_matrix;
+            fDirectionalLightShadowCoord[4*i + j] = model_shadow_matrix * pos;
+
+            // fDirectionalLightShadowCoord[4*i + j] = ((t1 * model_shadow_matrix * vertex_inputs[0].tPosition)
+            //                                        + (t2 * model_shadow_matrix * vertex_inputs[1].tPosition)
+            //                                        + (t3 * model_shadow_matrix * vertex_inputs[2].tPosition)
+            //                                         ) / (t1 + t2 + t3);
+        }
+    }
+
+    gl_Position = mvp_matrix * vec4(pos, 1);
+}

@@ -175,22 +175,25 @@ test_tesselation < MaterialType (
     vertex_format: 3;
     vertex_shader: Shaders/passthrough_none.vert;
     fragment_shader: Shaders/red.frag;
-    tesselation_control_shader: Shaders/testing/tesselation.tcs;
-    tesselation_evaluation_shader: Shaders/testing/tesselation.tes;
+    tessellation_control_shader: Shaders/testing/tesselation.tcs;
+    tessellation_evaluation_shader: Shaders/testing/tesselation.tes;
     num_blocks: 1;
     string block0: Standard3D;
 );
 
-textured_phong_shadows_phong_tesselated < textured_phong_shadows (
-    tesselation_control_shader: Shaders/phong_tesselation.tcs;
-    tesselation_evaluation_shader: Shaders/phong_tesselation.tes;
+textured_phong_shadows_phong_tessellation < textured_phong_shadows (
+    vertex_shader: Shaders/textured_phong_shadows_phong_tessellation.vert;
+    tessellation_control_shader: Shaders/textured_phong_shadows_phong_tessellation.tcs;
+    tessellation_evaluation_shader: Shaders/textured_phong_shadows_phong_tessellation.tes;
+    force_patches: true;
+    patch_vertices: 3;
 );
 
 red_phong_tessellation < MaterialType (
     vertex_format: 3N;
     vertex_shader: Shaders/red_phong_tessellation.vert;
-    tesselation_control_shader: Shaders/red_phong_tessellation.tcs;
-    tesselation_evaluation_shader: Shaders/red_phong_tessellation.tes;
+    tessellation_control_shader: Shaders/red_phong_tessellation.tcs;
+    tessellation_evaluation_shader: Shaders/red_phong_tessellation.tes;
     fragment_shader: Shaders/red.frag;
     num_blocks: 2;
     string block0: Standard3D;

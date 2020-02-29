@@ -79,16 +79,16 @@ void MaterialType_load(void *resource, char *path)
     mt.program_type = GRAPHICS_PROGRAM_VF;
     mt.shaders[Vertex] = new_resource_handle(Shader, vertex_shader);
     mt.shaders[Fragment] = new_resource_handle(Shader, fragment_shader);
-    // Optional tesselation shaders (evaluation or control+evaluation).
+    // Optional tessellation shaders (evaluation or control+evaluation).
     char *te_shader;
-    if (dd_get(dd, "tesselation_evaluation_shader", "string", &te_shader)) {
+    if (dd_get(dd, "tessellation_evaluation_shader", "string", &te_shader)) {
         mt.program_type = GRAPHICS_PROGRAM_VTF;
         mt.shaders[TesselationEvaluation] = new_resource_handle(Shader, te_shader);
     }
     char *tc_shader;
-    if (dd_get(dd, "tesselation_control_shader", "string", &tc_shader)) {
+    if (dd_get(dd, "tessellation_control_shader", "string", &tc_shader)) {
         if ((mt.program_type & (1 << TesselationEvaluation)) == 0) {
-            load_error("If there is a tesselation control shader, there must be a tesselation evaluation shader.");
+            load_error("If there is a tessellation control shader, there must be a tessellation evaluation shader.");
         }
         mt.program_type = GRAPHICS_PROGRAM_VTTF;
         mt.shaders[TesselationControl] = new_resource_handle(Shader, tc_shader);

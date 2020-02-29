@@ -102,6 +102,7 @@ void Geometry_load(void *resource, char *_path)
     }
 
     Geometry geometry;
+    if (!dd_get(dd, "patch_vertices", "int", &geometry.patch_vertices)) manifest_error("No patch_vertices.");
     if (strcmp(type, "ply") == 0) {
         // Load geometry from a PLY file.
         char *ply_path;
@@ -469,13 +470,26 @@ void gm_draw(Geometry geometry, Material *material)
 
     material_prepare(material);
     GLenum gl_primitive_type;
-    switch(geometry.primitive_type) {
-        case Triangles: gl_primitive_type = GL_TRIANGLES; break;
-        case Lines: gl_primitive_type = GL_LINE_STRIP; break; // GL_LINES treats each two vertices as a separate line, so use this for a contiguous chain.
-        case Patches: gl_primitive_type = GL_PATCHES; break;
-        default:
-            fprintf(stderr, ERROR_ALERT "Have not accounted for the primitive type of a piece of geometry passed into gm_draw.\n");
-            exit(EXIT_FAILURE);
+
+    if (mt->force_patches) {
+        // The material-type can force the geometry to be interpreted as patch data, no matter what primitive type it was loaded as (triangles, lines, or patches, etc.).
+        // This is primarily so that tessellation methods such as Phong tessellation can be easily used with for example, triangular models, without requiring a redefinition
+        // of the geometry with the patch type.
+        gl_primitive_type = GL_PATCHES;
+        glPatchParameteri(GL_PATCH_VERTICES, mt->patch_vertices);
+    } else {
+        switch(geometry.primitive_type) {
+            case Triangles: gl_primitive_type = GL_TRIANGLES; break;
+            case Lines: gl_primitive_type = GL_LINE_STRIP; break; // GL_LINES treats each two vertices as a separate line, so use this for a contiguous chain.
+            case Patches:
+                // If this geometry is formed from patches, GL needs to know how many vertices form a patch (3 for Phong tessellation, 9 for quadratic Bezier, etc.).
+                gl_primitive_type = GL_PATCHES;
+                glPatchParameteri(GL_PATCH_VERTICES, geometry.patch_vertices);
+                break;
+            default:
+                fprintf(stderr, ERROR_ALERT "Have not accounted for the primitive type of a piece of geometry passed into gm_draw.\n");
+                exit(EXIT_FAILURE);
+        }
     }
     glBindVertexArray(geometry.vao_id);
     if (geometry.is_indexed) {

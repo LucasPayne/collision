@@ -185,3 +185,16 @@ textured_phong_shadows_phong_tesselated < textured_phong_shadows (
     tesselation_control_shader: Shaders/phong_tesselation.tcs;
     tesselation_evaluation_shader: Shaders/phong_tesselation.tes;
 );
+
+red_phong_tessellation < MaterialType (
+    vertex_format: 3N;
+    vertex_shader: Shaders/red_phong_tessellation.vert;
+    tesselation_control_shader: Shaders/red_phong_tessellation.tcs;
+    tesselation_evaluation_shader: Shaders/red_phong_tessellation.tes;
+    fragment_shader: Shaders/red.frag;
+    num_blocks: 2;
+    string block0: Standard3D;
+    string block1: StandardLoopWindow;
+    force_patches: true;
+    patch_vertices: 3;
+);

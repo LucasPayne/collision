@@ -93,6 +93,8 @@ void MaterialType_load(void *resource, char *path)
         mt.program_type = GRAPHICS_PROGRAM_VTTF;
         mt.shaders[TesselationControl] = new_resource_handle(Shader, tc_shader);
     }
+    if (!dd_get(dd, "force_patches", "bool", &mt.force_patches)) load_error("No force_patches.");
+    if (!dd_get(dd, "patch_vertices", "int", &mt.patch_vertices)) load_error("No patch_vertices.");
 
     mt.program_id = glCreateProgram();
     // Attach the shaders. If they aren't loaded resources, then this loads and tries to compile them.

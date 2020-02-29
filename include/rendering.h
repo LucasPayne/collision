@@ -244,6 +244,10 @@ typedef struct /* Resource */ MaterialType_s {
 
     GraphicsProgramType program_type;
     GLuint program_id;
+
+    // A material-type can force geometry it is used to render to be interpreted as patch data.
+    bool force_patches;
+    int patch_vertices;
 } MaterialType;
 void MaterialType_load(void *resource, char *path);
 void print_material_type(MaterialType *material_type);
@@ -327,6 +331,7 @@ typedef struct /* Resource */ Geometry_s {
     int num_indices;
     int num_vertices;
     float radius;
+    int patch_vertices; // meaningful only if primitive_type is Patches.
 
     MeshData *mesh_data; // if this is null, it has been freed from application memory. This is the default.
 } Geometry;

@@ -11,6 +11,7 @@ Geometry < (
     string calculate_uv: none; // This is a string so there can be multiple options for projections used to generate UV coordinates.
     vec3 calculate_uv_orthographic_direction: 0,0,1; // Projection-type parameters.
     float calculate_uv_scale: 1.0; // scale the calculated UV coordinates. (might only make sense for certain projections).
+    int patch_vertices: 0;
 );
 MaterialType < (
     string vertex_format;
@@ -21,6 +22,9 @@ MaterialType < (
     uint num_blocks: 0;
     uint num_textures: 0;
     bool has_properties: false;
+    bool force_patches: false;
+    int patch_vertices: 0;
+
     properties < ();
     // A Material instance has its own properties.
     // It is intended for this to be done in a Material instance, for its material type:

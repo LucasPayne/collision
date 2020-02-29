@@ -15,12 +15,15 @@ floor_material < Material (
     );
 );
 stanford_bunny_material < Material (
-    type: Resources/Materials/textured_phong_shadows_phong_tesselated;
+    type: Resources/Materials/textured_phong_shadows;
     diffuse_map < Resources/Textures/test_texture;
     properties < (
         bool use_flat_color: true;
         vec4 flat_color: 0.74323,0.313,0.2111,1;
     );
+);
+test_phong_tessellation_material < Material (
+    type: Resources/Materials/red_phong_tessellation;
 );
 
 block_on_floor < (
@@ -100,6 +103,17 @@ block_on_floor < (
         transform < Transform (
             position: 0,0,-50;
             rotation: 1.5707963,0,0;
+        );
+    );
+    test_phong_tessellation < GameObject (
+        body < Body (
+            scale: 0.05;
+            geometry: Resources/Models/dolphins;
+            material: Scenes/test_phong_tessellation_material;
+        );
+        transform < Transform (
+            position: -18,30,60;
+            rotation: 1.54,0,0;
         );
     );
 );

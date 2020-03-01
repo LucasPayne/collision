@@ -150,14 +150,20 @@ void mesh_draw_wrong_winding_orders(Body *body, MeshData *mesh_data, int recursi
 void propogate_triangle_orientation(mat4x4 *draw_matrix, vec3 *positions, uint32_t *triangles, struct node *triangle_graph, uint32_t triangle, bool is_outer, int recursion_depth)
 {
     triangle_graph[triangle].done = true;
+
+    vec3 pos_a = mat4x4_vec3(draw_matrix, positions[triangles[3*triangle + 0]]);
+    vec3 pos_b = mat4x4_vec3(draw_matrix, positions[triangles[3*triangle + 1]]);
+    vec3 pos_c = mat4x4_vec3(draw_matrix, positions[triangles[3*triangle + 2]]);
     if (!is_outer) {
         // printf("Found an inner-pointing triangle, %u.\n", triangle);
-        vec3 pos_a = positions[triangles[3*triangle + 0]];
-        vec3 pos_b = positions[triangles[3*triangle + 1]];
-        vec3 pos_c = positions[triangles[3*triangle + 2]];
-        paint_triangle_cv(Canvas3D, mat4x4_vec3(draw_matrix, pos_a), mat4x4_vec3(draw_matrix, pos_b), mat4x4_vec3(draw_matrix, pos_c), "tk");
+        paint_triangle_cv(Canvas3D, pos_a,pos_b,pos_c, "tr");
+    } else {
+        paint_triangle_cv(Canvas3D, pos_a,pos_b,pos_c, "tk");
     }
-    if (recursion_depth == 0) return;
+    paint_line_cv(Canvas3D, pos_a,pos_b, "y", 2.0);
+    paint_line_cv(Canvas3D, pos_b,pos_c, "y", 2.0);
+    paint_line_cv(Canvas3D, pos_c,pos_a, "y", 2.0);
+
     for (int i = 0; i < 3; i++) {
         uint32_t adj = triangle_graph[triangle].adjacent_triangles[i];
         if (adj == -1) continue;
@@ -174,7 +180,7 @@ void propogate_triangle_orientation(mat4x4 *draw_matrix, vec3 *positions, uint32
                 break;
             }
         }
-        propogate_triangle_orientation(draw_matrix, positions, triangles, triangle_graph, adj, adj_is_outer, recursion_depth - 1);
+        if (recursion_depth != 0) propogate_triangle_orientation(draw_matrix, positions, triangles, triangle_graph, adj, adj_is_outer, recursion_depth - 1);
     }
 }
 
@@ -188,6 +194,7 @@ extern void cursor_move_event(double x, double y)
 {
 }
 
+bool propogating = false;
 int propogation = 0;
 void test_input(Input *input, int key, int action, int mods)
 {
@@ -201,6 +208,13 @@ void test_input(Input *input, int key, int action, int mods)
         }
         if (key == GLFW_KEY_Y) {
             propogation = 0;
+            propogating = false;
+        }
+        if (key == GLFW_KEY_B) {
+            propogating = true;
+        }
+        if (key == GLFW_KEY_U) {
+            propogation ++;
         }
         // if (key == GLFW_KEY_F) {
         //     test_triangle ++;
@@ -210,9 +224,12 @@ void test_input(Input *input, int key, int action, int mods)
 }
 void test_logic(Logic *logic)
 {
+    static int frame = 0;
+    frame ++;
     Body *body = other_aspect(logic, Body);
-    mesh_draw_wrong_winding_orders(body, resource_data(Geometry, body->geometry)->mesh_data, propogation / 10);
-    propogation ++;
+    mesh_draw_wrong_winding_orders(body, resource_data(Geometry, body->geometry)->mesh_data, propogation);
+    if (propogating && frame % 2 == 0) propogation ++;
+    // mesh_draw_wrong_winding_orders(body, resource_data(Geometry, body->geometry)->mesh_data, 100);
 }
 
 extern void init_program(void)
@@ -220,12 +237,40 @@ extern void init_program(void)
     open_scene(g_scenes, "floor");
     test_directional_light_controlled();
     create_key_camera_man(0,0,0,  0,0,0);
-
+#if 1
+{
     EntityID e = new_entity(4);
     float apart = 400;
     Body *body = add_aspect(e, Body);
     body->visible = true;
-#define opt 1
+    Transform_set(add_aspect(e, Transform), -40, -49, 0, 0,0,0);
+    body->scale = 250;
+    body->geometry = new_resource_handle(Geometry, "Models/stanford_bunny_broken -a");
+    body->material = Material_create("Materials/textured_phong_shadows_normal_mapped");
+    material_set_texture_path(resource_data(Material, body->material), "normal_map", "Textures/brick_wall_normal");
+    material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/dirt");
+    Input_init(add_aspect(e, Input), INPUT_KEY, test_input, true);
+    Logic_init(add_aspect(e, Logic), test_logic);
+}
+{
+    EntityID e = new_entity(4);
+    float apart = 400;
+    Body *body = add_aspect(e, Body);
+    body->visible = true;
+    Transform_set(add_aspect(e, Transform), 0, -20, 0, -M_PI/2,0,0);
+    body->scale = 0.04;
+    body->geometry = new_resource_handle(Geometry, "Models/dolphins_broken -a");
+    body->material = Material_create("Materials/textured_phong_shadows");
+    material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/stone_bricks");
+    Input_init(add_aspect(e, Input), INPUT_KEY, test_input, true);
+    Logic_init(add_aspect(e, Logic), test_logic);
+}
+#else
+    EntityID e = new_entity(4);
+    float apart = 400;
+    Body *body = add_aspect(e, Body);
+    body->visible = true;
+#define opt 2
 #if opt == 1
     Transform_set(add_aspect(e, Transform), 0, -49, 0, 0,0,0);
     body->scale = 250;
@@ -246,6 +291,7 @@ extern void init_program(void)
     material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/stone_bricks");
     Input_init(add_aspect(e, Input), INPUT_KEY, test_input, true);
     Logic_init(add_aspect(e, Logic), test_logic);
+#endif
 
 }
 extern void loop_program(void)

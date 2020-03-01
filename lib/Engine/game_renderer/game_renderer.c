@@ -110,7 +110,7 @@ void render(void)
         mat4x4 vp_matrix = Camera_prepare(camera);
         // Render each body.
         for_aspect(Body, body)
-            render_body(vp_matrix, body);
+            if (body->visible) render_body(vp_matrix, body);
         end_for_aspect()
         // Draw the buffered paint (in global coordinates).
         set_uniform_mat4x4(Standard3D, mvp_matrix.vals, vp_matrix.vals);

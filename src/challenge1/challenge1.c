@@ -4,11 +4,18 @@ project_libs:
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
 
+// int test_triangle = 0;
+
 vec3 barycentric_triangle(vec3 a, vec3 b, vec3 c, float wa, float wb, float wc)
 {
     //wa+wb+wc = 1
     return vec3_add(vec3_mul(a, wa), vec3_add(vec3_mul(b, wb), vec3_mul(c, wc)));
 }
+vec3 triangle_centroid(vec3 a, vec3 b, vec3 c)
+{
+    return barycentric_triangle(a,b,c, 1.0/3.0, 1.0/3.0, 1.0/3.0);
+}
+
 bool barycentric_triangle_convex(float wa, float wb, float wc)
 {
     // tests whether the weights are a convex combination of the triangle points.
@@ -35,31 +42,41 @@ bool ray_triangle_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3
 }
 void mesh_draw_wrong_winding_orders(Body *body, MeshData *mesh_data)
 {
+    mat4x4 body_matrix = Body_matrix(body); // This matrix is used for rendering things on the mesh, for visualization.
+
+    int starting_triangle = 78; //-----this is set specifically for the bunny model, to test the intersection methods.
+    
     if (mesh_data->num_triangles < 1) return;
     // Select the first triangle to be the start of the winding-test propogation.
-    int first_a = mesh_data->triangles[0];
-    int first_b = mesh_data->triangles[1];
-    int first_c = mesh_data->triangles[2];
+    int first_a = mesh_data->triangles[3*starting_triangle + 0];
+    int first_b = mesh_data->triangles[3*starting_triangle + 1];
+    int first_c = mesh_data->triangles[3*starting_triangle + 2];
     vec3 *positions = (vec3 *) (mesh_data->attribute_data[Position]);
     // Determine the correctness of the winding order geometrically by casting a ray from the surface
     // normal outward. If there are an even number of triangle intersections, then this first triangle has a correct winding order.
     // This is subject to geometric robustness issues which aren't addressed here.
-    int num_intersections = 0;
 
-    vec3 centroid = new_vec3((positions[first_a].vals[0] + positions[first_b].vals[1] + positions[first_c].vals[2]) / 3.0,
-                             (positions[first_b].vals[0] + positions[first_b].vals[1] + positions[first_c].vals[2]) / 3.0,
-                             (positions[first_c].vals[0] + positions[first_b].vals[1] + positions[first_c].vals[2]) / 3.0);
-    vec3 normal = vec3_normalize(vec3_cross(vec3_sub(positions[first_b], positions[first_a]), vec3_sub(positions[first_c], positions[first_a])));
-    for (int i = 1; i < mesh_data->num_triangles; i++) {
+    vec3 centroid = triangle_centroid(positions[first_a], positions[first_b], positions[first_c]);
+    vec3 normal = vec3_cross(vec3_sub(positions[first_b], positions[first_a]), vec3_sub(positions[first_c], positions[first_a]));
+    // paint_line_cv(Canvas3D, mat4x4_vec3(&body_matrix, centroid), mat4x4_vec3(&body_matrix, vec3_add(centroid, vec3_mul(normal, 10000))), "b", 50.0);
+
+    int num_intersections = 0;
+    vec3 last_intersection = centroid; // for line visualization.
+    for (int i = 0; i < mesh_data->num_triangles; i++) {
+        if (i == starting_triangle) continue;
         vec3 a = positions[mesh_data->triangles[3*i + 0]];
         vec3 b = positions[mesh_data->triangles[3*i + 1]];
         vec3 c = positions[mesh_data->triangles[3*i + 2]];
 
         vec3 in;
         if (ray_triangle_intersection(centroid,normal, a,b,c, &in)) {
+            paint_line_cv(Canvas3D, mat4x4_vec3(&body_matrix, last_intersection), mat4x4_vec3(&body_matrix, in), num_intersections % 2 == 0 ? "b" : "g", 50)
+            last_intersection = in;
             num_intersections ++;
         }
     }
+    paint_line_cv(Canvas3D, mat4x4_vec3(&body_matrix, last_intersection), mat4x4_vec3(&body_matrix, vec3_add(last_intersection, vec3_mul(normal, 1000))), num_intersections % 2 == 0 ? "b" : "g", 50)
+
     if (num_intersections % 2 == 1) {
         // This first triangle has an incorrect winding order. Fix it.
         int temp = mesh_data->triangles[0];
@@ -106,6 +123,11 @@ void mesh_draw_wrong_winding_orders(Body *body, MeshData *mesh_data)
     struct node *triangle_graph = (struct node *) malloc(mesh_data->num_triangles * sizeof(struct node));
     mem_check(triangle_graph);
     for (int i = 0; i < mesh_data->num_triangles; i++) {
+        vec3 a = positions[mesh_data->triangles[3*i + 0]];
+        vec3 b = positions[mesh_data->triangles[3*i + 1]];
+        vec3 c = positions[mesh_data->triangles[3*i + 2]];
+        vec3 centroid = triangle_centroid(a, b, c);  // calculate these for visualization of the graph.
+
         for (int j = 0; j < 3; j++) {
             int alpha = mesh_data->triangles[3*i + j];
             int beta = mesh_data->triangles[3*i + ((j + 1) % 3)];
@@ -119,10 +141,15 @@ void mesh_draw_wrong_winding_orders(Body *body, MeshData *mesh_data)
                     }
                 }
             }
+            if (triangle_graph[i].adjacent_triangles[j] != -1) {
+                vec3 ta = positions[mesh_data->triangles[3*triangle_graph[i].adjacent_triangles[j] + 0]];
+                vec3 tb = positions[mesh_data->triangles[3*triangle_graph[i].adjacent_triangles[j] + 1]];
+                vec3 tc = positions[mesh_data->triangles[3*triangle_graph[i].adjacent_triangles[j] + 2]];
+                vec3 tcentroid = triangle_centroid(ta, tb, tc);
+                paint_line_cv(Canvas3D, mat4x4_vec3(&body_matrix, centroid), mat4x4_vec3(&body_matrix, tcentroid), "tr", 2.0);
+            }
         }
     }
-
-    
 }
 
 extern void input_event(int key, int action, int mods)
@@ -134,6 +161,29 @@ extern void mouse_button_event(int button, int action, int mods)
 extern void cursor_move_event(double x, double y)
 {
 }
+
+void test_input(Input *input, int key, int action, int mods)
+{
+    Body *body = other_aspect(input, Body);
+    if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_P) {
+            mesh_draw_wrong_winding_orders(body, resource_data(Geometry, body->geometry)->mesh_data);
+        }
+        if (key == GLFW_KEY_V) {
+            body->visible = !body->visible;
+        }
+        // if (key == GLFW_KEY_F) {
+        //     test_triangle ++;
+        //     printf("%d\n", test_triangle);
+        // }
+    }
+}
+void test_logic(Logic *logic)
+{
+    Body *body = other_aspect(logic, Body);
+    mesh_draw_wrong_winding_orders(body, resource_data(Geometry, body->geometry)->mesh_data);
+}
+
 extern void init_program(void)
 {
     open_scene(g_scenes, "floor");
@@ -142,15 +192,17 @@ extern void init_program(void)
 
     EntityID e = new_entity(4);
     float apart = 400;
-    Transform_set(add_aspect(e, Transform), 0, -57, 0, 0,0,0);
+    Transform_set(add_aspect(e, Transform), 0, -49, 0, 0,0,0);
     Body *body = add_aspect(e, Body);
+    body->visible = true;
     body->scale = 250;
     body->geometry = new_resource_handle(Geometry, "Models/stanford_bunny_broken -a");
     body->material = Material_create("Materials/textured_phong_shadows_normal_mapped");
     material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/brick_wall");
     material_set_texture_path(resource_data(Material, body->material), "normal_map", "Textures/brick_wall_normal");
+    Input_init(add_aspect(e, Input), INPUT_KEY, test_input, true);
+    Logic_init(add_aspect(e, Logic), test_logic);
 
-    mesh_draw_wrong_winding_orders(body, resource_data(Geometry, body->geometry)->mesh_data);
 }
 extern void loop_program(void)
 {

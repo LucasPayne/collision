@@ -22,6 +22,7 @@ new_reader(Transform) {
 }
 new_reader(Body) {
     Body *body = (Body *) data;
+    body->visible = true;
     float scale;
     if (!dd_get(aspect_dd, "scale", "float", &scale)) return false;
     body->scale = scale;

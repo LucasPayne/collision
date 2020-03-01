@@ -59,6 +59,7 @@ may consist of multiple facets. However that would be a part of the rendering sy
 extern AspectType Body_TYPE_ID;
 typedef struct /* Aspect */ Body_s {
 ASPECT_PROPERTIES()
+    bool visible;
     float scale;
     ResourceHandle material; /* Resource: Material */
     ResourceHandle geometry; /* Resource: Geometry */
@@ -66,6 +67,7 @@ ASPECT_PROPERTIES()
 } Body;
 void Body_init(Body *body, char *material_path, char *mesh_path);
 float Body_radius(Body *body);
+mat4x4 Body_matrix(Body *body);
 
 /*--------------------------------------------------------------------------------
 Logic is the behavioral aspect of a gameobject. It holds an update routine

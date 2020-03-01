@@ -47,6 +47,7 @@ float ASPECT_RATIO;
 float mouse_x;
 float mouse_y;
 
+GLenum g_cull_mode;
 
 float g_bg_color[4];
 int g_window_width = 1;
@@ -396,11 +397,14 @@ int main(void)
     if (strcmp(cull_mode, "back") == 0) {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
+        g_cull_mode = GL_BACK;
     } else if (strcmp(cull_mode, "front") == 0) {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
+        g_cull_mode = GL_FRONT;
     } else if (strcmp(cull_mode, "none") == 0) {
         // no culling
+        g_cull_mode = GL_NONE;
     } else {
         fprintf(stderr, "Invalid cull_mode option set. The options are \"front\", \"back\", and \"none\".\n");
         exit(EXIT_FAILURE);

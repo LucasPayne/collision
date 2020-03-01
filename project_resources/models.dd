@@ -1,4 +1,14 @@
 
+apple < Geometry (
+    type: ply;
+    vertex_format: 3NU;
+    path: Meshes/apple.ply;
+    calculate_normals: true;
+    calculate_uv: orthographic;
+    calculate_uv_orthographic_direction: 0,0,1;
+    calculate_uv_scale: 20;
+);
+
 // A block is wrapped with the same texture on each face (quad). It has rigid normals, and does not share vertices between quads.
 block < Geometry (
     type: ply;
@@ -49,5 +59,9 @@ dolphins < Geometry (
     path: Meshes/dolphins.ply;
     calculate_normals: true;
     calculate_uv: orthographic;
+    calculate_uv_scale: 0.03;
     calculate_uv_orthographic_direction: 0,0,1;
+);
+dolphins_broken < dolphins (
+    path: Meshes/dolphins_broken.ply;
 );

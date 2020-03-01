@@ -114,11 +114,14 @@ void render(void)
         end_for_aspect()
         // Draw the buffered paint (in global coordinates).
         set_uniform_mat4x4(Standard3D, mvp_matrix.vals, vp_matrix.vals);
+        glCullFace(GL_NONE);
+        glDisable(GL_CULL_FACE);
         painting_draw(Canvas3D);
+        glEnable(GL_CULL_FACE);
+        glCullFace(g_cull_mode);
     end_for_aspect()
     // Flush the standard 3D paint canvas.
     painting_flush(Canvas3D);
-
     render_paint2d();
     painting_flush(Canvas2D);
 

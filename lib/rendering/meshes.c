@@ -88,7 +88,7 @@ void MeshData_calculate_normals(MeshData *mesh_data)
     float *normals = (float *) malloc(mesh_data->num_vertices * 3 * sizeof(float));
     mem_check(normals);
 
-    const int max_num_adjacent_triangles = 16; // If this becomes a problem, either change this number or allow the array to grow for rare cases.
+    const int max_num_adjacent_triangles = 64; // If this becomes a problem, either change this number or allow the array to grow for rare cases.
     const int triangle_array_length = max_num_adjacent_triangles + 1;
     // First entry in each slot is the number of adjacent triangles.
     uint32_t *triangle_arrays = (uint32_t *) calloc(mesh_data->num_vertices * triangle_array_length, sizeof(uint32_t));

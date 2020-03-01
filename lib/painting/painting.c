@@ -286,6 +286,18 @@ static Paint *strokes_quad(Canvas *canvas, vec3 a, vec3 b, vec3 c, vec3 d)
     canvas->current_index += 6;
     return paint;
 }
+static Paint *strokes_triangle(Canvas *canvas, vec3 a, vec3 b, vec3 c)
+{
+    Paint *paint = next_paint(canvas);
+    vec3 *vp = (vec3 *) index_buffer(canvas);
+    vp[0] = a;
+    vp[1] = b;
+    vp[2] = c;
+    paint->index = canvas->current_index;
+    canvas->current_index += 3;
+    return paint;
+}
+
 /*--------------------------------------------------------------------------------
 void paint2d_quad(float p1x, float p1y, float p2x, float p2y, float p3x, float p3y, float p4x, float p4y, COLOR_SCALARS) {
 void paint2d_rect(float x, float y, float width, float height, COLOR_SCALARS) {
@@ -315,6 +327,13 @@ void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color)
     paint->type = PAINT_FLAT_TRIANGLES;
     paint->contents.flat.color = color;
 }
+void paint_triangle_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec4 color)
+{
+    Paint *paint = strokes_triangle(painting_canvas(canvas_id), a, b, c);
+    paint->type = PAINT_FLAT_TRIANGLES;
+    paint->contents.flat.color = color;
+}
+
 void paint_loop(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width)
 {
     Paint *paint = strokes_loop(painting_canvas(canvas_id), vals, num_points, width);
@@ -348,3 +367,4 @@ void paint2d_rect_bordered(int canvas_id, float x, float y, float width, float h
     paint_line(canvas_id, x + width, y + height, layer2d(layer), x, y + height, layer2d(layer), UNPACK_COLOR(line_color), line_width);
     paint2d_rect(canvas_id, x, y, width, height, color, layer);
 }
+

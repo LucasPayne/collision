@@ -31,6 +31,17 @@ stanford_bunny < Geometry (
     calculate_uv_orthographic_direction: 0,0,1;
     calculate_uv_scale: 20;
 );
+// testing triangle-winding fixing
+stanford_bunny_broken < Geometry (
+    type: ply;    
+    vertex_format: 3NUT;
+    path: Meshes/stanford_bunny_broken.ply;
+    calculate_normals: true;
+    calculate_uv: orthographic;
+    calculate_uv_orthographic_direction: 0,0,1;
+    calculate_uv_scale: 20;
+);
+
 
 dolphins < Geometry (
     type: ply;

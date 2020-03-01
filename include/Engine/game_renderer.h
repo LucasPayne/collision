@@ -13,8 +13,8 @@ void render_paint2d();
 /*--------------------------------------------------------------------------------
     Shadows
 --------------------------------------------------------------------------------*/
-#define SHADOW_MAP_TEXTURE_WIDTH 2048
-#define SHADOW_MAP_TEXTURE_HEIGHT 2048
+#define SHADOW_MAP_TEXTURE_WIDTH 4096
+#define SHADOW_MAP_TEXTURE_HEIGHT 4096
 // Currently only doing directional light shadows.
 typedef struct ShadowMap_s {
     GLuint framebuffer;

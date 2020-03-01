@@ -123,6 +123,12 @@ void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color);
     vec4 color = str_to_color_key(( COLOR_STR ));\
     paint_quad_v(CANVAS_ID,A,B,C,D,color);\
 }
+void paint_triangle_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec4 color);
+#define paint_triangle_cv(CANVAS_ID,A,B,C,COLOR_STR)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint_triangle_v(CANVAS_ID,A,B,C,color);\
+}
 
 void paint_box_v(int canvas_id, vec3 corners[], vec4 color);
 #define paint_box_c(CANVAS_ID,CORNERS,COLOR_STR)\

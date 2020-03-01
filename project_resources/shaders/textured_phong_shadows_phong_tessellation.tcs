@@ -21,7 +21,7 @@ out controlled_vertex {
 void main(void)
 {
     // Set the tessellation levels.
-    const float tesselation_level = 8.0;
+    const float tesselation_level = 8;
     gl_TessLevelOuter[0] = tesselation_level;
     gl_TessLevelOuter[1] = tesselation_level;
     gl_TessLevelOuter[2] = tesselation_level;

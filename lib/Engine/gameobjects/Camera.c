@@ -14,7 +14,19 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
     n = near;
     f = far;
 
-    Matrix4x4f frustrum_matrix = {0};
+    mat4x4 frustrum_matrix = {0};
+    // Attempting derivation of projection matrix here.
+    // frustrum_matrix.vals[4*0 + 0] = (far / near) * near_half_width;
+    // frustrum_matrix.vals[4*1 + 1] = (far / near) * aspect_ratio * near_half_width;
+    // frustrum_matrix.vals[4*2 + 3] = -far;
+    // frustrum_matrix.vals[4*3 + 2] = -1;
+
+    //frustrum_matrix.vals[4*0 + 0] = 1.0 / ((far / near) * near_half_width);
+    //frustrum_matrix.vals[4*1 + 1] = 1.0 / ((far / near) * aspect_ratio * near_half_width);
+    //frustrum_matrix.vals[4*2 + 3] = -1;
+    //frustrum_matrix.vals[4*3 + 2] = 1 / far;
+    
+
     frustrum_matrix.vals[4*0 + 0] = (2*n*n)/(r-l);
     frustrum_matrix.vals[4*1 + 1] = (2*n*n)/(t-b);
     frustrum_matrix.vals[4*2 + 2] = -(f+n)/(f-n);

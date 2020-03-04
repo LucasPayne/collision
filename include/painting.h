@@ -123,6 +123,16 @@ void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color);
     vec4 color = str_to_color_key(( COLOR_STR ));\
     paint_quad_v(CANVAS_ID,A,B,C,D,color);\
 }
+
+void paint_grid_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color, int w, int h, float line_width);
+#define paint_grid_cv(CANVAS_ID,A,B,C,D,COLOR_STR,WIDTH,HEIGHT,LINE_WIDTH)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint_grid_v(CANVAS_ID,A,B,C,D,color,WIDTH,HEIGHT,LINE_WIDTH);\
+}
+
+void paint_arrow_v(int canvas_id, vec3 a, vec3 b, vec4 color, float width, float head_size);
+
 void paint_triangle_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec4 color);
 #define paint_triangle_cv(CANVAS_ID,A,B,C,COLOR_STR)\
 {\

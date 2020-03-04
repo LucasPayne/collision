@@ -314,6 +314,23 @@ void paint_line(int canvas_id, float ax, float ay, float az, float bx, float by,
     paint->type = PAINT_FLAT_LINES;
     paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
 }
+// void paint_arrow_v(int canvas_id, vec3 a, vec3 b, vec4 color, float width, float head_size)
+// {
+//     paint_line_v(canvas_id, a, b, color, width);
+//     vec3 c = vec3_sub(b, vec3_mul(vec3_normalize(vec3_sub(a, b)), head_size));
+//     vec3 ba = vec3_sub(b, a);
+//     vec3 v1 = vec3_normalize(vec3_cross(ba, new_vec3(-ba.vals[1], ba.vals[0], ba.vals[2])));
+//     vec3 v2 = vec3_normalize(vec3_cross(v1, ba));
+//     int n = 25;
+//     for (int i = 0; i < n; i++) {
+//         int j = (i + 1) % n;
+//         vec3 circle_p = vec3_add(c, vec3_add(vec3_mul(v1, sin(2*M_PI*i*1.0/n) * head_size/2.0),
+//                                     vec3_add(vec3_mul(v2, cos(2*M_PI*i*1.0/n) * head_size/2.0))));
+//         vec3 circle_pp = vec3_add(c, vec3_add(vec3_mul(v1, sin(2*M_PI*j*1.0/n) * head_size/2.0),
+//                                     vec3_add(vec3_mul(v2, cos(2*M_PI*j*1.0/n) * head_size/2.0))));
+//         paint_triangle_v(canvas_id, b, circle_p, circle_pp, color);
+//     }
+//}
 
 void paint_chain(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width)
 {
@@ -327,6 +344,19 @@ void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color)
     paint->type = PAINT_FLAT_TRIANGLES;
     paint->contents.flat.color = color;
 }
+void paint_grid_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color, int w, int h, float line_width)
+{
+    for (int i = 0; i < w + 1; i++) {
+        paint_line_v(canvas_id, vec3_add(a, vec3_mul(vec3_sub(b, a), i * 1.0 / w)),
+                                vec3_add(d, vec3_mul(vec3_sub(c, d), i * 1.0 / w)), color, line_width);
+    }
+    for (int i = 0; i < h + 1; i++) {
+        paint_line_v(canvas_id, vec3_add(a, vec3_mul(vec3_sub(d, a), i * 1.0 / h)),
+                                vec3_add(b, vec3_mul(vec3_sub(c, b), i * 1.0 / h)), color, line_width);
+    }
+}
+
+
 void paint_triangle_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec4 color)
 {
     Paint *paint = strokes_triangle(painting_canvas(canvas_id), a, b, c);

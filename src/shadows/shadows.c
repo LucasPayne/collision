@@ -75,6 +75,7 @@ extern void init_program(void)
         EntityID e = new_entity(4);
         Transform_set(add_aspect(e, Transform), -50+frand()*100,10,-50+frand()*100,  0,2*M_PI*frand(),0);
         Body *body = add_aspect(e, Body);
+        body->visible = true;
         body->scale = 5;
         body->geometry = new_resource_handle(Geometry, "Models/quad");
         body->material = Material_create("Materials/textured_phong_shadows");
@@ -90,6 +91,7 @@ extern void init_program(void)
             Body *body = add_aspect(e, Body);
             //body->scale = 400;
             body->scale = 1870;
+            body->visible = true;
             body->geometry = new_resource_handle(Geometry, "Models/stanford_bunny -a");
             body->material = Material_create("Materials/textured_phong_shadows_normal_mapped");
             material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/brick_wall");

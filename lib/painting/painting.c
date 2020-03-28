@@ -214,6 +214,8 @@ Variants can be combined.
 #define next_paint(CANVAS_POINTER) ( &( CANVAS_POINTER )->paint_buffer[( CANVAS_POINTER )->paint_count ++] )
 #define index_buffer(CANVAS_POINTER) (((vec3 *) &canvas->vertex_buffer) + ( CANVAS_POINTER )->current_index)
 
+static Paint *strokes_points(Canvas *canvas, vec3 *points, float width
+
 static Paint *strokes_line(Canvas *canvas, vec3 a, vec3 b, float width)
 {
     // 3: line from a to b.
@@ -307,6 +309,13 @@ void paint2d_loop(float vals[], int num_points, COLOR_SCALARS) {
 --------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
+
+void paint_points(int canvas_id, vec3 *points, int num_points, COLOR_SCALARS, float size)
+{
+    Paint *paint = strokes_points(painting_canvas(canvas_id), points, num_points, size);
+    paint->type = PAINT_FLAT_POINTS;
+    paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
+}
 
 void paint_line(int canvas_id, float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS, float width)
 {

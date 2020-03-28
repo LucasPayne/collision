@@ -99,6 +99,7 @@ void test_spawn_cubes(int n)
         Body *body = entity_add_aspect(quad, Body);
         body->scale = 5;
         body->material = Material_create("Materials/textured_phong_shadows");
+        body->visible = true;
         material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/mario/sand_bricks");
         body->geometry = new_resource_handle(Geometry, "Models/block");
     }
@@ -110,6 +111,7 @@ void test_floor(char *texture_path)
     Transform_set(entity_add_aspect(quad, Transform), 0,0,2,  M_PI/2,0,0);
     Body *body = entity_add_aspect(quad, Body);
     body->scale = 50;
+    body->visible = true;
     body->material = Material_create("Materials/textured_phong");
     material_set_texture_path(resource_data(Material, body->material), "diffuse_map", texture_path);
     body->geometry = new_resource_handle(Geometry, "Models/quad");
@@ -122,6 +124,7 @@ void test_mass_objects(int number_of_them)
         EntityID thing = new_entity(3);
         Transform_set(entity_add_aspect(thing, Transform), frand()*50-25,frand()*50-25,frand()*50-25, frand()*2*M_PI, frand()*2*M_PI, frand()*2*M_PI);
         Body *body = entity_add_aspect(thing, Body);
+        body->visible = true;
         body->scale = 1;
         Material *mat = oneoff_resource(Material, body->material);
         mat->material_type = new_resource_handle(MaterialType, "Materials/textured_phong");
@@ -186,3 +189,6 @@ void test_spawn_stars(int how_many)
     for (int i = 0; i < how_many; i++) test_spawn_star(frand()*50-25, frand()*50-25,frand()*50-25,  2*M_PI*frand(),2*M_PI*frand(),2*M_PI*frand());
 }
 #endif
+
+
+ 

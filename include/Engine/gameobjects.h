@@ -70,6 +70,22 @@ float Body_radius(Body *body);
 mat4x4 Body_matrix(Body *body);
 
 /*--------------------------------------------------------------------------------
+A RigidBody is simulated according to rigid body dynamics. The geometry need not be the
+same as what the object is being rendered as. Currently rigid bodies are restricted to being
+convex polyhedra, although the algorithms can be generalized to convex sets, and constraints can
+be incorporated along with convex decomposition to allow concave objects.
+--------------------------------------------------------------------------------*/
+extern AspectType RigidBody_TYPE_ID;
+typedef struct /* Aspect */ RigidBody_s {
+ASPECT_PROPERTIES()
+    ResourceHandle geometry; /* Resource: Geometry */
+    vec3 angular_momentum;
+    vec3 linear_momentum;
+    float mass;
+    mat3x3 inertia_tensor;
+} RigidBody;
+
+/*--------------------------------------------------------------------------------
 Logic is the behavioral aspect of a gameobject. It holds an update routine
 and optional data. Macros are provided for simple use of this per-entity specific
 usage of the logic aspect.

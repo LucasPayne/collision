@@ -18,6 +18,7 @@ enum PaintTypes {
     PAINT_NONE,
     PAINT_FLAT_LINES,
     PAINT_FLAT_TRIANGLES,
+    PAINT_FLAT_POINTS,
     PAINT_DASHED_LINES,
     PAINT_SPRITE,
     PAINT_CUSTOM_MATERIAL,
@@ -48,9 +49,17 @@ typedef struct Paint_s {
         } custom_material;
     } contents;
     union {
+        struct PaintShapeTriangle {
+            int num_triangles;
+        } triangle;
         struct PaintShapeLine {
             float width;
+            int num_points;
         } line;
+        struct PaintShapePoint {
+            float size;
+            int num_points;
+        } point;
     } shape;
 } Paint;
 
@@ -154,6 +163,13 @@ void paint2d_rect(int canvas_id, float x, float y, float width, float height, ve
     paint2d_rect(CANVAS_ID,X,Y,WIDTH,HEIGHT,color,LAYER);\
 }
 void paint2d_rect_bordered(int canvas_id, float x, float y, float width, float height, vec4 color, float line_width, vec4 line_color, int layer);
+
+void paint_points(int canvas_id, vec3 *points, int num_points, COLOR_SCALARS, float size);
+#define paint_points_c(CANVAS_ID,POINTS,NUM_POINTS,COLOR_STR,SIZE)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint_points(CANVAS_ID,POINTS,NUM_POINTS,UNPACK_COLOR(color),SIZE);\
+}
 
 //--------------------------------------------------------------------------------
 

@@ -51,7 +51,15 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-    
+    static float chain[] = {
+        0,0,0,
+        50,0,0,
+        100,0,50,
+        50,50,50,
+    };
+    paint_chain_c(Canvas3D, chain, 4, "g", 10);
+
+    paint_points_c(Canvas3D, chain, 4, "r", 30);
 }
 extern void close_program(void)
 {

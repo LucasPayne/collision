@@ -36,6 +36,8 @@ for further separate buffers or "canvases".
 Material *flat_color_material;
 GLint flat_color_material_uniform_location_flat_color;
 Material *sprite_material;
+Material *circle_material;
+GLint circle_material_uniform_location_flat_color;
 
 // Matrix used for 2d painting.
 // x: < 0-1 >
@@ -95,11 +97,15 @@ void painting_init(void)
     // Cache the standard painting materials.
     ResourceHandle flat_color_material_handle = Material_create("Painting/Materials/flat_color");
     ResourceHandle sprite_material_handle = Material_create("Painting/Materials/sprite");
+    ResourceHandle circle_material_handle = Material_create("Painting/Materials/circle");
     flat_color_material = resource_data(Material, flat_color_material_handle);
     // Currently, the material properties system has too much overhead for setting and uploading properties, so this is accessed more directly.
     MaterialType *mt = resource_data(MaterialType, flat_color_material->material_type);
     flat_color_material_uniform_location_flat_color = glGetUniformLocation(mt->program_id, "flat_color");
-    sprite_material = resource_data(Material,  sprite_material_handle);
+    sprite_material = resource_data(Material, sprite_material_handle);
+    circle_material = resource_data(Material, circle_material_handle);
+    mt = resource_data(MaterialType, circle_material->material_type);
+    circle_material_uniform_location_flat_color = glGetUniformLocation(mt->program_id, "flat_color");
 }
 
 #define paint_buffer_check(CANVAS)\
@@ -132,12 +138,18 @@ void painting_draw(int canvas_id)
                 material_prepare(flat_color_material);
                 glUniform4f(flat_color_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
                 glLineWidth(paint->shape.line.width);
-                glDrawArrays(GL_LINE_STRIP, paint->index, 2);
+                glDrawArrays(GL_LINE_STRIP, paint->index, paint->shape.line.num_points);
                 break;
             case PAINT_FLAT_TRIANGLES:
                 material_prepare(flat_color_material);
                 glUniform4f(flat_color_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
-                glDrawArrays(GL_TRIANGLES, paint->index, 6);
+                glDrawArrays(GL_TRIANGLES, paint->index, paint->shape.triangle.num_triangles);
+                break;
+            case PAINT_FLAT_POINTS:
+                material_prepare(circle_material);
+                glUniform4f(circle_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
+                glPointSize(paint->shape.point.size);
+                glDrawArrays(GL_POINTS, paint->index, paint->shape.point.num_points);
                 break;
             case PAINT_DASHED_LINES:
                 fprintf(stderr, "not implemented\n");
@@ -214,7 +226,17 @@ Variants can be combined.
 #define next_paint(CANVAS_POINTER) ( &( CANVAS_POINTER )->paint_buffer[( CANVAS_POINTER )->paint_count ++] )
 #define index_buffer(CANVAS_POINTER) (((vec3 *) &canvas->vertex_buffer) + ( CANVAS_POINTER )->current_index)
 
-static Paint *strokes_points(Canvas *canvas, vec3 *points, float width
+static Paint *strokes_points(Canvas *canvas, vec3 *points, int num_points, float size)
+{
+    Paint *paint = next_paint(canvas);
+    size_t vals_size = sizeof(float) * 3 * num_points;
+    memcpy(index_buffer(canvas), points, vals_size);
+    paint->index = canvas->current_index;
+    canvas->current_index += num_points;
+    paint->shape.point.size = size;
+    paint->shape.point.num_points = num_points;
+    return paint;
+}
 
 static Paint *strokes_line(Canvas *canvas, vec3 a, vec3 b, float width)
 {
@@ -226,6 +248,7 @@ static Paint *strokes_line(Canvas *canvas, vec3 a, vec3 b, float width)
     paint->index = canvas->current_index;
     canvas->current_index += 2;
     paint->shape.line.width = width;
+    paint->shape.line.num_points = 2;
     return paint;
 }
 #if 0
@@ -260,6 +283,7 @@ static Paint *strokes_chain(Canvas *canvas, float vals[], int num_points, float 
     paint->index = canvas->current_index;
     canvas->current_index += num_points;
     paint->shape.line.width = width;
+    paint->shape.line.num_points = num_points;
     return paint;
 }
 static Paint *strokes_loop(Canvas *canvas, float vals[], int num_points, float width)
@@ -272,6 +296,7 @@ static Paint *strokes_loop(Canvas *canvas, float vals[], int num_points, float w
     paint->index = canvas->current_index;
     canvas->current_index += num_points + 1;
     paint->shape.line.width = width;
+    paint->shape.line.num_points = num_points + 1;
     return paint;
 }
 static Paint *strokes_quad(Canvas *canvas, vec3 a, vec3 b, vec3 c, vec3 d)
@@ -286,6 +311,7 @@ static Paint *strokes_quad(Canvas *canvas, vec3 a, vec3 b, vec3 c, vec3 d)
     vp[5] = d;
     paint->index = canvas->current_index;
     canvas->current_index += 6;
+    paint->shape.triangle.num_triangles = 2;
     return paint;
 }
 static Paint *strokes_triangle(Canvas *canvas, vec3 a, vec3 b, vec3 c)
@@ -297,6 +323,7 @@ static Paint *strokes_triangle(Canvas *canvas, vec3 a, vec3 b, vec3 c)
     vp[2] = c;
     paint->index = canvas->current_index;
     canvas->current_index += 3;
+    paint->shape.triangle.num_triangles = 1;
     return paint;
 }
 
@@ -309,13 +336,6 @@ void paint2d_loop(float vals[], int num_points, COLOR_SCALARS) {
 --------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------*/
-
-void paint_points(int canvas_id, vec3 *points, int num_points, COLOR_SCALARS, float size)
-{
-    Paint *paint = strokes_points(painting_canvas(canvas_id), points, num_points, size);
-    paint->type = PAINT_FLAT_POINTS;
-    paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
-}
 
 void paint_line(int canvas_id, float ax, float ay, float az, float bx, float by, float bz, COLOR_SCALARS, float width)
 {
@@ -340,6 +360,13 @@ void paint_line(int canvas_id, float ax, float ay, float az, float bx, float by,
 //         paint_triangle_v(canvas_id, b, circle_p, circle_pp, color);
 //     }
 //}
+
+void paint_points(int canvas_id, vec3 *points, int num_points, COLOR_SCALARS, float size)
+{
+    Paint *paint = strokes_points(painting_canvas(canvas_id), points, num_points, size);
+    paint->type = PAINT_FLAT_POINTS;
+    paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
+}
 
 void paint_chain(int canvas_id, float vals[], int num_points, COLOR_SCALARS, float width)
 {

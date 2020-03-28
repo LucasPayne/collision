@@ -7,6 +7,13 @@ Materials < (
         num_blocks: 1;
         string block0: Standard3D;
     );
+    circle < MaterialType (
+        vertex_format: 3;
+        vertex_shader: Painting/shaders/passthrough.vert;
+        fragment_shader: Painting/shaders/circle.frag;
+        num_blocks: 1;
+        string block0: Standard3D;
+    );
     sprite < MaterialType (
         vertex_format: 3U;
         vertex_shader: Painting/shaders/sprite.vert;

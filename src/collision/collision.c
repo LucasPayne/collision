@@ -19,8 +19,8 @@ typedef struct DLNode_s {
     struct DLNode_s *next;
 } DLNode;
 typedef struct DLList_s {
-    DLNode_s *first;
-    DLNode_s *last;
+    DLNode *first;
+    DLNode *last;
 } DLList;
 
 
@@ -44,7 +44,7 @@ typedef struct PolyhedronPoint_s {
     struct PolyhedronPoint_s *prev;
     struct PolyhedronPoint_s *next;
     vec3 position;
-} PolyhedronPoint_s;
+} PolyhedronPoint;
 typedef struct PolyhedronTriangle_s {
     struct PolyhedronTriangle_s *prev;
     struct PolyhedronTriangle_s *next;
@@ -64,35 +64,87 @@ Polyhedron new_polyhedron(void)
     return poly;
 }
 
-DLNode *dl_add(DLList *list, DLNode *node)
+
+#define dl_add(LIST,NODE)\
+    ___dl_add(*((DLList *) (&( LIST ))), (DLNode *) ( NODE ))
+DLNode *___dl_add(DLList list, DLNode *node)
 {
-    if (list->first == NULL) {
-        list->first = node;
-        list->last = node;
+    if (list.first == NULL) {
+        list.first = node;
+        list.last = node;
     }
-    node->prev = list->last;
+    node->prev = list.last;
     node->next = NULL;
-    list->last.next = node;
-    list->last = node;
+    list.last->next = node;
+    list.last = node;
 }
-void dl_remove(DLList *list, DLNode *node)
+#define dl_remove(LIST,NODE)\
+    ___dl_remove(*((DLList *) (&( LIST ))), (DLNode *) ( NODE ))
+void ___dl_remove(DLList list, DLNode *node)
 {
     if (node->prev == NULL) {
-        list->first = node->next;
+        list.first = node->next;
+    } else if (node->next == NULL) {
+        list.first = NULL;
+        list.last = NULL;
+    } else {
+        node->prev->next = node->next;
     }
     free(node);
 }
 
 PolyhedronPoint *polyhedron_add_point(Polyhedron *polyhedron, vec3 point)
 {
-    if (polyhedron->points.first == NULL) {
-        polyhedron->points.first = polyhedron
+    PolyhedronPoint *p = calloc(1, sizeof(PolyhedronPoint));
+    mem_check(p);
+    p->position = point;
+    dl_add(polyhedron->points, p);
+}
+// It is up to the user of the polyhedron structure to maintain the fact that this is really does represent a polyhedron.
+PolyhedronEdge *polyhedron_add_edge(Polyhedron *polyhedron, PolyhedronPoint *p1, PolyhedronPoint *p2)
+{
+    PolyhedronEdge *e = calloc(1, sizeof(PolyhedronEdge));
+    mem_check(e);
+    e->a = p1;
+    e->b = p2;
+    dl_add(polyhedron->edges, e);
+}
+// Triangles are added through their edges, so these edges must actually form a triangle for this to make sense.
+PolyhedronTriangle *polyhedron_add_triangle(Polyhedron *polyhedron, PolyhedronEdge *e1, PolyhedronEdge *e2, PolyhedronEdge *e3)
+{
+    PolyhedronTriangle *t = calloc(1, sizeof(PolyhedronTriangle));
+    mem_check(t);
+    t->points[0] = e1->a;
+    t->points[1] = e2->a;
+    t->points[2] = e3->a;
+    if (e3->b == e1->a) {
+        e1->left_triangle = t;
+        e2->left_triangle = t;
+        e3->left_triangle = t;
+    } else {
+        // Assume this new triangle is given in edge-order clock-wise on the polyhedra.
+        e1->right_triangle = t;
+        e2->right_triangle = t;
+        e3->right_triangle = t;
     }
-    PolyhedronPoint *new_point = malloc(sizeof(PolyhedronPoint));
-    mem_check(new_point);
-    new_point->position = point;
-    polyhedron->points.last.next = new_point;
-    polyhedron->points.last = new_point;
+}
+
+float tetrahedron_6_times_volume(vec3 a, vec3 b, vec3 c, vec3 d)
+{
+    float a1,a2,a3,a4;
+    a1 = a.vals[0]; a2 = a.vals[1]; a3 = a.vals[2]; a4 = a.vals[3];
+    float b1,b2,b3,b4;
+    b1 = b.vals[0]; b2 = b.vals[1]; b3 = b.vals[2]; b4 = b.vals[3];
+    float c1,c2,c3,c4;
+    c1 = c.vals[0]; c2 = c.vals[1]; c3 = c.vals[2]; c4 = c.vals[3];
+    float d1,d2,d3,d4;
+    d1 = d.vals[0]; d2 = d.vals[1]; d3 = d.vals[2]; d4 = d.vals[3];
+
+    return a1*(b2*(c3-c4) - b3*(c2-c4) + b4*(c2-c3))
+         - a2*(b1*(c3-c4) - b3*(c1-c4) + b4*(c1-c3))
+         + a3*(b1*(c2-c4) - b2*(c1-c4) + b4*(c1-c2))
+         - a4*(b1*(c2-c3) - b2*(c1-c3) + b3*(c1-c2));
+
 }
 
 void convex_hull(vec3 *points, int num_points)
@@ -103,7 +155,23 @@ void convex_hull(vec3 *points, int num_points)
         return;
     }
     Polyhedron poly = new_polyhedron();
-    for (int i = 0; i < 4; i++) polyhedron_add_point(poly, points[i]);
+    {
+        PolyhedronPoint *tetrahedron_points[4];
+        for (int i = 0; i < 4; i++) {
+            tetrahedron_points[i] = polyhedron_add_point(&poly, points[i]);
+        }
+        bool negative = tetrahedron_6_times_volume(points[0], points[1], points[2], points[3]) < 0;
+        if (negative) {
+            PolyhedronPoint *temp[4];
+            memcpy(temp, tetrahedron_points, sizeof(PolyhedronPoint *) * 4);
+            for (int i = 0; i < 4; i++) tetrahedron_points[3-i] = temp[i];
+        }
+
+        PolyhedronEdge *e1 = polyhedron_add_edge(&poly, tetrahedron_points[0], tetrahedron_points[1]);
+        PolyhedronEdge *e2 = polyhedron_add_edge(&poly, tetrahedron_points[1], tetrahedron_points[2]);
+        PolyhedronEdge *e3 = polyhedron_add_edge(&poly, tetrahedron_points[2], tetrahedron_points[3]);
+        polyhedron_add_triangle(&poly, e1, e2, e3);
+    }
 }
 
 vec3 *random_points(float radius, int n)

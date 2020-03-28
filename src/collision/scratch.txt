@@ -1,0 +1,66 @@
+struct trinode {
+    int a;
+    int b;
+    int c;
+    struct trinode *next;
+};
+static void new_trinode(int a, int b, int c)
+{
+    struct trinode *t = malloc(sizeof(struct trinode));
+    t->a = a;
+    t->b = b;
+    t->c = c;
+    t->next = NULL;
+}
+static void insert_trinode(struct trinode *after, struct trinode *t)
+{
+    struct trinode *temp = after->next;
+    after->next = t;
+    t->next = temp;
+}
+typedef struct boundary_node_s {
+    int index;
+    struct boundary_node_s *next;
+} boundary_node;
+
+void convex_hull(vec3 *points, int num_points)
+{
+    // Edge cases for degenerate polyhedra (point, line segment, or triangle).
+    // Initialize hull to a tetrahedron.
+    int *boundary = malloc(sizeof(vec3) * num_points); // scratch-space for storing the centrally-projected boundary when adding a new point.
+    vec3 *hull = malloc(sizeof(vec3) * num_points);
+    int num_on_hull = 0;
+    struct trinode *triangles = new_trinode(0, 0, 0);
+    for (int i = 0; i < num_points; i++) {
+        if (point_in_hull(points[i])) continue;
+        // Form the matrix which transforms points via central projection to the new point.
+        mat4x4 matrix = ---;
+        int boundary_len = 0;
+        for (int j = 0; j < num_on_hull; j++) {
+            vec3 p = mat4x4_vec3(&matrix, hull[j]);
+            for (int k = 1; k < boundary_len; k++) {
+                vec3 v1 = vec3_sub(boundary[k], boundary[k - 1]);
+                vec3 v2 = vec3_sub(p, boundary[k - 1]);
+                float det = v1.vals[0]*v2.vals[1] - v1.vals[1]*v2.vals[0];
+                if (det < 0) {
+                    // This point is outside of the boundary, add it.
+                    for (int h = 0; h < boundary_len; h++) {
+
+                    }
+                }
+            }
+        }
+
+        for (int j = 0; j < num_triangles; j++) {
+            vec3 A = mat4x4_vec3(&matrix, points[triangles[j].a]);
+            vec3 B = mat4x4_vec3(&matrix, points[triangles[j].b]);
+            vec3 C = mat4x4_vec3(&matrix, points[triangles[j].c]);
+            // n: The normal formed by the transformed triangle.
+            vec3 n = vec3_cross(vec3_sub(B, A), vec3_sub(C, A));
+            if (n.vals[2] < 0) {
+                // Remove this triangle.
+            }
+        }
+
+    }
+}

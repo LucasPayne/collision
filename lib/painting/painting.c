@@ -143,7 +143,7 @@ void painting_draw(int canvas_id)
             case PAINT_FLAT_TRIANGLES:
                 material_prepare(flat_color_material);
                 glUniform4f(flat_color_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
-                glDrawArrays(GL_TRIANGLES, paint->index, paint->shape.triangle.num_triangles);
+                glDrawArrays(GL_TRIANGLES, paint->index, paint->shape.triangle.num_triangles * 3);
                 break;
             case PAINT_FLAT_POINTS:
                 material_prepare(circle_material);

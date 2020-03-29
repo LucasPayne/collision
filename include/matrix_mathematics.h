@@ -40,6 +40,9 @@ float vec3_square_length(vec3 v);
 
 vec4 vec4_zero(void);
 
+vec3 vec3_lerp(vec3 a, vec3 b, float t);
+// takes r+s+t = 1
+vec3 triangle_blend(vec3 a, vec3 b, vec3 c, float r, float s, float t);
 
 // Identity matrix
 //================================================================================

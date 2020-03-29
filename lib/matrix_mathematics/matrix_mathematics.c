@@ -527,6 +527,16 @@ vec3 vec4_to_vec3(vec4 v)
     return v3;
 }
 
+vec3 vec3_lerp(vec3 a, vec3 b, float t)
+{
+    return vec3_add(a, vec3_mul(vec3_sub(b, a), t));
+}
+vec3 triangle_blend(vec3 a, vec3 b, vec3 c, float r, float s, float t)
+{
+    return vec3_add(vec3_mul(a, r), vec3_add(vec3_mul(b, s),
+            		 vec3_mul(c, t)));
+
+}
 
 float vec3_square_dist(vec3 a, vec3 b)
 {

@@ -1,0 +1,99 @@
+#ifndef HEADER_DEFINED_GEOMETRY
+#define HEADER_DEFINED_GEOMETRY
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include "helper_definitions.h"
+#include "painting.h"
+#include "matrix_mathematics.h"
+
+// Generic doubly-linked lists.
+typedef struct DLNode_s {
+    struct DLNode_s *prev;
+    struct DLNode_s *next;
+} DLNode;
+typedef struct DLList_s {
+    DLNode *first;
+    DLNode *last;
+} DLList;
+#define dl_add(LIST,NODE)\
+    ___dl_add((DLList *) ( LIST ), (DLNode *) ( NODE ))
+DLNode *___dl_add(DLList *list, DLNode *node);
+#define dl_remove(LIST,NODE)\
+    ___dl_remove((DLList *) ( LIST ), (DLNode *) ( NODE ))
+void ___dl_remove(DLList *list, DLNode *node);
+
+/*================================================================================
+    Data structure for polyhedra, with adjacency information.
+    This is not designed for compactness or direct efficiency, but rather flexibility
+    as a data structure.  Vertices do not contain adjacency information.  Marks are
+    available space for algorithms to mark triangles as traversed, etc.
+================================================================================*/
+// Polyhedron structures. The implementation is partly based on O'Rourke, Computational Geometry in C.
+struct Polyhedra_s;
+struct PolyhedraPoint_s;
+struct PolyhedraEdge_s;
+struct PolyhedraTriangle_s;
+// Polyhedron feature structs (points [vertices], edges, and triangles [faces]).
+typedef struct PolyhedronEdge_s {
+    struct PolyhedronEdge_s *prev;
+    struct PolyhedronEdge_s *next;
+    struct PolyhedronPoint_s *a;
+    struct PolyhedronPoint_s *b;
+    struct PolyhedronTriangle_s *triangles[2];
+    int mark;
+    int print_mark; //mark for use by printing/visualization functions, so they don't interfere with the use of the other marks.
+} PolyhedronEdge;
+typedef struct PolyhedronPoint_s {
+    struct PolyhedronPoint_s *prev;
+    struct PolyhedronPoint_s *next;
+    vec3 position;
+    int mark;
+    int print_mark;
+    void *saved_edge; // this edge is used in the convex hull algorithm, to avoid duplicate vertices when adding the cone.
+} PolyhedronPoint;
+typedef struct PolyhedronTriangle_s {
+    struct PolyhedronTriangle_s *prev;
+    struct PolyhedronTriangle_s *next;
+    struct PolyhedronPoint_s *points[3];
+    struct PolyhedronEdge_s *edges[3];
+    int mark;
+    int print_mark;
+} PolyhedronTriangle;
+// The Polyhedron struct itself is just the three doubly linked lists of features.
+typedef struct Polyhedron_s {
+    DLList points;
+    DLList edges;
+    DLList triangles;
+} Polyhedron;
+
+// Create a new empty polyhedron.
+Polyhedron new_polyhedron(void);
+
+// Add features to the polyhedron. It is up to the user to maintain that polyhedra are only ever "incomplete", as in, they can be disconnected and have holes,
+// supposedly as intermediary steps in geometric processing, but this data structure does not allow being "overcomplete", as in, having more than two triangles incident to one edge.
+PolyhedronPoint *polyhedron_add_point(Polyhedron *polyhedron, vec3 point);
+PolyhedronEdge *polyhedron_add_edge(Polyhedron *polyhedron, PolyhedronPoint *p1, PolyhedronPoint *p2);
+PolyhedronTriangle *polyhedron_add_triangle(Polyhedron *polyhedron, PolyhedronPoint *a, PolyhedronPoint *b, PolyhedronPoint *c, PolyhedronEdge *e1, PolyhedronEdge *e2, PolyhedronEdge *e3);
+
+// Remove features from the polyhedron. This also removes all relevant inter-references between features.
+void polyhedron_remove_point(Polyhedron *poly, PolyhedronPoint *p);
+void polyhedron_remove_edge(Polyhedron *poly, PolyhedronEdge *e);
+void polyhedron_remove_triangle(Polyhedron *poly, PolyhedronTriangle *t);
+
+// Helper function for determining the sign of tetrahedron abcd.
+float tetrahedron_6_times_volume(vec3 a, vec3 b, vec3 c, vec3 d);
+
+// Printing and visualization.
+void print_polyhedron(Polyhedron *p);
+void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line_width);
+void draw_polyhedron(Polyhedron *p);
+
+
+/*================================================================================
+    Polyhedron algorithms.
+================================================================================*/
+Polyhedron convex_hull(vec3 *points, int num_points);
+
+#endif // HEADER_DEFINED_GEOMETRY

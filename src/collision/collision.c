@@ -33,21 +33,69 @@ vec3 *random_points(float radius, int n)
 vec3 *points;
 int num_points;
 Polyhedron hull;
+bool viewing = false;
 
 void create_object(void)
 {
     points = random_points(50, num_points);
     //-------destroy the previous hull polyhedron.
-    hull = convex_hull(points, num_points);
+    Polyhedron poly = convex_hull(points, num_points);
+    printf("%d\n", polyhedron_num_points(&poly));
 
+    // Convert the polyhedron in to a MeshData struct.
+    MeshData mesh;
+    mesh.vertex_format = VERTEX_FORMAT_3NU;
+    mesh.num_vertices = polyhedron_num_points(&poly);
+    mesh.num_triangles = polyhedron_num_triangles(&poly);
+    mesh.attribute_data[Position] = malloc(sizeof(float)*3*mesh.num_vertices);
+    mem_check(mesh.attribute_data[Position]);
+    PolyhedronPoint *p = poly.points.first;
+    int pi = 0;
+    while (p != NULL) {
+        p->mark = pi; // mark this point with an index so the triangles can reference it by index.
+        ((vec3 *) mesh.attribute_data[Position])[pi++] = p->position;
+        p = p->next;
+    }
+    mesh.attribute_data_sizes[Position] = sizeof(float)*3*mesh.num_vertices;
+    mesh.triangles = malloc(sizeof(uint32_t)*3*mesh.num_triangles);
+    mem_check(mesh.triangles);
+    PolyhedronTriangle *t = poly.triangles.first;
+    int ti = 0;
+    while (t != NULL) {
+        for (int i = 0; i < 3; i++) mesh.triangles[3*ti + i] = t->points[i]->mark;
+        t = t->next;
+        ti ++;
+    }
+    MeshData_calculate_normals(&mesh);
+    MeshData_calculate_uv_orthographic(&mesh, new_vec3(1,1,1), 0.1);
+    Geometry geometry = upload_mesh(&mesh);
 
+    printf("%d vertices, %d triangles\n", mesh.num_vertices, mesh.num_triangles);
+    
+    EntityID e = new_entity(4);
+    //float d = 300;
+    //Transform_set(add_aspect(e, Transform), frand()*d-d/2, frand()*d-d/2, frand()*d-d/2, 0,0,0);
+    Transform_set(add_aspect(e, Transform), 0,0,0,0,0,0);
+    Body *b = add_aspect(e, Body);
+    b->visible = true;
+    b->scale = 1;
+    Geometry *g = oneoff_resource(Geometry, b->geometry);
+    *g = geometry;
+    // b->material = Material_create("Materials/red");
+    b->material = Material_create("Materials/textured_phong_shadows");
+    material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/dirt");
+
+    hull = poly;
 }
 
 
 extern void input_event(int key, int action, int mods)
 {
-    if (action == GLFW_PRESS && key == GLFW_KEY_P) {
-        create_object();
+    if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_P) {
+            create_object();
+        }
+        if (key == GLFW_KEY_V) viewing = !viewing;
     }
 }
     
@@ -59,6 +107,8 @@ extern void cursor_move_event(double x, double y)
 }
 extern void init_program(void)
 {
+    test_directional_light_controlled();
+    // open_scene(g_scenes, "block_on_floor");
     create_key_camera_man(0,0,0,  0,0,0);
     num_points = 100;
     create_object();

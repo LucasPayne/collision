@@ -4,6 +4,11 @@
 Polyhedron new_polyhedron(void)
 {
     Polyhedron poly = {0};
+    // If this function is not used to create a polyhedron, then these values triggering the calculation of number of features
+    // won't be set.
+    poly.num_points = -1;
+    poly.num_edges = -1;
+    poly.num_triangles = -1;
     return poly;
 }
 
@@ -77,6 +82,36 @@ void polyhedron_remove_triangle(Polyhedron *poly, PolyhedronTriangle *t)
         }
     }
     dl_remove(&poly->triangles, t);
+}
+int polyhedron_num_points(Polyhedron *poly)
+{
+    if (poly->num_points == -1) {
+        int n = 0;
+        PolyhedronPoint *p = poly->points.first;
+        while (p != NULL) { n++; p = p->next; }
+        poly->num_points = n;
+        return n;
+    } else return poly->num_points;
+}
+int polyhedron_num_edges(Polyhedron *poly)
+{
+    if (poly->num_edges == -1) {
+        int n = 0;
+        PolyhedronEdge *e = poly->edges.first;
+        while (e != NULL) { n++; e = e->next; }
+        poly->num_edges = n;
+        return n;
+    } else return poly->num_edges;
+}
+int polyhedron_num_triangles(Polyhedron *poly)
+{
+    if (poly->num_triangles == -1) {
+        int n = 0;
+        PolyhedronTriangle *t = poly->triangles.first;
+        while (t != NULL) { n++; t = t->next; }
+        poly->num_triangles = n;
+        return n;
+    } else return poly->num_triangles;
 }
 
 float tetrahedron_6_times_volume(vec3 a, vec3 b, vec3 c, vec3 d)
@@ -170,7 +205,9 @@ void draw_polyhedron(Polyhedron *p)
 }
 
 
-
+/*================================================================================
+    3-dimensional convex hull. Returns the hull as a polyhedron.
+================================================================================*/
 // Definitions of marks this algorithm makes on features, during processing.
 #define VISIBLE true
 #define INVISIBLE false
@@ -307,13 +344,11 @@ Polyhedron convex_hull(vec3 *points, int num_points)
                 if (e1 == NULL) {
                     e1 = polyhedron_add_edge(&poly, new_point, p1);
                     p1->saved_edge = e1;
-                } else {
                 }
                 PolyhedronEdge *e2 = p2->saved_edge;
                 if (e2 == NULL) {
                     e2 = polyhedron_add_edge(&poly, new_point, p2);
                     p2->saved_edge = e2;
-                } else {
                 }
                 // Use these to form a new triangle.
                 polyhedron_add_triangle(&poly, new_point, p1, p2, e1, e, e2);
@@ -322,7 +357,4 @@ Polyhedron convex_hull(vec3 *points, int num_points)
         }
     }
     return poly;
-    // draw_polyhedron(&poly);
-    // draw_polyhedron_winding_order(&poly, "y", 10);
 }
-

@@ -63,6 +63,10 @@ typedef struct PolyhedronTriangle_s {
 } PolyhedronTriangle;
 // The Polyhedron struct itself is just the three doubly linked lists of features.
 typedef struct Polyhedron_s {
+    int num_points;
+    int num_edges;
+    int num_triangles; // these numbers are cached until add/remove functions are used.
+    // All features _must_ only be added or removed via the add/remove functions.
     DLList points;
     DLList edges;
     DLList triangles;
@@ -81,6 +85,10 @@ PolyhedronTriangle *polyhedron_add_triangle(Polyhedron *polyhedron, PolyhedronPo
 void polyhedron_remove_point(Polyhedron *poly, PolyhedronPoint *p);
 void polyhedron_remove_edge(Polyhedron *poly, PolyhedronEdge *e);
 void polyhedron_remove_triangle(Polyhedron *poly, PolyhedronTriangle *t);
+
+int polyhedron_num_points(Polyhedron *poly);
+int polyhedron_num_edges(Polyhedron *poly);
+int polyhedron_num_triangles(Polyhedron *poly);
 
 // Helper function for determining the sign of tetrahedron abcd.
 float tetrahedron_6_times_volume(vec3 a, vec3 b, vec3 c, vec3 d);

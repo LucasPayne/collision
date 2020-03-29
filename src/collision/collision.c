@@ -73,17 +73,18 @@ void create_object(void)
     printf("%d vertices, %d triangles\n", mesh.num_vertices, mesh.num_triangles);
     
     EntityID e = new_entity(4);
-    //float d = 300;
-    //Transform_set(add_aspect(e, Transform), frand()*d-d/2, frand()*d-d/2, frand()*d-d/2, 0,0,0);
-    Transform_set(add_aspect(e, Transform), 0,0,0,0,0,0);
+    float d = 300;
+    Transform_set(add_aspect(e, Transform), frand()*d-d/2, frand()*d-d/2, frand()*d-d/2, 0,0,0);
+    //Transform_set(add_aspect(e, Transform), 0,0,0,0,0,0);
     Body *b = add_aspect(e, Body);
     b->visible = true;
     b->scale = 1;
     Geometry *g = oneoff_resource(Geometry, b->geometry);
     *g = geometry;
-    // b->material = Material_create("Materials/red");
+    //b->material = Material_create("Materials/red");
+    //b->material = Material_create("Materials/textured_phong_shadows_phong_tessellation");
     b->material = Material_create("Materials/textured_phong_shadows");
-    material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/dirt");
+    material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/stone_bricks");
 
     hull = poly;
 }

@@ -468,7 +468,6 @@ int main(void)
         if (g_paused) continue;
 
         // Clearing: window clear to background color, viewport clear to the foreground color.
-        
         glClearColor(g_bg_color[0], g_bg_color[1], g_bg_color[2], g_bg_color[3]);
         glDisable(GL_SCISSOR_TEST);
         glClear(clear_mask);

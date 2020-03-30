@@ -19,11 +19,14 @@ void RigidBody_init_polyhedron(RigidBody *rb, Polyhedron poly, float mass)
     printf("calculating ...\n");
     vec3 center_of_mass = new_vec3(0,0,0);
 
+    // The center of mass is found by taking the weighted sum of the centroids of tetrahedra connecting the origin to each triangle,
+    // weighted by the signed volumes of each tetrahedron.
+    // ---I think this method works, at least for convex polyhedra, since if the origin is in the center,
+    // ---then this works, and it would not become incorrect when moving the origin past the boundary.
     float volume_times_6 = 0;
     while (tri != NULL) {
         // Calculate the centroid of the tetrahedron containing the origin and the points of the triangle.
         vec3 centroid = vec3_mul(vec3_add(vec3_add(tri->points[0]->position, tri->points[1]->position), tri->points[2]->position), 0.25);
-        // paint_points_c(Canvas3D, &centroid, 1, "k", 20);
         // Calculate the volume of this same tetrahedron.
         float v = tetrahedron_6_times_volume(new_vec3(0,0,0), tri->points[0]->position, tri->points[1]->position, tri->points[2]->position);
         volume_times_6 += v;
@@ -37,6 +40,5 @@ void RigidBody_init_polyhedron(RigidBody *rb, Polyhedron poly, float mass)
     // This is useful because then geometry (in application or in vram) does not need to be changed for a change of center of rotation.
     transform->center = center_of_mass;
 
-    // pause();
 }
 

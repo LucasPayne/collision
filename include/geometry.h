@@ -95,8 +95,8 @@ float tetrahedron_6_times_volume(vec3 a, vec3 b, vec3 c, vec3 d);
 
 // Printing and visualization.
 void print_polyhedron(Polyhedron *p);
-void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line_width);
-void draw_polyhedron(Polyhedron *p);
+void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line_width, mat4x4 *matrix);
+void draw_polyhedron(Polyhedron *p, mat4x4 *matrix);
 
 
 /*================================================================================

@@ -37,6 +37,7 @@ ASPECT_PROPERTIES()
     float theta_y;
     float theta_z;
     vec3 center;
+    float scale;
 } Transform;
 void Transform_set(Transform *transform, float x, float y, float z, float theta_x, float theta_y, float theta_z);
 vec3 Transform_position(Transform *t);
@@ -65,7 +66,7 @@ extern AspectType Body_TYPE_ID;
 typedef struct /* Aspect */ Body_s {
 ASPECT_PROPERTIES()
     bool visible;
-    float scale;
+    // float scale;
     ResourceHandle material; /* Resource: Material */
     ResourceHandle geometry; /* Resource: Geometry */
     bool is_ground;

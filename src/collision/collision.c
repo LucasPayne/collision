@@ -24,8 +24,11 @@ vec3 *random_points(float radius, int n)
 
     vec3 *points = malloc(sizeof(vec3) * n);
     mem_check(points);
+    float o = 50;
+    vec3 offset = new_vec3(frand()*o-o/2,frand()*o-o/2,frand()*o-o/2);
     for (int i = 0; i < n; i++) {
         points[i] = vec3_mul(vec3_add(vec3_add(vec3_mul(e1, frand()-0.5), vec3_mul(e2, frand()-0.5)), vec3_mul(e3, frand()-0.5)), radius * size);
+        points[i] = vec3_add(points[i], offset);
         print_vec3(points[i]);
     }
     return points;
@@ -82,7 +85,7 @@ void create_object(void)
     //Transform_set(add_aspect(e, Transform), 0,0,0,0,0,0);
     Body *b = add_aspect(e, Body);
     b->visible = true;
-    b->scale = 1;
+    transform->scale = 1;
     Geometry *g = oneoff_resource(Geometry, b->geometry);
     *g = geometry;
     //b->material = Material_create("Materials/red");
@@ -117,6 +120,10 @@ extern void mouse_button_event(int button, int action, int mods)
 extern void cursor_move_event(double x, double y)
 {
 }
+
+
+Polyhedron bunny_hull;
+mat4x4 bunny_matrix;
 extern void init_program(void)
 {
     test_directional_light_controlled();
@@ -127,24 +134,44 @@ extern void init_program(void)
     EntityID e = new_entity(4);
     Transform_set(add_aspect(e, Transform), -500,-1190,-500,0,0,0);
     Body *body = add_aspect(e, Body);
-    body->scale = 1000;
+    get_aspect_type(e, Transform)->scale = 1000;
     body->visible = true;
     body->geometry = new_resource_handle(Geometry, "Models/block");
     body->material = Material_create("Materials/textured_phong_shadows");
     body->is_ground = true;
     material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/marble_tile");
+
+    int bunny_square_root = 1;
+    for (int i = 0; i < bunny_square_root; i++) {
+        for (int j = 0; j < bunny_square_root; j++) {
+            EntityID e = new_entity(4);
+            float apart = 400;
+            Transform *t = add_aspect(e, Transform);
+            Transform_set(t, 200+i*apart,-250,200+j*apart, 0,0,0);
+            Body *body = add_aspect(e, Body);
+            t->scale = 1870;
+            body->visible = true;
+            body->geometry = new_resource_handle(Geometry, "Models/stanford_bunny -a");
+            body->material = Material_create("Materials/textured_phong_shadows");
+            material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/minecraft/stone_bricks");
+            MeshData *mesh = resource_data(Geometry, body->geometry)->mesh_data;
+            bunny_hull = convex_hull(mesh->attribute_data[Position], mesh->num_vertices);
+            bunny_matrix = Transform_matrix(t);
+        }
+    }
 }
 extern void loop_program(void)
 {
-    draw_polyhedron(&hull);
-    draw_polyhedron_winding_order(&hull, "k", 10);
+    draw_polyhedron(&hull, NULL);
+    draw_polyhedron_winding_order(&hull, "k", 10, NULL);
+    draw_polyhedron(&bunny_hull, &bunny_matrix);
+    draw_polyhedron_winding_order(&bunny_hull, "k", 10, &bunny_matrix);
     for_aspect(RigidBody, rb)
         Body *b = other_aspect(rb, Body);
         if (viewing) {
-            vec3 p = Transform_position(other_aspect(rb, Transform));
-            paint_points_c(Canvas3D, &p, 1, "g", 5);
-            vec3 center = vec3_add(rb->center_of_mass, p);
-            paint_points_c(Canvas3D, &center, 1, "r", 5);
+            Transform *t = other_aspect(rb, Transform);
+            vec3 p = Transform_position(t);
+            paint_points_c(Canvas3D, &p, 1, "b", 12);
             // PolyhedronTriangle *tri = rb->shape.polyhedron.triangles.first;
             // while (tri != NULL) {
             //     for (int i = 0; i < 3; i++) paint_line_cv(Canvas3D, tri->points[i]->position, tri->points[(i+1)%3]->position, "k", 5);
@@ -155,6 +182,8 @@ extern void loop_program(void)
             b->visible = true;
         }
     end_for_aspect()
+
+
 }
 extern void close_program(void)
 {

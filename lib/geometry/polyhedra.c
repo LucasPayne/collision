@@ -149,7 +149,7 @@ void print_polyhedron(Polyhedron *p)
     }
 }
 
-void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line_width)
+void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line_width, mat4x4 *matrix)
 {
     PolyhedronTriangle *t = poly->triangles.first;
     while (t != NULL) {
@@ -160,29 +160,50 @@ void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line
                                    alpha, alpha, 1-2*alpha);
         }
         for (int i = 0; i < 2; i++) {
-            paint_line_cv(Canvas3D, ps[i], ps[i+1], color_str, line_width);
+            if (matrix != NULL) {
+                paint_line_cv(Canvas3D, mat4x4_vec3(matrix, ps[i]), mat4x4_vec3(matrix, ps[i+1]), color_str, line_width);
+            } else {
+                paint_line_cv(Canvas3D, ps[i], ps[i+1], color_str, line_width);
+            }
         }
         vec3 end = vec3_lerp(ps[2], ps[0], 0.8);
-        paint_line_cv(Canvas3D, ps[2], end, color_str, line_width);
+        if (matrix != NULL) {
+            paint_line_cv(Canvas3D, mat4x4_vec3(matrix, ps[2]), mat4x4_vec3(matrix, end), color_str, line_width);
+        } else {
+            paint_line_cv(Canvas3D, ps[2], end, color_str, line_width);
+        }
         t = t->next;
     }
 }
 
-void draw_polyhedron(Polyhedron *p)
+void draw_polyhedron(Polyhedron *p, mat4x4 *matrix)
 {
     PolyhedronPoint *point = p->points.first;
     while (point != NULL) {
-        paint_points_c(Canvas3D, &point->position, 1, "r", 20);
+        if (matrix != NULL) {
+            vec3 pp = mat4x4_vec3(matrix, point->position);
+            paint_points_c(Canvas3D, &pp, 1, "r", 20);
+        } else {
+            paint_points_c(Canvas3D, &point->position, 1, "r", 20);
+        }
         point = point->next;
     }
     PolyhedronEdge *edge = p->edges.first;
     while (edge != NULL) {
-        paint_line_cv(Canvas3D, edge->a->position, edge->b->position, "r", 10);
+        if (matrix != NULL) {
+            paint_line_cv(Canvas3D, mat4x4_vec3(matrix, edge->a->position), mat4x4_vec3(matrix, edge->b->position), "r", 10);
+        } else {
+            paint_line_cv(Canvas3D, edge->a->position, edge->b->position, "r", 10);
+        }
         edge = edge->next;
     }
     PolyhedronTriangle *t = p->triangles.first;
     while (t != NULL) {
-        paint_triangle_cv(Canvas3D, t->points[0]->position, t->points[1]->position, t->points[2]->position, "tg");
+        if (matrix != NULL) {
+            paint_triangle_cv(Canvas3D, mat4x4_vec3(matrix, t->points[0]->position), mat4x4_vec3(matrix, t->points[1]->position), mat4x4_vec3(matrix, t->points[2]->position), "tg");
+        } else {
+            paint_triangle_cv(Canvas3D, t->points[0]->position, t->points[1]->position, t->points[2]->position, "tg");
+        }
         t = t->next;
     }
 }

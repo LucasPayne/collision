@@ -42,7 +42,15 @@ Matrix4x4f Transform_matrix(Transform *transform)
     mat.vals[4*3+0] = transform->x;
     mat.vals[4*3+1] = transform->y;
     mat.vals[4*3+2] = transform->z;
+
+    // Scaling and recentering adjustments.
     //----Do this matrix multiplication directly instead of using the multiply function, to make this faster.
+    mat4x4 scale_matrix;
+    fill_mat4x4(transform->scale,0,0,0,
+                0,transform->scale,0,0,
+                0,0,transform->scale,0,
+                0,0,0,1);
+    right_multiply_matrix4x4f(&mat, &scale_matrix);
     mat4x4 off_center_matrix;
     float cx,cy,cz;
     cx = transform->center.vals[0];

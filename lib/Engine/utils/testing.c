@@ -85,7 +85,7 @@ void test_point_light_1(void)
     Logic_init(entity_add_aspect(light, Logic), test_controls_1);
 
     Body *body = entity_add_aspect(light, Body);
-    body->scale = 0.003;
+    other_aspect(body, Transform)->scale = 0.003;
     body->material = Material_create("Materials/red");
     body->geometry = new_resource_handle(Geometry, "Models/icosohedron");
 }
@@ -101,7 +101,7 @@ void test_spawn_cubes(int n)
         EntityID quad = new_entity(4);
         Transform_set(entity_add_aspect(quad, Transform), frand()*50-25,frand()*50-25,frand()*50-25, frand()*M_PI*2,0,0);
         Body *body = entity_add_aspect(quad, Body);
-        body->scale = 5;
+        other_aspect(body, Transform)->scale = 5;
         body->material = Material_create("Materials/textured_phong_shadows");
         body->visible = true;
         material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/mario/sand_bricks");
@@ -114,7 +114,7 @@ void test_floor(char *texture_path)
     EntityID quad = new_entity(4);
     Transform_set(entity_add_aspect(quad, Transform), 0,0,2,  M_PI/2,0,0);
     Body *body = entity_add_aspect(quad, Body);
-    body->scale = 50;
+    other_aspect(body, Transform)->scale = 50;
     body->visible = true;
     body->material = Material_create("Materials/textured_phong");
     material_set_texture_path(resource_data(Material, body->material), "diffuse_map", texture_path);
@@ -129,7 +129,7 @@ void test_mass_objects(int number_of_them)
         Transform_set(entity_add_aspect(thing, Transform), frand()*50-25,frand()*50-25,frand()*50-25, frand()*2*M_PI, frand()*2*M_PI, frand()*2*M_PI);
         Body *body = entity_add_aspect(thing, Body);
         body->visible = true;
-        body->scale = 1;
+        other_aspect(body, Transform)->scale = 1;
         Material *mat = oneoff_resource(Material, body->material);
         mat->material_type = new_resource_handle(MaterialType, "Materials/textured_phong");
         float f = frand();

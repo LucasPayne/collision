@@ -17,12 +17,12 @@ void render_body_with_material(mat4x4 vp_matrix, Body *body, Material *material)
     Geometry *mesh = resource_data(Geometry, body->geometry);
     // Form the mvp matrix and upload it, along with other Standard3D information.
     Matrix4x4f model_matrix = Transform_matrix(transform);
-    //---This body rescaling is a hack.
-    for (int i = 0; i < 3; i++) {
-	for (int j = 0; j < 3; j++) {
-	    model_matrix.vals[4*i + j] *= body->scale;
-	}
-    }
+    // //---This body rescaling is a hack.
+    // for (int i = 0; i < 3; i++) {
+    //     for (int j = 0; j < 3; j++) {
+    //         model_matrix.vals[4*i + j] *= body->scale;
+    //     }
+    // }
     Matrix4x4f mvp_matrix = vp_matrix;
     right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
     set_uniform_vec3(Standard3D, model_position, new_vec3(transform->x, transform->y, transform->z));

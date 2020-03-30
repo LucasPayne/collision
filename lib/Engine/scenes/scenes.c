@@ -18,14 +18,14 @@ new_reader(Transform) {
     transform->theta_x = rotation.vals[0];
     transform->theta_y = rotation.vals[1];
     transform->theta_z = rotation.vals[2];
+    float scale;
+    if (!dd_get(aspect_dd, "scale", "float", &scale)) return false;
+    transform->scale = scale;
     return true;
 }
 new_reader(Body) {
     Body *body = (Body *) data;
     body->visible = true;
-    float scale;
-    if (!dd_get(aspect_dd, "scale", "float", &scale)) return false;
-    body->scale = scale;
     Material *mat = oneoff_resource(Material, body->material);
     char *geometry_path;
     if (!dd_get(aspect_dd, "geometry", "string", &geometry_path)) return false;

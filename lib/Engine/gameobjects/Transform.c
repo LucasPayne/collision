@@ -4,6 +4,7 @@
 #include "Engine.h"
 
 AspectType Transform_TYPE_ID;
+//---This transform initialization does not have scale as a parameter.
 void Transform_set(Transform *transform, float x, float y, float z, float theta_x, float theta_y, float theta_z)
 {
     transform->x = x;
@@ -14,6 +15,8 @@ void Transform_set(Transform *transform, float x, float y, float z, float theta_
     transform->theta_x = theta_x;
     transform->theta_y = theta_y;
     transform->theta_z = theta_z;
+
+    transform->scale = 1;
 }
 vec3 Transform_position(Transform *t)
 {
@@ -46,10 +49,10 @@ Matrix4x4f Transform_matrix(Transform *transform)
     // Scaling and recentering adjustments.
     //----Do this matrix multiplication directly instead of using the multiply function, to make this faster.
     mat4x4 scale_matrix;
-    fill_mat4x4(transform->scale,0,0,0,
-                0,transform->scale,0,0,
-                0,0,transform->scale,0,
-                0,0,0,1);
+    fill_mat4x4(scale_matrix, transform->scale,0,0,0,
+                              0,transform->scale,0,0,
+                              0,0,transform->scale,0,
+                              0,0,0,1);
     right_multiply_matrix4x4f(&mat, &scale_matrix);
     mat4x4 off_center_matrix;
     float cx,cy,cz;

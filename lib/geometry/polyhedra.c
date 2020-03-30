@@ -215,12 +215,14 @@ void draw_polyhedron(Polyhedron *p)
 #define BOUNDARY 0x2
 Polyhedron convex_hull(vec3 *points, int num_points)
 {
+    Polyhedron poly = new_polyhedron();
     if (num_points < 4) {
         // The points are their own convex hull.
-        return;
+        //-- currently just returning the points in this case.
+        for (int i = 0; i < num_points; i++) polyhedron_add_point(&poly, points[i]);
+        return poly;
     }
     // Start up a polyhedron data structure as a tetrahedron.
-    Polyhedron poly = new_polyhedron();
     {
         PolyhedronPoint *tetrahedron_points[4];
         for (int i = 0; i < 4; i++) {

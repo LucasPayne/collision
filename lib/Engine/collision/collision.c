@@ -1,5 +1,6 @@
 /*================================================================================
 ================================================================================*/
+#include "Engine.h"
 
 static vec3 closest_point_on_line_to_point(vec3 a, vec3 b, vec3 p)
 {
@@ -83,6 +84,7 @@ static vec3 closest_point_on_simplex(int n, vec3 points[], vec3 p)
     return vec3_zero(); //bad input
 }
 
+/*
 static vec3 support(vec3 *poly, int len, vec3 direction, int *index)
 {
     // Assuming no structure to the convex polyhedra. Just iterates over all points and takes the maximum in the given direction.
@@ -105,7 +107,6 @@ static vec3 md_support(vec3 *A, int A_len, vec3 *B, int B_len, vec3 direction, i
     vec3 B_support = support(B, B_len, vec3_sub(0, direction), B_index);
     return vec3_sub(A_support, B_support);
 }
-
 bool convex_polyhedra_intersection(vec3 *A, int A_len, vec3 *B, int B_len, vec3 *separating_vector)
 {
     // Gilbert-Johnson-Keerthi algorithm.
@@ -157,9 +158,10 @@ bool convex_polyhedra_intersection(vec3 *A, int A_len, vec3 *B, int B_len, vec3 
                 return false;
             }
         }
-        
     }
 }
+*/
+
 
 
 

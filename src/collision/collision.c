@@ -86,6 +86,13 @@ void create_object(void)
     b->material = Material_create("Materials/textured_phong_shadows");
     material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/stone_bricks");
 
+    RigidBody *rb = add_aspect(e, RigidBody);
+    rb->inverse_mass = 1;
+    float s = 30;
+    rb->linear_momentum = new_vec3(frand()*s-s/2,frand()*s-s/2,frand()*s-s/2);
+    float r = 1;
+    rb->angular_velocity = new_vec3(frand()*r-r/2,frand()*r-r/2,frand()*r-r/2);
+
     hull = poly;
 }
 
@@ -121,6 +128,10 @@ extern void loop_program(void)
         draw_polyhedron(&hull);
         draw_polyhedron_winding_order(&hull, "k", 10);
     }
+    for_aspect(RigidBody, rb)
+        vec3 p = Transform_position(other_aspect(rb, Transform));
+        paint_points_c(Canvas3D, &p, 1, "r", 20);
+    end_for_aspect()
 }
 extern void close_program(void)
 {

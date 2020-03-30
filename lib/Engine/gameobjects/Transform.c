@@ -9,6 +9,8 @@ void Transform_set(Transform *transform, float x, float y, float z, float theta_
     transform->x = x;
     transform->y = y;
     transform->z = z;
+
+    euler_rotation_matrix3x3f(&transform->rotation_matrix, theta_x, theta_y, theta_z);
     transform->theta_x = theta_x;
     transform->theta_y = theta_y;
     transform->theta_z = theta_z;
@@ -23,8 +25,23 @@ vec3 Transform_angles(Transform *t)
 }
 Matrix4x4f Transform_matrix(Transform *transform)
 {
-    Matrix4x4f mat;
-    translate_rotate_3d_matrix4x4f(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
+    Matrix4x4f mat = {0};
+    if (transform->euler_controlled) {
+        translate_rotate_3d_matrix4x4f(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
+        return mat;
+    }
+    // Copy over the orientation matrix to the upper-left block.
+    print_matrix3x3f(&transform->rotation_matrix);
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            mat.vals[4*i + j] = transform->rotation_matrix.vals[3*i + j];
+        }
+    }
+    mat.vals[15] = 1;
+    mat.vals[4*3+0] = transform->x;
+    mat.vals[4*3+1] = transform->y;
+    mat.vals[4*3+2] = transform->z;
+    print_matrix4x4f(&mat);
     return mat;
 }
 vec3 Transform_relative_direction(Transform *t, vec3 direction)

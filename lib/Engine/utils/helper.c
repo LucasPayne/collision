@@ -83,7 +83,9 @@ static void camera_key_controls(Logic *logic)
 EntityID create_key_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z)
 {
     EntityID camera_man = new_entity(4);
-    Transform_set(entity_add_aspect(camera_man, Transform), x,y,z,  0,0,0);//--do lookat
+    Transform *t = entity_add_aspect(camera_man, Transform);
+    Transform_set(t, x,y,z,  0,0,0);//--do lookat
+    t->euler_controlled = true;
     Camera *camera = entity_add_aspect(camera_man, Camera);
 // void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far)
     //Camera_init(camera, ASPECT_RATIO, 1, 0.9, 1200);

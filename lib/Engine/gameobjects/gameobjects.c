@@ -24,6 +24,7 @@ void init_aspects_gameobjects(void)
     new_default_manager(DirectionalLight, NULL);
     new_default_manager(PointLight, NULL);
     new_default_manager(Text, NULL);
+    new_default_manager(RigidBody, NULL);
 }
 
 

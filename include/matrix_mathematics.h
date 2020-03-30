@@ -126,10 +126,48 @@ vec2 new_vec2(float x, float y);
 
 vec3 mat4x4_vec3(mat4x4 *matrix, vec3 v);
 
+mat3x3 multiply_mat3x3(mat3x3 A, mat3x3 B);
+
 // multiply only the first three components.
 vec4 color_mul(vec4 color, float x);
 // multiply only the last component.
 vec4 color_fade(vec4 color, float x);
+
+#define fill_mat3x3(MATRIX,A,B,C,D,E,F,G,H,I)\
+{\
+    ( MATRIX ).vals[0] = ( A );\
+    ( MATRIX ).vals[1] = ( B );\
+    ( MATRIX ).vals[2] = ( C );\
+    ( MATRIX ).vals[3] = ( D );\
+    ( MATRIX ).vals[4] = ( E );\
+    ( MATRIX ).vals[5] = ( F );\
+    ( MATRIX ).vals[6] = ( G );\
+    ( MATRIX ).vals[7] = ( H );\
+    ( MATRIX ).vals[8] = ( I );\
+}
+
+#define fill_mat4x4(MATRIX,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O)\
+{\
+    ( MATRIX ).vals[0] = ( A );\
+    ( MATRIX ).vals[1] = ( B );\
+    ( MATRIX ).vals[2] = ( C );\
+    ( MATRIX ).vals[3] = ( D );\
+    ( MATRIX ).vals[4] = ( E );\
+    ( MATRIX ).vals[5] = ( F );\
+    ( MATRIX ).vals[6] = ( G );\
+    ( MATRIX ).vals[7] = ( H );\
+    ( MATRIX ).vals[8] = ( I );\
+    ( MATRIX ).vals[9] = ( I );\
+    ( MATRIX ).vals[10] = ( J );\
+    ( MATRIX ).vals[11] = ( K );\
+    ( MATRIX ).vals[12] = ( L );\
+    ( MATRIX ).vals[13] = ( M );\
+    ( MATRIX ).vals[14] = ( N );\
+    ( MATRIX ).vals[15] = ( O );\
+}
+
+mat3x3 mat3x3_add(mat3x3 A, mat3x3 B);
+void mat3x3_orthonormalize(mat3x3 *m);
 
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS

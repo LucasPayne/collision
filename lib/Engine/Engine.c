@@ -270,6 +270,8 @@ static void loop_base(void)
     for_aspect(Logic, logic)
         if (logic->updating) logic->update(logic);
     end_for_aspect()
+    // Update rigid body dynamics
+    rigid_body_dynamics();
 
     // Handle lights
 {

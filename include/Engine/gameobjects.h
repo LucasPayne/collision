@@ -26,9 +26,13 @@ Also, initializing and setting a transform is easy:
 extern AspectType Transform_TYPE_ID;
 typedef struct /* Aspect */ Transform_s {
 ASPECT_PROPERTIES()
+    mat3x3 rotation_matrix;
     float x;
     float y;
     float z;
+    //--- This is here for backward compatability. Maybe rethink how a transform can be controlled by angles with no build-up of numerical error.
+    //--- Possibly will be easier when Logic aspects can be modular and have modular data (as in "euler controller" as a sort of mini-aspect).
+    bool euler_controlled;
     float theta_x;
     float theta_y;
     float theta_z;
@@ -79,10 +83,13 @@ extern AspectType RigidBody_TYPE_ID;
 typedef struct /* Aspect */ RigidBody_s {
 ASPECT_PROPERTIES()
     ResourceHandle geometry; /* Resource: Geometry */
-    vec3 angular_momentum;
     vec3 linear_momentum;
     float mass;
+    float inverse_mass;
+    vec3 angular_momentum;
+    vec3 angular_velocity; // calculated from angular momentum and the inertia tensor.
     mat3x3 inertia_tensor;
+    mat3x3 inverse_inertia_tensor;
 } RigidBody;
 
 /*--------------------------------------------------------------------------------

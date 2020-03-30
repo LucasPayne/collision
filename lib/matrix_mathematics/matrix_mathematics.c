@@ -575,3 +575,50 @@ vec4 color_fade(vec4 color, float x)
     return color;
 }
 
+
+mat3x3 multiply_mat3x3(mat3x3 A, mat3x3 B)
+{
+    mat3x3 m = {0};
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            for (int k = 0; k < 3; k++) {
+                m.vals[3*i + j] += A.vals[3*k + j] * B.vals[3*i + k];
+            }
+        }
+    }
+    return m;
+}
+
+mat3x3 mat3x3_add(mat3x3 A, mat3x3 B)
+{
+    mat3x3 m;
+    for (int i = 0; i < 9; i++) m.vals[i] = A.vals[i] + B.vals[i];
+    return m;
+}
+
+void mat3x3_orthonormalize(mat3x3 *m)
+{
+    // Gram-Schmidt. Subtract component of second column along the first, then normalize. Ignore the third column and just use the cross product.
+    // This assumes that the matrix being orthonormalized is drifted from a right-handed orientation matrix.
+    
+    // Normalize col 1.
+    float inv_col1_len = 1.0 / sqrt(m->vals[0]*m->vals[0]+m->vals[3]*m->vals[3]+m->vals[6]*m->vals[6]);
+    m->vals[0] *= inv_col1_len;
+    m->vals[3] *= inv_col1_len;
+    m->vals[6] *= inv_col1_len;
+    // Make col 2 orthogonal to col 1.
+    float d = m->vals[0]*m->vals[1] + m->vals[3+0]*m->vals[3+1] + m->vals[2*3+0]*m->vals[2*3+1];
+    m->vals[1] -= d * m->vals[0];
+    m->vals[4] -= d * m->vals[3];
+    m->vals[7] -= d * m->vals[6];
+    // Normalize col 2.
+    float inv_col2_len = 1.0 / sqrt(m->vals[1]*m->vals[1]+m->vals[4]*m->vals[4]+m->vals[7]*m->vals[7]);
+    m->vals[1] *= inv_col2_len;
+    m->vals[4] *= inv_col2_len;
+    m->vals[7] *= inv_col2_len;
+    // Infer col 3.
+    vec3 c = vec3_cross(new_vec3(m->vals[0], m->vals[3], m->vals[6]), new_vec3(m->vals[1], m->vals[4], m->vals[7]));
+    m->vals[2] = c.vals[0];
+    m->vals[5] = c.vals[1];
+    m->vals[8] = c.vals[2];
+}

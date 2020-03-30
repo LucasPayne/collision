@@ -146,7 +146,7 @@ vec4 color_fade(vec4 color, float x);
     ( MATRIX ).vals[8] = ( I );\
 }
 
-#define fill_mat4x4(MATRIX,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O)\
+#define fill_mat4x4(MATRIX,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P)\
 {\
     ( MATRIX ).vals[0] = ( A );\
     ( MATRIX ).vals[1] = ( B );\
@@ -157,13 +157,13 @@ vec4 color_fade(vec4 color, float x);
     ( MATRIX ).vals[6] = ( G );\
     ( MATRIX ).vals[7] = ( H );\
     ( MATRIX ).vals[8] = ( I );\
-    ( MATRIX ).vals[9] = ( I );\
-    ( MATRIX ).vals[10] = ( J );\
-    ( MATRIX ).vals[11] = ( K );\
-    ( MATRIX ).vals[12] = ( L );\
-    ( MATRIX ).vals[13] = ( M );\
-    ( MATRIX ).vals[14] = ( N );\
-    ( MATRIX ).vals[15] = ( O );\
+    ( MATRIX ).vals[9] = ( J );\
+    ( MATRIX ).vals[10] = ( K );\
+    ( MATRIX ).vals[11] = ( L );\
+    ( MATRIX ).vals[12] = ( M );\
+    ( MATRIX ).vals[13] = ( N );\
+    ( MATRIX ).vals[14] = ( O );\
+    ( MATRIX ).vals[15] = ( P );\
 }
 
 mat3x3 mat3x3_add(mat3x3 A, mat3x3 B);

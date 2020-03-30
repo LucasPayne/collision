@@ -1,15 +1,16 @@
 /*--------------------------------------------------------------------------------
 project_libs:
     + Engine
-    + geometry
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
-#include "geometry.h"
 
 vec3 *random_points(float radius, int n)
 {
     // So the "random" convex polyhedra have some sort of variety, use Gram-Schmidt to create a semi-random orthonormal basis, and
     // then have r1,r2,r3 be the "random principal axes", that weight the points in each of those directions.
+
+    float size = frand()*1.9 + 0.1; // size multiplies the base radius.
+
     vec3 e1, e2, e3;
     e1 = new_vec3(frand()-0.5, frand()-0.5, frand()-0.5);
     e1 = vec3_normalize(e1);
@@ -24,22 +25,24 @@ vec3 *random_points(float radius, int n)
     vec3 *points = malloc(sizeof(vec3) * n);
     mem_check(points);
     for (int i = 0; i < n; i++) {
-        points[i] = vec3_mul(vec3_add(vec3_add(vec3_mul(e1, frand()-0.5), vec3_mul(e2, frand()-0.5)), vec3_mul(e3, frand()-0.5)), radius);
+        points[i] = vec3_mul(vec3_add(vec3_add(vec3_mul(e1, frand()-0.5), vec3_mul(e2, frand()-0.5)), vec3_mul(e3, frand()-0.5)), radius * size);
         print_vec3(points[i]);
     }
     return points;
 }
 
 vec3 *points;
-int num_points;
 Polyhedron hull;
 bool viewing = false;
 
 void create_object(void)
 {
-    points = random_points(50, num_points);
+    int min = 6;
+    int max = 100;
+    int n = (rand() % (max - min)) + min;
+    points = random_points(50, n);
     //-------destroy the previous hull polyhedron.
-    Polyhedron poly = convex_hull(points, num_points);
+    Polyhedron poly = convex_hull(points, n);
     printf("%d\n", polyhedron_num_points(&poly));
 
     // Convert the polyhedron in to a MeshData struct.
@@ -74,7 +77,8 @@ void create_object(void)
     
     EntityID e = new_entity(4);
     float d = 300;
-    Transform_set(add_aspect(e, Transform), frand()*d-d/2, frand()*d-d/2, frand()*d-d/2, 0,0,0);
+    Transform *transform = add_aspect(e, Transform);
+    Transform_set(transform, frand()*d-d/2, frand()*d-d/2, frand()*d-d/2, 0,0,0);
     //Transform_set(add_aspect(e, Transform), 0,0,0,0,0,0);
     Body *b = add_aspect(e, Body);
     b->visible = true;
@@ -84,10 +88,10 @@ void create_object(void)
     //b->material = Material_create("Materials/red");
     //b->material = Material_create("Materials/textured_phong_shadows_phong_tessellation");
     b->material = Material_create("Materials/textured_phong_shadows");
-    material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/stone_bricks");
+    material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/dirt");
 
     RigidBody *rb = add_aspect(e, RigidBody);
-    rb->inverse_mass = 1;
+    RigidBody_init_polyhedron(rb, poly, 1);
     float s = 30;
     rb->linear_momentum = new_vec3(frand()*s-s/2,frand()*s-s/2,frand()*s-s/2);
     float r = 1;
@@ -118,19 +122,38 @@ extern void init_program(void)
     test_directional_light_controlled();
     // open_scene(g_scenes, "block_on_floor");
     create_key_camera_man(0,0,0,  0,0,0);
-    num_points = 100;
     create_object();
+
+    EntityID e = new_entity(4);
+    Transform_set(add_aspect(e, Transform), -500,-1190,-500,0,0,0);
+    Body *body = add_aspect(e, Body);
+    body->scale = 1000;
+    body->visible = true;
+    body->geometry = new_resource_handle(Geometry, "Models/block");
+    body->material = Material_create("Materials/textured_phong_shadows");
+    body->is_ground = true;
+    material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/marble_tile");
 }
 extern void loop_program(void)
 {
-    paint_points_c(Canvas3D, points, num_points, "b", 5);
-    if (viewing) {
-        draw_polyhedron(&hull);
-        draw_polyhedron_winding_order(&hull, "k", 10);
-    }
+    draw_polyhedron(&hull);
+    draw_polyhedron_winding_order(&hull, "k", 10);
     for_aspect(RigidBody, rb)
-        vec3 p = Transform_position(other_aspect(rb, Transform));
-        paint_points_c(Canvas3D, &p, 1, "r", 20);
+        Body *b = other_aspect(rb, Body);
+        if (viewing) {
+            vec3 p = Transform_position(other_aspect(rb, Transform));
+            paint_points_c(Canvas3D, &p, 1, "g", 5);
+            vec3 center = vec3_add(rb->center_of_mass, p);
+            paint_points_c(Canvas3D, &center, 1, "r", 5);
+            // PolyhedronTriangle *tri = rb->shape.polyhedron.triangles.first;
+            // while (tri != NULL) {
+            //     for (int i = 0; i < 3; i++) paint_line_cv(Canvas3D, tri->points[i]->position, tri->points[(i+1)%3]->position, "k", 5);
+            //     tri = tri->next;
+            // }
+            b->visible = false;
+        } else {
+            b->visible = true;
+        }
     end_for_aspect()
 }
 extern void close_program(void)

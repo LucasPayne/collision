@@ -36,6 +36,7 @@ ASPECT_PROPERTIES()
     float theta_x;
     float theta_y;
     float theta_z;
+    vec3 center;
 } Transform;
 void Transform_set(Transform *transform, float x, float y, float z, float theta_x, float theta_y, float theta_z);
 vec3 Transform_position(Transform *t);
@@ -79,18 +80,30 @@ same as what the object is being rendered as. Currently rigid bodies are restric
 convex polyhedra, although the algorithms can be generalized to convex sets, and constraints can
 be incorporated along with convex decomposition to allow concave objects.
 --------------------------------------------------------------------------------*/
+typedef uint8_t RigidBodyType;
+typedef enum RigidBodyTypes {
+    RigidBodyPolyhedron,
+    NUM_RIGID_BODY_TYPES
+};
 extern AspectType RigidBody_TYPE_ID;
 typedef struct /* Aspect */ RigidBody_s {
 ASPECT_PROPERTIES()
-    ResourceHandle geometry; /* Resource: Geometry */
+    RigidBodyType type;
+    union {
+        Polyhedron polyhedron;
+    } shape;
     vec3 linear_momentum;
-    float mass;
-    float inverse_mass;
+
     vec3 angular_momentum;
     vec3 angular_velocity; // calculated from angular momentum and the inertia tensor.
+
+    float mass;
+    float inverse_mass;
+    vec3 center_of_mass;
     mat3x3 inertia_tensor;
     mat3x3 inverse_inertia_tensor;
 } RigidBody;
+void RigidBody_init_polyhedron(RigidBody *rb, Polyhedron poly, float mass);
 
 /*--------------------------------------------------------------------------------
 Logic is the behavioral aspect of a gameobject. It holds an update routine

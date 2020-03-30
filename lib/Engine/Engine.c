@@ -34,6 +34,7 @@ project_libs:
     + rendering
     + ply
     + painting
+    + geometry
 --------------------------------------------------------------------------------*/
 #define BASE_DIRECTORY "/home/lucas/collision/lib/Engine/"
 #define PROJECT_DIRECTORY "/home/lucas/collision/"
@@ -146,6 +147,13 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
 float time = 0;
 float dt = 0;
 
+// Pause after drawing the next frame.
+bool g_pause_after_rendering = false;
+void pause(void)
+{
+    g_pause_after_rendering = true;
+}
+
 extern void init_program(void);
 extern void loop_program(void);
 extern void close_program(void);
@@ -159,6 +167,8 @@ static void reshape(GLFWwindow *window, int width, int height)
     g_window_height = height;
     force_aspect_ratio(window, width, height, ASPECT_RATIO);
 }
+
+
 static void key_callback(GLFWwindow *window, int key,
                 int scancode, int action,
                 int mods)
@@ -479,6 +489,12 @@ int main(void)
 
         glFlush();
         glfwSwapBuffers(window);
+
+        // Pausing after rendering is helpful for visual debugging.
+        if (g_pause_after_rendering) {
+            g_paused = true;
+            g_pause_after_rendering = false;
+        }
     }
     // Cleanup
     close_program();

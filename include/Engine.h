@@ -20,6 +20,7 @@
 #include "matrix_mathematics.h"
 #include "painting.h"
 #include "scenes.h"
+#include "geometry.h"
 
 #include "shader_blocks/Standard3D.h"
 #include "shader_blocks/StandardLoopWindow.h"

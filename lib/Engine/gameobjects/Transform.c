@@ -27,11 +27,12 @@ Matrix4x4f Transform_matrix(Transform *transform)
 {
     Matrix4x4f mat = {0};
     if (transform->euler_controlled) {
+        //----Does not take into account the center.
         translate_rotate_3d_matrix4x4f(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
         return mat;
     }
     // Copy over the orientation matrix to the upper-left block.
-    print_matrix3x3f(&transform->rotation_matrix);
+    // print_matrix3x3f(&transform->rotation_matrix);
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             mat.vals[4*i + j] = transform->rotation_matrix.vals[3*i + j];
@@ -41,7 +42,19 @@ Matrix4x4f Transform_matrix(Transform *transform)
     mat.vals[4*3+0] = transform->x;
     mat.vals[4*3+1] = transform->y;
     mat.vals[4*3+2] = transform->z;
-    print_matrix4x4f(&mat);
+    //----Do this matrix multiplication directly instead of using the multiply function, to make this faster.
+    mat4x4 off_center_matrix;
+    float cx,cy,cz;
+    cx = transform->center.vals[0];
+    cy = transform->center.vals[1];
+    cz = transform->center.vals[2];
+    fill_mat4x4(off_center_matrix, 1,0,0,0,
+                                   0,1,0,0,
+                                   0,0,1,0,
+                                   -cx,-cy,-cz,1);
+    right_multiply_matrix4x4f(&mat, &off_center_matrix);
+
+    // print_matrix4x4f(&mat);
     return mat;
 }
 vec3 Transform_relative_direction(Transform *t, vec3 direction)

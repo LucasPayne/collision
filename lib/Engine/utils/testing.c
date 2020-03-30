@@ -42,7 +42,9 @@ static void test_directional_light_auto_update(Logic *logic)
 DirectionalLight *test_directional_light_auto(void)
 {
     EntityID light = new_entity(4);
-    Transform_set(entity_add_aspect(light, Transform), 0,200,0,  0,0,0);
+    Transform *t = entity_add_aspect(light, Transform);
+    Transform_set(t, 0,200,0,  0,0,0);
+    t->euler_controlled = true;
     Logic_init(entity_add_aspect(light, Logic), test_directional_light_auto_update);
     DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,0.7,0.7,1,  400,400,500);
     return get_aspect_type(light, DirectionalLight);
@@ -66,7 +68,9 @@ static void test_directional_light_controlled_logic(Logic *logic)
 DirectionalLight *test_directional_light_controlled(void)
 {
     EntityID light = new_entity(4);
-    Transform_set(entity_add_aspect(light, Transform), 0,100,100,  -0.6,M_PI,0);
+    Transform *t = entity_add_aspect(light, Transform);
+    Transform_set(t, 0,100,100,  -0.6,M_PI,0);
+    t->euler_controlled = true;
     DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,1,0.1,1,  400,400,500);
     // Input_init(entity_add_aspect(light, Input), INPUT_KEY, test_directional_light_controlled_key_input, true);
     Logic_init(entity_add_aspect(light, Logic), test_directional_light_controlled_logic);

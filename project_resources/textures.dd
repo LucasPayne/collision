@@ -39,7 +39,7 @@ ghibli_meadow < Texture ( type: png; path: Images/ghibli_meadow.png; );
 marble_tile < Texture ( type: png; path: Images/marble_tile.png; );
 
 mario < (
-    sand_bricks < Texture ( type: png; path: Images/mario/sand_bricks.png; );
+    sand_bricks < Texture ( type: png; path: Images/mario/sand_bricks.png; nearest: true;);
 );
 
 grass < Texture (

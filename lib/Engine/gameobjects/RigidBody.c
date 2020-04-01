@@ -9,6 +9,9 @@ AspectType RigidBody_TYPE_ID;
 mat3x3 brute_force_polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
 {
     printf("Brute forcing the inertia tensor ...\n");
+    printf("center: "); print_vec3(center);
+    printf("mass: %.2f\n", mass);
+    
     float integrals[6] = {0}; // x^2, y^2, z^2, xy, xz, yz
     float volume = 0;
 
@@ -27,31 +30,42 @@ mat3x3 brute_force_polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float
     float d = 0.5;
     float dcubed = d*d*d;
     printf("Doing ~%.0f evaluations ...\n", (max.vals[0] - min.vals[0])/d * (max.vals[1] - min.vals[1])/d * (max.vals[2] - min.vals[2])/d);
+
     for (float x = min.vals[0]; x <= max.vals[0]; x += d) {
         for (float y = min.vals[1]; y <= max.vals[1]; y += d) {
             for (float z = min.vals[2]; z <= max.vals[2]; z += d) {
                 if (!point_in_convex_polyhedron(new_vec3(x,y,z), poly)) continue;
-                float xc = x - center.vals[0];
-                float yc = y - center.vals[1];
-                float zc = z - center.vals[2];
+                volume += dcubed;
+            }
+        }
+    }
+
+    float scale_term = volume == 0 ? 0 : pow(1.0 / volume, 2.0 / 3.0);
+    for (float x = min.vals[0]; x <= max.vals[0]; x += d) {
+        for (float y = min.vals[1]; y <= max.vals[1]; y += d) {
+            for (float z = min.vals[2]; z <= max.vals[2]; z += d) {
+                if (!point_in_convex_polyhedron(new_vec3(x,y,z), poly)) continue;
+                float xc = (x - center.vals[0]) * scale_term;
+                float yc = (y - center.vals[1]) * scale_term;
+                float zc = (z - center.vals[2]) * scale_term;
                 integrals[0] += xc*xc * dcubed;
                 integrals[1] += yc*yc * dcubed;
                 integrals[2] += zc*zc * dcubed;
                 integrals[3] += xc*yc * dcubed;
                 integrals[4] += xc*zc * dcubed;
                 integrals[5] += yc*zc * dcubed;
-                volume += dcubed;
             }
         }
     }
     printf("Volume: %.2f\n", volume);
+    printf("Volume?: %.2f\n", polyhedron_volume(poly));
     mat3x3 inertia_tensor;
     fill_mat3x3(inertia_tensor, integrals[1]+integrals[2], -integrals[3], -integrals[4],
                                  -integrals[3], integrals[0]+integrals[2], -integrals[5],
                                  -integrals[4], -integrals[5], integrals[0]+integrals[1]);
-    float inverse_volume = volume == 0 ? 0 : 1.0 / volume;
     for (int i = 0; i < 9; i++) {
-        inertia_tensor.vals[i] *= inverse_volume * mass;
+        // inertia_tensor.vals[i] *= inverse_volume * mass;
+        inertia_tensor.vals[i] *= mass;
     }
     print_matrix3x3f(&inertia_tensor);
     getchar();
@@ -73,6 +87,10 @@ mat3x3 polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
 
     float integrals[6] = {0}; // x^2, y^2, z^2, xy, xz, yz
     PolyhedronTriangle *tri = poly.triangles.first;
+
+    float volume = polyhedron_volume(poly);
+    float scale_term = volume == 0 ? 0 : pow(1.0 / volume, 2.0 / 3.0);
+
     while (tri != NULL) {
         // Compute the outward-pointing unit normal.
         vec3 n = vec3_normalize(vec3_cross(vec3_sub(tri->points[1]->position, tri->points[0]->position), vec3_sub(tri->points[2]->position, tri->points[0]->position)));
@@ -80,8 +98,8 @@ mat3x3 polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
         nx = n.vals[0]; ny = n.vals[1]; nz = n.vals[2];
 
         for (int i = 0; i < 3; i++) {
-            vec3 e1 = vec3_sub(tri->points[i]->position, center);
-            vec3 e2 = vec3_sub(tri->points[(i+1)%3]->position, center);
+            vec3 e1 = vec3_mul(vec3_sub(tri->points[i]->position, center), scale_term);
+            vec3 e2 = vec3_mul(vec3_sub(tri->points[(i+1)%3]->position, center), scale_term);
             float e1x, e1y, e1z, e2x, e2y, e2z;
             e1x = e1.vals[0]; e1y = e1.vals[1]; e1z = e1.vals[2];
             e2x = e2.vals[0]; e2y = e2.vals[1]; e2z = e2.vals[2];

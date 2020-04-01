@@ -105,5 +105,6 @@ void draw_polyhedron(Polyhedron *p, mat4x4 *matrix);
 Polyhedron convex_hull(vec3 *points, int num_points);
 
 bool point_in_convex_polyhedron(vec3 p, Polyhedron poly);
+float polyhedron_volume(Polyhedron poly);
 
 #endif // HEADER_DEFINED_GEOMETRY

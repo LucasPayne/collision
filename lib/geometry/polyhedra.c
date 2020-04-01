@@ -381,3 +381,15 @@ bool point_in_convex_polyhedron(vec3 p, Polyhedron poly)
     }
     return !any_visible;
 }
+
+float polyhedron_volume(Polyhedron poly)
+{
+    float volume = 0.0;
+    PolyhedronTriangle *t = poly.triangles.first;
+    vec3 zero = vec3_zero();
+    while (t != NULL) {
+        volume += tetrahedron_6_times_volume(t->points[0]->position, t->points[1]->position, t->points[2]->position, zero);
+        t = t->next;
+    }
+    return volume / 6.0;
+}

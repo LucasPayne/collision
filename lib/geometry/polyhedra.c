@@ -364,3 +364,20 @@ Polyhedron convex_hull(vec3 *points, int num_points)
     }
     return poly;
 }
+
+
+bool point_in_convex_polyhedron(vec3 p, Polyhedron poly)
+{
+    // Uses "visibility" from the point. If any triangle is visible (as in, from the point of view of the point, the triangle is non-degenerate and in anti-clockwise order),
+    // then the point is outside the convex polyhedron.
+    bool any_visible = false;
+    PolyhedronTriangle *t = poly.triangles.first;
+    while (t != NULL) {
+        float v = tetrahedron_6_times_volume(t->points[0]->position, t->points[1]->position, t->points[2]->position, p);
+        if (v < 0) {
+            any_visible = true;
+        }
+        t = t->next;
+    }
+    return !any_visible;
+}

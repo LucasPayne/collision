@@ -4,6 +4,7 @@ project_libs:
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
 
+/*
 vec3 closest_point_on_line_to_point(vec3 a, vec3 b, vec3 p)
 {
     // This is an unlimited line.
@@ -76,7 +77,7 @@ vec3 closest_point_on_simplex(int n, vec3 points[], vec3 p)
         float mindis = -1;
         int min_index = 0;
         for (int i = 0; i < 4; i++) {
-            float dis = vec3_dot(close_points[i], close_points[i]);
+            float dis = vec3_dot(vec3_sub(close_points[i], p), vec3_sub(close_points[i], p));
             if (mindis < 0 || dis < mindis) {
                 mindis = dis; min_index = i;
             }
@@ -85,6 +86,7 @@ vec3 closest_point_on_simplex(int n, vec3 points[], vec3 p)
     }
     return vec3_zero(); //bad input
 }
+*/
 
 int n = 0;
 vec3 points[4];
@@ -101,10 +103,11 @@ void new_simplex(void)
     if (n++ == 4) n = 1;
 }
 
-int mode = 0;
+bool controlling = false;
+Transform *cam_t;
 extern void input_event(int key, int action, int mods)
 {
-    if (action == GLFW_PRESS && key == GLFW_KEY_M) mode = (mode + 1) % 3;
+    if (action == GLFW_PRESS && key == GLFW_KEY_M) controlling = !controlling;
     if (action == GLFW_PRESS && key == GLFW_KEY_R) new_simplex();
     if (action == GLFW_PRESS && key == GLFW_KEY_P) new_point();
 }
@@ -118,25 +121,18 @@ extern void init_program(void)
 {
     new_simplex();
     new_point();
-    create_key_camera_man(0,0,0,  0,0,0);
+    EntityID cam = create_key_camera_man(0,0,0,  0,0,0);
+    cam_t = get_aspect_type(cam, Transform);
 }
 extern void loop_program(void)
 {
-    if (mode == 0) {
-        if (arrow_key_down(Down)) p.vals[0] -= 100 * dt;
-        if (arrow_key_down(Up)) p.vals[0] += 100 * dt;
-    } else if (mode == 1) {
-        if (arrow_key_down(Down)) p.vals[1] -= 100 * dt;
-        if (arrow_key_down(Up)) p.vals[1] += 100 * dt;
-    } else if (mode == 2) {
-        if (arrow_key_down(Down)) p.vals[2] -= 100 * dt;
-        if (arrow_key_down(Up)) p.vals[2] += 100 * dt;
-    }
-
-
+    if (controlling) p = new_vec3(cam_t->x, cam_t->y, cam_t->z);
     vec3 c = closest_point_on_simplex(n, points, p);
+    paint_points_c(Canvas3D, &c, 1, "y", 30.0);
+    paint_points_c(Canvas3D, &p, 1, "y", 30.0);
     paint_line_cv(Canvas3D, c, p, "r", 10.0);
     for (int i = 0; i < n; i++) {
+        paint_points_c(Canvas3D, &points[i], 1, "g", 20.0);
         for (int j = 0; j < i; j++) {
             if (i == j) continue;
             paint_line_cv(Canvas3D, points[i], points[j], "b", 5.0);

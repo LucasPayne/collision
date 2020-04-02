@@ -161,7 +161,3 @@ bool convex_polyhedra_intersection(vec3 *A, int A_len, vec3 *B, int B_len, vec3 
     }
 }
 */
-
-
-
-

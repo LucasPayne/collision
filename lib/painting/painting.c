@@ -195,6 +195,7 @@ vec4 str_to_color_key(char *color)
     col("r", "red", 1,0,0,1);
     col("y", "yellow", 1,1,0,1);
     col("b", "blue", 0,0,1,1);
+    col("p", "pink", 0.95,0.7,0.85,1);
     col("k", "black", 0,0,0,1);
     col("w", "white", 1,1,1,1);
     col("gr", "gray", 0.4,0.4,0.4,1);

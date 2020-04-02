@@ -40,14 +40,15 @@ mat3x3 brute_force_polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float
         }
     }
 
-    float scale_term = volume == 0 ? 0 : pow(1.0 / volume, 2.0 / 3.0);
+    float inverse_volume = volume == 0 ? 0 : 1.0 / volume;
+    float element = dcubed * inverse_volume;
     for (float x = min.vals[0]; x <= max.vals[0]; x += d) {
         for (float y = min.vals[1]; y <= max.vals[1]; y += d) {
             for (float z = min.vals[2]; z <= max.vals[2]; z += d) {
                 if (!point_in_convex_polyhedron(new_vec3(x,y,z), poly)) continue;
-                float xc = (x - center.vals[0]) * scale_term;
-                float yc = (y - center.vals[1]) * scale_term;
-                float zc = (z - center.vals[2]) * scale_term;
+                float xc = x - center.vals[0];
+                float yc = y - center.vals[1];
+                float zc = z - center.vals[2];
                 integrals[0] += xc*xc * dcubed;
                 integrals[1] += yc*yc * dcubed;
                 integrals[2] += zc*zc * dcubed;
@@ -64,8 +65,7 @@ mat3x3 brute_force_polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float
                                  -integrals[3], integrals[0]+integrals[2], -integrals[5],
                                  -integrals[4], -integrals[5], integrals[0]+integrals[1]);
     for (int i = 0; i < 9; i++) {
-        // inertia_tensor.vals[i] *= inverse_volume * mass;
-        inertia_tensor.vals[i] *= mass;
+        inertia_tensor.vals[i] *= inverse_volume * mass;
     }
     print_matrix3x3f(&inertia_tensor);
     getchar();
@@ -85,12 +85,12 @@ mat3x3 polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
     //=====================================================================================
     // The computation here is done by reducing the integral into lower dimensional integrals, using the divergence theorem and Green's theorem.
 
+    printf("Computing with reduced integral method ...\n");
+
     float integrals[6] = {0}; // x^2, y^2, z^2, xy, xz, yz
-    PolyhedronTriangle *tri = poly.triangles.first;
-
     float volume = polyhedron_volume(poly);
-    float scale_term = volume == 0 ? 0 : pow(1.0 / volume, 2.0 / 3.0);
 
+    PolyhedronTriangle *tri = poly.triangles.first;
     while (tri != NULL) {
         // Compute the outward-pointing unit normal.
         vec3 n = vec3_normalize(vec3_cross(vec3_sub(tri->points[1]->position, tri->points[0]->position), vec3_sub(tri->points[2]->position, tri->points[0]->position)));
@@ -98,8 +98,8 @@ mat3x3 polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
         nx = n.vals[0]; ny = n.vals[1]; nz = n.vals[2];
 
         for (int i = 0; i < 3; i++) {
-            vec3 e1 = vec3_mul(vec3_sub(tri->points[i]->position, center), scale_term);
-            vec3 e2 = vec3_mul(vec3_sub(tri->points[(i+1)%3]->position, center), scale_term);
+            vec3 e1 = vec3_sub(tri->points[i]->position, center);
+            vec3 e2 = vec3_sub(tri->points[(i+1)%3]->position, center);
             float e1x, e1y, e1z, e2x, e2y, e2z;
             e1x = e1.vals[0]; e1y = e1.vals[1]; e1z = e1.vals[2];
             e2x = e2.vals[0]; e2y = e2.vals[1]; e2z = e2.vals[2];
@@ -109,16 +109,26 @@ mat3x3 polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
             float mx,my,mz;
             mx = m.vals[0]; my = m.vals[1]; mz = m.vals[2];
 
-            // integrals[0] += 
+            float edge_length = vec3_length(vec3_sub(e2, e1));
+            
+            integrals[0] += nx * mx * (e2x*e2x*e2x*e2x*e2x - e1x*e1x*e1x*e1x*e1x) * edge_length * 1.0 / 60.0;
+            integrals[1] += ny * my * (e2y*e2y*e2y*e2y*e2y - e1y*e1y*e1y*e1y*e1y) * edge_length * 1.0 / 60.0;
+            integrals[2] += nz * mz * (e2z*e2z*e2z*e2z*e2z - e1z*e1z*e1z*e1z*e1z) * edge_length * 1.0 / 60.0;
 
         }
         tri = tri->next;
     }
-
+    printf("volume: %.2f\n", volume);
+    float inverse_volume = 1.0 / volume;
+    for (int i = 0; i < 6; i++) {
+        integrals[i] *= inverse_volume * mass;
+    }
     mat3x3 inertia_tensor;
     fill_mat3x3(inertia_tensor, integrals[1]+integrals[2], -integrals[3], -integrals[4],
                                  -integrals[3], integrals[0]+integrals[2], -integrals[5],
                                  -integrals[4], -integrals[5], integrals[0]+integrals[1]);
+    print_matrix3x3f(&inertia_tensor);
+    getchar();
     return inertia_tensor;
 }
 
@@ -162,7 +172,7 @@ void RigidBody_init_polyhedron(RigidBody *rb, Polyhedron poly, float mass)
     // This is useful because then geometry (in application or in vram) does not need to be changed for a change of center of rotation.
     transform->center = center_of_mass;
 
-    // mat3x3 inertia_tensor = polyhedron_inertia_tensor(poly, center_of_mass, mass);
     mat3x3 inertia_tensor = brute_force_polyhedron_inertia_tensor(poly, center_of_mass, mass);
+    polyhedron_inertia_tensor(poly, center_of_mass, mass);
 }
 

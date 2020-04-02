@@ -100,6 +100,19 @@ void draw_polyhedron(Polyhedron *p, mat4x4 *matrix);
 
 
 /*================================================================================
+    Closest-points methods.
+================================================================================*/
+vec3 closest_point_on_line_to_point(vec3 a, vec3 b, vec3 p);
+vec3 closest_point_on_line_segment_to_point(vec3 a, vec3 b, vec3 p);
+vec3 closest_point_on_triangle_to_point(vec3 a, vec3 b, vec3 c, vec3 p);
+vec3 closest_point_on_tetrahedron_to_point(vec3 a, vec3 b, vec3 c, vec3 d, vec3 p);
+
+/*================================================================================
+    Simplex methods.
+================================================================================*/
+vec3 closest_point_on_simplex(int n, vec3 points[], vec3 p);
+
+/*================================================================================
     Polyhedron algorithms.
 ================================================================================*/
 Polyhedron convex_hull(vec3 *points, int num_points);

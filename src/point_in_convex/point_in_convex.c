@@ -114,6 +114,9 @@ void contains_origin(Polyhedron poly)
                 triangles[triangles_n * index] = ( AI );\
                 triangles[triangles_n * index + 1] = ( BI );\
                 triangles[triangles_n * index + 2] = ( CI );\
+                add_edge(AI,BI);\
+                add_edge(BI,CI);\
+                add_edge(CI,AI);\
             }
             float v = tetrahedron_6_times_volume(simplex[0],simplex[1],simplex[2],simplex[3]);
             if (v < 0) {
@@ -122,12 +125,38 @@ void contains_origin(Polyhedron poly)
                 simplex[0] = simplex[1];
                 simplex[1] = temp;
             }
-
+            //---since it is known that everything is empty, it would be more efficient to just hardcode the initial tetrahedron.
             for (int i = 0; i < 4; i++) {
                 add_point(simplex[i]);
             }
-            add_
-            
+            add_triangle(0,1,2);
+            add_triangle(1,0,3);
+            add_triangle(2,1,3);
+            add_triangle(0,2,3);
+            // The initial tetrahedron has been set up. Proceed with EPA.
+            while (1) {
+                // Find the closest triangle to the origin.
+                float min_d = -1;
+                int closest_triangle_index = -1;
+                for (int i = 0; i < triangles_len; i++) {
+                    if (triangles[3*i] == -1) continue;
+                    vec3 a = points[triangles[3*i]];
+                    vec3 b = points[triangles[3*i+1]];
+                    vec3 c = points[triangles[3*i+2]];
+                    vec3 p = point_to_triangle_plane(a,b,c, origin);
+                    float new_d = vec3_dot(p, p);
+                    if (min_d == -1 || new_d < min_d) {
+                        min_d = new_d;
+                        closest_triangle_index = i;
+                    }
+                }
+                vec3 a = triangles[3*closest_triangle_index];
+                vec3 b = triangles[3*closest_triangle_index + 1];
+                vec3 c = triangles[3*closest_triangle_index + 2];
+                vec3 expand_to = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
+                vec3 new_point = polyhedron_extreme_point(poly, expand_to);
+            }
+
 
             return;
         }

@@ -95,12 +95,11 @@ void contains_origin(Polyhedron poly)
                     ( INDEX ) = TYPE ## _len ++;\
                 }\
             }
-            #define add_point(VEC) {\
-                int index;\
-                new_feature_index(points, index);\
-                points[points_n * index] = ( VEC ).vals[0];\
-                points[points_n * index + 1] = ( VEC ).vals[1];\
-                points[points_n * index + 2] = ( VEC ).vals[2];\
+            #define add_point(VEC, ( INDEX )) {\
+                new_feature_index(points, ( INDEX ));\
+                points[points_n * ( INDEX )] = ( VEC ).vals[0];\
+                points[points_n * ( INDEX ) + 1] = ( VEC ).vals[1];\
+                points[points_n * ( INDEX ) + 2] = ( VEC ).vals[2];\
             }
             // Edge: references its end points.
             #define add_edge(AI,BI,INDEX) {\
@@ -115,9 +114,9 @@ void contains_origin(Polyhedron poly)
                 triangles[triangles_n * index] = ( AI );\
                 triangles[triangles_n * index + 1] = ( BI );\
                 triangles[triangles_n * index + 2] = ( CI );\
-                add_edge(AI,BI,triangles[triangles_n * index + 3]);\
-                add_edge(BI,CI,triangles[triangles_n * index + 4]);\
-                add_edge(CI,AI,triangles[triangles_n * index + 5]);\
+                add_edge(( AI ),( BI ),triangles[triangles_n * index + 3]);\
+                add_edge(( BI ),( CI ),triangles[triangles_n * index + 4]);\
+                add_edge(( CI ),( AI ),triangles[triangles_n * index + 5]);\
             }
             float v = tetrahedron_6_times_volume(simplex[0],simplex[1],simplex[2],simplex[3]);
             if (v < 0) {
@@ -127,8 +126,9 @@ void contains_origin(Polyhedron poly)
                 simplex[1] = temp;
             }
             //---since it is known that everything is empty, it would be more efficient to just hardcode the initial tetrahedron.
+            int dummy; // since the macro saves the index.
             for (int i = 0; i < 4; i++) {
-                add_point(simplex[i]);
+                add_point(simplex[i], dummy);
             }
             add_triangle(0,1,2);
             add_triangle(1,0,3);
@@ -159,6 +159,22 @@ void contains_origin(Polyhedron poly)
                 // The convex hull of the points of the polytope adjoined with this new point will be computed.
                 vec3 expand_to = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
                 vec3 new_point = polyhedron_extreme_point(poly, expand_to);
+                bool new_point_on_polytope = false;
+                for (int i = 0; i < points_len; i++) {
+                    // Unreferenced but non-nullified points can't be on the convex hull, so they can be checked against without problems.
+                    if (points[points_n*i] == -1) continue;
+                    if (memcmp(&points[points_n*i], &new_point, sizeof(float)*3) == 0) {
+                        new_point_on_polytope = true;
+                        break;
+                    }
+                }
+                if (new_point_on_polytope) {
+                    // The closest triangle is on the border of the polyhedron, so the closest point on this triangle is the closest point
+                    // to the border of the polyhedron.
+                    vec3 closest_point = point_to_triangle_plane(a,b,c, origin);
+                    paint_point_c(Canvas3D, &closest_point, 1, "p", 100);
+                    return;
+                }
 
                 // Remove the visible triangles and their directed edges. Points do not need to be nullified.
                 for (int i = 0; i < triangles_len; i++) {
@@ -176,20 +192,38 @@ void contains_origin(Polyhedron poly)
                         triangles[triangles_n*i] = -1;
                     }
                 }
-                // Search for boundary edges, and add a new triangle for each one.
+                int new_point_index;
+                add_point(new_point, new_point_index);
+
+                // Search for boundary edges and save them in an array.
+                int boundary_len = 0;
+                uint16_t boundary[1024];
                 for (int i = 0; i < edges_len; i++) {
                     if (edges[edges_n*i] == -1) continue;
+                    // Search for an incident triangle, by looking for the opposite edge (with reversed direction).
+                    bool boundary = true;
                     for (int j = 0; j < edges_len; j++) {
                         if (edges[edges_n*j] == -1) continue;
                         if (   memcmp(&points[points_n*edges[edges_n*i]], &points[points_n*edges[edges_n*j+1]], sizeof(float)*3) == 0
                             && memcmp(&points[points_n*edges[edges_n*i+1]], &points[points_n*edges[edges_n*j]], sizeof(float)*3) == 0) {
-                            //
+                            // This is the opposite edge, so a boundary edge has not been found.
+                            boundary = false;
+                            break;
                         }
                     }
+                    if (boundary) {
+                        // Instead of adding the triangle straight away, save the boundary edge of the new triangle in the array.
+                        // This is because the edges are still being iterated, and if new ones are added, they could be registered as boundary edges.
+                        boundary[2*boundary_len] = edges[edges_n*i+1];
+                        boundary[2*boundary_len+1] = edges[edges_n*i];
+                        boundary_len ++; //--- not checking out-of-space.
+                    }
+                }
+                // Add the triangles of the extending cone.
+                for (int i = 0; i < boundary_len; i++) {
+                    add_triangle(boundary[2*i], boundary[2*i+1], new_point_index);
                 }
             }
-
-
             return;
         }
         vec3 new_point = polyhedron_extreme_point(poly, dir);
@@ -224,7 +258,6 @@ void contains_origin(Polyhedron poly)
             }
             n --;
         }
-
         check() {
             show_simplex(n, simplex, "k");
             return;

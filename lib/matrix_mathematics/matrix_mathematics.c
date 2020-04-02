@@ -622,3 +622,11 @@ void mat3x3_orthonormalize(mat3x3 *m)
     m->vals[5] = c.vals[1];
     m->vals[8] = c.vals[2];
 }
+
+bool vec3_equal(vec3 a, vec3 b)
+{
+    for (int i = 0; i < 3; i++) {
+        if (a.vals[i] != b.vals[i]) return false;
+    }
+    return true;
+}

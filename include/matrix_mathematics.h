@@ -3,7 +3,7 @@
 ================================================================================*/
 #ifndef HEADER_DEFINED_MATRIX_MATHEMATICS
 #define HEADER_DEFINED_MATRIX_MATHEMATICS
-
+#include <stdbool.h>
 
 typedef struct Matrix3x3f_s {
     float vals[3 * 3];
@@ -169,6 +169,7 @@ vec4 color_fade(vec4 color, float x);
 mat3x3 mat3x3_add(mat3x3 A, mat3x3 B);
 void mat3x3_orthonormalize(mat3x3 *m);
 
+bool vec3_equal(vec3 a, vec3 b);
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

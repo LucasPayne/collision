@@ -82,18 +82,29 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len)
             simplex[replace] = new_point;
             indices_A[replace] = A_index;
             indices_B[replace] = B_index;
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            //----This check seems to fix an infinite loop bug here, but I am not sure if the reasoning is correct.
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            if (vec3_dot(new_point, dir) <= 0) {
+                paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+                vec3 closest_on_poly = closest_point_on_tetrahedron_to_point(simplex[0], simplex[1], simplex[2], simplex[3], origin);
+                paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+                return false;
+            }
         } else if (n == 3 && on_simplex) {
             paint_points_c(Canvas3D, &origin, 1, "tr", 50);
             vec3 closest_on_poly = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[2], origin);
             paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
-            return;
+            return false;
         } else if (n == 2 && on_simplex) {
             paint_points_c(Canvas3D, &origin, 1, "tr", 50);
             vec3 closest_on_poly = closest_point_on_line_segment_to_point(simplex[0], simplex[1], origin);
             paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+            return false;
         } else if (n == 1 && on_simplex) {
             paint_points_c(Canvas3D, &origin, 1, "tr", 50);
             paint_points_c(Canvas3D, &simplex[0], 1, "tb", 50);
+            return false;
         } else if (!on_simplex) {
             simplex[n] = new_point;
             indices_A[n] = A_index;
@@ -499,7 +510,7 @@ extern void loop_program(void)
 
     draw_polyhedron2(&polyA, NULL, "tb", 5);
     draw_polyhedron2(&polyB, NULL, "tr", 5);
-    draw_polyhedron2(&mink, NULL, "k", 10);
+    draw_polyhedron2(&mink, NULL, "tk", 3);
     vec3 origin = vec3_zero();
     paint_points_c(Canvas3D, &origin, 1, "p", 25);
 

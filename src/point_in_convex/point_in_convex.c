@@ -38,11 +38,10 @@ void contains_origin(Polyhedron poly)
     vec3 origin = vec3_zero();
 
     while (1) {
-        printf("num points: %d\n", n);
         vec3 c = closest_point_on_simplex(n, simplex, origin);
         vec3 dir = vec3_neg(c);
         if (n == 4 && point_in_tetrahedron(simplex[0],simplex[1],simplex[2],simplex[3], origin)) {
-            show_simplex(n, simplex, "g");
+            //show_simplex(n, simplex, "g");
             paint_points_c(Canvas3D, &origin, 1, "tg", 50);
 
             // Find the closest point on the boundary.
@@ -65,7 +64,7 @@ void contains_origin(Polyhedron poly)
             float points[1024 * 3] = {-1}; //----should be indices. If coord is -1, this is definitely buggy.
             const int points_n = 3;
             int points_len = 0;
-            int16_t triangles[1024 * 3] = {-1};
+            int16_t triangles[1024 * 6] = {-1};
             const int triangles_n = 6;
             int triangles_len = 0;
             int16_t edges[1024 * 2] = {-1};
@@ -95,7 +94,7 @@ void contains_origin(Polyhedron poly)
                     ( INDEX ) = TYPE ## _len ++;\
                 }\
             }
-            #define add_point(VEC, ( INDEX )) {\
+            #define add_point(VEC, INDEX) {\
                 new_feature_index(points, ( INDEX ));\
                 points[points_n * ( INDEX )] = ( VEC ).vals[0];\
                 points[points_n * ( INDEX ) + 1] = ( VEC ).vals[1];\
@@ -118,6 +117,20 @@ void contains_origin(Polyhedron poly)
                 add_edge(( BI ),( CI ),triangles[triangles_n * index + 4]);\
                 add_edge(( CI ),( AI ),triangles[triangles_n * index + 5]);\
             }
+
+            #define show_polytope() {\
+                for (int i = 0; i < edges_len; i++) {\
+                    if (edges[edges_n*i] == -1) continue;\
+                    paint_line_cv(Canvas3D, *((vec3 *) &points[points_n*edges[edges_n*i]]), *((vec3 *) &points[points_n*edges[edges_n*i+1]]), "y", 40);\
+                }\
+            }
+/*
+                for (int i = 0; i < triangles_len; i++) {\
+                    if (triangles[triangles_n*i] == -1) continue;\
+                    paint_triangle_cv(Canvas3D, *((vec3 *) &points[points_n*triangles[triangles_n*i]]),*((vec3 *) &points[points_n*triangles[triangles_n*i+1]]),*((vec3 *) &points[points_n*triangles[triangles_n*i+2]]), "tk");\
+                }\
+*/
+
             float v = tetrahedron_6_times_volume(simplex[0],simplex[1],simplex[2],simplex[3]);
             if (v < 0) {
                 // If the tetrahedron has negative volume, swap two entries, forcing the winding order to be anti-clockwise from outside.
@@ -134,16 +147,25 @@ void contains_origin(Polyhedron poly)
             add_triangle(1,0,3);
             add_triangle(2,1,3);
             add_triangle(0,2,3);
+
             // The initial tetrahedron has been set up. Proceed with EPA.
+            int counter = 0;
             while (1) {
+                counter ++;
+
+                check() {
+                    show_polytope();
+                    return;
+                }
+
                 // Find the closest triangle to the origin.
                 float min_d = -1;
                 int closest_triangle_index = -1;
                 for (int i = 0; i < triangles_len; i++) {
                     if (triangles[triangles_n*i] == -1) continue;
-                    vec3 a = points[points_n*triangles[triangles_n*i]];
-                    vec3 b = points[points_n*triangles[triangles_n*i+1]];
-                    vec3 c = points[points_n*triangles[triangles_n*i+2]];
+                    vec3 a = *((vec3 *) &points[points_n*triangles[triangles_n*i]]);
+                    vec3 b = *((vec3 *) &points[points_n*triangles[triangles_n*i+1]]);
+                    vec3 c = *((vec3 *) &points[points_n*triangles[triangles_n*i+2]]);
                     vec3 p = point_to_triangle_plane(a,b,c, origin);
                     float new_d = vec3_dot(p, p);
                     if (min_d == -1 || new_d < min_d) {
@@ -151,9 +173,16 @@ void contains_origin(Polyhedron poly)
                         closest_triangle_index = i;
                     }
                 }
-                vec3 a = triangles[triangles_n*closest_triangle_index];
-                vec3 b = triangles[triangles_n*closest_triangle_index + 1];
-                vec3 c = triangles[triangles_n*closest_triangle_index + 2];
+                vec3 a = *((vec3 *) &points[points_n*triangles[triangles_n*closest_triangle_index]]);
+                vec3 b = *((vec3 *) &points[points_n*triangles[triangles_n*closest_triangle_index + 1]]);
+                vec3 c = *((vec3 *) &points[points_n*triangles[triangles_n*closest_triangle_index + 2]]);
+                check() {
+                    show_polytope();
+                    vec3 p = point_to_triangle_plane(a,b,c, origin);
+                    paint_points_c(Canvas3D, &p, 1, "k", 25);
+                    paint_line_cv(Canvas3D, origin, p, "k", 20);
+                    return;
+                }
 
                 // Find an extreme point in the direction from the origin to the closest point on the polytope boundary.
                 // The convex hull of the points of the polytope adjoined with this new point will be computed.
@@ -169,19 +198,27 @@ void contains_origin(Polyhedron poly)
                     }
                 }
                 if (new_point_on_polytope) {
+                    //printf("!!!! aaa!!!!AAAAAAHHHHHHHHHH!!!!!\n");
+                    //getchar();
                     // The closest triangle is on the border of the polyhedron, so the closest point on this triangle is the closest point
                     // to the border of the polyhedron.
+                    print_vec3(a);
+                    print_vec3(b);
+                    print_vec3(c);
+                    print_vec3(origin);
                     vec3 closest_point = point_to_triangle_plane(a,b,c, origin);
-                    paint_point_c(Canvas3D, &closest_point, 1, "p", 100);
+                    print_vec3(closest_point);
+                    paint_points_c(Canvas3D, &closest_point, 1, "tp", 300);
+                    printf("%d loops were done.\n", counter);
                     return;
                 }
 
                 // Remove the visible triangles and their directed edges. Points do not need to be nullified.
                 for (int i = 0; i < triangles_len; i++) {
                     if (triangles[triangles_n*i] == -1) continue;
-                    vec3 a = points[points_n*triangles[triangles_n*i]];
-                    vec3 b = points[points_n*triangles[triangles_n*i+1]];
-                    vec3 c = points[points_n*triangles[triangles_n*i+2]];
+                    vec3 a = *((vec3 *) &points[points_n*triangles[triangles_n*i]]);
+                    vec3 b = *((vec3 *) &points[points_n*triangles[triangles_n*i+1]]);
+                    vec3 c = *((vec3 *) &points[points_n*triangles[triangles_n*i+2]]);
                     vec3 n = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
                     float v = tetrahedron_6_times_volume(a,b,c, new_point);
                     if (v < 0) {
@@ -197,7 +234,7 @@ void contains_origin(Polyhedron poly)
 
                 // Search for boundary edges and save them in an array.
                 int boundary_len = 0;
-                uint16_t boundary[1024];
+                int16_t boundary_edges[1024];
                 for (int i = 0; i < edges_len; i++) {
                     if (edges[edges_n*i] == -1) continue;
                     // Search for an incident triangle, by looking for the opposite edge (with reversed direction).
@@ -214,14 +251,14 @@ void contains_origin(Polyhedron poly)
                     if (boundary) {
                         // Instead of adding the triangle straight away, save the boundary edge of the new triangle in the array.
                         // This is because the edges are still being iterated, and if new ones are added, they could be registered as boundary edges.
-                        boundary[2*boundary_len] = edges[edges_n*i+1];
-                        boundary[2*boundary_len+1] = edges[edges_n*i];
+                        boundary_edges[2*boundary_len] = edges[edges_n*i+1];
+                        boundary_edges[2*boundary_len+1] = edges[edges_n*i];
                         boundary_len ++; //--- not checking out-of-space.
                     }
                 }
                 // Add the triangles of the extending cone.
                 for (int i = 0; i < boundary_len; i++) {
-                    add_triangle(boundary[2*i], boundary[2*i+1], new_point_index);
+                    add_triangle(boundary_edges[2*i], boundary_edges[2*i+1], new_point_index);
                 }
             }
             return;
@@ -239,13 +276,13 @@ void contains_origin(Polyhedron poly)
             int replace = simplex_extreme_index(n, simplex, c);
             simplex[replace] = new_point;
         } else if (n == 3 && on_simplex) {
-            show_simplex(n, simplex, "r");
+            //show_simplex(n, simplex, "r");
             paint_points_c(Canvas3D, &origin, 1, "tr", 50);
             vec3 closest_on_poly = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[2], origin);
             paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
             return;
         } else if (n == 2 && on_simplex) {
-            show_simplex(n, simplex, "r");
+            //show_simplex(n, simplex, "r");
             paint_points_c(Canvas3D, &origin, 1, "tr", 50);
             vec3 closest_on_poly = closest_point_on_line_segment_to_point(simplex[0], simplex[1], origin);
             paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
@@ -259,7 +296,7 @@ void contains_origin(Polyhedron poly)
             n --;
         }
         check() {
-            show_simplex(n, simplex, "k");
+            //show_simplex(n, simplex, "k");
             return;
         }
     }
@@ -289,6 +326,19 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
+    float y_move = 0;
+    if (arrow_key_down(Up)) {
+        y_move += 60;
+    }
+    if (arrow_key_down(Down)) {
+        y_move -= 60;
+    }
+    PolyhedronPoint *p = poly.points.first;
+    while (p != NULL) {
+        p->position.vals[1] += y_move * dt;
+        p = p->next;
+    }
+
     vec3 origin = vec3_zero();
     paint_points_c(Canvas3D, &origin, 1, "p", 25);
     draw_polyhedron(&poly, NULL);

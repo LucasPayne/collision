@@ -198,18 +198,10 @@ void contains_origin(Polyhedron poly)
                     }
                 }
                 if (new_point_on_polytope) {
-                    //printf("!!!! aaa!!!!AAAAAAHHHHHHHHHH!!!!!\n");
-                    //getchar();
                     // The closest triangle is on the border of the polyhedron, so the closest point on this triangle is the closest point
                     // to the border of the polyhedron.
-                    print_vec3(a);
-                    print_vec3(b);
-                    print_vec3(c);
-                    print_vec3(origin);
                     vec3 closest_point = point_to_triangle_plane(a,b,c, origin);
-                    print_vec3(closest_point);
                     paint_points_c(Canvas3D, &closest_point, 1, "tp", 300);
-                    printf("%d loops were done.\n", counter);
                     return;
                 }
 
@@ -286,6 +278,9 @@ void contains_origin(Polyhedron poly)
             paint_points_c(Canvas3D, &origin, 1, "tr", 50);
             vec3 closest_on_poly = closest_point_on_line_segment_to_point(simplex[0], simplex[1], origin);
             paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+        } else if (n == 1 && on_simplex) {
+            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+            paint_points_c(Canvas3D, &simplex[0], 1, "tb", 50);
         } else if (!on_simplex) {
             simplex[n++] = new_point;
         } else {

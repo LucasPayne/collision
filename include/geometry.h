@@ -91,10 +91,6 @@ int polyhedron_num_edges(Polyhedron *poly);
 int polyhedron_num_triangles(Polyhedron *poly);
 
 
-// Printing and visualization.
-void print_polyhedron(Polyhedron *p);
-void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line_width, mat4x4 *matrix);
-void draw_polyhedron(Polyhedron *p, mat4x4 *matrix);
 
 /*================================================================================
     Polyhedron algorithms.
@@ -135,5 +131,10 @@ vec3 *random_points(float radius, int n);
 Polyhedron random_convex_polyhedron(float radius, int n);
 #include "entity.h"
 EntityID polyhedron_create_entity(Polyhedron poly, vec3 position, char *texture_path);
+// Polyhedron printing and visualization.
+void print_polyhedron(Polyhedron *p);
+void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line_width, mat4x4 *matrix);
+void draw_polyhedron(Polyhedron *p, mat4x4 *matrix);
+void draw_polyhedron2(Polyhedron *p, mat4x4 *matrix, char *color_str, float line_width);
 
 #endif // HEADER_DEFINED_GEOMETRY

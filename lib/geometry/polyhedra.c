@@ -207,7 +207,30 @@ void draw_polyhedron(Polyhedron *p, mat4x4 *matrix)
     //     t = t->next;
     // }
 }
-
+void draw_polyhedron2(Polyhedron *p, mat4x4 *matrix, char *color_str, float line_width)
+{
+    PolyhedronEdge *edge = p->edges.first;
+    while (edge != NULL) {
+        if (matrix != NULL) {
+            paint_line_cv(Canvas3D, mat4x4_vec3(matrix, edge->a->position), mat4x4_vec3(matrix, edge->b->position), color_str, line_width);
+        } else {
+            paint_line_cv(Canvas3D, edge->a->position, edge->b->position, color_str, line_width);
+        }
+        edge = edge->next;
+    }
+/*
+    PolyhedronPoint *point = p->points.first;
+    while (point != NULL) {
+        if (matrix != NULL) {
+            vec3 pp = mat4x4_vec3(matrix, point->position);
+            paint_points_c(Canvas3D, &pp, 1, color_str, line_width);
+        } else {
+            paint_points_c(Canvas3D, &point->position, 1, color_str, line_width);
+        }
+        point = point->next;
+    }
+*/
+}
 
 /*================================================================================
     3-dimensional convex hull. Returns the hull as a polyhedron.

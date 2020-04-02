@@ -98,6 +98,13 @@ void print_polyhedron(Polyhedron *p);
 void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line_width, mat4x4 *matrix);
 void draw_polyhedron(Polyhedron *p, mat4x4 *matrix);
 
+/*================================================================================
+    Polyhedron algorithms.
+================================================================================*/
+Polyhedron convex_hull(vec3 *points, int num_points);
+bool point_in_convex_polyhedron(vec3 p, Polyhedron poly);
+float polyhedron_volume(Polyhedron poly);
+vec3 polyhedron_extreme_point(Polyhedron poly, vec3 direction);
 
 /*================================================================================
     Closest-points methods.
@@ -111,13 +118,17 @@ vec3 closest_point_on_tetrahedron_to_point(vec3 a, vec3 b, vec3 c, vec3 d, vec3 
     Simplex methods.
 ================================================================================*/
 vec3 closest_point_on_simplex(int n, vec3 points[], vec3 p);
+int simplex_extreme_index(int n, vec3 points[], vec3 dir);
+bool point_in_tetrahedron(vec3 a, vec3 b, vec3 c, vec3 d, vec3 p);
 
 /*================================================================================
-    Polyhedron algorithms.
+    Testing utilities.
 ================================================================================*/
-Polyhedron convex_hull(vec3 *points, int num_points);
-
-bool point_in_convex_polyhedron(vec3 p, Polyhedron poly);
-float polyhedron_volume(Polyhedron poly);
+// These semi-random points have forced biasing toward being ellipsoidal, otherwise generally
+// the hull will be close to spherical for high n.
+vec3 *random_points(float radius, int n);
+Polyhedron random_convex_polyhedron(float radius, int n);
+#include "entity.h"
+EntityID polyhedron_create_entity(Polyhedron poly, vec3 position, char *texture_path);
 
 #endif // HEADER_DEFINED_GEOMETRY

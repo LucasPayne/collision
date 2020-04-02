@@ -197,15 +197,15 @@ void draw_polyhedron(Polyhedron *p, mat4x4 *matrix)
         }
         edge = edge->next;
     }
-    PolyhedronTriangle *t = p->triangles.first;
-    while (t != NULL) {
-        if (matrix != NULL) {
-            paint_triangle_v(Canvas3D, mat4x4_vec3(matrix, t->points[0]->position), mat4x4_vec3(matrix, t->points[1]->position), mat4x4_vec3(matrix, t->points[2]->position), new_vec4(0.2,0.2,0.6,0.354));
-        } else {
-            paint_triangle_v(Canvas3D, t->points[0]->position, t->points[1]->position, t->points[2]->position, new_vec4(0.2,0.2,0.6,0.354));
-        }
-        t = t->next;
-    }
+    // PolyhedronTriangle *t = p->triangles.first;
+    // while (t != NULL) {
+    //     if (matrix != NULL) {
+    //         paint_triangle_v(Canvas3D, mat4x4_vec3(matrix, t->points[0]->position), mat4x4_vec3(matrix, t->points[1]->position), mat4x4_vec3(matrix, t->points[2]->position), new_vec4(0.2,0.2,0.6,0.354));
+    //     } else {
+    //         paint_triangle_v(Canvas3D, t->points[0]->position, t->points[1]->position, t->points[2]->position, new_vec4(0.2,0.2,0.6,0.354));
+    //     }
+    //     t = t->next;
+    // }
 }
 
 
@@ -392,4 +392,20 @@ float polyhedron_volume(Polyhedron poly)
         t = t->next;
     }
     return volume / 6.0;
+}
+
+// This is for a general polyhedron, so no hill-climbing is done.
+vec3 polyhedron_extreme_point(Polyhedron poly, vec3 direction)
+{
+    PolyhedronPoint *p = poly.points.first;
+    float d = vec3_dot(p->position, direction);
+    vec3 v = p->position;
+    while ((p = p->next) != NULL) {
+        float new_d = vec3_dot(p->position, direction);
+        if (new_d > d) {
+            d = new_d;
+            v = p->position;
+        }
+    }
+    return v;
 }

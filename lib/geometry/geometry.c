@@ -111,19 +111,22 @@ vec3 closest_point_on_triangle_to_point(vec3 a, vec3 b, vec3 c, vec3 p)
     return barycentric_triangle(a,b,c, wa,wb,wc);
 }
 
-vec3 closest_point_on_tetrahedron_to_point(vec3 a, vec3 b, vec3 c, vec3 d, vec3 p)
+// Order: a,b,c,d,  p
+// This is for strict inclusion, not on the boundary.
+bool point_in_tetrahedron(vec3 a, vec3 b, vec3 c, vec3 d, vec3 p)
 {
-    // This method just takes all the closest points on each triangle, and takes the one of minium distance, unless the point is inside the tetrahedron.
-    // This could definitely be better.
-
     float wa = tetrahedron_6_times_volume(a, b, c, p);
     float wb = tetrahedron_6_times_volume(b, a, d, p);
     float wc = tetrahedron_6_times_volume(c, b, d, p);
     float wd = tetrahedron_6_times_volume(a, c, d, p);
-    if (wa != 0 && wa < 0 == wb < 0 && wb < 0 == wc < 0 && wc < 0 == wd < 0) {
-        // The weights all have the same sign.
-        return p;
-    }
+    // Return whether or not the weights all have the same sign.
+    return (wa != 0 && wa < 0 == wb < 0 && wb < 0 == wc < 0 && wc < 0 == wd < 0);
+}
+vec3 closest_point_on_tetrahedron_to_point(vec3 a, vec3 b, vec3 c, vec3 d, vec3 p)
+{
+    // This method just takes all the closest points on each triangle, and takes the one of minium distance, unless the point is inside the tetrahedron.
+    // This could definitely be better.
+    if (point_in_tetrahedron(a,b,c,d, p)) return p;
 
     vec3 close_points[4];
     close_points[0] = closest_point_on_triangle_to_point(a,b,c, p);
@@ -144,14 +147,31 @@ vec3 closest_point_on_tetrahedron_to_point(vec3 a, vec3 b, vec3 c, vec3 d, vec3 
 //--------------------------------------------------------------------------------
 // Simplex methods.
 //--------------------------------------------------------------------------------
+#define bad_simplex_error() {\
+    fprintf(stderr, ERROR_ALERT "simplex method: Bad input. Input must be a simplex of 1,2,3, or 4 vertices.\n");\
+    exit(EXIT_FAILURE);\
+}
 vec3 closest_point_on_simplex(int n, vec3 points[], vec3 p)
 {
     if (n == 1) return points[0];
     if (n == 2) return closest_point_on_line_segment_to_point(points[0], points[1], p);
     if (n == 3) return closest_point_on_triangle_to_point(points[0], points[1], points[2], p);
     if (n == 4) return closest_point_on_tetrahedron_to_point(points[0], points[1], points[2], points[3], p);
-    fprintf(stderr, ERROR_ALERT "closest_point_on_simplex: Bad input. Input must be a simplex of 1,2,3, or 4 vertices.\n");
-    exit(EXIT_FAILURE);
+    bad_simplex_error();
 }
-
+int simplex_extreme_index(int n, vec3 points[], vec3 dir)
+{
+    // Returns the index of a support vector in the simplex vertices in the given direction.
+    if (n < 1 || n > 4) bad_simplex_error();
+    float dist = vec3_dot(points[0], dir);
+    int index = 0;
+    for (int i = 1; i < n; i++) {
+        float new_dist = vec3_dot(points[i], dir);
+        if (new_dist > dist) {
+            index = i;
+            dist = new_dist;
+        }
+    }
+    return index;
+}
 

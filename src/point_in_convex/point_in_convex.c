@@ -7,7 +7,7 @@ Polyhedron poly;
 
 void create(void)
 {
-    poly = random_convex_polyhedron(100, 10);
+    poly = random_convex_polyhedron(100, 100);
     PolyhedronPoint *p = poly.points.first;
     float o = 70;
     vec3 shift = new_vec3(o*frand()-o/2,o*frand()-o/2,o*frand()-o/2);
@@ -42,9 +42,65 @@ void contains_origin(Polyhedron poly)
         vec3 c = closest_point_on_simplex(n, simplex, origin);
         vec3 dir = vec3_neg(c);
         if (n == 4 && point_in_tetrahedron(simplex[0],simplex[1],simplex[2],simplex[3], origin)) {
-            // The origin is inside.
             show_simplex(n, simplex, "g");
             paint_points_c(Canvas3D, &origin, 1, "tg", 50);
+
+            // Find the closest point on the boundary.
+            // The negative of this will be the minimal separating vector the polyhedron has from the origin.
+            // -------------------------------------------------------------------------------
+            // Brute force it for comparison.
+            PolyhedronTriangle *tri = poly.triangles.first;
+            vec3 brute_p = closest_point_on_triangle_to_point(tri->points[0]->position,tri->points[1]->position,tri->points[2]->position, origin);
+            while ((tri = tri->next) != NULL) {
+                vec3 new_p = closest_point_on_triangle_to_point(tri->points[0]->position,tri->points[1]->position,tri->points[2]->position, origin);
+                if (vec3_dot(new_p, new_p) < vec3_dot(brute_p, brute_p)) brute_p = new_p;
+            }
+	    paint_points_c(Canvas3D, &brute_p, 1, "g", 30);
+
+            vec3 closest_points[4];
+            int INFINITE = 500000;
+            int INFINITE_COUNTER = 0;
+            while (1) {
+                if (INFINITE_COUNTER++ == INFINITE) {
+                    fprintf(stderr, ERROR_ALERT "apparently stuck in infinite loop.\n");
+                    exit(EXIT_FAILURE);
+                }
+                // Find the closest point on the boundary of the tetrahedron, and the index of the triangle that it belongs to.
+                // ---- Could skip the full closest point computation, since it is assumed the closest point is on the interior of a triangle anyway.
+                closest_points[0] = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[2], origin);
+                closest_points[1] = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[3], origin);
+                closest_points[2] = closest_point_on_triangle_to_point(simplex[0], simplex[2], simplex[3], origin);
+                closest_points[3] = closest_point_on_triangle_to_point(simplex[1], simplex[2], simplex[3], origin);
+                float min_d = vec3_dot(closest_points[0], closest_points[0]);
+                int index = 0;
+                for (int i = 1; i < 4; i++) {
+                    float new_d = vec3_dot(closest_points[i], closest_points[i]);
+                    if (new_d < min_d) {
+                        min_d = new_d;
+                        index = i;
+                    }
+                }
+                vec3 new_point = polyhedron_extreme_point(poly, closest_points[index]);
+                bool on_simplex = false;
+		int remove = simplex_extreme_index(n, simplex, vec3_neg(closest_points[index]));
+                for (int i = 0; i < 4; i++) {
+                    if (vec3_equal(new_point, simplex[i])) {
+                        on_simplex = true;
+                        break;
+                    }
+                }
+                if (!on_simplex) {
+                    simplex[remove] = new_point;
+                } else {
+                    for (int j = remove; j < n - 1; j++) {
+                        simplex[j] = simplex[j + 1];
+                    }
+                    // The simplex is now a triangle, the closest point on the boundary being the closest point on this triangle.
+                    vec3 boundary_point = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[2], origin);
+                    paint_points_c(Canvas3D, &boundary_point, 1, "k", 30);
+                    return;
+                }
+            }
             return;
         }
         vec3 new_point = polyhedron_extreme_point(poly, dir);

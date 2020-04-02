@@ -66,7 +66,7 @@ void contains_origin(Polyhedron poly)
             const int points_n = 3;
             int points_len = 0;
             int16_t triangles[1024 * 3] = {-1};
-            const int triangles_n = 3;
+            const int triangles_n = 6;
             int triangles_len = 0;
             int16_t edges[1024 * 2] = {-1};
             const int edges_n = 2;
@@ -102,21 +102,22 @@ void contains_origin(Polyhedron poly)
                 points[points_n * index + 1] = ( VEC ).vals[1];\
                 points[points_n * index + 2] = ( VEC ).vals[2];\
             }
-            #define add_edge(AI,BI) {\
-                int index;\
-                new_feature_index(edges, index);\
-                edges[edges_n * index] = ( AI );\
-                edges[edges_n * index + 1] = ( BI );\
+            // Edge: references its end points.
+            #define add_edge(AI,BI,INDEX) {\
+                new_feature_index(edges, ( INDEX ));\
+                edges[edges_n * ( INDEX )] = ( AI );\
+                edges[edges_n * ( INDEX ) + 1] = ( BI );\
             }
+            // Triangle: References its points in anti-clockwise winding order, abc, and references its edges, ab, bc, ca.
             #define add_triangle(AI,BI,CI) {\
                 int index;\
                 new_feature_index(triangles, index);\
                 triangles[triangles_n * index] = ( AI );\
                 triangles[triangles_n * index + 1] = ( BI );\
                 triangles[triangles_n * index + 2] = ( CI );\
-                add_edge(AI,BI);\
-                add_edge(BI,CI);\
-                add_edge(CI,AI);\
+                add_edge(AI,BI,triangles[triangles_n * index + 3]);\
+                add_edge(BI,CI,triangles[triangles_n * index + 4]);\
+                add_edge(CI,AI,triangles[triangles_n * index + 5]);\
             }
             float v = tetrahedron_6_times_volume(simplex[0],simplex[1],simplex[2],simplex[3]);
             if (v < 0) {
@@ -139,10 +140,10 @@ void contains_origin(Polyhedron poly)
                 float min_d = -1;
                 int closest_triangle_index = -1;
                 for (int i = 0; i < triangles_len; i++) {
-                    if (triangles[3*i] == -1) continue;
-                    vec3 a = points[triangles[3*i]];
-                    vec3 b = points[triangles[3*i+1]];
-                    vec3 c = points[triangles[3*i+2]];
+                    if (triangles[triangles_n*i] == -1) continue;
+                    vec3 a = points[points_n*triangles[triangles_n*i]];
+                    vec3 b = points[points_n*triangles[triangles_n*i+1]];
+                    vec3 c = points[points_n*triangles[triangles_n*i+2]];
                     vec3 p = point_to_triangle_plane(a,b,c, origin);
                     float new_d = vec3_dot(p, p);
                     if (min_d == -1 || new_d < min_d) {
@@ -150,11 +151,42 @@ void contains_origin(Polyhedron poly)
                         closest_triangle_index = i;
                     }
                 }
-                vec3 a = triangles[3*closest_triangle_index];
-                vec3 b = triangles[3*closest_triangle_index + 1];
-                vec3 c = triangles[3*closest_triangle_index + 2];
+                vec3 a = triangles[triangles_n*closest_triangle_index];
+                vec3 b = triangles[triangles_n*closest_triangle_index + 1];
+                vec3 c = triangles[triangles_n*closest_triangle_index + 2];
+
+                // Find an extreme point in the direction from the origin to the closest point on the polytope boundary.
+                // The convex hull of the points of the polytope adjoined with this new point will be computed.
                 vec3 expand_to = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
                 vec3 new_point = polyhedron_extreme_point(poly, expand_to);
+
+                // Remove the visible triangles and their directed edges. Points do not need to be nullified.
+                for (int i = 0; i < triangles_len; i++) {
+                    if (triangles[triangles_n*i] == -1) continue;
+                    vec3 a = points[points_n*triangles[triangles_n*i]];
+                    vec3 b = points[points_n*triangles[triangles_n*i+1]];
+                    vec3 c = points[points_n*triangles[triangles_n*i+2]];
+                    vec3 n = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
+                    float v = tetrahedron_6_times_volume(a,b,c, new_point);
+                    if (v < 0) {
+                        // Remove this triangle, as it is visible from the new point.
+                        edges[edges_n*triangles[triangles_n*i+3]] = -1;
+                        edges[edges_n*triangles[triangles_n*i+4]] = -1;
+                        edges[edges_n*triangles[triangles_n*i+5]] = -1;
+                        triangles[triangles_n*i] = -1;
+                    }
+                }
+                // Search for boundary edges, and add a new triangle for each one.
+                for (int i = 0; i < edges_len; i++) {
+                    if (edges[edges_n*i] == -1) continue;
+                    for (int j = 0; j < edges_len; j++) {
+                        if (edges[edges_n*j] == -1) continue;
+                        if (   memcmp(&points[points_n*edges[edges_n*i]], &points[points_n*edges[edges_n*j+1]], sizeof(float)*3) == 0
+                            && memcmp(&points[points_n*edges[edges_n*i+1]], &points[points_n*edges[edges_n*j]], sizeof(float)*3) == 0) {
+                            //
+                        }
+                    }
+                }
             }
 
 

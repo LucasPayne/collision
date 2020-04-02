@@ -2,162 +2,339 @@
 ================================================================================*/
 #include "Engine.h"
 
-static vec3 closest_point_on_line_to_point(vec3 a, vec3 b, vec3 p)
+//================================================================================
+// for testing and debugging.
+Polyhedron compute_minkowski_difference(Polyhedron A, Polyhedron B)
 {
-    // This is an unlimited line.
-    vec3 ab = vec3_sub(b, a);
-    vec3 ap = vec3_sub(p, a);
-    return vec3_add(a, vec3_mul(ab, vec3_dot(ap, ab) / vec3_dot(ab, ab)));
+    int num_points = polyhedron_num_points(&A) * polyhedron_num_points(&B);
+    vec3 *points = malloc(sizeof(float)*3 * num_points);
+    mem_check(points);
+    PolyhedronPoint *p = A.points.first;
+    int i = 0;
+    while (p != NULL) {
+        int j = 0;
+        PolyhedronPoint *q = B.points.first;
+        while (q != NULL) {
+            points[i + j*polyhedron_num_points(&A)] = vec3_sub(p->position, q->position);
+            q = q->next;
+            j++;
+        }
+        p = p->next;
+        i++;
+    }
+    Polyhedron diff = convex_hull(points, num_points);
+    free(points);
+    return diff;
+}
+/*================================================================================
+----------------------------------------------------------------------------------
+        Convex polyhedra collision.
+----------------------------------------------------------------------------------
+    Collision and contact information is computed for two convex polyhedra.
+    The polyhedra are given as point clouds, which define their convex hulls.
+    The GJK (Gilbert-Johnson-Keerthi) algorithm is used to descend a simplex
+    through the Minkowski difference, or configuration space obstacle, of the polyhedra.
+    If the simplex ever bounds the origin, the polyhedra are intersecting (as for some
+    points a in A and b in B, a - b = 0 => a = b).
+
+    If they are not intersecting, the closest points of the two polyhedra can be computed from
+    the closest point on the CSO to the origin.
+    If they are colliding, contact information is wanted. The minimum separating vector is given,
+    computed by the expanding polytope algorithm (EPA). This algorithm progressively expands
+    a sub-polytope of the CSO in order to find the closest point on the CSO boundary to the origin,
+    whose negative is the separating vector, the minimal translation to move the CSO so that it does not
+    bound the origin. This can be used to infer the contact normal and contact points on each polyhedron.
+================================================================================*/
+static int support_index(vec3 *points, int num_points, vec3 direction)
+{
+    float d = vec3_dot(points[0], direction); // At least one point must be given.
+    int index = 0;
+    for (int i = 1; i < num_points; i++) {
+        float new_d = vec3_dot(points[i], direction);
+        if (new_d > d) {
+            d = new_d;
+            index = i;
+        }
+    }
+    return index;
+}
+// cso: Configuration space obstacle, another name for the Minkowski difference of two sets.
+static vec3 cso_support(vec3 *A, int A_len, vec3 *B, int B_len, vec3 direction, int *A_support, int *B_support)
+{
+    // Returns the support vector in the Minkowski difference, and also gives the indices of the points in A and B whose difference is that support vector.
+    *A_support = support_index(A, A_len, direction);
+    *B_support = support_index(B, B_len, vec3_neg(direction));
+    return vec3_sub(A[*A_support], B[*B_support]);
 }
 
-static vec3 barycentric_triangle(vec3 a, vec3 b, vec3 c, float wa, float wb, float wc)
+bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifold *manifold)
 {
-    return vec3_mul(vec3_add(vec3_mul(a, wa), vec3_add(vec3_mul(b, wb), vec3_mul(c, wc))), 1.0/(wa + wb + wc));
-}
-static bool barycentric_triangle_convex(float wa, float wb, float wc)
-{
-    // tests whether the weights wa+wb+wc = 1 are a convex combination of the triangle points.
-    // Weights _must_ have wa+wb+wc for this to work.
-    return 0 <= wa && wa <= 1 && 0 <= wb && wb <= 1 && 0 <= wc && wc <= 1;
-}
-static vec3 closest_point_on_triangle_to_point(vec3 a, vec3 b, vec3 c, vec3 p)
-{
-    vec3 n = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
-    vec3 ap = vec3_sub(p, a);
-    vec3 bp = vec3_sub(p, b);
-    vec3 cp = vec3_sub(p, c);
-    float wa = vec3_dot(vec3_cross(bp, cp), n);
-    float wb = vec3_dot(vec3_cross(cp, ap), n);
-    float wc = vec3_dot(vec3_cross(ap, bp), n);
-    float winv = 1.0 / (wa + wb + wc);
-    wa *= winv; wb *= winv; wc *= winv;
-    if (wa < 0) {
-       if (vec3_dot(vec3_sub(p, b), vec3_sub(c, b)) < 0) return b;
-       if (vec3_dot(vec3_sub(p, c), vec3_sub(b, c)) < 0) return c;
-       return closest_point_on_line_to_point(b, c, p);
-    }
-    if (wb < 0) {
-       if (vec3_dot(vec3_sub(p, c), vec3_sub(a, c)) < 0) return c;
-       if (vec3_dot(vec3_sub(p, a), vec3_sub(c, a)) < 0) return a;
-       return closest_point_on_line_to_point(c, a, p);
-    }
-    if (wc < 0) {
-        if (vec3_dot(vec3_sub(p, a), vec3_sub(b, a)) < 0) return a;
-        if (vec3_dot(vec3_sub(p, b), vec3_sub(a, b)) < 0) return b;
-        return closest_point_on_line_to_point(a, b, p);
-    }
-    return barycentric_triangle(a,b,c, wa,wb,wc);
-}
-
-static vec3 closest_point_on_simplex(int n, vec3 points[], vec3 p)
-{
-    if (n == 1) return points[0];
-    if (n == 2) {
-        if (vec3_dot(vec3_sub(p, points[0]), vec3_sub(points[1], points[0])) < 0) {
-            return points[0];
-        }
-        if (vec3_dot(vec3_sub(p, points[1]), vec3_sub(points[0], points[1])) < 0) {
-            return points[1];
-        }
-        return closest_point_on_line_to_point(points[0], points[1], p);
-    }
-    if (n == 3) {
-        return closest_point_on_triangle_to_point(points[0], points[1], points[2], p);
-    }
-    if (n == 4) {
-        vec3 a = points[0]; vec3 b = points[1]; vec3 c = points[2]; vec3 d = points[3];
-        vec3 close_points[4];
-        close_points[0] = closest_point_on_triangle_to_point(a,b,c, p);
-        close_points[1] = closest_point_on_triangle_to_point(a,b,d, p);
-        close_points[2] = closest_point_on_triangle_to_point(a,c,d, p);
-        close_points[3] = closest_point_on_triangle_to_point(b,c,d, p);
-        float mindis = -1;
-        int min_index = 0;
-        for (int i = 0; i < 4; i++) {
-            float dis = vec3_dot(close_points[i], close_points[i]);
-            if (mindis < 0 || dis < mindis) {
-                mindis = dis; min_index = i;
-            }
-        }
-        return close_points[min_index];
-    }
-    return vec3_zero(); //bad input
-}
-
-/*
-static vec3 support(vec3 *poly, int len, vec3 direction, int *index)
-{
-    // Assuming no structure to the convex polyhedra. Just iterates over all points and takes the maximum in the given direction.
-    vec3 support_vector = poly[0];
-    *index = 0;
-    float support_value = vec3_dot(support_vector, direction);
-    for (int i = 1; i < len; i++) {
-        float new_support_value = vec3_dot(poly[i], direction);
-        if (new_support_value > support_value) {
-            support_value = new_support_value;
-            support_vector = poly[i];
-            *index = i;
-        }
-    }
-    return support_vector;
-}
-static vec3 md_support(vec3 *A, int A_len, vec3 *B, int B_len, vec3 direction, int *A_index, int *B_index)
-{
-    vec3 A_support = support(A, A_len, direction, A_index);
-    vec3 B_support = support(B, B_len, vec3_sub(0, direction), B_index);
-    return vec3_sub(A_support, B_support);
-}
-bool convex_polyhedra_intersection(vec3 *A, int A_len, vec3 *B, int B_len, vec3 *separating_vector)
-{
-    // Gilbert-Johnson-Keerthi algorithm.
-    vec3 start_direction = new_vec3(1,1,1);
-    // Extreme points of the Minkowski difference are successively used to descend a simplex in search of the origin.
-    // The GJK algorithm tries to find a simplex formed from points of A (-) B bounding the origin.
-    vec3 simplex[4] = {0};
-    // Indices are stored for the points on each polyhedra which gave these extreme points of the Minkowski difference.
-    int A_indices[4] = {0};
-    int B_indices[4] = {0};
+    // Initialize the simplex as a line segment.
+    vec3 simplex[4];
+    int indices_A[4];
+    int indices_B[4];
     int n = 2;
-    // Initialize a 2-simplex (a line segment).
-    simplex[0] = md_support(A, A_len, B, B_len, start_direction, &A_indices[0], &B_indices[0]);
-    simplex[1] = md_support(A, A_len, B, B_len, start_direction, &A_indices[1], &B_indices[1]);
+    simplex[0] = cso_support(A, A_len, B, B_len, new_vec3(1,1,1), &indices_A[0], &indices_B[0]);
+    simplex[1] = cso_support(A, A_len, B, B_len, vec3_neg(simplex[0]), &indices_A[1], &indices_B[1]);
+    vec3 origin = vec3_zero();
+
+    // Go into a loop, computing the closest point on the simplex and expanding it in the opposite direction (from the origin),
+    // and removing simplex points to maintain n <= 4.
     while (1) {
-        vec3 closest_point = closest_point_on_simplex(n, simplex, vec3_zero());
-        int replace_index = n; // The index to add the new simplex point at.
-        if (n == 4) {
-            // If the simplex is a tetrahedron, remove the point least extreme in the new direction.
-            // The index of this removed point is the index to continue adding at.
-            replace_index = 0;
-            float sup = vec3_dot(simplex[0], closest_point);
-            for (int i = 1; i < n; i++) {
-                float new_sup = vec3_dot(simplex[i], closest_point);
-                if (new_sup > sup) {
-                    replace_index = i;
-                    sup = new_sup;
+        vec3 c = closest_point_on_simplex(n, simplex, origin);
+        vec3 dir = vec3_neg(c);
+
+        // If the simplex is a tetrahedron and contains the origin, the CSO contains the origin.
+        if (n == 4 && point_in_tetrahedron(simplex[0],simplex[1],simplex[2],simplex[3], origin)) {
+            paint_points_c(Canvas3D, &origin, 1, "tg", 50);
+
+            // Brute force for comparison.
+            #if 1
+            Polyhedron poly = compute_minkowski_difference(convex_hull(A, A_len), convex_hull(B, B_len));
+            PolyhedronTriangle *tri = poly.triangles.first;
+            vec3 brute_p = closest_point_on_triangle_to_point(tri->points[0]->position,tri->points[1]->position,tri->points[2]->position, origin);
+            while ((tri = tri->next) != NULL) {
+                vec3 new_p = closest_point_on_triangle_to_point(tri->points[0]->position,tri->points[1]->position,tri->points[2]->position, origin);
+                if (vec3_dot(new_p, new_p) < vec3_dot(brute_p, brute_p)) brute_p = new_p;
+            }
+	    paint_points_c(Canvas3D, &brute_p, 1, "g", 30);
+            #endif
+
+            // Perform the expanding polytope algorithm.
+            // Instead of using a fancy data-structure, the polytope is maintained by keeping
+            // a pool. Entries can be nullified, and entries re-added in those empty spaces, but linear iterations still need to
+            // check up to *_len features. If the arrays are not long enough, then this fails.
+            int16_t points[1024 * 2] = {-1};
+            const int points_n = 2;
+            int points_len = 0;
+            int16_t triangles[1024 * 6] = {-1};
+            const int triangles_n = 6;
+            int triangles_len = 0;
+            int16_t edges[1024 * 2] = {-1};
+            const int edges_n = 2;
+            int edges_len = 0;
+
+            // For efficiency, features are added by this simple macro'd routine. e.g.,
+            //     int new_tri_index;
+            //     new_feature_index(triangles, new_tri_index);
+            // will get the index of an available triangle slot.
+            static const char *EPA_error_string = ERROR_ALERT "Expanding polytope algorithm: Fixed-length feature lists failed to be sufficient.\n";
+            #define new_feature_index(TYPE,INDEX)\
+            {\
+                bool found = false;\
+                for (int i = 0; i < TYPE ## _len; i++) {\
+                    if (TYPE [TYPE ## _n * i] == -1) {\
+                        ( INDEX ) = i;\
+                        found = true;\
+                        break;\
+                    }\
+                }\
+                if (!found) {\
+                    if (TYPE ## _len == 1024) {\
+                        fprintf(stderr, EPA_error_string);\
+                        exit(EXIT_FAILURE);\
+                    }\
+                    ( INDEX ) = TYPE ## _len ++;\
+                }\
+            }
+            // Point: References the indices of the points of A and B for which the difference is this point.
+            #define add_point(POINT_INDEX_A,POINT_INDEX_B,INDEX) {\
+                new_feature_index(points, ( INDEX ));\
+                points[points_n * ( INDEX )] = ( POINT_INDEX_A );\
+                points[points_n * ( INDEX ) + 1] = ( POINT_INDEX_B );\
+            }
+            // Edge: References its end points.
+            #define add_edge(AI,BI,INDEX) {\
+                new_feature_index(edges, ( INDEX ));\
+                edges[edges_n * ( INDEX )] = ( AI );\
+                edges[edges_n * ( INDEX ) + 1] = ( BI );\
+            }
+            // Triangle: References its points in anti-clockwise winding order, abc, and references its edges, ab, bc, ca.
+            #define add_triangle(AI,BI,CI) {\
+                int index;\
+                new_feature_index(triangles, index);\
+                triangles[triangles_n * index] = ( AI );\
+                triangles[triangles_n * index + 1] = ( BI );\
+                triangles[triangles_n * index + 2] = ( CI );\
+                add_edge(( AI ),( BI ),triangles[triangles_n * index + 3]);\
+                add_edge(( BI ),( CI ),triangles[triangles_n * index + 4]);\
+                add_edge(( CI ),( AI ),triangles[triangles_n * index + 5]);\
+            }
+
+            float v = tetrahedron_6_times_volume(simplex[0],simplex[1],simplex[2],simplex[3]);
+            if (v < 0) {
+                // If the tetrahedron has negative volume, swap two entries, forcing the winding order to be anti-clockwise from outside.
+                vec3 temp = simplex[0];
+                simplex[0] = simplex[1];
+                simplex[1] = temp;
+            }
+            //---since it is known that everything is empty, it would be more efficient to just hardcode the initial tetrahedron.
+            int dummy; // since the macro saves the index.
+            for (int i = 0; i < 4; i++) {
+                add_point(indices_A[i], indices_B[i], dummy);
+            }
+            add_triangle(0,1,2);
+            add_triangle(1,0,3);
+            add_triangle(2,1,3);
+            add_triangle(0,2,3);
+
+            // The initial tetrahedron has been set up. Proceed with EPA.
+            while (1) {
+                // Find the closest triangle to the origin.
+                float min_d = -1;
+                int closest_triangle_index = -1;
+                for (int i = 0; i < triangles_len; i++) {
+                    if (triangles[triangles_n*i] == -1) continue;
+
+                    vec3 a = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
+                    vec3 b = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
+                    vec3 c = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
+
+                    // vec3 a = *((vec3 *) &points[points_n*triangles[triangles_n*i]]);
+                    // vec3 b = *((vec3 *) &points[points_n*triangles[triangles_n*i+1]]);
+                    // vec3 c = *((vec3 *) &points[points_n*triangles[triangles_n*i+2]]);
+                    vec3 p = point_to_triangle_plane(a,b,c, origin);
+                    float new_d = vec3_dot(p, p);
+                    if (min_d == -1 || new_d < min_d) {
+                        min_d = new_d;
+                        closest_triangle_index = i;
+                    }
+                }
+	        vec3 a = vec3_sub(A[points[points_n*triangles[triangles_n*closest_triangle_index+0]]], B[points[points_n*triangles[triangles_n*closest_triangle_index+0] + 1]]);
+	        vec3 b = vec3_sub(A[points[points_n*triangles[triangles_n*closest_triangle_index+1]]], B[points[points_n*triangles[triangles_n*closest_triangle_index+1] + 1]]);
+	        vec3 c = vec3_sub(A[points[points_n*triangles[triangles_n*closest_triangle_index+2]]], B[points[points_n*triangles[triangles_n*closest_triangle_index+2] + 1]]);
+
+                // vec3 a = *((vec3 *) &points[points_n*triangles[triangles_n*closest_triangle_index]]);
+                // vec3 b = *((vec3 *) &points[points_n*triangles[triangles_n*closest_triangle_index + 1]]);
+                // vec3 c = *((vec3 *) &points[points_n*triangles[triangles_n*closest_triangle_index + 2]]);
+
+                // Find an extreme point in the direction from the origin to the closest point on the polytope boundary.
+                // The convex hull of the points of the polytope adjoined with this new point will be computed.
+                vec3 expand_to = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
+                int new_point_A_index, new_point_B_index;
+                vec3 new_point = cso_support(A, A_len, B, B_len, expand_to, &new_point_A_index, &new_point_B_index);
+                bool new_point_on_polytope = false;
+                for (int i = 0; i < points_len; i++) {
+                    // Unreferenced but non-nullified points can't be on the convex hull, so they can be checked against without problems.
+                    if (points[points_n*i] == -1) continue;
+                    if (points[points_n*i] == new_point_A_index && points[points_n*i+1] == new_point_B_index) {
+                        new_point_on_polytope = true;
+                        break;
+                    }
+                }
+                if (new_point_on_polytope) {
+                    // The closest triangle is on the border of the polyhedron, so the closest point on this triangle is the closest point
+                    // to the border of the polyhedron.
+                    vec3 closest_point = point_to_triangle_plane(a,b,c, origin);
+                    paint_points_c(Canvas3D, &closest_point, 1, "tk", 120);
+                    manifold->separating_vector = closest_point;
+                    return true;
+                }
+
+                // Remove the visible triangles and their directed edges. Points do not need to be nullified.
+                for (int i = 0; i < triangles_len; i++) {
+                    if (triangles[triangles_n*i] == -1) continue;
+                    vec3 a = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
+                    vec3 b = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
+                    vec3 c = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
+
+                    vec3 n = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
+                    float v = tetrahedron_6_times_volume(a,b,c, new_point);
+                    if (v < 0) {
+                        // Remove this triangle, as it is visible from the new point.
+                        edges[edges_n*triangles[triangles_n*i+3]] = -1;
+                        edges[edges_n*triangles[triangles_n*i+4]] = -1;
+                        edges[edges_n*triangles[triangles_n*i+5]] = -1;
+                        triangles[triangles_n*i] = -1;
+                    }
+                }
+                int new_point_index;
+                add_point(new_point_A_index, new_point_B_index, new_point_index);
+
+                // Search for boundary edges and save them in an array.
+                int boundary_len = 0;
+                int16_t boundary_edges[1024];
+                for (int i = 0; i < edges_len; i++) {
+                    if (edges[edges_n*i] == -1) continue;
+                    // Search for an incident triangle, by looking for the opposite edge (with reversed direction).
+                    bool boundary = true;
+                    for (int j = 0; j < edges_len; j++) {
+                        if (edges[edges_n*j] == -1) continue;
+                        if (   points[points_n*edges[edges_n*i]] == points[points_n*edges[edges_n*j+1]]
+                            && points[points_n*edges[edges_n*i]+1] == points[points_n*edges[edges_n*j+1]+1]
+                            && points[points_n*edges[edges_n*i+1]] == points[points_n*edges[edges_n*j]]
+                            && points[points_n*edges[edges_n*i+1]+1] == points[points_n*edges[edges_n*j]+1]) {
+                            // This is the opposite edge, so a boundary edge has not been found.
+                            boundary = false;
+                            break;
+                        }
+                    }
+                    if (boundary) {
+                        // Instead of adding the triangle straight away, save the boundary edge of the new triangle in the array.
+                        // This is because the edges are still being iterated, and if new ones are added, they could be registered as boundary edges.
+                        boundary_edges[2*boundary_len] = edges[edges_n*i+1];
+                        boundary_edges[2*boundary_len+1] = edges[edges_n*i];
+                        boundary_len ++; //--- not checking out-of-space.
+                    }
+                }
+                // Add the triangles of the extending cone.
+                for (int i = 0; i < boundary_len; i++) {
+                    add_triangle(boundary_edges[2*i], boundary_edges[2*i+1], new_point_index);
                 }
             }
-            n --;
         }
+
+        // The polyhedra are not intersecting. Descend the simplex and compute the closest point on the CSO.
         int A_index, B_index;
-        vec3 support = md_support(A, A_len, B, B_len, vec3_sub(0, closest_point), &A_index, &B_index);
-        vec3 support_value = vec3_dot(support, closest_point);
-        if (support_value <= 0) {
-            // The polyhedra are intersecting. ---(not returning any information about the intersection).
-            return true;
-        }
-        // Add the new point to the simplex.
-        simplex[replace_index] = support;
-        A_indices[replace_index] = A_index;
-        B_indices[replace_index] = B_index;
-        // Check if the new point is really a new point. If it was already on the simplex then there is no intersection.
+        vec3 new_point = cso_support(A, A_len, B, B_len, dir, &A_index, &B_index);
+        bool on_simplex = false;
         for (int i = 0; i < n; i++) {
-            if (i == replace_index) continue; // make sure not to check against the index of the new point.
-            if (A_indices[i] == A_index && B_indices[i] == B_index) {
-                // If both indices are the same on both polyhedra, this is the same point. ---could it be easier to just check equality of vec3s?
-                // Not intersecting.
+            if (A_index == indices_A[i] && B_index == indices_B[i]) {
+                on_simplex = true;
+                break;
+            }
+        }
+        if (n == 4 && !on_simplex) {
+            int replace = simplex_extreme_index(n, simplex, c);
+            simplex[replace] = new_point;
+            indices_A[replace] = A_index;
+            indices_B[replace] = B_index;
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            //----This check seems to fix an infinite loop bug here, but I am not sure if the reasoning is correct.
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            if (vec3_dot(new_point, dir) <= 0) {
+                paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+                vec3 closest_on_poly = closest_point_on_tetrahedron_to_point(simplex[0], simplex[1], simplex[2], simplex[3], origin);
+                paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
                 return false;
             }
+        } else if (n == 3 && on_simplex) {
+            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+            vec3 closest_on_poly = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[2], origin);
+            paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+            return false;
+        } else if (n == 2 && on_simplex) {
+            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+            vec3 closest_on_poly = closest_point_on_line_segment_to_point(simplex[0], simplex[1], origin);
+            paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+            return false;
+        } else if (n == 1 && on_simplex) {
+            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+            paint_points_c(Canvas3D, &simplex[0], 1, "tb", 50);
+            return false;
+        } else if (!on_simplex) {
+            simplex[n] = new_point;
+            indices_A[n] = A_index;
+            indices_B[n] = B_index;
+            n++;
+        } else {
+            int remove = simplex_extreme_index(n, simplex, c);
+            for (int j = remove; j < n - 1; j++) {
+                simplex[j] = simplex[j + 1];
+                indices_A[j] = indices_A[j + 1];
+                indices_B[j] = indices_B[j + 1];
+            }
+            n--;
         }
     }
 }
-*/

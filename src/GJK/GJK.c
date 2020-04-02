@@ -4,124 +4,6 @@ project_libs:
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
 
-/*================================================================================
-----------------------------------------------------------------------------------
-        Convex polyhedra collision.
-----------------------------------------------------------------------------------
-    Collision and contact information is computed for two convex polyhedra.
-    The polyhedra are given as point clouds, which define their convex hulls.
-    The GJK (Gilbert-Johnson-Keerthi) algorithm is used to descend a simplex
-    through the Minkowski difference, or configuration space obstacle, of the polyhedra.
-    If the simplex ever bounds the origin, the polyhedra are intersecting (as for some
-    points a in A and b in B, a - b = 0 => a = b).
-
-    If they are not intersecting, the closest points of the two polyhedra can be computed from
-    the closest point on the CSO to the origin.
-    If they are colliding, contact information is wanted. The minimum separating vector is given,
-    computed by the expanding polytope algorithm (EPA). This algorithm progressively expands
-    a sub-polytope of the CSO in order to find the closest point on the CSO boundary to the origin,
-    whose negative is the separating vector, the minimal translation to move the CSO so that it does not
-    bound the origin. This can be used to infer the contact normal and contact points on each polyhedron.
-================================================================================*/
-static int support_index(vec3 *points, int num_points, vec3 direction)
-{
-    float d = vec3_dot(points[0], direction); // At least one point must be given.
-    int index = 0;
-    for (int i = 1; i < num_points; i++) {
-        float new_d = vec3_dot(points[i], direction);
-        if (new_d > d) {
-            d = new_d;
-            index = i;
-        }
-    }
-    return index;
-}
-// cso: Configuration space obstacle, another name for the Minkowski difference of two sets.
-static vec3 cso_support(vec3 *A, int A_len, vec3 *B, int B_len, vec3 direction, int *A_support, int *B_support)
-{
-    // Returns the support vector in the Minkowski difference, and also gives the indices of the points in A and B whose difference is that support vector.
-    *A_support = support_index(A, A_len, direction);
-    *B_support = support_index(B, B_len, vec3_neg(direction));
-    return vec3_sub(A[*A_support], B[*B_support]);
-}
-bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len)
-{
-    // Initialize the simplex as a line segment.
-    vec3 simplex[4];
-    int indices_A[4];
-    int indices_B[4];
-    int n = 2;
-    simplex[0] = cso_support(A, A_len, B, B_len, new_vec3(1,1,1), &indices_A[0], &indices_B[0]);
-    simplex[1] = cso_support(A, A_len, B, B_len, vec3_neg(simplex[0]), &indices_A[1], &indices_B[1]);
-    vec3 origin = vec3_zero();
-
-    // Go into a loop, computing the closest point on the simplex and expanding it in the opposite direction (from the origin),
-    // and removing simplex points to maintain n <= 4.
-    while (1) {
-        vec3 c = closest_point_on_simplex(n, simplex, origin);
-        vec3 dir = vec3_neg(c);
-
-        // If the simplex is a tetrahedron and contains the origin, the CSO contains the origin.
-        if (n == 4 && point_in_tetrahedron(simplex[0],simplex[1],simplex[2],simplex[3], origin)) {
-            paint_points_c(Canvas3D, &origin, 1, "tg", 50);
-            //---EPA here.
-            return true;
-        }
-        int A_index, B_index;
-        vec3 new_point = cso_support(A, A_len, B, B_len, dir, &A_index, &B_index);
-
-        bool on_simplex = false;
-        for (int i = 0; i < n; i++) {
-            if (A_index == indices_A[i] && B_index == indices_B[i]) {
-                on_simplex = true;
-                break;
-            }
-        }
-        if (n == 4 && !on_simplex) {
-            int replace = simplex_extreme_index(n, simplex, c);
-            simplex[replace] = new_point;
-            indices_A[replace] = A_index;
-            indices_B[replace] = B_index;
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////
-            //----This check seems to fix an infinite loop bug here, but I am not sure if the reasoning is correct.
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////
-            if (vec3_dot(new_point, dir) <= 0) {
-                paint_points_c(Canvas3D, &origin, 1, "tr", 50);
-                vec3 closest_on_poly = closest_point_on_tetrahedron_to_point(simplex[0], simplex[1], simplex[2], simplex[3], origin);
-                paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
-                return false;
-            }
-        } else if (n == 3 && on_simplex) {
-            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
-            vec3 closest_on_poly = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[2], origin);
-            paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
-            return false;
-        } else if (n == 2 && on_simplex) {
-            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
-            vec3 closest_on_poly = closest_point_on_line_segment_to_point(simplex[0], simplex[1], origin);
-            paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
-            return false;
-        } else if (n == 1 && on_simplex) {
-            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
-            paint_points_c(Canvas3D, &simplex[0], 1, "tb", 50);
-            return false;
-        } else if (!on_simplex) {
-            simplex[n] = new_point;
-            indices_A[n] = A_index;
-            indices_B[n] = B_index;
-            n++;
-        } else {
-            int remove = simplex_extreme_index(n, simplex, c);
-            for (int j = remove; j < n - 1; j++) {
-                simplex[j] = simplex[j + 1];
-                indices_A[j] = indices_A[j + 1];
-                indices_B[j] = indices_B[j + 1];
-            }
-            n--;
-        }
-    }
-}
-
 int N = 0;
 void contains_origin(Polyhedron poly)
 {
@@ -153,7 +35,6 @@ void contains_origin(Polyhedron poly)
 	    paint_points_c(Canvas3D, &brute_p, 1, "g", 30);
 
             // Perform the expanding polytope algorithm.
-
             // Instead of using a fancy data-structure, the polytope is maintained by keeping
             // a pool. Entries can be nullified, and entries readded in those empty spaces, but linear iterations still need to
             // check up to *_len features. If the arrays are not long enough, then this fails.
@@ -401,27 +282,7 @@ int A_len;
 vec3 *B = NULL;
 int B_len;
 Polyhedron mink;
-void compute_minkowski_difference(Polyhedron A, Polyhedron B)
-{
-    int num_points = polyhedron_num_points(&A) * polyhedron_num_points(&B);
-    vec3 *points = malloc(sizeof(float)*3 * num_points);
-    mem_check(points);
-    PolyhedronPoint *p = A.points.first;
-    int i = 0;
-    while (p != NULL) {
-        int j = 0;
-        PolyhedronPoint *q = B.points.first;
-        while (q != NULL) {
-            points[i + j*polyhedron_num_points(&A)] = vec3_sub(p->position, q->position);
-            q = q->next;
-            j++;
-        }
-        p = p->next;
-        i++;
-    }
-    mink = convex_hull(points, num_points);
-    free(points);
-}
+
 void create(void)
 {
     polyA = random_convex_polyhedron(100, 20);
@@ -441,8 +302,9 @@ void create(void)
         p->position = vec3_add(p->position, shift);
         p = p->next;
     }
-    compute_minkowski_difference(polyA, polyB);
+    mink = compute_minkowski_difference(polyA, polyB);
 }
+GJKManifold manifold;
 void test_gjk(void)
 {
     if (A != NULL) free(A);
@@ -468,7 +330,7 @@ void test_gjk(void)
         i++;
     }
 
-    convex_hull_intersection(A, A_len, B, B_len);
+    convex_hull_intersection(A, A_len, B, B_len, &manifold);
 }
 
 extern void input_event(int key, int action, int mods)
@@ -476,6 +338,15 @@ extern void input_event(int key, int action, int mods)
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_C) {
             create();
+        }
+        if (key == GLFW_KEY_P) {
+            PolyhedronPoint *p = polyA.points.first;
+            while (p != NULL) {
+                p->position = vec3_add(p->position, vec3_neg(manifold.separating_vector));
+                // Not giving it a slight error leads to edge cases on contact ...
+                p->position = vec3_add(p->position, new_vec3(0.1,0.1,0.1));
+                p = p->next;
+            }
         }
     }
 }
@@ -505,7 +376,7 @@ extern void loop_program(void)
             p->position.vals[1] += y_move * dt;
             p = p->next;
         }
-        compute_minkowski_difference(polyA, polyB);
+        mink = compute_minkowski_difference(polyA, polyB);
     }
 
     draw_polyhedron2(&polyA, NULL, "tb", 5);

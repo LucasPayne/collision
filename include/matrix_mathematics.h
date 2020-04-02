@@ -171,6 +171,9 @@ void mat3x3_orthonormalize(mat3x3 *m);
 
 bool vec3_equal(vec3 a, vec3 b);
 
+vec3 rand_vec3(float r);
+
+
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 
 

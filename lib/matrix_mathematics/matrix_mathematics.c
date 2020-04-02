@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "matrix_mathematics.h"
-
+#include "helper_definitions.h"
 
 // Static helper functions
 //--------------------------------------------------------------------------------
@@ -629,4 +629,9 @@ bool vec3_equal(vec3 a, vec3 b)
         if (a.vals[i] != b.vals[i]) return false;
     }
     return true;
+}
+
+vec3 rand_vec3(float r)
+{
+    return new_vec3(frand()*r-r/2,frand()*r-r/2,frand()*r-r/2);
 }

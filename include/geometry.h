@@ -26,8 +26,8 @@ void ___dl_remove(DLList *list, DLNode *node);
 
 /*================================================================================
     Data structure for polyhedra, with adjacency information.
-    This is not designed for compactness or direct efficiency, but rather flexibility
-    as a data structure.  Vertices do not contain adjacency information.  Marks are
+    This is not designed for compactness or direct efficiency, but rather originally as a data
+    structure for the iterative convex hull algorithm.  Vertices do not contain adjacency information. Marks are
     available space for algorithms to mark triangles as traversed, etc.
 ================================================================================*/
 // Polyhedron structures. The implementation is partly based on O'Rourke, Computational Geometry in C.
@@ -90,8 +90,6 @@ int polyhedron_num_points(Polyhedron *poly);
 int polyhedron_num_edges(Polyhedron *poly);
 int polyhedron_num_triangles(Polyhedron *poly);
 
-// Helper function for determining the sign of tetrahedron abcd.
-float tetrahedron_6_times_volume(vec3 a, vec3 b, vec3 c, vec3 d);
 
 // Printing and visualization.
 void print_polyhedron(Polyhedron *p);
@@ -115,11 +113,18 @@ vec3 closest_point_on_triangle_to_point(vec3 a, vec3 b, vec3 c, vec3 p);
 vec3 closest_point_on_tetrahedron_to_point(vec3 a, vec3 b, vec3 c, vec3 d, vec3 p);
 
 /*================================================================================
+    Projection methods.
+================================================================================*/
+vec3 point_to_triangle_plane(vec3 a, vec3 b, vec3 c, vec3 p);
+vec3 point_to_triangle_plane_barycentric(vec3 a, vec3 b, vec3 c, vec3 p);
+
+/*================================================================================
     Simplex methods.
 ================================================================================*/
 vec3 closest_point_on_simplex(int n, vec3 points[], vec3 p);
 int simplex_extreme_index(int n, vec3 points[], vec3 dir);
 bool point_in_tetrahedron(vec3 a, vec3 b, vec3 c, vec3 d, vec3 p);
+float tetrahedron_6_times_volume(vec3 a, vec3 b, vec3 c, vec3 d);
 
 /*================================================================================
     Testing utilities.

@@ -57,50 +57,78 @@ void contains_origin(Polyhedron poly)
             }
 	    paint_points_c(Canvas3D, &brute_p, 1, "g", 30);
 
-            vec3 closest_points[4];
-            int INFINITE = 500000;
-            int INFINITE_COUNTER = 0;
-            while (1) {
-                if (INFINITE_COUNTER++ == INFINITE) {
-                    fprintf(stderr, ERROR_ALERT "apparently stuck in infinite loop.\n");
-                    exit(EXIT_FAILURE);
-                }
-                // Find the closest point on the boundary of the tetrahedron, and the index of the triangle that it belongs to.
-                // ---- Could skip the full closest point computation, since it is assumed the closest point is on the interior of a triangle anyway.
-                closest_points[0] = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[2], origin);
-                closest_points[1] = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[3], origin);
-                closest_points[2] = closest_point_on_triangle_to_point(simplex[0], simplex[2], simplex[3], origin);
-                closest_points[3] = closest_point_on_triangle_to_point(simplex[1], simplex[2], simplex[3], origin);
-                float min_d = vec3_dot(closest_points[0], closest_points[0]);
-                int index = 0;
-                for (int i = 1; i < 4; i++) {
-                    float new_d = vec3_dot(closest_points[i], closest_points[i]);
-                    if (new_d < min_d) {
-                        min_d = new_d;
-                        index = i;
-                    }
-                }
-                vec3 new_point = polyhedron_extreme_point(poly, closest_points[index]);
-                bool on_simplex = false;
-		int remove = simplex_extreme_index(n, simplex, vec3_neg(closest_points[index]));
-                for (int i = 0; i < 4; i++) {
-                    if (vec3_equal(new_point, simplex[i])) {
-                        on_simplex = true;
-                        break;
-                    }
-                }
-                if (!on_simplex) {
-                    simplex[remove] = new_point;
-                } else {
-                    for (int j = remove; j < n - 1; j++) {
-                        simplex[j] = simplex[j + 1];
-                    }
-                    // The simplex is now a triangle, the closest point on the boundary being the closest point on this triangle.
-                    vec3 boundary_point = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[2], origin);
-                    paint_points_c(Canvas3D, &boundary_point, 1, "k", 30);
-                    return;
-                }
+            // Perform the expanding polytope algorithm.
+
+            // Instead of using a fancy data-structure, the polytope is maintained by keeping
+            // a pool. Entries can be nullified, and entries readded in those empty spaces, but linear iterations still need to
+            // check up to *_len features. If the arrays are not long enough, then this fails.
+            float points[1024 * 3] = {-1}; //----should be indices. If coord is -1, this is definitely buggy.
+            const int points_n = 3;
+            int points_len = 0;
+            int16_t triangles[1024 * 3] = {-1};
+            const int triangles_n = 3;
+            int triangles_len = 0;
+            int16_t edges[1024 * 2] = {-1};
+            const int edges_n = 2;
+            int edges_len = 0;
+
+            // For efficiency, features are added by this simple macro'd routine. e.g.,
+            //     int new_tri_index;
+            //     new_feature_index(triangles, new_tri_index);
+            // will get the index of an available triangle slot.
+            static const char *EPA_error_string = ERROR_ALERT "Expanding polytope algorithm: Fixed-length feature lists failed to be sufficient.\n";
+            #define new_feature_index(TYPE,INDEX)\
+            {\
+                bool found = false;\
+                for (int i = 0; i < TYPE ## _len; i++) {\
+                    if (TYPE [TYPE ## _n * i] == -1) {\
+                        ( INDEX ) = i;\
+                        found = true;\
+                        break;\
+                    }\
+                }\
+                if (!found) {\
+                    if (TYPE ## _len == 1024) {\
+                        fprintf(stderr, EPA_error_string);\
+                        exit(EXIT_FAILURE);\
+                    }\
+                    ( INDEX ) = TYPE ## _len ++;\
+                }\
             }
+            #define add_point(VEC) {\
+                int index;\
+                new_feature_index(points, index);\
+                points[points_n * index] = ( VEC ).vals[0];\
+                points[points_n * index + 1] = ( VEC ).vals[1];\
+                points[points_n * index + 2] = ( VEC ).vals[2];\
+            }
+            #define add_edge(AI,BI) {\
+                int index;\
+                new_feature_index(edges, index);\
+                edges[edges_n * index] = ( AI );\
+                edges[edges_n * index + 1] = ( BI );\
+            }
+            #define add_triangle(AI,BI,CI) {\
+                int index;\
+                new_feature_index(triangles, index);\
+                triangles[triangles_n * index] = ( AI );\
+                triangles[triangles_n * index + 1] = ( BI );\
+                triangles[triangles_n * index + 2] = ( CI );\
+            }
+            float v = tetrahedron_6_times_volume(simplex[0],simplex[1],simplex[2],simplex[3]);
+            if (v < 0) {
+                // If the tetrahedron has negative volume, swap two entries, forcing the winding order to be anti-clockwise from outside.
+                vec3 temp = simplex[0];
+                simplex[0] = simplex[1];
+                simplex[1] = temp;
+            }
+
+            for (int i = 0; i < 4; i++) {
+                add_point(simplex[i]);
+            }
+            add_
+            
+
             return;
         }
         vec3 new_point = polyhedron_extreme_point(poly, dir);

@@ -79,20 +79,39 @@ static bool barycentric_triangle_convex(float wa, float wb, float wc)
     // Weights _must_ have wa+wb+wc for this to work.
     return 0 <= wa && wa <= 1 && 0 <= wb && wb <= 1 && 0 <= wc && wc <= 1;
 }
+
+// Get the barycentric coordinates of the projection of the point into the plane spanned by the triangle.
+vec3 point_to_triangle_plane_barycentric(vec3 a, vec3 b, vec3 c, vec3 p)
+{
+    //---all three collinear gives a divison by zero?
+    vec3 n = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
+    vec3 ap = vec3_sub(p, a);
+    vec3 bp = vec3_sub(p, b);
+    vec3 cp = vec3_sub(p, c);
+    vec3 w;
+    w.vals[0] = vec3_dot(vec3_cross(bp, cp), n);
+    w.vals[1] = vec3_dot(vec3_cross(cp, ap), n);
+    w.vals[2] = vec3_dot(vec3_cross(ap, bp), n);
+    float winv = 1.0 / (w.vals[0] + w.vals[1] + w.vals[2]);
+    w.vals[0] *= winv; w.vals[1] *= winv; w.vals[2] *= winv;
+    return w;
+}
+// Get the cartesian coordinates of the projection of the point into the plane spanned by the triangle.
+vec3 point_to_triangle_plane(vec3 a, vec3 b, vec3 c, vec3 p)
+{
+    vec3 w = point_to_triangle_plane_barycentric(a, b, c, p);
+    return barycentric_triangle(a, b, c, w.vals[0], w.vals[1], w.vals[2]);
+}
+
 vec3 closest_point_on_triangle_to_point(vec3 a, vec3 b, vec3 c, vec3 p)
 {
     // Get the barycentric coordinates of the projection of p into the triangle's plane,
     // then use barycentric regions then tests against normals to determine the Voronoi region,
     // and return the closest point on the relevant feature.
-    vec3 n = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
-    vec3 ap = vec3_sub(p, a);
-    vec3 bp = vec3_sub(p, b);
-    vec3 cp = vec3_sub(p, c);
-    float wa = vec3_dot(vec3_cross(bp, cp), n);
-    float wb = vec3_dot(vec3_cross(cp, ap), n);
-    float wc = vec3_dot(vec3_cross(ap, bp), n);
-    float winv = 1.0 / (wa + wb + wc);
-    wa *= winv; wb *= winv; wc *= winv;
+
+    vec3 w = point_to_triangle_plane_barycentric(a, b, c, p);
+    float wa,wb,wc;
+    wa = w.vals[0]; wb = w.vals[1]; wc = w.vals[2];
     if (wa < 0) {
        if (vec3_dot(vec3_sub(p, b), vec3_sub(c, b)) < 0) return b;
        if (vec3_dot(vec3_sub(p, c), vec3_sub(b, c)) < 0) return c;

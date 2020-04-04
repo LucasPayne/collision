@@ -27,7 +27,10 @@ vec3 *random_points(float radius, int n)
     float o = 50;
     vec3 offset = new_vec3(frand()*o-o/2,frand()*o-o/2,frand()*o-o/2);
     for (int i = 0; i < n; i++) {
-        points[i] = vec3_mul(vec3_add(vec3_add(vec3_mul(e1, frand()-0.5), vec3_mul(e2, frand()-0.5)), vec3_mul(e3, frand()-0.5)), radius * size);
+        vec3 f = vec3_normalize(rand_vec3(1));
+        float r = frand();
+        //points[i] = vec3_mul(vec3_add(vec3_add(vec3_mul(e1, frand()-0.5), vec3_mul(e2, frand()-0.5)), vec3_mul(e3, frand()-0.5)), radius * size);
+        points[i] = vec3_mul(vec3_add(vec3_mul(e1, f.vals[0]), vec3_add(vec3_mul(e2, f.vals[1]), vec3_mul(e3, f.vals[2]))), radius * size * r);
         points[i] = vec3_add(points[i], offset);
         print_vec3(points[i]);
     }

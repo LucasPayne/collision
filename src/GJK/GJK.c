@@ -285,18 +285,18 @@ Polyhedron mink;
 
 void create(void)
 {
-    polyA = random_convex_polyhedron(100, 20);
+    polyA = random_convex_polyhedron(100, 100);
     PolyhedronPoint *p = polyA.points.first;
-    float o = 130;
+    float o = 10;
     vec3 shift = rand_vec3(o);
     while (p != NULL) {
         p->position = vec3_add(p->position, shift);
         p = p->next;
     }
 
-    polyB = random_convex_polyhedron(100, 20);
+    polyB = random_convex_polyhedron(100, 100);
     p = polyB.points.first;
-    o = 130;
+    o = 10;
     shift = rand_vec3(o);
     while (p != NULL) {
         p->position = vec3_add(p->position, shift);
@@ -379,8 +379,8 @@ extern void loop_program(void)
         mink = compute_minkowski_difference(polyA, polyB);
     }
 
-    draw_polyhedron2(&polyA, NULL, "tb", 5);
-    draw_polyhedron2(&polyB, NULL, "tr", 5);
+    // draw_polyhedron2(&polyA, NULL, "tb", 5);
+    // draw_polyhedron2(&polyB, NULL, "tr", 5);
     draw_polyhedron2(&mink, NULL, "tk", 3);
     vec3 origin = vec3_zero();
     paint_points_c(Canvas3D, &origin, 1, "p", 25);

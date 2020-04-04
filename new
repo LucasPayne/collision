@@ -6,8 +6,12 @@ if [[ $# -ne 1 ]] ; then
 fi
 appname=$1
 
-mkdir -p "src/$appname"
-cp -r utils/schematics/interactive_3D_schematic/* "src/$appname"
-mv "src/$appname/interactive_3D_schematic.c" "src/$appname/$appname.c"
-vim "src/$appname/$appname.c"
+if [[ -f src/$appname/$appname.c ]] ; then
+    echo This application seems to already exist.
+else
+    mkdir -p "src/$appname"
+    cp -r utils/schematics/interactive_3D_schematic/* "src/$appname"
+    mv "src/$appname/interactive_3D_schematic.c" "src/$appname/$appname.c"
+    vim "src/$appname/$appname.c"
+fi
 

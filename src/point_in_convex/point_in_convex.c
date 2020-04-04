@@ -7,7 +7,7 @@ Polyhedron poly;
 
 void create(void)
 {
-    poly = random_convex_polyhedron(100, 100);
+    poly = random_convex_polyhedron(100, 10000);
     PolyhedronPoint *p = poly.points.first;
     float o = 70;
     vec3 shift = new_vec3(o*frand()-o/2,o*frand()-o/2,o*frand()-o/2);
@@ -48,6 +48,7 @@ void contains_origin(Polyhedron poly)
             // The negative of this will be the minimal separating vector the polyhedron has from the origin.
             // -------------------------------------------------------------------------------
             // Brute force it for comparison.
+            #if 1
             PolyhedronTriangle *tri = poly.triangles.first;
             vec3 brute_p = closest_point_on_triangle_to_point(tri->points[0]->position,tri->points[1]->position,tri->points[2]->position, origin);
             while ((tri = tri->next) != NULL) {
@@ -55,6 +56,7 @@ void contains_origin(Polyhedron poly)
                 if (vec3_dot(new_p, new_p) < vec3_dot(brute_p, brute_p)) brute_p = new_p;
             }
 	    paint_points_c(Canvas3D, &brute_p, 1, "g", 30);
+            #endif
 
             // Perform the expanding polytope algorithm.
 
@@ -123,6 +125,13 @@ void contains_origin(Polyhedron poly)
                     if (edges[edges_n*i] == -1) continue;\
                     paint_line_cv(Canvas3D, *((vec3 *) &points[points_n*edges[edges_n*i]]), *((vec3 *) &points[points_n*edges[edges_n*i+1]]), "y", 40);\
                 }\
+                for (int i = 0; i < triangles_len; i++) {\
+                    if (triangles[triangles_n*i] == -1) continue;\
+                    vec3 p1 = *((vec3 *) &points[points_n*triangles[triangles_n*i]]);\
+                    vec3 p2 = *((vec3 *) &points[points_n*triangles[triangles_n*i+1]]);\
+                    vec3 p3 = *((vec3 *) &points[points_n*triangles[triangles_n*i+2]]);\
+                    paint_triangle_cv(Canvas3D, p1, p2, p3, "tk");\
+                }\
             }
 /*
                 for (int i = 0; i < triangles_len; i++) {\
@@ -149,14 +158,7 @@ void contains_origin(Polyhedron poly)
             add_triangle(0,2,3);
 
             // The initial tetrahedron has been set up. Proceed with EPA.
-            int counter = 0;
             while (1) {
-                counter ++;
-
-                check() {
-                    show_polytope();
-                    return;
-                }
 
                 // Find the closest triangle to the origin.
                 float min_d = -1;
@@ -202,6 +204,7 @@ void contains_origin(Polyhedron poly)
                     // to the border of the polyhedron.
                     vec3 closest_point = point_to_triangle_plane(a,b,c, origin);
                     paint_points_c(Canvas3D, &closest_point, 1, "tp", 300);
+                    show_polytope();
                     return;
                 }
 

@@ -66,7 +66,6 @@ static vec3 cso_support(vec3 *A, int A_len, vec3 *B, int B_len, vec3 direction, 
     *B_support = support_index(B, B_len, vec3_neg(direction));
     return vec3_sub(A[*A_support], B[*B_support]);
 }
-
 bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifold *manifold)
 {
     // Initialize the simplex as a line segment.
@@ -183,34 +182,29 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                 // Find the closest triangle to the origin.
                 float min_d = -1;
                 int closest_triangle_index = -1;
+                vec3 closest_point;
                 for (int i = 0; i < triangles_len; i++) {
                     if (triangles[triangles_n*i] == -1) continue;
 
                     vec3 a = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
                     vec3 b = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
                     vec3 c = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
-
-                    // vec3 a = *((vec3 *) &points[points_n*triangles[triangles_n*i]]);
-                    // vec3 b = *((vec3 *) &points[points_n*triangles[triangles_n*i+1]]);
-                    // vec3 c = *((vec3 *) &points[points_n*triangles[triangles_n*i+2]]);
                     vec3 p = point_to_triangle_plane(a,b,c, origin);
                     float new_d = vec3_dot(p, p);
                     if (min_d == -1 || new_d < min_d) {
                         min_d = new_d;
                         closest_triangle_index = i;
+                        closest_point = p;
                     }
                 }
 	        vec3 a = vec3_sub(A[points[points_n*triangles[triangles_n*closest_triangle_index+0]]], B[points[points_n*triangles[triangles_n*closest_triangle_index+0] + 1]]);
 	        vec3 b = vec3_sub(A[points[points_n*triangles[triangles_n*closest_triangle_index+1]]], B[points[points_n*triangles[triangles_n*closest_triangle_index+1] + 1]]);
 	        vec3 c = vec3_sub(A[points[points_n*triangles[triangles_n*closest_triangle_index+2]]], B[points[points_n*triangles[triangles_n*closest_triangle_index+2] + 1]]);
 
-                // vec3 a = *((vec3 *) &points[points_n*triangles[triangles_n*closest_triangle_index]]);
-                // vec3 b = *((vec3 *) &points[points_n*triangles[triangles_n*closest_triangle_index + 1]]);
-                // vec3 c = *((vec3 *) &points[points_n*triangles[triangles_n*closest_triangle_index + 2]]);
-
                 // Find an extreme point in the direction from the origin to the closest point on the polytope boundary.
                 // The convex hull of the points of the polytope adjoined with this new point will be computed.
-                vec3 expand_to = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
+                // vec3 expand_to = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
+                vec3 expand_to = closest_point;
                 int new_point_A_index, new_point_B_index;
                 vec3 new_point = cso_support(A, A_len, B, B_len, expand_to, &new_point_A_index, &new_point_B_index);
                 bool new_point_on_polytope = false;
@@ -225,21 +219,38 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                 if (new_point_on_polytope) {
                     // The closest triangle is on the border of the polyhedron, so the closest point on this triangle is the closest point
                     // to the border of the polyhedron.
-                    vec3 closest_point = point_to_triangle_plane(a,b,c, origin);
-                    paint_points_c(Canvas3D, &closest_point, 1, "tk", 120);
+                    paint_points_c(Canvas3D, &new_point, 1, "tr", 65);
+                    paint_line_cv(Canvas3D, origin, closest_point, "tr", 5);
+                    paint_points_c(Canvas3D, &closest_point, 1, "tp", 300);
                     manifold->separating_vector = closest_point;
+            #define show_polytope() {\
+                for (int i = 0; i < edges_len; i++) {\
+                    if (edges[edges_n*i] == -1) continue;\
+                    vec3 p1 = vec3_sub(A[points[points_n*edges[edges_n*i+0]]], B[points[points_n*edges[edges_n*i+0] + 1]]);\
+                    vec3 p2 = vec3_sub(A[points[points_n*edges[edges_n*i+1]]], B[points[points_n*edges[edges_n*i+1] + 1]]);\
+                    paint_line_cv(Canvas3D, p1, p2, "y", 40);\
+                }\
+                for (int i = 0; i < triangles_len; i++) {\
+                    if (triangles[triangles_n*i] == -1) continue;\
+                    vec3 p1 = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);\
+                    vec3 p2 = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);\
+                    vec3 p3 = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);\
+                    paint_triangle_cv(Canvas3D, p1, p2, p3, "tk");\
+                }\
+            }
+                    show_polytope();
                     return true;
                 }
 
                 // Remove the visible triangles and their directed edges. Points do not need to be nullified.
                 for (int i = 0; i < triangles_len; i++) {
                     if (triangles[triangles_n*i] == -1) continue;
-                    vec3 a = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
-                    vec3 b = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
-                    vec3 c = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
+                    vec3 ap = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
+                    vec3 bp = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
+                    vec3 cp = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
 
-                    vec3 n = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
-                    float v = tetrahedron_6_times_volume(a,b,c, new_point);
+                    vec3 n = vec3_cross(vec3_sub(bp, ap), vec3_sub(cp, ap));
+                    float v = tetrahedron_6_times_volume(ap,bp,cp, new_point);
                     if (v < 0) {
                         // Remove this triangle, as it is visible from the new point.
                         edges[edges_n*triangles[triangles_n*i+3]] = -1;
@@ -282,6 +293,8 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                     add_triangle(boundary_edges[2*i], boundary_edges[2*i+1], new_point_index);
                 }
             }
+            fprintf(stderr, ERROR_ALERT "Code should not reach this.\n");
+            exit(EXIT_FAILURE);
         }
 
         // The polyhedra are not intersecting. Descend the simplex and compute the closest point on the CSO.

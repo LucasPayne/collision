@@ -330,7 +330,11 @@ void test_gjk(void)
         i++;
     }
 
-    convex_hull_intersection(A, A_len, B, B_len, &manifold);
+    mat4x4 matrixA;
+    mat4x4 matrixB;
+    identity_matrix4x4f(&matrixA);
+    identity_matrix4x4f(&matrixB);
+    convex_hull_intersection(A, A_len, &matrixA, B, B_len, &matrixB, &manifold);
 }
 
 extern void input_event(int key, int action, int mods)

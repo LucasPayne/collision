@@ -432,3 +432,54 @@ vec3 polyhedron_extreme_point(Polyhedron poly, vec3 direction)
     }
     return v;
 }
+
+// Extract the points from the polyhedron as an array on the heap.
+vec3 *polyhedron_points(Polyhedron poly)
+{
+    int n = polyhedron_num_points(&poly);
+    vec3 *points = malloc(sizeof(vec3) * n);
+    mem_check(points);
+    PolyhedronPoint *p = poly.points.first;
+    int i = 0;
+    while (p != NULL) {
+        points[i++] = p->position;
+        p = p->next;
+    }
+    return points;
+}
+
+vec3 polyhedron_center_of_mass(Polyhedron poly)
+{
+    // Calculate the center of mass (assuming the mass is uniform).
+    PolyhedronTriangle *tri = poly.triangles.first;
+    vec3 center_of_mass = new_vec3(0,0,0);
+    // The center of mass is found by taking the weighted sum of the centroids of tetrahedra connecting the origin to each triangle,
+    // weighted by the signed volumes of each tetrahedron.
+    // ---I think this method works, at least for convex polyhedra, since if the origin is in the center,
+    // ---then this works, and it would not become incorrect when moving the origin past the boundary.
+    float volume_times_6 = 0;
+    while (tri != NULL) {
+        // Calculate the centroid of the tetrahedron containing the origin and the points of the triangle.
+        vec3 centroid = vec3_mul(vec3_add(vec3_add(tri->points[0]->position, tri->points[1]->position), tri->points[2]->position), 0.25);
+        // Calculate the volume of this same tetrahedron.
+        float v = tetrahedron_6_times_volume(new_vec3(0,0,0), tri->points[0]->position, tri->points[1]->position, tri->points[2]->position);
+        volume_times_6 += v;
+        center_of_mass = vec3_add(center_of_mass, vec3_mul(centroid, v));
+        tri = tri->next;
+    }
+    center_of_mass = vec3_mul(center_of_mass, 1.0 / volume_times_6);
+    return center_of_mass;
+}
+
+
+/*--------------------------------------------------------------------------------
+    Polytope methods. Polytopes are represented by only their points, and their polyhedron can be recovered at any time by taking the convex hull.
+    (Polyhedron representation may not be consistent due to triangulation of faces).
+--------------------------------------------------------------------------------*/
+vec3 polytope_center_of_mass(vec3 *points, int num_points)
+{
+    Polyhedron hull = convex_hull(points, num_points);
+    vec3 center_of_mass = polyhedron_center_of_mass(hull);
+    //----------////// Destroy the polyhedron.
+    return center_of_mass;
+}

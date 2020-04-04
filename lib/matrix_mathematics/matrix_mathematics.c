@@ -318,6 +318,17 @@ mat3x3 transpose_mat3x3(mat3x3 m)
     }
     return mt;
 }
+mat4x4 transpose_mat4x4(mat4x4 m)
+{
+    mat4x4 mt;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            mt.vals[4*i + j] = m.vals[4*j + i];
+        }
+    }
+    return mt;
+}
+
 
 // "Rigid" matrices are 4x4 matrices which are the composition of a translation and a rotation.
 // Due to this restriction, it is for example easier to invert them, so they have separate routines.

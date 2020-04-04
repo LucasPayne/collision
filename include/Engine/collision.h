@@ -7,7 +7,7 @@
 typedef struct GJKManifold_s {
     vec3 separating_vector;
 } GJKManifold;
-bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifold *manifold);
+bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int B_len, mat4x4 *B_matrix, GJKManifold *manifold);
 
 // Debugging and visualization.
 Polyhedron compute_minkowski_difference(Polyhedron A, Polyhedron B);

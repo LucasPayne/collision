@@ -90,7 +90,7 @@ int polyhedron_num_points(Polyhedron *poly);
 int polyhedron_num_edges(Polyhedron *poly);
 int polyhedron_num_triangles(Polyhedron *poly);
 
-
+vec3 *polyhedron_points(Polyhedron poly);
 
 /*================================================================================
     Polyhedron algorithms.
@@ -99,6 +99,15 @@ Polyhedron convex_hull(vec3 *points, int num_points);
 bool point_in_convex_polyhedron(vec3 p, Polyhedron poly);
 float polyhedron_volume(Polyhedron poly);
 vec3 polyhedron_extreme_point(Polyhedron poly, vec3 direction);
+// Assuming uniform mass of the polyhedron.
+vec3 polyhedron_center_of_mass(Polyhedron poly);
+
+/*================================================================================
+    Polytope methods. Polytopes are represented by only their points, and their polyhedron
+    can be recovered at any time by taking the convex hull.
+    (Polyhedron representation may not be consistent due to triangulation of faces).
+================================================================================*/
+vec3 polytope_center_of_mass(vec3 *points, int num_points);
 
 /*================================================================================
     Closest-points methods.

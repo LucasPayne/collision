@@ -132,39 +132,17 @@ mat3x3 polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
     return inertia_tensor;
 }
 
-vec3 polyhedron_center_of_mass(Polyhedron poly)
+void RigidBody_init_polytope(RigidBody *rb, vec3 *points, int num_points, float mass)
 {
-    // Calculate the center of mass (assuming the mass is uniform).
-    PolyhedronTriangle *tri = poly.triangles.first;
-    vec3 center_of_mass = new_vec3(0,0,0);
-    // The center of mass is found by taking the weighted sum of the centroids of tetrahedra connecting the origin to each triangle,
-    // weighted by the signed volumes of each tetrahedron.
-    // ---I think this method works, at least for convex polyhedra, since if the origin is in the center,
-    // ---then this works, and it would not become incorrect when moving the origin past the boundary.
-    float volume_times_6 = 0;
-    while (tri != NULL) {
-        // Calculate the centroid of the tetrahedron containing the origin and the points of the triangle.
-        vec3 centroid = vec3_mul(vec3_add(vec3_add(tri->points[0]->position, tri->points[1]->position), tri->points[2]->position), 0.25);
-        // Calculate the volume of this same tetrahedron.
-        float v = tetrahedron_6_times_volume(new_vec3(0,0,0), tri->points[0]->position, tri->points[1]->position, tri->points[2]->position);
-        volume_times_6 += v;
-        center_of_mass = vec3_add(center_of_mass, vec3_mul(centroid, v));
-        tri = tri->next;
-    }
-    center_of_mass = vec3_mul(center_of_mass, 1.0 / volume_times_6);
-    return center_of_mass;
-}
-
-void RigidBody_init_polyhedron(RigidBody *rb, Polyhedron poly, float mass)
-{
-    rb->type = RigidBodyPolyhedron;
-    rb->shape.polyhedron = poly;
+    rb->type = RigidBodyPolytope;
+    rb->shape.polytope.points = points;
+    rb->shape.polytope.num_points = num_points;
     rb->mass = mass;
     rb->inverse_mass = mass == 0 ? 0 : 1.0 / mass;
     
     Transform *transform = other_aspect(rb, Transform);
 
-    vec3 center_of_mass = polyhedron_center_of_mass(poly);
+    vec3 center_of_mass = polytope_center_of_mass(points, num_points);
 
     print_vec3(center_of_mass);
     rb->center_of_mass = center_of_mass;
@@ -172,7 +150,7 @@ void RigidBody_init_polyhedron(RigidBody *rb, Polyhedron poly, float mass)
     // This is useful because then geometry (in application or in vram) does not need to be changed for a change of center of rotation.
     transform->center = center_of_mass;
 
-    mat3x3 inertia_tensor = brute_force_polyhedron_inertia_tensor(poly, center_of_mass, mass);
-    polyhedron_inertia_tensor(poly, center_of_mass, mass);
+    // mat3x3 inertia_tensor = brute_force_polyhedron_inertia_tensor(poly, center_of_mass, mass);
+    // polyhedron_inertia_tensor(poly, center_of_mass, mass);
 }
 

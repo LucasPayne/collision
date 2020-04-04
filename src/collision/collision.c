@@ -65,7 +65,7 @@ void create_object(void)
     material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/dirt");
 
     RigidBody *rb = add_aspect(e, RigidBody);
-    RigidBody_init_polyhedron(rb, poly, 1);
+    RigidBody_init_polytope(rb, polyhedron_points(poly), polyhedron_num_points(&poly), 1);
     float s = 30;
     rb->linear_momentum = new_vec3(frand()*s-s/2,frand()*s-s/2,frand()*s-s/2);
     float r = 1;
@@ -103,14 +103,16 @@ extern void init_program(void)
     create_object();
 
     EntityID e = new_entity(4);
-    Transform_set(add_aspect(e, Transform), -500,-1190,-500,0,0,0);
+    Transform_set(add_aspect(e, Transform), 0,-700,0,0,0,0);
     Body *body = add_aspect(e, Body);
     get_aspect_type(e, Transform)->scale = 1000;
     body->visible = true;
-    body->geometry = new_resource_handle(Geometry, "Models/block");
+    body->geometry = new_resource_handle(Geometry, "Models/block -a");
     body->material = Material_create("Materials/textured_phong_shadows");
     body->is_ground = true;
     material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/marble_tile");
+    Geometry *block_geometry = resource_data(Geometry, body->geometry);
+    RigidBody_init_polytope(add_aspect(e, RigidBody), block_geometry->mesh_data->attribute_data[Position], block_geometry->num_vertices, 0);
 
     int bunny_square_root = 1;
     for (int i = 0; i < bunny_square_root; i++) {
@@ -133,11 +135,13 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-    draw_polyhedron(&hull, NULL);
-    draw_polyhedron_winding_order(&hull, "k", 10, NULL);
+    // draw_polyhedron(&hull, NULL);
+    // draw_polyhedron_winding_order(&hull, "k", 10, NULL);
     draw_polyhedron(&bunny_hull, &bunny_matrix);
     draw_polyhedron_winding_order(&bunny_hull, "k", 10, &bunny_matrix);
     for_aspect(RigidBody, rb)
+        rb->linear_momentum.vals[1] -= rb->mass * dt * 500;
+
         Body *b = other_aspect(rb, Body);
         if (viewing) {
             Transform *t = other_aspect(rb, Transform);
@@ -154,6 +158,9 @@ extern void loop_program(void)
         }
     end_for_aspect()
 
+    vec3 origin = vec3_zero();
+    paint_line_cv(Canvas3D, origin, new_vec3(10,10,10), "p", 10);
+    paint_line_cv(Canvas3D, origin, new_vec3(-10,10,10), "p", 10);
 
 }
 extern void close_program(void)

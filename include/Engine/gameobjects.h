@@ -83,7 +83,7 @@ be incorporated along with convex decomposition to allow concave objects.
 --------------------------------------------------------------------------------*/
 typedef uint8_t RigidBodyType;
 typedef enum RigidBodyTypes {
-    RigidBodyPolyhedron,
+    RigidBodyPolytope,
     NUM_RIGID_BODY_TYPES
 };
 extern AspectType RigidBody_TYPE_ID;
@@ -91,7 +91,11 @@ typedef struct /* Aspect */ RigidBody_s {
 ASPECT_PROPERTIES()
     RigidBodyType type;
     union {
-        Polyhedron polyhedron;
+        struct {
+            // Given as a point cloud, as any other structure is not needed.
+            vec3 *points;
+            int num_points;
+        } polytope;
     } shape;
     vec3 linear_momentum;
 
@@ -104,7 +108,7 @@ ASPECT_PROPERTIES()
     mat3x3 inertia_tensor;
     mat3x3 inverse_inertia_tensor;
 } RigidBody;
-void RigidBody_init_polyhedron(RigidBody *rb, Polyhedron poly, float mass);
+void RigidBody_init_polytope(RigidBody *rb, vec3 *points, int num_points, float mass);
 
 /*--------------------------------------------------------------------------------
 Logic is the behavioral aspect of a gameobject. It holds an update routine

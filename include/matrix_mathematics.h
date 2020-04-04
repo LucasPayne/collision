@@ -109,6 +109,7 @@ vec3 new_vec3(float x, float y, float z);
 //----changing matrix module to stuff more like this.
 vec3 matrix_vec3(mat3x3 m, vec3 v);
 mat3x3 transpose_mat3x3(mat3x3 m);
+mat4x4 transpose_mat4x4(mat4x4 m);
 mat3x3 rotation_part_rigid_mat4x4(mat4x4 m);
 vec3 translation_vector_rigid_mat4x4(mat4x4 m);
 mat4x4 invert_rigid_mat4x4(mat4x4 m);

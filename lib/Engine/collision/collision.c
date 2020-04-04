@@ -45,12 +45,13 @@ Polyhedron compute_minkowski_difference(Polyhedron A, Polyhedron B)
     whose negative is the separating vector, the minimal translation to move the CSO so that it does not
     bound the origin. This can be used to infer the contact normal and contact points on each polyhedron.
 ================================================================================*/
-static int support_index(vec3 *points, int num_points, vec3 direction)
+static int support_index(vec3 *points, int num_points, mat4x4 *matrix, vec3 direction)
 {
-    float d = vec3_dot(points[0], direction); // At least one point must be given.
+    //---Basic rearrangement can allow the avoidance of most matrix-vector multiplies here.
+    float d = vec3_dot(mat4x4_vec3(matrix, points[0]), direction); // At least one point must be given.
     int index = 0;
     for (int i = 1; i < num_points; i++) {
-        float new_d = vec3_dot(points[i], direction);
+        float new_d = vec3_dot(mat4x4_vec3(matrix, points[i]), direction);
         if (new_d > d) {
             d = new_d;
             index = i;
@@ -58,15 +59,7 @@ static int support_index(vec3 *points, int num_points, vec3 direction)
     }
     return index;
 }
-// cso: Configuration space obstacle, another name for the Minkowski difference of two sets.
-static vec3 cso_support(vec3 *A, int A_len, vec3 *B, int B_len, vec3 direction, int *A_support, int *B_support)
-{
-    // Returns the support vector in the Minkowski difference, and also gives the indices of the points in A and B whose difference is that support vector.
-    *A_support = support_index(A, A_len, direction);
-    *B_support = support_index(B, B_len, vec3_neg(direction));
-    return vec3_sub(A[*A_support], B[*B_support]);
-}
-bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifold *manifold)
+bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int B_len, mat4x4 *B_matrix, GJKManifold *manifold)
 {
 #define DEBUG 0 // Turn this flag on to visualize some things.
     // Initialize the simplex as a line segment.
@@ -74,8 +67,16 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
     int indices_A[4];
     int indices_B[4];
     int n = 2;
-    simplex[0] = cso_support(A, A_len, B, B_len, new_vec3(1,1,1), &indices_A[0], &indices_B[0]);
-    simplex[1] = cso_support(A, A_len, B, B_len, vec3_neg(simplex[0]), &indices_A[1], &indices_B[1]);
+    // cso: Configuration space obstacle, another name for the Minkowski difference of two sets.
+    // This macro gives the support vector in the Minkowski difference, and also gives the indices of the points in A and B whose difference is that support vector.
+    #define cso_support(DIRECTION,SUPPORT,INDEX_A,INDEX_B)\
+    {\
+        ( INDEX_A ) = support_index(A, A_len, A_matrix, ( DIRECTION ));\
+        ( INDEX_B ) = support_index(B, B_len, B_matrix, vec3_neg(( DIRECTION )));\
+        ( SUPPORT ) = vec3_sub(mat4x4_vec3(A_matrix, A[( INDEX_A )]), mat4x4_vec3(B_matrix, B[( INDEX_B )]));\
+    }
+    cso_support(new_vec3(1,1,1), simplex[0], indices_A[0], indices_B[0]);
+    cso_support(vec3_neg(simplex[0]), simplex[1], indices_A[1], indices_B[1]);
     vec3 origin = vec3_zero();
 
     // Go into a loop, computing the closest point on the simplex and expanding it in the opposite direction (from the origin),
@@ -86,6 +87,7 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
 
         // If the simplex is a tetrahedron and contains the origin, the CSO contains the origin.
         if (n == 4 && point_in_tetrahedron(simplex[0],simplex[1],simplex[2],simplex[3], origin)) {
+            /*
             if (DEBUG) {
                 paint_points_c(Canvas3D, &origin, 1, "tg", 50);
                 // Brute force for comparison and debugging.
@@ -98,6 +100,7 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                 }
 	        paint_points_c(Canvas3D, &brute_p, 1, "g", 30);
             }
+            */
             // Perform the expanding polytope algorithm.
             // Instead of using a fancy data-structure, the polytope is maintained by keeping
             // a pool. Entries can be nullified, and entries re-added in those empty spaces, but linear iterations still need to
@@ -192,9 +195,9 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                 for (int i = 0; i < triangles_len; i++) {
                     if (triangles[triangles_n*i] == -1) continue;
 
-                    vec3 a = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
-                    vec3 b = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
-                    vec3 c = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
+                    vec3 a = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+0]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+0] + 1]]));
+                    vec3 b = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+1]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+1] + 1]]));
+                    vec3 c = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+2]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+2] + 1]]));
                     vec3 p = point_to_triangle_plane(a,b,c, origin);
                     float new_d = vec3_dot(p, p);
                     if (min_d == -1 || new_d < min_d) {
@@ -203,16 +206,17 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                         closest_point = p;
                     }
                 }
-	        vec3 a = vec3_sub(A[points[points_n*triangles[triangles_n*closest_triangle_index+0]]], B[points[points_n*triangles[triangles_n*closest_triangle_index+0] + 1]]);
-	        vec3 b = vec3_sub(A[points[points_n*triangles[triangles_n*closest_triangle_index+1]]], B[points[points_n*triangles[triangles_n*closest_triangle_index+1] + 1]]);
-	        vec3 c = vec3_sub(A[points[points_n*triangles[triangles_n*closest_triangle_index+2]]], B[points[points_n*triangles[triangles_n*closest_triangle_index+2] + 1]]);
+                vec3 a = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+0]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+0] + 1]]));
+                vec3 b = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+1]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+1] + 1]]));
+                vec3 c = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+2]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+2] + 1]]));
 
                 // Find an extreme point in the direction from the origin to the closest point on the polytope boundary.
                 // The convex hull of the points of the polytope adjoined with this new point will be computed.
                 // vec3 expand_to = vec3_cross(vec3_sub(b, a), vec3_sub(c, a));
                 vec3 expand_to = closest_point;
                 int new_point_A_index, new_point_B_index;
-                vec3 new_point = cso_support(A, A_len, B, B_len, expand_to, &new_point_A_index, &new_point_B_index);
+                vec3 new_point;
+                cso_support(expand_to, new_point, new_point_A_index, new_point_B_index);
                 bool new_point_on_polytope = false;
                 for (int i = 0; i < points_len; i++) {
                     // Unreferenced but non-nullified points can't be on the convex hull, so they can be checked against without problems.
@@ -222,7 +226,7 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                         break;
                     }
                 }
-                if (new_point_on_polytope || TEST_SWITCH == COUNTER) {
+                if (new_point_on_polytope) {
                     // The closest triangle is on the border of the polyhedron, so the closest point on this triangle is the closest point
                     // to the border of the polyhedron.
                     manifold->separating_vector = closest_point;
@@ -233,12 +237,14 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                         // Show the polytope.
                         for (int i = 0; i < edges_len; i++) {
                             if (edges[edges_n*i] == -1) continue;
+                            //---untransformed
                             vec3 p1 = vec3_sub(A[points[points_n*edges[edges_n*i+0]]], B[points[points_n*edges[edges_n*i+0] + 1]]);
                             vec3 p2 = vec3_sub(A[points[points_n*edges[edges_n*i+1]]], B[points[points_n*edges[edges_n*i+1] + 1]]);
                             paint_line_cv(Canvas3D, p1, p2, "y", 40);
                         }
                         for (int i = 0; i < triangles_len; i++) {
                             if (triangles[triangles_n*i] == -1) continue;
+                            //---untransformed
                             vec3 p1 = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
                             vec3 p2 = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
                             vec3 p3 = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
@@ -252,9 +258,9 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                 // Remove the visible triangles and their directed edges. Points do not need to be nullified.
                 for (int i = 0; i < triangles_len; i++) {
                     if (triangles[triangles_n*i] == -1) continue;
-                    vec3 ap = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
-                    vec3 bp = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
-                    vec3 cp = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
+                    vec3 ap = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+0]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+0] + 1]]));
+                    vec3 bp = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+1]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+1] + 1]]));
+                    vec3 cp = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+2]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+2] + 1]]));
 
                     vec3 n = vec3_cross(vec3_sub(bp, ap), vec3_sub(cp, ap));
                     float v = tetrahedron_6_times_volume(ap,bp,cp, new_point);
@@ -306,7 +312,8 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
 
         // The polyhedra are not intersecting. Descend the simplex and compute the closest point on the CSO.
         int A_index, B_index;
-        vec3 new_point = cso_support(A, A_len, B, B_len, dir, &A_index, &B_index);
+        vec3 new_point;
+        cso_support(dir, new_point, A_index, B_index);
         bool on_simplex = false;
         for (int i = 0; i < n; i++) {
             if (A_index == indices_A[i] && B_index == indices_B[i]) {

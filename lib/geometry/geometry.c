@@ -69,7 +69,7 @@ vec3 closest_point_on_line_segment_to_point(vec3 a, vec3 b, vec3 p)
     return closest_point_on_line_to_point(a, b, p);
 }
 
-static vec3 barycentric_triangle(vec3 a, vec3 b, vec3 c, float wa, float wb, float wc)
+vec3 barycentric_triangle(vec3 a, vec3 b, vec3 c, float wa, float wb, float wc)
 {
     return vec3_mul(vec3_add(vec3_mul(a, wa), vec3_add(vec3_mul(b, wb), vec3_mul(c, wc))), 1.0/(wa + wb + wc));
 }

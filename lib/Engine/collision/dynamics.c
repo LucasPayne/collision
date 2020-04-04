@@ -23,7 +23,9 @@ static void resolve_rigid_body_collisions(void)
                                                       B->shape.polytope.points, B->shape.polytope.num_points, &B_matrix, &manifold);
         
             if (colliding) {
-                Transform_move(t, vec3_mul(vec3_neg(manifold.separating_vector), 1.1)); //---Offset because resting contact crashes. Seriously need to work on robustness.
+                // Move each object away from each other along the separating vector, taking into account the relative momentums at the point of contact.
+
+                // Transform_move(t, vec3_mul(vec3_neg(manifold.separating_vector), 1.1)); //---Offset because resting contact crashes. Seriously need to work on robustness.
             }
             // Polyhedron hull_A = convex_hull(A->shape.polytope.points,A->shape.polytope.num_points);
             // Polyhedron hull_B = convex_hull(B->shape.polytope.points,B->shape.polytope.num_points);

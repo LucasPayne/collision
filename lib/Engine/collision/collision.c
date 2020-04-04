@@ -229,11 +229,39 @@ bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int
                 if (new_point_on_polytope) {
                     // The closest triangle is on the border of the polyhedron, so the closest point on this triangle is the closest point
                     // to the border of the polyhedron.
+
+                    // The separating vector is the minimal translation B must make to separate from A.
                     manifold->separating_vector = closest_point;
+
+                    // Compute the barycentric coordinates of the closest point in terms of the triangle on the boundary of the CSO.
+                    // This triangle is the Minkowski difference between a triangle on A and a triangle on B. Use the same barycentric weights
+                    // to calculate the corresponding points on the boundaries of A and B.
+                    //---need a better way to get these points.
+                    vec3 Aa = mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+0]]]);
+                    vec3 Ab = mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+1]]]);
+                    vec3 Ac = mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+2]]]);
+                    vec3 Ba = mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+0]+1]]);
+                    vec3 Bb = mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+1]+1]]);
+                    vec3 Bc = mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+2]+1]]);
+                    vec3 a = vec3_sub(Aa, Ba);
+                    vec3 b = vec3_sub(Ab, Bb);
+                    vec3 c = vec3_sub(Ac, Bc);
+                    vec3 barycentric_coords = point_to_triangle_plane_barycentric(a,b,c,  origin);
+                    manifold->A_closest = barycentric_triangle_v(Aa,Ab,Ac,  barycentric_coords);
+                    manifold->B_closest = barycentric_triangle_v(Ba,Bb,Bc,  barycentric_coords);
+                    // printf("a: ");print_vec3(a);
+                    // printf("b: ");print_vec3(b);
+                    // printf("c: ");print_vec3(c);
+                    // print_vec3(barycentric_coords);
+                    // print_vec3(manifold->A_closest);
+                    // print_vec3(manifold->B_closest);
                     if (DEBUG) {
                         paint_points_c(Canvas3D, &new_point, 1, "tr", 65);
                         paint_line_cv(Canvas3D, origin, closest_point, "tr", 5);
                         paint_points_c(Canvas3D, &closest_point, 1, "tp", 300);
+                        paint_points_c(Canvas3D, &manifold->A_closest, 1, "tr", 30);
+                        paint_points_c(Canvas3D, &manifold->B_closest, 1, "tb", 30);
+                        paint_line_cv(Canvas3D, manifold->A_closest, manifold->B_closest, "g", 20);
                         // Show the polytope.
                         for (int i = 0; i < edges_len; i++) {
                             if (edges[edges_n*i] == -1) continue;
@@ -248,8 +276,8 @@ bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int
                             vec3 p1 = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
                             vec3 p2 = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
                             vec3 p3 = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
-                            draw_triangle_winding_order(p1, p2, p3, "p", 10);
-                            paint_triangle_cv(Canvas3D, p1, p2, p3, "tk");
+                            //draw_triangle_winding_order(p1, p2, p3, "p", 10);
+                            // paint_triangle_cv(Canvas3D, p1, p2, p3, "tk");
                         }
                     }
                     return true;

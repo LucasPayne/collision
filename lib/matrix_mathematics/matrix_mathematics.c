@@ -61,7 +61,7 @@ void right_multiply_matrix3x3f(Matrix3x3f *matrix, Matrix3x3f *B)
             scratch.vals[j + 3*i] = dot;
         }
     }
-    memcpy(&scratch.vals, &matrix->vals, sizeof(matrix->vals));
+    memcpy(matrix->vals, scratch.vals, sizeof(matrix->vals));
 }
 
 void print_matrix3x3f(Matrix3x3f *matrix)
@@ -645,4 +645,38 @@ bool vec3_equal(vec3 a, vec3 b)
 vec3 rand_vec3(float r)
 {
     return new_vec3(frand()*r-r/2,frand()*r-r/2,frand()*r-r/2);
+}
+
+
+// Determinants
+//--------------------------------------------------------------------------------
+float mat3x3_determinant(mat3x3 m)
+{
+    return   m.vals[0]*(m.vals[4]*m.vals[8]-m.vals[5]*m.vals[7]);
+           - m.vals[1]*(m.vals[3]*m.vals[8]-m.vals[5]*m.vals[6]);
+           + m.vals[2]*(m.vals[3]*m.vals[7]-m.vals[4]*m.vals[6]);
+}
+
+// Inverses
+//--------------------------------------------------------------------------------
+mat3x3 mat3x3_inverse(mat3x3 m)
+{
+    mat3x3 minv;
+    float det = mat3x3_determinant(m);
+    float detinv = 1.0 / det;
+    printf("%.6f    %.12f\n", det, detinv);
+    #define term(Ar,Ac,Br,Bc,Cr,Cc,Dr,Dc) ( m.vals[3*(Ar-1)+ Ac-1]*m.vals[3*(Dr-1)+ Dc-1]-m.vals[3*(Br-1)+ Bc-1]-m.vals[3*(Cr-1)+ Cc-1] )
+
+    minv.vals[0] = term(2,2,2,3,3,2,3,3);
+    minv.vals[1] = term(1,3,1,2,3,3,3,2);
+    minv.vals[2] = term(1,2,1,3,2,2,2,3);
+    minv.vals[3] = term(2,3,2,1,3,3,3,1);
+    minv.vals[4] = term(1,1,1,3,3,1,3,3);
+    minv.vals[5] = term(1,3,1,1,2,3,2,1);
+    minv.vals[6] = term(2,1,2,2,3,1,3,2);
+    minv.vals[7] = term(1,2,1,1,3,2,3,1);
+    minv.vals[8] = term(1,1,1,2,2,1,2,2);
+
+    for (int i = 0; i < 9; i++) minv.vals[i] *= detinv;
+    return minv;
 }

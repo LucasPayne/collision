@@ -129,7 +129,16 @@ vec3 point_to_triangle_plane_barycentric(vec3 a, vec3 b, vec3 c, vec3 p);
 vec3 closest_point_on_simplex(int n, vec3 points[], vec3 p);
 int simplex_extreme_index(int n, vec3 points[], vec3 dir);
 bool point_in_tetrahedron(vec3 a, vec3 b, vec3 c, vec3 d, vec3 p);
+//note: 6-times the volume is easier for checking signs since it is the factor achieved from the 4x4 determinant formulation.
 float tetrahedron_6_times_volume(vec3 a, vec3 b, vec3 c, vec3 d);
+
+/*================================================================================
+    Coordinate methods.
+================================================================================*/
+// wa+wb+wc != 0 is required. The sum is normalized to one by this function.
+vec3 barycentric_triangle(vec3 a, vec3 b, vec3 c, float wa, float wb, float wc);
+// Alternatively give the barycentric weights as a vector.
+#define barycentric_triangle_v(A,B,C,W) barycentric_triangle(A,B,C, ( W ).vals[0], ( W ).vals[1], ( W ).vals[2])
 
 /*================================================================================
     Testing utilities.

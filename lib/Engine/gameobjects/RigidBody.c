@@ -140,17 +140,28 @@ void RigidBody_init_polytope(RigidBody *rb, vec3 *points, int num_points, float 
     rb->mass = mass;
     rb->inverse_mass = mass == 0 ? 0 : 1.0 / mass;
     
-    Transform *transform = other_aspect(rb, Transform);
-
     vec3 center_of_mass = polytope_center_of_mass(points, num_points);
 
     print_vec3(center_of_mass);
     rb->center_of_mass = center_of_mass;
     // Update the transform center. This is by default (0,0,0), but the center can be changed to make adjustments to the transform matrix.
     // This is useful because then geometry (in application or in vram) does not need to be changed for a change of center of rotation.
+    Transform *transform = other_aspect(rb, Transform);
     transform->center = center_of_mass;
 
-    // mat3x3 inertia_tensor = brute_force_polyhedron_inertia_tensor(poly, center_of_mass, mass);
+    mat3x3 inertia_tensor = brute_force_polyhedron_inertia_tensor(convex_hull(points, num_points), center_of_mass, mass);
+    if (mass == 0) {
+        memset(&rb->inertia_tensor, 0, sizeof(mat3x3));
+        memset(&rb->inverse_inertia_tensor, 0, sizeof(mat3x3));
+    } else {
+        rb->inertia_tensor = inertia_tensor;
+        rb->inverse_inertia_tensor = mat3x3_inverse(inertia_tensor);
+    }
+    //print_matrix3x3f(&rb->inertia_tensor);
+    //print_matrix3x3f(&rb->inverse_inertia_tensor);
+    //right_multiply_matrix3x3f(&inertia_tensor, &rb->inverse_inertia_tensor);
+    //print_matrix3x3f(&inertia_tensor);
+    //getchar();
     // polyhedron_inertia_tensor(poly, center_of_mass, mass);
 }
 

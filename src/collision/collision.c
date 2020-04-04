@@ -60,8 +60,11 @@ void create_object(void)
     Geometry *g = oneoff_resource(Geometry, b->geometry);
     *g = geometry;
     //b->material = Material_create("Materials/red");
-    //b->material = Material_create("Materials/textured_phong_shadows_phong_tessellation");
+#if 0
+    b->material = Material_create("Materials/textured_phong_shadows_phong_tessellation");
+#else
     b->material = Material_create("Materials/textured_phong_shadows");
+#endif
     material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/dirt");
 
     RigidBody *rb = add_aspect(e, RigidBody);

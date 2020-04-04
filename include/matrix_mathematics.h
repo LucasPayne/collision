@@ -174,6 +174,8 @@ bool vec3_equal(vec3 a, vec3 b);
 
 vec3 rand_vec3(float r);
 
+mat3x3 mat3x3_inverse(mat3x3 m);
+float mat3x3_determinant(mat3x3 m);
 
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 

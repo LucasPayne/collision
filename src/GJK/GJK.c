@@ -379,8 +379,8 @@ extern void loop_program(void)
         mink = compute_minkowski_difference(polyA, polyB);
     }
 
-    // draw_polyhedron2(&polyA, NULL, "tb", 5);
-    // draw_polyhedron2(&polyB, NULL, "tr", 5);
+    draw_polyhedron2(&polyA, NULL, "tb", 5);
+    draw_polyhedron2(&polyB, NULL, "tr", 5);
     draw_polyhedron2(&mink, NULL, "tk", 3);
     vec3 origin = vec3_zero();
     paint_points_c(Canvas3D, &origin, 1, "p", 25);

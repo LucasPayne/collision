@@ -68,6 +68,7 @@ static vec3 cso_support(vec3 *A, int A_len, vec3 *B, int B_len, vec3 direction, 
 }
 bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifold *manifold)
 {
+#define DEBUG 0 // Turn this flag on to visualize some things.
     // Initialize the simplex as a line segment.
     vec3 simplex[4];
     int indices_A[4];
@@ -85,20 +86,18 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
 
         // If the simplex is a tetrahedron and contains the origin, the CSO contains the origin.
         if (n == 4 && point_in_tetrahedron(simplex[0],simplex[1],simplex[2],simplex[3], origin)) {
-            paint_points_c(Canvas3D, &origin, 1, "tg", 50);
-
-            // Brute force for comparison.
-            #if 1
-            Polyhedron poly = compute_minkowski_difference(convex_hull(A, A_len), convex_hull(B, B_len));
-            PolyhedronTriangle *tri = poly.triangles.first;
-            vec3 brute_p = closest_point_on_triangle_to_point(tri->points[0]->position,tri->points[1]->position,tri->points[2]->position, origin);
-            while ((tri = tri->next) != NULL) {
-                vec3 new_p = closest_point_on_triangle_to_point(tri->points[0]->position,tri->points[1]->position,tri->points[2]->position, origin);
-                if (vec3_dot(new_p, new_p) < vec3_dot(brute_p, brute_p)) brute_p = new_p;
+            if (DEBUG) {
+                paint_points_c(Canvas3D, &origin, 1, "tg", 50);
+                // Brute force for comparison and debugging.
+                Polyhedron poly = compute_minkowski_difference(convex_hull(A, A_len), convex_hull(B, B_len));
+                PolyhedronTriangle *tri = poly.triangles.first;
+                vec3 brute_p = closest_point_on_triangle_to_point(tri->points[0]->position,tri->points[1]->position,tri->points[2]->position, origin);
+                while ((tri = tri->next) != NULL) {
+                    vec3 new_p = closest_point_on_triangle_to_point(tri->points[0]->position,tri->points[1]->position,tri->points[2]->position, origin);
+                    if (vec3_dot(new_p, new_p) < vec3_dot(brute_p, brute_p)) brute_p = new_p;
+                }
+	        paint_points_c(Canvas3D, &brute_p, 1, "g", 30);
             }
-	    paint_points_c(Canvas3D, &brute_p, 1, "g", 30);
-            #endif
-
             // Perform the expanding polytope algorithm.
             // Instead of using a fancy data-structure, the polytope is maintained by keeping
             // a pool. Entries can be nullified, and entries re-added in those empty spaces, but linear iterations still need to
@@ -159,7 +158,6 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                 add_edge(( BI ),( CI ),triangles[triangles_n * index + 4]);\
                 add_edge(( CI ),( AI ),triangles[triangles_n * index + 5]);\
             }
-
             float v = tetrahedron_6_times_volume(simplex[0],simplex[1],simplex[2],simplex[3]);
             if (v < 0) {
                 // If the tetrahedron has negative volume, swap two entries, forcing the winding order to be anti-clockwise from outside.
@@ -227,27 +225,27 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                 if (new_point_on_polytope || TEST_SWITCH == COUNTER) {
                     // The closest triangle is on the border of the polyhedron, so the closest point on this triangle is the closest point
                     // to the border of the polyhedron.
-                    paint_points_c(Canvas3D, &new_point, 1, "tr", 65);
-                    paint_line_cv(Canvas3D, origin, closest_point, "tr", 5);
-                    paint_points_c(Canvas3D, &closest_point, 1, "tp", 300);
                     manifold->separating_vector = closest_point;
-            #define show_polytope() {\
-                for (int i = 0; i < edges_len; i++) {\
-                    if (edges[edges_n*i] == -1) continue;\
-                    vec3 p1 = vec3_sub(A[points[points_n*edges[edges_n*i+0]]], B[points[points_n*edges[edges_n*i+0] + 1]]);\
-                    vec3 p2 = vec3_sub(A[points[points_n*edges[edges_n*i+1]]], B[points[points_n*edges[edges_n*i+1] + 1]]);\
-                    paint_line_cv(Canvas3D, p1, p2, "y", 40);\
-                }\
-                for (int i = 0; i < triangles_len; i++) {\
-                    if (triangles[triangles_n*i] == -1) continue;\
-                    vec3 p1 = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);\
-                    vec3 p2 = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);\
-                    vec3 p3 = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);\
-                    draw_triangle_winding_order(p1, p2, p3, "p", 10);\
-                    paint_triangle_cv(Canvas3D, p1, p2, p3, "tk");\
-                }\
-            }
-                    show_polytope();
+                    if (DEBUG) {
+                        paint_points_c(Canvas3D, &new_point, 1, "tr", 65);
+                        paint_line_cv(Canvas3D, origin, closest_point, "tr", 5);
+                        paint_points_c(Canvas3D, &closest_point, 1, "tp", 300);
+                        // Show the polytope.
+                        for (int i = 0; i < edges_len; i++) {
+                            if (edges[edges_n*i] == -1) continue;
+                            vec3 p1 = vec3_sub(A[points[points_n*edges[edges_n*i+0]]], B[points[points_n*edges[edges_n*i+0] + 1]]);
+                            vec3 p2 = vec3_sub(A[points[points_n*edges[edges_n*i+1]]], B[points[points_n*edges[edges_n*i+1] + 1]]);
+                            paint_line_cv(Canvas3D, p1, p2, "y", 40);
+                        }
+                        for (int i = 0; i < triangles_len; i++) {
+                            if (triangles[triangles_n*i] == -1) continue;
+                            vec3 p1 = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);
+                            vec3 p2 = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);
+                            vec3 p3 = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);
+                            draw_triangle_winding_order(p1, p2, p3, "p", 10);
+                            paint_triangle_cv(Canvas3D, p1, p2, p3, "tk");
+                        }
+                    }
                     return true;
                 }
 
@@ -325,24 +323,32 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
             //----This check seems to fix an infinite loop bug here, but I am not sure if the reasoning is correct.
             ///////////////////////////////////////////////////////////////////////////////////////////////////////
             if (vec3_dot(new_point, dir) <= 0) {
-                paint_points_c(Canvas3D, &origin, 1, "tr", 50);
                 vec3 closest_on_poly = closest_point_on_tetrahedron_to_point(simplex[0], simplex[1], simplex[2], simplex[3], origin);
-                paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+                if (DEBUG) {
+                    paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+                    paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+                }
                 return false;
             }
         } else if (n == 3 && on_simplex) {
-            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
             vec3 closest_on_poly = closest_point_on_triangle_to_point(simplex[0], simplex[1], simplex[2], origin);
-            paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+            if (DEBUG) {
+                paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+                paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+            }
             return false;
         } else if (n == 2 && on_simplex) {
-            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
             vec3 closest_on_poly = closest_point_on_line_segment_to_point(simplex[0], simplex[1], origin);
-            paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+            if (DEBUG) {
+                paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+                paint_points_c(Canvas3D, &closest_on_poly, 1, "tb", 50);
+            }
             return false;
         } else if (n == 1 && on_simplex) {
-            paint_points_c(Canvas3D, &origin, 1, "tr", 50);
-            paint_points_c(Canvas3D, &simplex[0], 1, "tb", 50);
+            if (DEBUG) {
+                paint_points_c(Canvas3D, &origin, 1, "tr", 50);
+                paint_points_c(Canvas3D, &simplex[0], 1, "tb", 50);
+            }
             return false;
         } else if (!on_simplex) {
             simplex[n] = new_point;
@@ -359,4 +365,5 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
             n--;
         }
     }
+#undef DEBUG
 }

@@ -8,9 +8,9 @@ AspectType RigidBody_TYPE_ID;
 
 mat3x3 brute_force_polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
 {
-    printf("Brute forcing the inertia tensor ...\n");
-    printf("center: "); print_vec3(center);
-    printf("mass: %.2f\n", mass);
+    //printf("Brute forcing the inertia tensor ...\n");
+    //printf("center: "); print_vec3(center);
+    //printf("mass: %.2f\n", mass);
     
     float integrals[6] = {0}; // x^2, y^2, z^2, xy, xz, yz
     float volume = 0;
@@ -25,11 +25,11 @@ mat3x3 brute_force_polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float
         }
         point = point->next;
     }
-    print_vec3(min);
-    print_vec3(max);
-    float d = 0.5;
+    //print_vec3(min);
+    //print_vec3(max);
+    float d = 2.5;
     float dcubed = d*d*d;
-    printf("Doing ~%.0f evaluations ...\n", (max.vals[0] - min.vals[0])/d * (max.vals[1] - min.vals[1])/d * (max.vals[2] - min.vals[2])/d);
+    //printf("Doing ~%.0f evaluations ...\n", (max.vals[0] - min.vals[0])/d * (max.vals[1] - min.vals[1])/d * (max.vals[2] - min.vals[2])/d);
 
     for (float x = min.vals[0]; x <= max.vals[0]; x += d) {
         for (float y = min.vals[1]; y <= max.vals[1]; y += d) {
@@ -58,8 +58,8 @@ mat3x3 brute_force_polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float
             }
         }
     }
-    printf("Volume: %.2f\n", volume);
-    printf("Volume?: %.2f\n", polyhedron_volume(poly));
+    //printf("Volume: %.2f\n", volume);
+    //printf("Volume?: %.2f\n", polyhedron_volume(poly));
     mat3x3 inertia_tensor;
     fill_mat3x3(inertia_tensor, integrals[1]+integrals[2], -integrals[3], -integrals[4],
                                  -integrals[3], integrals[0]+integrals[2], -integrals[5],
@@ -67,8 +67,8 @@ mat3x3 brute_force_polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float
     for (int i = 0; i < 9; i++) {
         inertia_tensor.vals[i] *= inverse_volume * mass;
     }
-    print_matrix3x3f(&inertia_tensor);
-    getchar();
+    //print_matrix3x3f(&inertia_tensor);
+    //getchar();
     return inertia_tensor;
 }
 
@@ -127,8 +127,8 @@ mat3x3 polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
     fill_mat3x3(inertia_tensor, integrals[1]+integrals[2], -integrals[3], -integrals[4],
                                  -integrals[3], integrals[0]+integrals[2], -integrals[5],
                                  -integrals[4], -integrals[5], integrals[0]+integrals[1]);
-    print_matrix3x3f(&inertia_tensor);
-    getchar();
+    //print_matrix3x3f(&inertia_tensor);
+    //getchar();
     return inertia_tensor;
 }
 

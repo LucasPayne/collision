@@ -159,7 +159,6 @@ void contains_origin(Polyhedron poly)
 
             // The initial tetrahedron has been set up. Proceed with EPA.
             while (1) {
-
                 // Find the closest triangle to the origin.
                 float min_d = -1;
                 int closest_triangle_index = -1;

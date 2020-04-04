@@ -136,5 +136,6 @@ void print_polyhedron(Polyhedron *p);
 void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line_width, mat4x4 *matrix);
 void draw_polyhedron(Polyhedron *p, mat4x4 *matrix);
 void draw_polyhedron2(Polyhedron *p, mat4x4 *matrix, char *color_str, float line_width);
+void draw_triangle_winding_order(vec3 a, vec3 b, vec3 c, char *color_str, float line_width);
 
 #endif // HEADER_DEFINED_GEOMETRY

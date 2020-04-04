@@ -46,6 +46,8 @@ extern float mouse_y;
 
 extern GLenum g_cull_mode;
 
+extern int TEST_SWITCH;
+
 vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, float try); //---
 
 #include "Engine/gameobjects.h"

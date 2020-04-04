@@ -42,6 +42,8 @@ project_libs:
 
 static GLFWwindow *window;
 
+
+int TEST_SWITCH = 0;
 DataDictionary *g_scenes;
 DataDictionary *g_data; // Global data dictionary for the application.
 float ASPECT_RATIO;
@@ -96,6 +98,7 @@ static const int g_glfw_freeze_shadows_key = GLFW_KEY_F10;
 static bool g_test_toggle = false;
 static const int g_glfw_test_toggle_key = GLFW_KEY_F9;
 static const int g_glfw_pause_key = GLFW_KEY_F1;
+static const int g_test_switch_key = GLFW_KEY_F2;
 static bool g_paused = false;
 
 static void toggle_raw_mouse(void)
@@ -193,6 +196,7 @@ static void key_callback(GLFWwindow *window, int key,
         if (key == g_glfw_pause_key) {
             g_paused = !g_paused;
         }
+        if (key == g_test_switch_key) TEST_SWITCH = (TEST_SWITCH + 1) % 2; // The test switch is just a useful global toggle, for debugging.
     }
 
     // Send input events to Input aspects listening for keys.

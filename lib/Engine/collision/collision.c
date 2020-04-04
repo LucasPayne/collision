@@ -164,8 +164,14 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
             if (v < 0) {
                 // If the tetrahedron has negative volume, swap two entries, forcing the winding order to be anti-clockwise from outside.
                 vec3 temp = simplex[0];
+                int tempA = indices_A[0];
+                int tempB = indices_B[0];
                 simplex[0] = simplex[1];
+                indices_A[0] = indices_A[1];
+                indices_B[0] = indices_B[1];
                 simplex[1] = temp;
+                indices_A[1] = tempA;
+                indices_B[1] = tempB;
             }
             //---since it is known that everything is empty, it would be more efficient to just hardcode the initial tetrahedron.
             int dummy; // since the macro saves the index.
@@ -178,7 +184,9 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
             add_triangle(0,2,3);
 
             // The initial tetrahedron has been set up. Proceed with EPA.
+	    int COUNTER = 0; // for debugging.
             while (1) {
+                COUNTER ++;
                 // Find the closest triangle to the origin.
                 float min_d = -1;
                 int closest_triangle_index = -1;
@@ -216,7 +224,7 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                         break;
                     }
                 }
-                if (new_point_on_polytope) {
+                if (new_point_on_polytope || TEST_SWITCH == COUNTER) {
                     // The closest triangle is on the border of the polyhedron, so the closest point on this triangle is the closest point
                     // to the border of the polyhedron.
                     paint_points_c(Canvas3D, &new_point, 1, "tr", 65);
@@ -235,6 +243,7 @@ bool convex_hull_intersection(vec3 *A, int A_len, vec3 *B, int B_len, GJKManifol
                     vec3 p1 = vec3_sub(A[points[points_n*triangles[triangles_n*i+0]]], B[points[points_n*triangles[triangles_n*i+0] + 1]]);\
                     vec3 p2 = vec3_sub(A[points[points_n*triangles[triangles_n*i+1]]], B[points[points_n*triangles[triangles_n*i+1] + 1]]);\
                     vec3 p3 = vec3_sub(A[points[points_n*triangles[triangles_n*i+2]]], B[points[points_n*triangles[triangles_n*i+2] + 1]]);\
+                    draw_triangle_winding_order(p1, p2, p3, "p", 10);\
                     paint_triangle_cv(Canvas3D, p1, p2, p3, "tk");\
                 }\
             }

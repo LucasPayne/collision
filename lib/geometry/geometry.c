@@ -194,3 +194,4 @@ int simplex_extreme_index(int n, vec3 points[], vec3 dir)
     return index;
 }
 
+

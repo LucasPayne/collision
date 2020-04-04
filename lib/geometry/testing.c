@@ -94,3 +94,20 @@ EntityID polyhedron_create_entity(Polyhedron poly, vec3 position, char *texture_
     }
     return e;
 }
+
+void draw_triangle_winding_order(vec3 a, vec3 b, vec3 c, char *color_str, float line_width)
+{
+        vec3 ps[3];
+        vec3 tri[3] = { a, b, c };
+        for (int i = 0; i < 3; i++) {
+            float alpha = 0.1;
+            ps[i] = triangle_blend(tri[(i+1)%3], tri[(i+2)%3], tri[i],
+                                   alpha, alpha, 1-2*alpha);
+        }
+        for (int i = 0; i < 2; i++) {
+	    paint_line_cv(Canvas3D, ps[i], ps[i+1], color_str, line_width);
+        }
+        vec3 end = vec3_lerp(ps[2], ps[0], 0.8);
+        paint_line_cv(Canvas3D, ps[2], end, color_str, line_width);
+}
+

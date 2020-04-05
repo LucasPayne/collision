@@ -483,3 +483,21 @@ vec3 polytope_center_of_mass(vec3 *points, int num_points)
     //----------////// Destroy the polyhedron.
     return center_of_mass;
 }
+
+vec3 polytope_extreme_point(vec3 *points, int num_points, vec3 direction)
+{
+    if (num_points == 0) {
+        fprintf(stderr, ERROR_ALERT "polytope_extreme_point: Need at least one point.\n");
+        exit(EXIT_FAILURE);
+    }
+    vec3 p = points[0];
+    float d = vec3_dot(p, direction);
+    for (int i = 1; i < num_points; i++) {
+        float new_d = vec3_dot(points[i], direction);
+        if (new_d > d) {
+            d = new_d;
+            p = points[i];
+        }
+    }
+    return p;
+}

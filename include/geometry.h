@@ -108,6 +108,7 @@ vec3 polyhedron_center_of_mass(Polyhedron poly);
     (Polyhedron representation may not be consistent due to triangulation of faces).
 ================================================================================*/
 vec3 polytope_center_of_mass(vec3 *points, int num_points);
+vec3 polytope_extreme_point(vec3 *points, int num_points, vec3 direction);
 
 /*================================================================================
     Closest-points methods.

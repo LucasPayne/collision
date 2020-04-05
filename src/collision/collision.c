@@ -9,14 +9,48 @@ vec3 *points;
 Polyhedron hull;
 bool viewing = false;
 
-void create_object(void)
+#define ROCK 0
+#define ROD 1
+#define PLATE 2
+RigidBody *create_object(int mode, vec3 position, vec3 euler_angles)
 {
-    int min = 6;
-    int max = 100;
-    int n = (rand() % (max - min)) + min;
-    points = random_points(50, n);
+    int num_points;
+    if (mode == ROCK) {
+        int min = 6;
+        int max = 100;
+        num_points = (rand() % (max - min)) + min;
+        points = random_points(50, num_points);
+    } else if (mode == ROD) {
+        points = malloc(sizeof(float)*3*8);
+        mem_check(points);
+        float w = 100;
+        float h = 10;
+        points[0] = new_vec3(-w,-h,-h);
+        points[1] = new_vec3(-w,h,-h);
+        points[2] = new_vec3(-w,-h,h);
+        points[3] = new_vec3(-w,h,h);
+        points[4] = new_vec3(w,-h,-h);
+        points[5] = new_vec3(w,h,-h);
+        points[6] = new_vec3(w,-h,h);
+        points[7] = new_vec3(w,h,h);
+        num_points = 8;
+    } else if (mode == PLATE) {
+        points = malloc(sizeof(float)*3*8);
+        mem_check(points);
+        float w = 10;
+        float h = 100;
+        points[0] = new_vec3(-w,-h,-h);
+        points[1] = new_vec3(-w,h,-h);
+        points[2] = new_vec3(-w,-h,h);
+        points[3] = new_vec3(-w,h,h);
+        points[4] = new_vec3(w,-h,-h);
+        points[5] = new_vec3(w,h,-h);
+        points[6] = new_vec3(w,-h,h);
+        points[7] = new_vec3(w,h,h);
+        num_points = 8;
+    }
     //-------destroy the previous hull polyhedron.
-    Polyhedron poly = convex_hull(points, n);
+    Polyhedron poly = convex_hull(points, num_points);
     printf("%d\n", polyhedron_num_points(&poly));
 
     // Convert the polyhedron in to a MeshData struct.
@@ -50,9 +84,10 @@ void create_object(void)
     printf("%d vertices, %d triangles\n", mesh.num_vertices, mesh.num_triangles);
     
     EntityID e = new_entity(4);
-    float d = 300;
     Transform *transform = add_aspect(e, Transform);
-    Transform_set(transform, frand()*d-d/2, frand()*d-d/2, frand()*d-d/2, 0,0,0);
+    //float d = 300;
+    //Transform_set(transform, frand()*d-d/2, frand()*d-d/2, frand()*d-d/2, 0,0,0);
+    Transform_set(transform, position.vals[0],position.vals[1],position.vals[2], euler_angles.vals[0],euler_angles.vals[1],euler_angles.vals[2]);
     //Transform_set(add_aspect(e, Transform), 0,0,0,0,0,0);
     Body *b = add_aspect(e, Body);
     b->visible = true;
@@ -68,25 +103,34 @@ void create_object(void)
 #else
     b->material = Material_create("Materials/textured_phong_shadows");
 #endif
-    material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/dirt");
+    if (frand() > 0.5) material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/stone_bricks");
+    else material_set_texture_path(resource_data(Material, b->material), "diffuse_map", "Textures/minecraft/dirt");
 
     RigidBody *rb = add_aspect(e, RigidBody);
     RigidBody_init_polytope(rb, polyhedron_points(poly), polyhedron_num_points(&poly), 1);
     float s = 30;
-    rb->linear_momentum = new_vec3(frand()*s-s/2,frand()*s-s/2,frand()*s-s/2);
-    float r = 1;
-    //rb->angular_velocity = new_vec3(frand()*r-r/2,frand()*r-r/2,frand()*r-r/2);
+    // rb->linear_momentum = new_vec3(frand()*s-s/2,frand()*s-s/2,frand()*s-s/2);
+    // float r = 1000;
+    // rb->angular_momentum = new_vec3(frand()*r-r/2,frand()*r-r/2,frand()*r-r/2);
 
     hull = poly;
+    return rb;
+}
+
+void create_random_object(int kind)
+{
+    float d = 300;
+    create_object(kind, new_vec3(frand()*d-d/2, frand()*d-d/2, frand()*d-d/2), new_vec3(0,0,0));
 }
 
 bool wireframe = false;
 extern void input_event(int key, int action, int mods)
 {
     if (action == GLFW_PRESS) {
-        if (key == GLFW_KEY_P) {
-            create_object();
-        }
+        if (key == GLFW_KEY_V) for (int i = 0; i < 20; i++) create_random_object(ROCK);
+        if (key == GLFW_KEY_P) create_random_object(ROCK);
+        if (key == GLFW_KEY_O) create_random_object(ROD);
+        if (key == GLFW_KEY_I) create_random_object(PLATE);
         if (key == GLFW_KEY_V) viewing = !viewing;
         if (key == GLFW_KEY_M) {
             wireframe = !wireframe;
@@ -111,9 +155,7 @@ void turn_off(void)
 {
     for_aspect(Body, body)
         body->visible = false;
-    end_for_aspect()
-}
-
+    end_for_aspect() } 
 
 Polyhedron bunny_hull;
 mat4x4 bunny_matrix;
@@ -122,12 +164,17 @@ extern void init_program(void)
     test_directional_light_controlled();
     // open_scene(g_scenes, "block_on_floor");
     create_key_camera_man(0,0,0,  0,0,0);
-    create_object();
+    //create_object(ROCK);
+
+    // RigidBody *test_rod = create_object(ROD, new_vec3(0,-150,0), new_vec3(0,0.3,0));
+    // test_rod->angular_momentum = new_vec3(0,0,600);
+    RigidBody *test_rod = create_object(ROD, new_vec3(0,-150,0), new_vec3(0,0.3,M_PI/4));
+    test_rod->linear_momentum = new_vec3(0,-10,0);
 
     EntityID e = new_entity(4);
-    Transform_set(add_aspect(e, Transform), 0,-700,0,0,0,0);
+    Transform_set(add_aspect(e, Transform), 0,-50000-500,0,0,0,0);
     Body *body = add_aspect(e, Body);
-    get_aspect_type(e, Transform)->scale = 1000;
+    get_aspect_type(e, Transform)->scale = 100000;
     body->visible = true;
     body->geometry = new_resource_handle(Geometry, "Models/block -a");
     body->material = Material_create("Materials/textured_phong_shadows");
@@ -135,7 +182,7 @@ extern void init_program(void)
     material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/marble_tile");
     Geometry *block_geometry = resource_data(Geometry, body->geometry);
     RigidBody_init_polytope(add_aspect(e, RigidBody), block_geometry->mesh_data->attribute_data[Position], block_geometry->num_vertices, 0);
-
+#if 0
     int bunny_square_root = 1;
     for (int i = 0; i < bunny_square_root; i++) {
         for (int j = 0; j < bunny_square_root; j++) {
@@ -154,6 +201,7 @@ extern void init_program(void)
             bunny_matrix = Transform_matrix(t);
         }
     }
+#endif
 }
 extern void loop_program(void)
 {
@@ -164,31 +212,17 @@ extern void loop_program(void)
     for_aspect(Body, body)
         if (wireframe) MeshData_draw_wireframe(resource_data(Geometry, body->geometry)->mesh_data, Transform_matrix(other_aspect(body, Transform)), new_vec4(0.5,0,0,1), 3);
     end_for_aspect()
-    for_aspect(RigidBody, rb)
-        rb->linear_momentum.vals[1] -= rb->mass * dt * 500;
-            /*
-        Body *b = other_aspect(rb, Body);
-        if (viewing) {
-            Transform *t = other_aspect(rb, Transform);
-            vec3 p = Transform_position(t);
-            paint_points_c(Canvas3D, &p, 1, "b", 12);
-            // PolyhedronTriangle *tri = rb->shape.polyhedron.triangles.first;
-            // while (tri != NULL) {
-            //     for (int i = 0; i < 3; i++) paint_line_cv(Canvas3D, tri->points[i]->position, tri->points[(i+1)%3]->position, "k", 5);
-            //     tri = tri->next;
-            // }
-            b->visible = false;
-        } else {
-            b->visible = true;
-        }
-	    */
-    end_for_aspect()
-
 
     vec3 origin = vec3_zero();
     paint_line_cv(Canvas3D, origin, new_vec3(10,10,10), "p", 10);
     paint_line_cv(Canvas3D, origin, new_vec3(-10,10,10), "p", 10);
-
+#if 1 //gravity
+    if (!TEST_SWITCH) {
+        for_aspect(RigidBody, rb)
+             rb->linear_momentum.vals[1] -= rb->mass * dt * 500;
+        end_for_aspect()
+    }
+#endif
 }
 extern void close_program(void)
 {

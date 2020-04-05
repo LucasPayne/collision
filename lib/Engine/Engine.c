@@ -100,6 +100,10 @@ static const int g_glfw_test_toggle_key = GLFW_KEY_F9;
 static const int g_glfw_pause_key = GLFW_KEY_F1;
 static const int g_test_switch_key = GLFW_KEY_F2;
 static bool g_paused = false;
+static int g_time_speed_down_key = GLFW_KEY_F3;
+static int g_time_speed_up_key = GLFW_KEY_F4;
+static int g_time_speed_reset_key = GLFW_KEY_F5;
+static float g_time_multiplier = 1.0;
 
 static void toggle_raw_mouse(void)
 {
@@ -197,6 +201,15 @@ static void key_callback(GLFWwindow *window, int key,
             g_paused = !g_paused;
         }
         if (key == g_test_switch_key) TEST_SWITCH = (TEST_SWITCH + 1) % 2; // The test switch is just a useful global toggle, for debugging.
+        if (key == g_time_speed_down_key) {
+            g_time_multiplier *= 0.7;
+        }
+        if (key == g_time_speed_up_key) {
+            g_time_multiplier *= 1.0 / 0.7;
+        }
+        if (key == g_time_speed_reset_key) {
+            g_time_multiplier = 1.0;
+        }
     }
 
     // Send input events to Input aspects listening for keys.
@@ -467,7 +480,7 @@ int main(void)
 
         last_time = time;
         time = glfwGetTime();
-        dt = time - last_time;
+        dt = g_time_multiplier * (time - last_time);
 
         if (g_paused) continue;
 

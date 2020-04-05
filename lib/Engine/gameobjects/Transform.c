@@ -123,3 +123,18 @@ void Transform_draw_axes(Transform *t, float length, float width)
     paint_line_cv(Canvas3D, pos, vec3_add(pos, vec3_mul(Transform_up(t), length)), "g", width);
     paint_line_cv(Canvas3D, pos, vec3_add(pos, vec3_mul(Transform_right(t), length)), "r", width);
 }
+
+// This is a routine since being Euler-controlled means the rotation matrix is described implicitly.
+//---want to remove Euler-controlledness anyway.
+mat3x3 Transform_rotation_matrix(Transform *t)
+{
+    if (!t->euler_controlled) return t->rotation_matrix;
+    mat4x4 matrix = Transform_matrix(t);
+    mat3x3 rotation_matrix;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            rotation_matrix.vals[3*i + j] = matrix.vals[4*i + j];
+        }
+    }
+    return rotation_matrix;
+}

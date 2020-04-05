@@ -85,7 +85,7 @@ static void fprint_matrixNxNf(FILE *file, Matrix4x4f *matrix, int N)
     for (int i = 0; i < N; i++) {
         putchar('[');
         for (int j = 0; j < N; j++) {
-            fprintf(file, "%.6lf", matrix->vals[i + N*j]);
+            fprintf(file, "%.6lf", matrix->vals[j + N*i]);
             if (j != N - 1) fprintf(file, ", ");
         }
         fprintf(file, "]\n");
@@ -652,8 +652,8 @@ vec3 rand_vec3(float r)
 //--------------------------------------------------------------------------------
 float mat3x3_determinant(mat3x3 m)
 {
-    return   m.vals[0]*(m.vals[4]*m.vals[8]-m.vals[5]*m.vals[7]);
-           - m.vals[1]*(m.vals[3]*m.vals[8]-m.vals[5]*m.vals[6]);
+    return   m.vals[0]*(m.vals[4]*m.vals[8]-m.vals[5]*m.vals[7])
+           - m.vals[1]*(m.vals[3]*m.vals[8]-m.vals[5]*m.vals[6])
            + m.vals[2]*(m.vals[3]*m.vals[7]-m.vals[4]*m.vals[6]);
 }
 
@@ -665,7 +665,7 @@ mat3x3 mat3x3_inverse(mat3x3 m)
     float det = mat3x3_determinant(m);
     float detinv = 1.0 / det;
     printf("%.6f    %.12f\n", det, detinv);
-    #define term(Ar,Ac,Br,Bc,Cr,Cc,Dr,Dc) ( m.vals[3*(Ar-1)+ Ac-1]*m.vals[3*(Dr-1)+ Dc-1]-m.vals[3*(Br-1)+ Bc-1]-m.vals[3*(Cr-1)+ Cc-1] )
+    #define term(Ar,Ac,Br,Bc,Cr,Cc,Dr,Dc) ( m.vals[3*(Ar-1)+ Ac-1]*m.vals[3*(Dr-1)+ Dc-1] - m.vals[3*(Br-1)+ Bc-1]*m.vals[3*(Cr-1)+ Cc-1] )
 
     minv.vals[0] = term(2,2,2,3,3,2,3,3);
     minv.vals[1] = term(1,3,1,2,3,3,3,2);
@@ -679,4 +679,42 @@ mat3x3 mat3x3_inverse(mat3x3 m)
 
     for (int i = 0; i < 9; i++) minv.vals[i] *= detinv;
     return minv;
+}
+
+
+mat3x3 mat3x3_multiply(mat3x3 A, mat3x3 B)
+{
+    right_multiply_matrix3x3f(&A, &B);
+    return A;
+}
+mat3x3 mat3x3_multiply3(mat3x3 A, mat3x3 B, mat3x3 C)
+{
+    right_multiply_matrix3x3f(&A, &B);
+    right_multiply_matrix3x3f(&A, &C);
+    return A;
+}
+mat3x3 mat3x3_multiply4(mat3x3 A, mat3x3 B, mat3x3 C, mat3x3 D)
+{
+    right_multiply_matrix3x3f(&A, &B);
+    right_multiply_matrix3x3f(&A, &C);
+    right_multiply_matrix3x3f(&A, &D);
+    return A;
+}
+mat4x4 mat4x4_multiply(mat4x4 A, mat4x4 B)
+{
+    right_multiply_matrix4x4f(&A, &B);
+    return A;
+}
+mat4x4 mat4x4_multiply3(mat4x4 A, mat4x4 B, mat4x4 C)
+{
+    right_multiply_matrix4x4f(&A, &B);
+    right_multiply_matrix4x4f(&A, &C);
+    return A;
+}
+mat4x4 mat4x4_multiply4(mat4x4 A, mat4x4 B, mat4x4 C, mat4x4 D)
+{
+    right_multiply_matrix4x4f(&A, &B);
+    right_multiply_matrix4x4f(&A, &C);
+    right_multiply_matrix4x4f(&A, &D);
+    return A;
 }

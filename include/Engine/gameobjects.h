@@ -41,7 +41,8 @@ ASPECT_PROPERTIES()
 } Transform;
 void Transform_set(Transform *transform, float x, float y, float z, float theta_x, float theta_y, float theta_z);
 vec3 Transform_position(Transform *t);
-Matrix4x4f Transform_matrix(Transform *transform);
+mat4x4 Transform_matrix(Transform *transform);
+mat3x3 Transform_rotation_matrix(Transform *t);
 vec3 Transform_relative_direction(Transform *t, vec3 direction);
 vec3 Transform_relative_position(Transform *t, vec3 position);
 void Transform_move(Transform *t, vec3 translation);

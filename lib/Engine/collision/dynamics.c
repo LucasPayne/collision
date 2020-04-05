@@ -16,19 +16,29 @@ static void resolve_rigid_body_collisions(void)
             // va,vb: The linear velocities of the rigid bodies.
             vec3 va = vec3_mul(A->linear_momentum, A->inverse_mass);
             vec3 vb = vec3_mul(B->linear_momentum, B->inverse_mass);
+            // Transform the inverse inertia tensors to world space via the rotation matrix of this body.
+            mat3x3 A_rotation_matrix = Transform_rotation_matrix(t);
+            mat3x3 A_worldspace_inverse_inertia_tensor = mat3x3_multiply3(A_rotation_matrix, A->inverse_inertia_tensor, transpose_mat3x3(A_rotation_matrix));
+            mat3x3 B_rotation_matrix = Transform_rotation_matrix(t2);
+            mat3x3 B_worldspace_inverse_inertia_tensor = mat3x3_multiply3(B_rotation_matrix, B->inverse_inertia_tensor, transpose_mat3x3(B_rotation_matrix));
+
             // wa,wb: The angular velocities of the rigid bodies.
-            vec3 wa = matrix_vec3(A->inverse_inertia_tensor, A->angular_momentum);
-            vec3 wb = matrix_vec3(B->inverse_inertia_tensor, B->angular_momentum);
+            vec3 wa = matrix_vec3(A_worldspace_inverse_inertia_tensor, A->angular_momentum);
+            vec3 wb = matrix_vec3(B_worldspace_inverse_inertia_tensor, B->angular_momentum);
             // If the bodies are colliding, manifold will contain contact information.
             GJKManifold manifold;
             bool colliding = convex_hull_intersection(A->shape.polytope.points, A->shape.polytope.num_points, &A_matrix,
                                                       B->shape.polytope.points, B->shape.polytope.num_points, &B_matrix, &manifold);
             if (colliding) {
+                vec3 sep = vec3_mul(vec3_neg(manifold.separating_vector), 1.1);
+	        Transform_move(t, sep); //---Offset because resting contact crashes. Seriously need to work on robustness.
+                vec3 p = vec3_add(manifold.A_closest, sep);
+
                 // n: The normalized direction of separation.
                 vec3 n = vec3_normalize(manifold.separating_vector);
-                // a_pos,b_pos: The relative positions of the points of contact of A and B.
-                vec3 a_pos = vec3_sub(manifold.A_closest, Transform_position(t));
-                vec3 b_pos = vec3_sub(manifold.B_closest, Transform_position(t2));
+                // a_pos,b_pos: The relative positions of the point of contact from A and B.
+                vec3 a_pos = vec3_sub(p, Transform_position(t));
+                vec3 b_pos = vec3_sub(p, Transform_position(t2));
                 // dpa,dpb: The linear velocities at the points of contact.
                 vec3 dpa = vec3_add(va, vec3_cross(wa, a_pos));
                 vec3 dpb = vec3_add(vb, vec3_cross(wb, b_pos));
@@ -41,6 +51,7 @@ static void resolve_rigid_body_collisions(void)
                     // Separate the objects.
                     // Move each object away from each other along the separating vector, taking into account the relative momentums at the points of contact.
                     // Calculate the linear momentums at the points of contact.
+                    /*
                     vec3 momentum_pa = vec3_add(A->linear_momentum, vec3_cross(a_pos, A->angular_momentum));
                     vec3 momentum_pb = vec3_add(B->linear_momentum, vec3_cross(b_pos, B->angular_momentum));
                     float dpan = vec3_dot(dpa, n);
@@ -54,12 +65,31 @@ static void resolve_rigid_body_collisions(void)
                         float b_sep = momentum_pbn / (momentum_pan - momentum_pbn);
                         Transform_move(t, vec3_mul(manifold.separating_vector, -a_sep * 1.1));
                         Transform_move(t2, vec3_mul(manifold.separating_vector, b_sep * 1.1));
-                    }
+                    }*/
 
+
+                    float e = 0.5;
+                    vec3 rA = a_pos;
+                    vec3 rB = b_pos;
+                    vec3 kA = vec3_cross(rA, n);
+                    vec3 kB = vec3_cross(rB, n);
+                    vec3 uA = matrix_vec3(A_worldspace_inverse_inertia_tensor, kA);
+                    vec3 uB = matrix_vec3(B_worldspace_inverse_inertia_tensor, kB);
+                    float fNumer = -(1 + e) * (vec3_dot(n, vec3_sub(va, vb)) + vec3_dot(wa, kA) - vec3_dot(wb, kB));
+                    float fDenom = A->inverse_mass + B->inverse_mass + vec3_dot(kA, uA) + vec3_dot(kB, uB);
+                    float f = fNumer / fDenom;
+                    vec3 impulse = vec3_mul(n, f);
+                    A->linear_momentum = vec3_add(A->linear_momentum, impulse);
+                    B->linear_momentum = vec3_sub(B->linear_momentum, impulse);
+                    A->angular_momentum = vec3_add(A->angular_momentum, vec3_mul(kA, f));
+                    B->angular_momentum = vec3_sub(B->angular_momentum, vec3_mul(kB, f));
+
+
+/*
                     float coefficient_of_restitution = 0.5;
                     float numerator = -(1 + coefficient_of_restitution) * (vec3_dot(relative_velocity, n) + vec3_dot(wa, vec3_cross(a_pos, n)) - vec3_dot(wb, vec3_cross(b_pos, n)));
-                    float denominator = A->inverse_mass + B->inverse_mass + vec3_dot(vec3_cross(a_pos, n), matrix_vec3(A->inverse_inertia_tensor, vec3_cross(a_pos, n)))
-                                                                          + vec3_dot(vec3_cross(b_pos, n), matrix_vec3(B->inverse_inertia_tensor, vec3_cross(b_pos, n)));
+                    float denominator = A->inverse_mass + B->inverse_mass + vec3_dot(vec3_cross(a_pos, n), matrix_vec3(A_worldspace_inverse_inertia_tensor, vec3_cross(a_pos, n)))
+                                                                          + vec3_dot(vec3_cross(b_pos, n), matrix_vec3(B_worldspace_inverse_inertia_tensor, vec3_cross(b_pos, n)));
                     if (denominator == 0) {
                         fprintf(stderr, ERROR_ALERT "Denominator in calculation of impulse magnitude between rigid bodies should never be zero.\n");
                         exit(EXIT_FAILURE);
@@ -80,8 +110,9 @@ static void resolve_rigid_body_collisions(void)
                     vec3 impulse_force = vec3_mul(n, impulse_magnitude);
                     A->linear_momentum = vec3_add(A->linear_momentum, impulse_force);
                     B->linear_momentum = vec3_sub(B->linear_momentum, impulse_force);
-                    A->angular_momentum = vec3_add(A->linear_momentum, vec3_mul(vec3_cross(a_pos, n), impulse_magnitude));
-                    B->angular_momentum = vec3_sub(B->linear_momentum, vec3_mul(vec3_cross(b_pos, n), impulse_magnitude));
+                    A->angular_momentum = vec3_add(A->angular_momentum, vec3_mul(vec3_cross(a_pos, n), impulse_magnitude));
+                    B->angular_momentum = vec3_sub(B->angular_momentum, vec3_mul(vec3_cross(b_pos, n), impulse_magnitude));
+*/
                 }
             }
             // Polyhedron hull_A = convex_hull(A->shape.polytope.points,A->shape.polytope.num_points);
@@ -103,7 +134,14 @@ static void update_rigid_bodies(void)
         t->z += rb->linear_momentum.vals[2] * rb->inverse_mass * dt;
 
         // Calculate the angular velocity from angular momentum and the (inverse) inertia tensor.
-        vec3 angular_velocity = matrix_vec3(rb->inverse_inertia_tensor, rb->angular_momentum);
+
+
+        // Transform the inverse inertia tensor to world space via the rotation matrix of this body.
+        mat3x3 rotation_matrix = Transform_rotation_matrix(t);
+        mat3x3 worldspace_inverse_inertia_tensor = mat3x3_multiply3(rotation_matrix, rb->inverse_inertia_tensor, transpose_mat3x3(rotation_matrix));
+
+        vec3 angular_velocity = matrix_vec3(worldspace_inverse_inertia_tensor, rb->angular_momentum);
+
         float dwx,dwy,dwz;
         dwx = angular_velocity.vals[0] * dt;
         dwy = angular_velocity.vals[1] * dt;
@@ -120,6 +158,18 @@ static void update_rigid_bodies(void)
 
 void rigid_body_dynamics(void)
 {
+    for_aspect(RigidBody, rb)
+        Transform *t = other_aspect(rb, Transform);
+        mat3x3 rotation_matrix = Transform_rotation_matrix(t);
+        mat3x3 identity = mat3x3_multiply(rb->inertia_tensor, rb->inverse_inertia_tensor);
+        printf("identity:\n");
+        print_matrix4x4f(&identity);
+        mat3x3 worldspace_inverse_inertia_tensor = mat3x3_multiply3(rotation_matrix, rb->inverse_inertia_tensor, transpose_mat3x3(rotation_matrix));
+        vec3 angular_velocity = matrix_vec3(worldspace_inverse_inertia_tensor, rb->angular_momentum);
+        paint_line_cv(Canvas3D, Transform_position(t), vec3_add(Transform_position(t), angular_velocity), "k", 4);
+        paint_line_cv(Canvas3D, Transform_position(t), vec3_add(Transform_position(t), rb->angular_momentum), "y", 4);
+    end_for_aspect()
+    if (TEST_SWITCH) return;
     update_rigid_bodies();
     resolve_rigid_body_collisions();
 }

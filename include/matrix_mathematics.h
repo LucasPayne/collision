@@ -177,6 +177,14 @@ vec3 rand_vec3(float r);
 mat3x3 mat3x3_inverse(mat3x3 m);
 float mat3x3_determinant(mat3x3 m);
 
+// Multiplying multiple matrices by value.
+mat3x3 mat3x3_multiply(mat3x3 A, mat3x3 B);
+mat3x3 mat3x3_multiply3(mat3x3 A, mat3x3 B, mat3x3 C);
+mat3x3 mat3x3_multiply4(mat3x3 A, mat3x3 B, mat3x3 C, mat3x3 D);
+mat4x4 mat4x4_multiply(mat4x4 A, mat4x4 B);
+mat4x4 mat4x4_multiply3(mat4x4 A, mat4x4 B, mat4x4 C);
+mat4x4 mat4x4_multiply4(mat4x4 A, mat4x4 B, mat4x4 C, mat4x4 D);
+
 #endif // HEADER_DEFINED_MATRIX_MATHEMATICS
 
 

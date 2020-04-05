@@ -19,6 +19,8 @@ This module consists of
 #include "resources.h"
 #include "ply.h"
 #include "rendering.h"
+// Painting module for debugging and visualization.
+#include "painting.h"
 
 void MeshData_calculate_tangents(MeshData *mesh_data)
 {
@@ -276,4 +278,17 @@ Geometry upload_mesh(MeshData *mesh_data)
     }
     gm_index_buf(mesh_data->triangles, 3*mesh_data->num_triangles);
     return gm_done();
+}
+
+/*--------------------------------------------------------------------------------
+    Debugging and visualization.
+--------------------------------------------------------------------------------*/
+void MeshData_draw_wireframe(MeshData *mesh, mat4x4 matrix, vec4 color, float line_width)
+{
+    for (int i = 0; i < mesh->num_triangles; i++) {
+        for (int j = 0; j < 3; j++) {
+            paint_line_v(Canvas3D, mat4x4_vec3(&matrix, ((vec3 *) mesh->attribute_data[Position])[mesh->triangles[3*i+j]]),
+                                   mat4x4_vec3(&matrix, ((vec3 *) mesh->attribute_data[Position])[mesh->triangles[3*i+((j+1)%3)]]), color, line_width);
+        }
+    }
 }

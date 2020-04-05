@@ -61,7 +61,7 @@ static int support_index(vec3 *points, int num_points, mat4x4 *matrix, vec3 dire
 }
 bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int B_len, mat4x4 *B_matrix, GJKManifold *manifold)
 {
-#define DEBUG 0 // Turn this flag on to visualize some things.
+#define DEBUG 1 // Turn this flag on to visualize some things.
     // Initialize the simplex as a line segment.
     vec3 simplex[4];
     int indices_A[4];

@@ -59,6 +59,9 @@ void create_object(void)
     transform->scale = 1;
     Geometry *g = oneoff_resource(Geometry, b->geometry);
     *g = geometry;
+    g->mesh_data = malloc(sizeof(MeshData));
+    mem_check(g->mesh_data);
+    memcpy(g->mesh_data, &mesh, sizeof(MeshData)); //save the geometry in application memory.
     //b->material = Material_create("Materials/red");
 #if 0
     b->material = Material_create("Materials/textured_phong_shadows_phong_tessellation");
@@ -72,12 +75,12 @@ void create_object(void)
     float s = 30;
     rb->linear_momentum = new_vec3(frand()*s-s/2,frand()*s-s/2,frand()*s-s/2);
     float r = 1;
-    rb->angular_velocity = new_vec3(frand()*r-r/2,frand()*r-r/2,frand()*r-r/2);
+    //rb->angular_velocity = new_vec3(frand()*r-r/2,frand()*r-r/2,frand()*r-r/2);
 
     hull = poly;
 }
 
-
+bool wireframe = false;
 extern void input_event(int key, int action, int mods)
 {
     if (action == GLFW_PRESS) {
@@ -85,6 +88,12 @@ extern void input_event(int key, int action, int mods)
             create_object();
         }
         if (key == GLFW_KEY_V) viewing = !viewing;
+        if (key == GLFW_KEY_M) {
+            wireframe = !wireframe;
+            for_aspect(Body, body)
+                body->visible = !wireframe;
+            end_for_aspect()
+        }
     }
 }
     
@@ -93,6 +102,16 @@ extern void mouse_button_event(int button, int action, int mods)
 }
 extern void cursor_move_event(double x, double y)
 {
+}
+
+void turn_on(void)
+{
+}
+void turn_off(void)
+{
+    for_aspect(Body, body)
+        body->visible = false;
+    end_for_aspect()
 }
 
 
@@ -142,9 +161,12 @@ extern void loop_program(void)
     // draw_polyhedron_winding_order(&hull, "k", 10, NULL);
     draw_polyhedron(&bunny_hull, &bunny_matrix);
     draw_polyhedron_winding_order(&bunny_hull, "k", 10, &bunny_matrix);
+    for_aspect(Body, body)
+        if (wireframe) MeshData_draw_wireframe(resource_data(Geometry, body->geometry)->mesh_data, Transform_matrix(other_aspect(body, Transform)), new_vec4(0.5,0,0,1), 3);
+    end_for_aspect()
     for_aspect(RigidBody, rb)
         rb->linear_momentum.vals[1] -= rb->mass * dt * 500;
-
+            /*
         Body *b = other_aspect(rb, Body);
         if (viewing) {
             Transform *t = other_aspect(rb, Transform);
@@ -159,7 +181,9 @@ extern void loop_program(void)
         } else {
             b->visible = true;
         }
+	    */
     end_for_aspect()
+
 
     vec3 origin = vec3_zero();
     paint_line_cv(Canvas3D, origin, new_vec3(10,10,10), "p", 10);

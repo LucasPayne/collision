@@ -100,7 +100,6 @@ ASPECT_PROPERTIES()
     vec3 linear_momentum;
 
     vec3 angular_momentum;
-    vec3 angular_velocity; // calculated from angular momentum and the inertia tensor.
 
     float mass;
     float inverse_mass;

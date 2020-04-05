@@ -19,7 +19,7 @@ static void camera_controls(Logic *logic)
 }
 static void camera_key_input(Input *input, int key, int action, int mods)
 {
-    int jump_height = 8;
+    int jump_height = 32;
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_SPACE) {
             Transform *t = get_sibling_aspect(input, Transform);

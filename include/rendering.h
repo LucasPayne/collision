@@ -319,6 +319,8 @@ void MeshData_calculate_normals(MeshData *mesh_data);
 void MeshData_calculate_uv_orthographic(MeshData *mesh_data, vec3 direction, float scale);
 // Tangents are always calculated, when in the vertex format, from normals and uv coordinates.
 void MeshData_calculate_tangents(MeshData *mesh_data);
+// Debugging and visualization.
+void MeshData_draw_wireframe(MeshData *mesh, mat4x4 matrix, vec4 color, float line_width);
 
 extern ResourceType Geometry_RTID;
 typedef struct /* Resource */ Geometry_s {

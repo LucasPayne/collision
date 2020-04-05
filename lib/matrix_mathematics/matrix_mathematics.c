@@ -85,7 +85,7 @@ static void fprint_matrixNxNf(FILE *file, Matrix4x4f *matrix, int N)
     for (int i = 0; i < N; i++) {
         putchar('[');
         for (int j = 0; j < N; j++) {
-            fprintf(file, "%.2lf", matrix->vals[i + N*j]);
+            fprintf(file, "%.6lf", matrix->vals[i + N*j]);
             if (j != N - 1) fprintf(file, ", ");
         }
         fprintf(file, "]\n");

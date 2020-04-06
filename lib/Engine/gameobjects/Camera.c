@@ -14,26 +14,22 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
     n = near;
     f = far;
 
-    mat4x4 frustrum_matrix = {0};
-    // Attempting derivation of projection matrix here.
-    // frustrum_matrix.vals[4*0 + 0] = (far / near) * near_half_width;
-    // frustrum_matrix.vals[4*1 + 1] = (far / near) * aspect_ratio * near_half_width;
-    // frustrum_matrix.vals[4*2 + 3] = -far;
-    // frustrum_matrix.vals[4*3 + 2] = -1;
+    mat4x4 frustum_matrix = {0};
+    //------
+    // Actually derived formulation, assuming r = -l and t = -b.
+    fill_mat4x4(frustum_matrix, 1/r, 0,   0,    0,
+                                0,   1/t, 0,    0,
+                                0,   0,   -1/n,  -1/n,
+                                0,   0,   -1,  0);
 
-    //frustrum_matrix.vals[4*0 + 0] = 1.0 / ((far / near) * near_half_width);
-    //frustrum_matrix.vals[4*1 + 1] = 1.0 / ((far / near) * aspect_ratio * near_half_width);
-    //frustrum_matrix.vals[4*2 + 3] = -1;
-    //frustrum_matrix.vals[4*3 + 2] = 1 / far;
-    
-
-    frustrum_matrix.vals[4*0 + 0] = (2*n*n)/(r-l);
-    frustrum_matrix.vals[4*1 + 1] = (2*n*n)/(t-b);
-    frustrum_matrix.vals[4*2 + 2] = -(f+n)/(f-n);
-    frustrum_matrix.vals[4*0 + 2] = (r+l)/(r-l);
-    frustrum_matrix.vals[4*1 + 2] = (t+b)/(t-b);
-    frustrum_matrix.vals[4*2 + 3] = -(2*n*f)/(f-n);
-    frustrum_matrix.vals[4*3 + 2] = -1;
+    //---Incorrect formulation copied incorrectly.
+    // frustum_matrix.vals[4*0 + 0] = (2*n*n)/(r-l);
+    // frustum_matrix.vals[4*1 + 1] = (2*n*n)/(t-b);
+    // frustum_matrix.vals[4*2 + 2] = -(f+n)/(f-n);
+    // frustum_matrix.vals[4*0 + 2] = (r+l)/(r-l);
+    // frustum_matrix.vals[4*1 + 2] = (t+b)/(t-b);
+    // frustum_matrix.vals[4*2 + 3] = -(2*n*f)/(f-n);
+    // frustum_matrix.vals[4*3 + 2] = -1;
 
     camera->plane_r = r;
     camera->plane_l = l;
@@ -49,7 +45,7 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
     camera->trx = 1;
     camera->try = 1;
 
-    camera->projection_matrix = frustrum_matrix;
+    camera->projection_matrix = frustum_matrix;
 
     camera->override_bg_color = false;
     camera->bg_color = new_vec4(0,0,0,1);

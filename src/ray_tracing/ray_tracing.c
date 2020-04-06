@@ -39,15 +39,19 @@ void tracer_update(Logic *logic)
     }
 
     vec3 position = Transform_position(t);
-    vec3 plane_point = vec3_add(position, vec3_mul(Transform_forward(t), distance));
+
     // tl, bl, br, tr.
-    points[0] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), -half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * half_width)));
-    points[1] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), -half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * -half_width)));
-    points[2] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * -half_width)));
-    points[3] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * half_width)));
+    mat4x4 matrix = Transform_matrix(t);
+    vec3 camera_space_points[4];
+    camera_space_points[0] = new_vec3(-half_width, (GRID_HEIGHT * 1.0 / GRID_WIDTH) * half_width, -distance);
+    camera_space_points[1] = new_vec3(-half_width, (GRID_HEIGHT * 1.0 / GRID_WIDTH) * -half_width, -distance);
+    camera_space_points[2] = new_vec3(half_width, (GRID_HEIGHT * 1.0 / GRID_WIDTH) * -half_width, -distance);
+    camera_space_points[3] = new_vec3(half_width, (GRID_HEIGHT * 1.0 / GRID_WIDTH) * half_width, -distance);
+    for (int i = 0; i < 4; i++) {
+        points[i] = mat4x4_vec3(&matrix, camera_space_points[i]);
+    }
 
     paint_points_c(Canvas3D, &position, 1, "k", 12);
-    // paint_line_cv(Canvas3D, position, plane_point, "k", 5);
     for (int i = 0; i < 4; i++) {
         float thickness = 2;
         paint_line_cv(Canvas3D, position, points[i], "k", thickness);
@@ -71,10 +75,10 @@ void tracer_update(Logic *logic)
     }
     
     if (showing_ray) {
-        vec3 t = vec3_lerp(points[1], points[0], (showing_ray_i + 0.5) * 1.0 / GRID_WIDTH);
-        vec3 b = vec3_lerp(points[2], points[3], (showing_ray_i + 0.5) * 1.0 / GRID_WIDTH);
-        vec3 ray_point = vec3_lerp(t, b, (showing_ray_j + 0.5) * 1.0 / GRID_HEIGHT);
-        paint_line_v(Canvas3D, position, ray_point, new_vec4(0.8,1,0.356,0.532), 3);
+        vec3 t = vec3_lerp(points[0], points[3], (showing_ray_j + 0.5) * 1.0 / GRID_WIDTH);
+        vec3 b = vec3_lerp(points[1], points[2], (showing_ray_j + 0.5) * 1.0 / GRID_WIDTH);
+        vec3 ray_point = vec3_lerp(t, b, (showing_ray_i + 0.5) * 1.0 / GRID_HEIGHT);
+        paint_line_cv(Canvas3D, position, ray_point, "p", 3);
     }
 }
 
@@ -92,15 +96,18 @@ extern void mouse_button_event(int button, int action, int mods)
     if (action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_LEFT) {
         vec3 ray_origin, ray_direction;
         Camera_ray(camera, mouse_screen_x, mouse_screen_y, &ray_origin, &ray_direction);
-        printf("%.2f %.2f\n", mouse_screen_x, mouse_screen_y);
-        print_vec3(ray_origin);
-        print_vec3(ray_direction);
-        paint_line_cv(Canvas3D, ray_origin, vec3_add(ray_origin, vec3_mul(ray_direction, 20)), "g", 10);
-        paint_points_c(Canvas3D, &ray_origin, 1, "tp", 30);
+        // printf("%.2f %.2f\n", mouse_screen_x, mouse_screen_y);
+        // print_vec3(ray_origin);
+        // print_vec3(ray_direction);
+        // paint_line_cv(Canvas3D, ray_origin, vec3_add(ray_origin, vec3_mul(ray_direction, 20)), "g", 10);
+        // paint_points_c(Canvas3D, &ray_origin, 1, "tp", 30);
         
         float rect_x, rect_y;
-        if (ray_rectangle_plane_coordinates(ray_origin, ray_direction, points[0], points[1], points[2], points[3], &rect_x, &rect_y)) {
+        if (ray_rectangle_coordinates(ray_origin, ray_direction, points[0], points[1], points[2], points[3], &rect_x, &rect_y)) {
             printf("%.2f %.2f\n", rect_x, rect_y);
+            showing_ray_i = (int) (GRID_HEIGHT * rect_y);
+            showing_ray_j = (int) (GRID_WIDTH * rect_x);
+            printf("%d %d\n", showing_ray_i, showing_ray_j);
         }
     }
 }
@@ -113,9 +120,9 @@ extern void init_program(void)
     camera = get_aspect_type(camera_man, Camera);
 
     tracer = new_entity(4);
-    Transform *t = add_aspect(tracer, Transform);
-    Transform_set(t, 0,0,0, 0,0,0);
-    t->euler_controlled = true;
+    Transform *transform = add_aspect(tracer, Transform);
+    Transform_set(transform, 0,0,0, 0,0,0);
+    transform->euler_controlled = true;
     Logic_init(add_aspect(tracer, Logic), tracer_update);
 
     for (int i = 0; i < GRID_HEIGHT; i++) {

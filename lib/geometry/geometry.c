@@ -265,3 +265,13 @@ bool ray_rectangle_plane_coordinates(vec3 origin, vec3 direction, vec3 tl, vec3 
     *y = vec3_dot(vec3_sub(p, tl), side_vector) / vec3_dot(side_vector, side_vector);
     return true;
 }
+// Only detect intersection and give coordinates when the ray actually intersects with the rectangle, not just the plane it spans.
+bool ray_rectangle_coordinates(vec3 origin, vec3 direction, vec3 tl, vec3 bl, vec3 br, vec3 tr, float *x, float *y)
+{
+    float xx,yy;
+    if (!ray_rectangle_plane_coordinates(origin, direction, tl, bl, br, tr, &xx, &yy)) return false;
+    if (xx < 0 || xx > 1 || yy < 0 || yy > 1) return false;
+    *x = xx;
+    *y = yy;
+    return true;
+}

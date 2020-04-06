@@ -43,6 +43,8 @@ extern DataDictionary *g_scenes;
 
 extern float mouse_x;
 extern float mouse_y;
+extern float mouse_screen_x;
+extern float mouse_screen_y;
 
 extern GLenum g_cull_mode;
 

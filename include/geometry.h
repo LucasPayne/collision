@@ -148,6 +148,7 @@ bool ray_triangle_plane_intersection_barycentric(vec3 origin, vec3 direction, ve
 bool ray_triangle_plane_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection);
 bool ray_triangle_intersection_barycentric(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection);
 bool ray_triangle_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection);
+bool ray_rectangle_plane_coordinates(vec3 origin, vec3 direction, vec3 tl, vec3 bl, vec3 br, vec3 tr, float *x, float *y);
 
 /*================================================================================
     Testing utilities.

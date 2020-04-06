@@ -194,8 +194,7 @@ int simplex_extreme_index(int n, vec3 points[], vec3 dir)
 /*--------------------------------------------------------------------------------
     Intersection methods.
 --------------------------------------------------------------------------------*/
-
-// Ray-triangle methods and variants.
+// Ray intersection methods.
 //--------------------------------------------------------------------------------
 // Test whether the weights are a convex combination of the triangle points.
 #define barycentric_triangle_convex(WA,WB,WC)\
@@ -246,3 +245,23 @@ bool ray_triangle_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3
     return true;
 }
 
+// Ray-rectangle.
+// --------------------------------------------------------------------------------
+// Give the intersection of the ray with the plane spanned by a rectangle, given in terms of rectangular coordinates where tl (top-left)
+// is (0,0), and br (bottom-right) is (1,1).
+// tl----------tr
+// |            | => (3/13, 2/3)
+// |  x         |
+// bl----------br
+bool ray_rectangle_plane_coordinates(vec3 origin, vec3 direction, vec3 tl, vec3 bl, vec3 br, vec3 tr, float *x, float *y)
+{
+    vec3 p;
+    if (!ray_triangle_plane_intersection(origin, direction, tl, bl, br, &p)) return false;
+    vec3 top_vector = vec3_sub(tr, tl);
+    vec3 side_vector = vec3_sub(bl, tl);
+    // Get the x-coordinate by projecting onto the line tl->tr.
+    *x = vec3_dot(vec3_sub(p, tl), top_vector) / vec3_dot(top_vector, top_vector);
+    // Get the y-coordinate by projecting onto the line tl->bl.
+    *y = vec3_dot(vec3_sub(p, tl), side_vector) / vec3_dot(side_vector, side_vector);
+    return true;
+}

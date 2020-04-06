@@ -61,3 +61,21 @@ mat4x4 Camera_vp_matrix(Camera *camera)
     right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
     return vp_matrix;
 }
+
+// Bottom-left of camera rectangle is (0,0), top-right is (1,1).
+// This method gives the origin and direction of a ray cast outward from the position of the camera,
+// starting on the near plane.
+void Camera_ray(Camera *camera, float x, float y, vec3 *origin, vec3 *direction)
+{
+    Transform *t = other_aspect(camera, Transform);
+    mat4x4 matrix = Transform_matrix(t);
+    vec3 position = Transform_position(t);
+
+    vec3 camera_space_p = new_vec3(camera->plane_l + (camera->plane_r - camera->plane_l) * x,
+                                   camera->plane_b + (camera->plane_t - camera->plane_b) * y,
+                                   -camera->plane_n);
+    // printf("camera_space_p: "); print_vec3(camera_space_p);
+    *origin = mat4x4_vec3(&matrix, camera_space_p);
+    *direction = vec3_sub(*origin, position);
+}
+

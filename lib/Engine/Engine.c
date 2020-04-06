@@ -47,8 +47,15 @@ int TEST_SWITCH = 0;
 DataDictionary *g_scenes;
 DataDictionary *g_data; // Global data dictionary for the application.
 float ASPECT_RATIO;
+
+// mouse_x and mouse_y are given in pixel coordinates. They are not really directly useful as they are in terms of the window
+// (0,0) top-left, (1,1) bottom-right.
 float mouse_x;
 float mouse_y;
+// mouse_screen_x and mouse_screen_y are updated to range from (0,0) at the bottom-left of the actually used subrectangle of the window,
+// to the top-right.
+float mouse_screen_x;
+float mouse_screen_y;
 
 GLenum g_cull_mode;
 
@@ -88,6 +95,7 @@ vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, fl
     float y = -(bly - sy) / (try - bly);
     return new_vec2(x, y);
 }
+
 
 static const int g_glfw_sma_debug_overlay_key = GLFW_KEY_F11; // debugging small memory allocator.
 static bool g_sma_debug_overlay = false;
@@ -149,6 +157,9 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
 
     mouse_x = x;
     mouse_y = y;
+    vec2 screen_coordinates = pixel_to_rect(x,y, 0,0, 1,1);
+    mouse_screen_x = screen_coordinates.vals[0];
+    mouse_screen_y = screen_coordinates.vals[1];
 }
 
 float time = 0;

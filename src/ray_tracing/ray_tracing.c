@@ -8,6 +8,10 @@ project_libs:
 #define GRID_HEIGHT 24
 vec3 grid[GRID_HEIGHT][GRID_WIDTH] = {0};
 EntityID tracer;
+
+// tl, bl, br, tr.
+// Anti-clockwise corners of the imaging plane of the ray tracer.
+vec3 points[4];
 float distance = 100;
 float half_width = 50;
 bool controlling_tracer = false;
@@ -15,7 +19,7 @@ bool showing_ray = true;
 int showing_ray_i = 0;
 int showing_ray_j = 0;
 EntityID camera_man;
-
+Camera *camera;
 
 void tracer_update(Logic *logic)
 {
@@ -36,12 +40,11 @@ void tracer_update(Logic *logic)
 
     vec3 position = Transform_position(t);
     vec3 plane_point = vec3_add(position, vec3_mul(Transform_forward(t), distance));
-    vec3 points[4];
-    // tr, tl, bl, br
-    points[0] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * half_width)));
-    points[1] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), -half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * half_width)));
-    points[2] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), -half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * -half_width)));
-    points[3] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * -half_width)));
+    // tl, bl, br, tr.
+    points[0] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), -half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * half_width)));
+    points[1] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), -half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * -half_width)));
+    points[2] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * -half_width)));
+    points[3] = vec3_add(plane_point, vec3_add(vec3_mul(Transform_right(t), half_width), vec3_mul(Transform_up(t), (GRID_HEIGHT * 1.0 / GRID_WIDTH) * half_width)));
 
     paint_points_c(Canvas3D, &position, 1, "k", 12);
     // paint_line_cv(Canvas3D, position, plane_point, "k", 5);
@@ -54,8 +57,8 @@ void tracer_update(Logic *logic)
     vec3 grid_points[GRID_HEIGHT + 1][GRID_WIDTH + 1];
     for (int i = 0; i < GRID_HEIGHT + 1; i++) {
         for (int j = 0; j < GRID_WIDTH + 1; j++) {
-            vec3 t = vec3_lerp(points[1], points[0], j * 1.0 / GRID_WIDTH);
-            vec3 b = vec3_lerp(points[2], points[3], j * 1.0 / GRID_WIDTH);
+            vec3 t = vec3_lerp(points[0], points[3], j * 1.0 / GRID_WIDTH);
+            vec3 b = vec3_lerp(points[1], points[2], j * 1.0 / GRID_WIDTH);
             grid_points[i][j] = vec3_lerp(t, b, i * 1.0 / GRID_HEIGHT);
         }
     }
@@ -86,6 +89,20 @@ extern void input_event(int key, int action, int mods)
 }
 extern void mouse_button_event(int button, int action, int mods)
 {
+    if (action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_LEFT) {
+        vec3 ray_origin, ray_direction;
+        Camera_ray(camera, mouse_screen_x, mouse_screen_y, &ray_origin, &ray_direction);
+        printf("%.2f %.2f\n", mouse_screen_x, mouse_screen_y);
+        print_vec3(ray_origin);
+        print_vec3(ray_direction);
+        paint_line_cv(Canvas3D, ray_origin, vec3_add(ray_origin, vec3_mul(ray_direction, 20)), "g", 10);
+        paint_points_c(Canvas3D, &ray_origin, 1, "tp", 30);
+        
+        float rect_x, rect_y;
+        if (ray_rectangle_plane_coordinates(ray_origin, ray_direction, points[0], points[1], points[2], points[3], &rect_x, &rect_y)) {
+            printf("%.2f %.2f\n", rect_x, rect_y);
+        }
+    }
 }
 extern void cursor_move_event(double x, double y)
 {
@@ -93,6 +110,7 @@ extern void cursor_move_event(double x, double y)
 extern void init_program(void)
 {
     camera_man = create_key_camera_man(0,0,0,  0,0,0);
+    camera = get_aspect_type(camera_man, Camera);
 
     tracer = new_entity(4);
     Transform *t = add_aspect(tracer, Transform);

@@ -11,6 +11,9 @@ EntityID tracer;
 float distance = 100;
 float half_width = 50;
 bool controlling_tracer = false;
+bool showing_ray = true;
+int showing_ray_i = 0;
+int showing_ray_j = 0;
 EntityID camera_man;
 
 
@@ -62,6 +65,13 @@ void tracer_update(Logic *logic)
             vec4 color = new_vec4(grid[i][j].vals[0], grid[i][j].vals[1], grid[i][j].vals[2], 1);
             paint_quad_v(Canvas3D, grid_points[i][j], grid_points[i+1][j], grid_points[i+1][j+1], grid_points[i][j+1], color);
         }
+    }
+    
+    if (showing_ray) {
+        vec3 t = vec3_lerp(points[1], points[0], (showing_ray_i + 0.5) * 1.0 / GRID_WIDTH);
+        vec3 b = vec3_lerp(points[2], points[3], (showing_ray_i + 0.5) * 1.0 / GRID_WIDTH);
+        vec3 ray_point = vec3_lerp(t, b, (showing_ray_j + 0.5) * 1.0 / GRID_HEIGHT);
+        paint_line_v(Canvas3D, position, ray_point, new_vec4(0.8,1,0.356,0.532), 3);
     }
 }
 

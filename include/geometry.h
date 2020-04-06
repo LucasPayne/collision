@@ -142,6 +142,14 @@ vec3 barycentric_triangle(vec3 a, vec3 b, vec3 c, float wa, float wb, float wc);
 #define barycentric_triangle_v(A,B,C,W) barycentric_triangle(A,B,C, ( W ).vals[0], ( W ).vals[1], ( W ).vals[2])
 
 /*================================================================================
+    Intersection methods.
+================================================================================*/
+bool ray_triangle_plane_intersection_barycentric(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection);
+bool ray_triangle_plane_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection);
+bool ray_triangle_intersection_barycentric(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection);
+bool ray_triangle_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection);
+
+/*================================================================================
     Testing utilities.
 ================================================================================*/
 // These semi-random points have forced biasing toward being ellipsoidal, otherwise generally

@@ -1,5 +1,7 @@
 #include "geometry.h"
 
+#define ABS(X) ((X) < 0 ? -(X) : (X))
+
 DLNode *___dl_add(DLList *list, DLNode *node)
 {
     if (list->first == NULL) {
@@ -49,7 +51,7 @@ float tetrahedron_6_times_volume(vec3 a, vec3 b, vec3 c, vec3 d)
 }
 
 //--------------------------------------------------------------------------------
-// Geometric closest-points methods.
+// Closest-points methods.
 //--------------------------------------------------------------------------------
 vec3 closest_point_on_line_to_point(vec3 a, vec3 b, vec3 p)
 {
@@ -72,12 +74,6 @@ vec3 closest_point_on_line_segment_to_point(vec3 a, vec3 b, vec3 p)
 vec3 barycentric_triangle(vec3 a, vec3 b, vec3 c, float wa, float wb, float wc)
 {
     return vec3_mul(vec3_add(vec3_mul(a, wa), vec3_add(vec3_mul(b, wb), vec3_mul(c, wc))), 1.0/(wa + wb + wc));
-}
-static bool barycentric_triangle_convex(float wa, float wb, float wc)
-{
-    // tests whether the weights wa+wb+wc = 1 are a convex combination of the triangle points.
-    // Weights _must_ have wa+wb+wc for this to work.
-    return 0 <= wa && wa <= 1 && 0 <= wb && wb <= 1 && 0 <= wc && wc <= 1;
 }
 
 // Get the barycentric coordinates of the projection of the point into the plane spanned by the triangle.
@@ -194,4 +190,59 @@ int simplex_extreme_index(int n, vec3 points[], vec3 dir)
     return index;
 }
 
+
+/*--------------------------------------------------------------------------------
+    Intersection methods.
+--------------------------------------------------------------------------------*/
+
+// Ray-triangle methods and variants.
+//--------------------------------------------------------------------------------
+// Test whether the weights are a convex combination of the triangle points.
+#define barycentric_triangle_convex(WA,WB,WC)\
+    (0 <= ( WA ) && ( WA ) <= 1 && 0 <= ( WB ) && ( WB ) <= 1 && 0 <= ( WC ) && ( WC ) <= 1)
+#define barycentric_triangle_convex_v(W)\
+    barycentric_triangle_convex(( W ).vals[0], ( W ).vals[1], ( W ).vals[2])
+    
+// Get the intersection of the ray with the plane the triangle defines, in barycentric coordinates.
+bool ray_triangle_plane_intersection_barycentric(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection)
+{
+    float wa = vec3_dot(direction, vec3_cross(vec3_sub(b, origin), vec3_sub(c, origin)));
+    float wb = vec3_dot(direction, vec3_cross(vec3_sub(c, origin), vec3_sub(a, origin)));
+    float wc = vec3_dot(direction, vec3_cross(vec3_sub(a, origin), vec3_sub(b, origin)));
+    const float epsilon = 0.001;
+    float w = wa + wb + wc;
+    if (ABS(w) < epsilon || vec3_dot(vec3_sub(barycentric_triangle(a,b,c, wa,wb,wc), origin), direction) < 0) return false;
+    float winv = 1.0 / w;
+    wa *= winv;
+    wb *= winv;
+    wc *= winv;
+    *intersection = new_vec3(wa,wb,wc);
+    return true;
+}
+// Give the intersection as cartesian coordinates.
+bool ray_triangle_plane_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection)
+{
+    vec3 inter;
+    if (!ray_triangle_plane_intersection_barycentric(origin, direction, a, b, c, &inter)) return false;
+    *intersection = barycentric_triangle_v(a,b,c, inter);
+    return true;
+}
+// Get the intersection of the ray with the triangle, in barycentric coordinates,
+bool ray_triangle_intersection_barycentric(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection)
+{
+    vec3 weights;
+    if (!ray_triangle_plane_intersection_barycentric(origin, direction, a, b, c, &weights)) return false;
+    if (!barycentric_triangle_convex_v(weights)) return false;
+    *intersection = weights;
+    return true;
+}
+// Give the intersection as cartesian coordinates.
+bool ray_triangle_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection)
+{
+    vec3 weights;
+    if (!ray_triangle_plane_intersection_barycentric(origin, direction, a, b, c, &weights)) return false;
+    if (!barycentric_triangle_convex_v(weights)) return false;
+    *intersection = barycentric_triangle_v(a,b,c, weights);
+    return true;
+}
 

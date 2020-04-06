@@ -22,12 +22,7 @@ void new_ray(void)
     direction = vec3_normalize(new_vec3(frand() * 50, frand() * 50, frand() * 50));
 }
 
-
-vec3 barycentric_triangle(vec3 a, vec3 b, vec3 c, float wa, float wb, float wc)
-{
-    //wa+wb+wc = 1
-    return vec3_add(vec3_mul(a, wa), vec3_add(vec3_mul(b, wb), vec3_mul(c, wc)));
-}
+/*
 bool barycentric_triangle_convex(float wa, float wb, float wc)
 {
     // tests whether the weights are a convex combination of the triangle points.
@@ -52,6 +47,7 @@ bool ray_triangle_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3
     }
     return false;
 }
+*/
 
 extern void input_event(int key, int action, int mods)
 {

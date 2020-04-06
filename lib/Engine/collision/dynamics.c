@@ -48,6 +48,7 @@ static void resolve_rigid_body_collisions(void)
                     Transform_move(t2, b_sep);
                     p = vec3_add(manifold.A_closest, a_sep);
                 }
+
                 // vec3 sep = vec3_mul(vec3_neg(manifold.separating_vector), 1.1);
 	        // Transform_move(t, sep); //---Offset because resting contact crashes. Seriously need to work on robustness.
                 // vec3 p = vec3_add(manifold.A_closest, sep);

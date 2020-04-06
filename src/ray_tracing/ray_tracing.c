@@ -21,6 +21,8 @@ int showing_ray_j = 0;
 EntityID camera_man;
 Camera *camera;
 
+Polyhedron icosahedron;
+
 void tracer_update(Logic *logic)
 {
     Transform *t = get_sibling_aspect(logic, Transform);
@@ -130,9 +132,12 @@ extern void init_program(void)
             grid[i][j] = vec3_add(rand_vec3(1), new_vec3(0.5,0.5,0.5));
         }
     }
+    
+    icosahedron = make_icosahedron(100);
 }
 extern void loop_program(void)
 {
+    draw_polyhedron(&icosahedron, NULL);
 }
 extern void close_program(void)
 {

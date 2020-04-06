@@ -167,4 +167,9 @@ void draw_polyhedron(Polyhedron *p, mat4x4 *matrix);
 void draw_polyhedron2(Polyhedron *p, mat4x4 *matrix, char *color_str, float line_width);
 void draw_triangle_winding_order(vec3 a, vec3 b, vec3 c, char *color_str, float line_width);
 
+/*================================================================================
+    Geometric object creation.
+================================================================================*/
+Polyhedron make_icosahedron(float radius);
+
 #endif // HEADER_DEFINED_GEOMETRY

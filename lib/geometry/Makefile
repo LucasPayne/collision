@@ -1,4 +1,4 @@
-geometry.o: _geometry.o polyhedra.o testing.o
+geometry.o: _geometry.o polyhedra.o testing.o objects.o
 	ld -relocatable -o $@ $^
 
 _geometry.o: $(LIB)/geometry.c
@@ -6,5 +6,7 @@ _geometry.o: $(LIB)/geometry.c
 polyhedra.o: $(LIB)/polyhedra.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
 testing.o: $(LIB)/testing.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
+objects.o: $(LIB)/objects.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
 

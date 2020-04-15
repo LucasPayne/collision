@@ -21,7 +21,8 @@ int showing_ray_j = 0;
 EntityID camera_man;
 Camera *camera;
 
-Polyhedron icosahedron;
+Polyhedron icosahedron_geometry;
+EntityID icosahedron;
 
 void tracer_update(Logic *logic)
 {
@@ -55,7 +56,7 @@ void tracer_update(Logic *logic)
 
     paint_points_c(Canvas3D, &position, 1, "k", 12);
     for (int i = 0; i < 4; i++) {
-        float thickness = 2;
+        float thickness = 1;
         paint_line_cv(Canvas3D, position, points[i], "k", thickness);
         paint_line_cv(Canvas3D, points[i], points[(i+1)%4], "k", thickness);
     }
@@ -71,7 +72,7 @@ void tracer_update(Logic *logic)
 
     for (int i = 0; i < GRID_HEIGHT; i++) {
         for (int j = 0; j < GRID_WIDTH; j++) {
-            vec4 color = new_vec4(grid[i][j].vals[0], grid[i][j].vals[1], grid[i][j].vals[2], 1);
+            vec4 color = new_vec4(grid[i][j].vals[0], grid[i][j].vals[1], grid[i][j].vals[2], 0.9);
             paint_quad_v(Canvas3D, grid_points[i][j], grid_points[i+1][j], grid_points[i+1][j+1], grid_points[i][j+1], color);
         }
     }
@@ -127,17 +128,22 @@ extern void init_program(void)
     transform->euler_controlled = true;
     Logic_init(add_aspect(tracer, Logic), tracer_update);
 
+#if 0 //randomize the grid
     for (int i = 0; i < GRID_HEIGHT; i++) {
         for (int j = 0; j < GRID_WIDTH; j++) {
             grid[i][j] = vec3_add(rand_vec3(1), new_vec3(0.5,0.5,0.5));
         }
     }
+#endif
     
-    icosahedron = make_icosahedron(100);
+    icosahedron_geometry = make_icosahedron(100);
+    icosahedron = new_entity(4);
+    Transform_set(add_aspect(icosahedron, Transform), 0,0,-300, 0,0,0);
 }
 extern void loop_program(void)
 {
-    draw_polyhedron(&icosahedron, NULL);
+    mat4x4 matrix = Transform_matrix(get_aspect_type(icosahedron, Transform));
+    draw_polyhedron2(&icosahedron_geometry, &matrix, "k", 1);
 }
 extern void close_program(void)
 {

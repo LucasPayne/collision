@@ -12,6 +12,7 @@ bool viewing = false;
 #define ROCK 0
 #define ROD 1
 #define PLATE 2
+#define ICOSAHEDRON 3
 RigidBody *create_object(int mode, vec3 position, vec3 euler_angles)
 {
     int num_points;
@@ -48,6 +49,10 @@ RigidBody *create_object(int mode, vec3 position, vec3 euler_angles)
         points[6] = new_vec3(w,-h,h);
         points[7] = new_vec3(w,h,h);
         num_points = 8;
+    } else if (mode == ICOSAHEDRON) {
+        Polyhedron ico = make_icosahedron(30 + frand()*70);
+        points = polyhedron_points(ico);
+        num_points = polyhedron_num_points(&ico);
     }
     //-------destroy the previous hull polyhedron.
     Polyhedron poly = convex_hull(points, num_points);
@@ -131,6 +136,7 @@ extern void input_event(int key, int action, int mods)
         if (key == GLFW_KEY_P) create_random_object(ROCK);
         if (key == GLFW_KEY_O) create_random_object(ROD);
         if (key == GLFW_KEY_I) create_random_object(PLATE);
+        if (key == GLFW_KEY_C) create_random_object(ICOSAHEDRON);
         if (key == GLFW_KEY_V) viewing = !viewing;
         if (key == GLFW_KEY_M) {
             wireframe = !wireframe;

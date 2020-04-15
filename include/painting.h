@@ -19,6 +19,7 @@ enum PaintTypes {
     PAINT_FLAT_LINES,
     PAINT_FLAT_TRIANGLES,
     PAINT_FLAT_POINTS,
+    PAINT_FLAT_SPHERES,
     PAINT_DASHED_LINES,
     PAINT_SPRITE,
     PAINT_CUSTOM_MATERIAL,
@@ -40,12 +41,12 @@ typedef struct Paint_s {
         } dashed;
         struct PaintPropertiesSprite {
             ResourceHandle texture;
-            bool destroy; // if this flag is set, the texture handle is destroyed when the canvas is flused.
+            bool destroy; // if this flag is set, the texture handle is destroyed when the canvas is flushed.
         } sprite;
         struct PaintPropertiesCustomMaterial {
             ResourceHandle material;
             uint32_t vertex_format;
-            bool destroy; // if this flag is set, the material handle is destroyed when the canvas is flused.
+            bool destroy; // if this flag is set, the material handle is destroyed when the canvas is flushed.
         } custom_material;
     } contents;
     union {
@@ -60,6 +61,10 @@ typedef struct Paint_s {
             float size;
             int num_points;
         } point;
+        struct PaintShapeSphere {
+            float radius;
+            int num_spheres;
+        } sphere;
     } shape;
 } Paint;
 
@@ -169,6 +174,12 @@ void paint_points(int canvas_id, vec3 *points, int num_points, COLOR_SCALARS, fl
 {\
     vec4 color = str_to_color_key(( COLOR_STR ));\
     paint_points(CANVAS_ID,POINTS,NUM_POINTS,UNPACK_COLOR(color),SIZE);\
+}
+
+void paint_sphere_v(int canvas_id, vec3 center, float radius, vec4 color);
+#define paint_sphere_cv(CANVAS_ID,CENTER,RADIUS,COLOR_STR)\
+{\
+    paint_sphere_v(CANVAS_ID,CENTER,RADIUS,str_to_color_key(( COLOR_STR )));\
 }
 
 //--------------------------------------------------------------------------------

@@ -14,6 +14,16 @@ Materials < (
         num_blocks: 1;
         string block0: Standard3D;
     );
+    sphere < MaterialType (
+        vertex_format: 3;
+        vertex_shader: Painting/shaders/sphere.vert;
+        tessellation_control_shader: Painting/shaders/sphere.tcs;
+        tessellation_evaluation_shader: Painting/shaders/sphere.tes;
+        fragment_shader: Painting/shaders/flat_color.frag;
+        num_blocks: 1;
+        string block0: Standard3D;
+        patch_vertices: 1;
+    );
     sprite < MaterialType (
         vertex_format: 3U;
         vertex_shader: Painting/shaders/sprite.vert;

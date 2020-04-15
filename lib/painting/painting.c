@@ -38,6 +38,10 @@ GLint flat_color_material_uniform_location_flat_color;
 Material *sprite_material;
 Material *circle_material;
 GLint circle_material_uniform_location_flat_color;
+Material *sphere_material;
+GLint sphere_material_uniform_location_tessellation_level;
+GLint sphere_material_uniform_location_radius;
+GLint sphere_material_uniform_location_flat_color;
 
 // Matrix used for 2d painting.
 // x: < 0-1 >
@@ -98,14 +102,23 @@ void painting_init(void)
     ResourceHandle flat_color_material_handle = Material_create("Painting/Materials/flat_color");
     ResourceHandle sprite_material_handle = Material_create("Painting/Materials/sprite");
     ResourceHandle circle_material_handle = Material_create("Painting/Materials/circle");
-    flat_color_material = resource_data(Material, flat_color_material_handle);
+    ResourceHandle sphere_material_handle = Material_create("Painting/Materials/sphere");
     // Currently, the material properties system has too much overhead for setting and uploading properties, so this is accessed more directly.
+    flat_color_material = resource_data(Material, flat_color_material_handle);
     MaterialType *mt = resource_data(MaterialType, flat_color_material->material_type);
     flat_color_material_uniform_location_flat_color = glGetUniformLocation(mt->program_id, "flat_color");
-    sprite_material = resource_data(Material, sprite_material_handle);
+
+    // sprite_material = resource_data(Material, sprite_material_handle);
+
     circle_material = resource_data(Material, circle_material_handle);
     mt = resource_data(MaterialType, circle_material->material_type);
     circle_material_uniform_location_flat_color = glGetUniformLocation(mt->program_id, "flat_color");
+
+    sphere_material = resource_data(Material, sphere_material_handle);
+    mt = resource_data(MaterialType, sphere_material->material_type);
+    sphere_material_uniform_location_tessellation_level = glGetUniformLocation(mt->program_id, "tessellation_level");
+    sphere_material_uniform_location_radius = glGetUniformLocation(mt->program_id, "radius");
+    sphere_material_uniform_location_flat_color = glGetUniformLocation(mt->program_id, "flat_color");
 }
 
 #define paint_buffer_check(CANVAS)\
@@ -150,6 +163,14 @@ void painting_draw(int canvas_id)
                 glUniform4f(circle_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
                 glPointSize(paint->shape.point.size);
                 glDrawArrays(GL_POINTS, paint->index, paint->shape.point.num_points);
+                break;
+            case PAINT_FLAT_SPHERES:
+                material_prepare(sphere_material);
+                glUniform4f(sphere_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
+                glUniform1f(sphere_material_uniform_location_radius, paint->shape.sphere.radius);
+                glUniform1f(sphere_material_uniform_location_tessellation_level, 50); //---
+                glPatchParameteri(GL_PATCH_VERTICES, 1);
+                glDrawArrays(GL_PATCHES, paint->index, paint->shape.sphere.num_spheres);
                 break;
             case PAINT_DASHED_LINES:
                 fprintf(stderr, "not implemented\n");
@@ -327,6 +348,18 @@ static Paint *strokes_triangle(Canvas *canvas, vec3 a, vec3 b, vec3 c)
     paint->shape.triangle.num_triangles = 1;
     return paint;
 }
+static Paint *strokes_sphere(Canvas *canvas, vec3 center, float radius)
+{
+    Paint *paint = next_paint(canvas);
+    vec3 *vp = (vec3 *) index_buffer(canvas);
+    vp[0] = center;
+    paint->index = canvas->current_index;
+    canvas->current_index += 1;
+    paint->shape.sphere.radius = radius;
+    paint->shape.sphere.num_spheres = 1;
+    return paint;
+}
+
 
 /*--------------------------------------------------------------------------------
 void paint2d_quad(float p1x, float p1y, float p2x, float p2y, float p3x, float p3y, float p4x, float p4y, COLOR_SCALARS) {
@@ -406,6 +439,12 @@ void paint_loop(int canvas_id, float vals[], int num_points, COLOR_SCALARS, floa
     Paint *paint = strokes_loop(painting_canvas(canvas_id), vals, num_points, width);
     paint->type = PAINT_FLAT_LINES;
     paint->contents.flat.color = new_vec4(cr, cg, cb, ca);
+}
+void paint_sphere_v(int canvas_id, vec3 center, float radius, vec4 color)
+{
+    Paint *paint = strokes_sphere(painting_canvas(canvas_id), center, radius);
+    paint->type = PAINT_FLAT_SPHERES;
+    paint->contents.flat.color = color;
 }
 
 void paint_box_v(int canvas_id, vec3 corners[], vec4 color)

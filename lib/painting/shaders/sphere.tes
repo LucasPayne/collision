@@ -1,0 +1,26 @@
+#version 420
+#block Standard3D
+
+layout (quads, equal_spacing, ccw) in;
+
+#define TWOPI ( radians(360) )
+
+// The single tPosition is the center of the sphere.
+in controlled_vertex {
+    vec3 tPosition;
+} vertex_inputs[];
+
+uniform float radius;
+
+void main(void)
+{
+    float x,y;
+    x = gl_TessCoord[0];
+    y = gl_TessCoord[1];
+
+    float a = 2*y-1;
+    float b = sqrt(1 - a*a);
+    vec3 pos = vertex_inputs[0].tPosition + radius*vec3(b*cos(TWOPI*x), a, b*sin(TWOPI*x));
+    
+    gl_Position = mvp_matrix * vec4(pos, 1);
+}

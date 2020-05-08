@@ -22,7 +22,12 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
-    
+    float r = 0.3 * time;
+    int n = 200;
+    for (int i = 0; i < n; i++) {
+        float theta = 2*M_PI * i * 1.0 / 200;
+        paint_line_cv(Canvas2D, new_vec3(0.5,0.5,0), new_vec3(0.5 + r*cos(theta), 0.5 + r*sin(theta), 0), "k", time);
+    }
 }
 extern void close_program(void)
 {

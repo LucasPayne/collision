@@ -518,11 +518,7 @@ int main(void)
         g_raw_mouse = false;
     } 
 
-    // glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     init_base();
-
     init_program();
     double last_time = time;
     while (!glfwWindowShouldClose(window))

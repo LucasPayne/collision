@@ -1,4 +1,4 @@
-Engine.o: _Engine.o helper.o gameobjects.o testing.o game_renderer.o scenes.o collision.o
+Engine.o: _Engine.o helper.o gameobjects.o testing.o game_renderer.o scenes.o collision.o player.o
 	ld -relocatable -o $@ $^
 _Engine.o: $(LIB)/Engine.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
@@ -44,3 +44,5 @@ helper.o: $(LIB)/utils/helper.c
 scenes.o: $(LIB)/scenes/scenes.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
 
+player.o: $(LIB)/player/player.c
+	$(CC) -o $@ -c $^ $(CFLAGS)

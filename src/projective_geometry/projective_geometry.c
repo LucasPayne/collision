@@ -36,7 +36,9 @@ extern void mouse_move_event(double dx, double dy)
 }
 extern void init_program(void)
 {
-    create_key_camera_man(0,0,0,  0,0,0);
+    // open_scene(g_scenes, "block_on_floor");
+
+    // create_key_camera_man(0,0,0,  0,0,0);
 
     {
     EntityID e = new_gameobject(0,0,0, 0,0,0, true);
@@ -48,6 +50,8 @@ extern void init_program(void)
     EntityID e = new_gameobject(-100,0,0, 0,0,0, true);
     SM *sm = StraightModel_add(e, 100, 100, 20);
     }
+    //---for some reason if this is the first entity created, nothing can be seen.
+    Player_create_default(0,0,0, 0,0);
 }
 
 vec3 perspective_point(Logic *g, vec3 p)

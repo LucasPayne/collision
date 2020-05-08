@@ -134,8 +134,8 @@ The Logic aspect also handles input listening.
 ---Should put standard logic loops here.
 --------------------------------------------------------------------------------*/
 typedef void (*KeyListener)(struct Logic_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
-typedef void (*MousePositionListener)(struct Logic_s *, double, double); // x, y position of mouse in GLFW screen units.
-typedef void (*MouseMoveListener)(struct Logic_s *, double, double); // x, y position of mouse in GLFW screen units.
+typedef void (*MousePositionListener)(struct Logic_s *, float, float); // x, y position of mouse in GLFW screen units.
+typedef void (*MouseMoveListener)(struct Logic_s *, float, float); // x, y position of mouse in GLFW screen units.
 typedef void (*MouseButtonListener)(struct Logic_s *, MouseButton, bool, float, float); // Button, click=true: Pressed ; click=false: Released, mouse x, mouse y
 #define INPUT_KEY 0                // Key press and release.
 #define INPUT_MOUSE_POSITION 1     // Mouse position change.

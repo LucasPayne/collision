@@ -64,5 +64,6 @@ vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, fl
 #include "Engine/testing.h"
 #include "Engine/scenes.h"
 #include "Engine/collision.h"
+#include "Engine/player.h"
 
 #endif // HEADER_DEFINED_ENGINE

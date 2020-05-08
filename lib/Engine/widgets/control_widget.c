@@ -26,16 +26,16 @@ void ControlWidget_update(Logic *g)
     }
 }
 
-void control_widget_mouse_button_listener(Input *in, MouseButton button, bool click, float x, float y)
+void control_widget_mouse_button_listener(Logic *g, MouseButton button, bool click, float x, float y)
 {
-    ControlWidget *widget = sibling_aspect->data;
+    ControlWidget *widget = g->data;
 
     if (widget->dragging) {
-        if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) {
+        if (button == MouseLeft && !click) {
             widget->dragging = false;
         }
     } else {
-        if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON) {
+        if (click && button == MouseLeft) {
             // When clicking, check a ray against three axis-aligned rectangles. If any are intersected, the closest one is
             // the one chosen.
 	    vec3 ray_origin, ray_direction;

@@ -80,7 +80,7 @@ ApplicationConfiguration < (
     float aspect_ratio: 1;
     string cull_mode: front;
     bool depth_test: true;
-    bool raw_mouse: false;
+    bool raw_mouse: true;
 );
 app_config < ApplicationConfiguration (
     #include(conf);

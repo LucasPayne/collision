@@ -3,3 +3,4 @@ core_profile: true;
 fg_color: 0.81,0.89,0.89;
 aspect_ratio: 0.5616;
 cull_mode: none;
+raw_mouse: true;

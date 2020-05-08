@@ -136,8 +136,10 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
         mouse_x = x;
         mouse_y = y;
     }
+    printf("mouse: %.6f %.6f\n", mouse_x, mouse_y);
     float dx = x - mouse_x;
     float dy = y - mouse_y;
+    printf("dx dy: %.6f %.6f\n", dx, dy);
 
     // Call the application's mouse movement event handler.
     // This is given relative motion of the cursor.

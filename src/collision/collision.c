@@ -147,10 +147,13 @@ extern void input_event(int key, int action, int mods)
     }
 }
     
-extern void mouse_button_event(int button, int action, int mods)
+extern void mouse_button_event(MouseButton button, bool click, float x, float y)
 {
 }
-extern void cursor_move_event(double x, double y)
+extern void mouse_position_event(double x, double y)
+{
+}
+extern void mouse_move_event(double dx, double dy)
 {
 }
 
@@ -169,7 +172,7 @@ extern void init_program(void)
 {
     test_directional_light_controlled();
     // open_scene(g_scenes, "block_on_floor");
-    create_key_camera_man(0,0,0,  0,0,0);
+    //create_key_camera_man(0,0,0,  0,0,0);
     //create_object(ROCK);
 
     // RigidBody *test_rod = create_object(ROD, new_vec3(0,-150,0), new_vec3(0,0.3,0));
@@ -208,6 +211,8 @@ extern void init_program(void)
         }
     }
 #endif
+
+    Player_create_default(0,0,0,  0,0);
 }
 extern void loop_program(void)
 {

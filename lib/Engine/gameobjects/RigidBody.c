@@ -61,7 +61,7 @@ mat3x3 brute_force_polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float
     //printf("Volume: %.2f\n", volume);
     //printf("Volume?: %.2f\n", polyhedron_volume(poly));
     mat3x3 inertia_tensor;
-    fill_mat3x3(inertia_tensor, integrals[1]+integrals[2], -integrals[3], -integrals[4],
+    fill_mat3x3_rmaj(inertia_tensor, integrals[1]+integrals[2], -integrals[3], -integrals[4],
                                  -integrals[3], integrals[0]+integrals[2], -integrals[5],
                                  -integrals[4], -integrals[5], integrals[0]+integrals[1]);
     for (int i = 0; i < 9; i++) {
@@ -124,7 +124,7 @@ mat3x3 polyhedron_inertia_tensor(Polyhedron poly, vec3 center, float mass)
         integrals[i] *= inverse_volume * mass;
     }
     mat3x3 inertia_tensor;
-    fill_mat3x3(inertia_tensor, integrals[1]+integrals[2], -integrals[3], -integrals[4],
+    fill_mat3x3_rmaj(inertia_tensor, integrals[1]+integrals[2], -integrals[3], -integrals[4],
                                  -integrals[3], integrals[0]+integrals[2], -integrals[5],
                                  -integrals[4], -integrals[5], integrals[0]+integrals[1]);
     //print_matrix3x3f(&inertia_tensor);
@@ -159,7 +159,7 @@ void RigidBody_init_polytope(RigidBody *rb, vec3 *points, int num_points, float 
     }
     //print_matrix3x3f(&rb->inertia_tensor);
     //print_matrix3x3f(&rb->inverse_inertia_tensor);
-    //right_multiply_matrix3x3f(&inertia_tensor, &rb->inverse_inertia_tensor);
+    //right_multiply_mat3x3(&inertia_tensor, &rb->inverse_inertia_tensor);
     //print_matrix3x3f(&inertia_tensor);
     //getchar();
     // polyhedron_inertia_tensor(poly, center_of_mass, mass);

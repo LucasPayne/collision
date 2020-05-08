@@ -11,7 +11,7 @@ void Transform_set(Transform *transform, float x, float y, float z, float theta_
     transform->y = y;
     transform->z = z;
 
-    euler_rotation_matrix3x3f(&transform->rotation_matrix, theta_x, theta_y, theta_z);
+    transform->rotation_matrix = euler_rotation_mat3x3(theta_x, theta_y, theta_z);
     transform->theta_x = theta_x;
     transform->theta_y = theta_y;
     transform->theta_z = theta_z;
@@ -26,12 +26,12 @@ vec3 Transform_angles(Transform *t)
 {
     return new_vec3(t->theta_x, t->theta_y, t->theta_z);
 }
-Matrix4x4f Transform_matrix(Transform *transform)
+mat4x4 Transform_matrix(Transform *transform)
 {
-    Matrix4x4f mat = {0};
+    mat4x4 mat = {0};
     if (transform->euler_controlled) {
         //----Does not take into account the center.
-        translate_rotate_3d_matrix4x4f(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
+        translate_rotate_3d_mat4x4(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
         return mat;
     }
     // Copy over the orientation matrix to the upper-left block.
@@ -49,21 +49,21 @@ Matrix4x4f Transform_matrix(Transform *transform)
     // Scaling and recentering adjustments.
     //----Do this matrix multiplication directly instead of using the multiply function, to make this faster.
     mat4x4 scale_matrix;
-    fill_mat4x4(scale_matrix, transform->scale,0,0,0,
+    fill_mat4x4_cmaj(scale_matrix, transform->scale,0,0,0,
                               0,transform->scale,0,0,
                               0,0,transform->scale,0,
                               0,0,0,1);
-    right_multiply_matrix4x4f(&mat, &scale_matrix);
+    right_multiply_mat4x4(&mat, &scale_matrix);
     mat4x4 off_center_matrix;
     float cx,cy,cz;
     cx = transform->center.vals[0];
     cy = transform->center.vals[1];
     cz = transform->center.vals[2];
-    fill_mat4x4(off_center_matrix, 1,0,0,0,
+    fill_mat4x4_cmaj(off_center_matrix, 1,0,0,0,
                                    0,1,0,0,
                                    0,0,1,0,
                                    -cx,-cy,-cz,1);
-    right_multiply_matrix4x4f(&mat, &off_center_matrix);
+    right_multiply_mat4x4(&mat, &off_center_matrix);
 
     // print_matrix4x4f(&mat);
     return mat;
@@ -77,7 +77,7 @@ vec3 Transform_relative_position(Transform *t, vec3 position)
 {
     // Transform a point from model space to world space.
     mat4x4 m = Transform_matrix(t);
-    return vec4_to_vec3(matrix_vec4(&m, vec3_to_vec4(position)));
+    return vec4_to_vec3(matrix_vec4(m, vec3_to_vec4(position)));
 }
 vec3 Transform_up(Transform *t)
 {

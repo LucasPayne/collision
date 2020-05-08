@@ -52,7 +52,7 @@ float z|zpos|zposition|z_pos|posz|pos_z|z_position";
 
 int main(int argc, char *argv[])
 {
-    Matrix4x4f mat;
+    mat4x4 mat;
     identity_matrix4x4f(&mat);
     print_matrix4x4f(&mat);
 

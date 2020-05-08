@@ -30,14 +30,14 @@ Isometric viewing
 #define Transform_TYPE_ID 1
 typedef struct Transform_s {
     Component component;
-    Matrix4x4f matrix;
+    mat4x4 matrix;
 } Transform;
 
 #define Camera_TYPE_ID 2
 typedef struct Camera_s {
     Component component;
     ComponentID transform; // depends on Transform
-    Matrix4x4f projection_matrix;
+    mat4x4 projection_matrix;
     Renderer renderer;
 } Camera;
 

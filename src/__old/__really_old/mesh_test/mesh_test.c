@@ -30,10 +30,10 @@ PROJECT_LIBS:
 static double ASPECT_RATIO;
 static Renderer g_renderer;
 
-static Matrix4x4f g_view_matrix;
-static Matrix4x4f g_projection_matrix;
+static mat4x4 g_view_matrix;
+static mat4x4 g_projection_matrix;
 
-static Matrix4x4f g_mvp_matrix;
+static mat4x4 g_mvp_matrix;
 //--------------------------------------------------------------------------------
 
 static void key_callback(GLFWwindow *window, int key,

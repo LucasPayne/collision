@@ -19,22 +19,22 @@ void loop(void)
 {
     for_aspect(Camera, camera)
         Transform *camera_transform = get_sibling_aspect(camera, Transform);
-        Matrix4x4f view_matrix = Transform_matrix(camera_transform);
-        Matrix4x4f vp_matrix = camera->projection_matrix;
-        right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+        mat4x4 view_matrix = Transform_matrix(camera_transform);
+        mat4x4 vp_matrix = camera->projection_matrix;
+        right_multiply_mat4x4(&vp_matrix, &view_matrix);
 
         for_aspect(Body, body)
             Transform *transform = get_sibling_aspect(body, Transform);
             Geometry *mesh = resource_data(Geometry, body->geometry);
             Material *material = resource_data(Material, body->material);
-            Matrix4x4f model_matrix = Transform_matrix(transform);
+            mat4x4 model_matrix = Transform_matrix(transform);
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
                     model_matrix.vals[4*i + j] *= body->scale;
                 }
             }
-            Matrix4x4f mvp_matrix = vp_matrix;
-            right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+            mat4x4 mvp_matrix = vp_matrix;
+            right_multiply_mat4x4(&mvp_matrix, &model_matrix);
 
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
             set_uniform_float(StandardLoopWindow, TEST_VALUE, camera_transform->theta_x);

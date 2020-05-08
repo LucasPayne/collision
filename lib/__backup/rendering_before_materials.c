@@ -509,14 +509,14 @@ the artist preparing its own standard uniforms, as they will be overwritten.
 some outline (not how it should work)
 
 for_aspect(Camera, camera)
-    Matrix4x4f vp_matrix = camera->projection_matrix; // a "camera" as an entity w/ aspect will have a lens and a clipping rectangle. Not taking this fully into account yet.
-    right_multiply_matrix4x4f(vp_matrix, Transform_matrix(get_sibling_aspect(camera, Transform)));
+    mat4x4 vp_matrix = camera->projection_matrix; // a "camera" as an entity w/ aspect will have a lens and a clipping rectangle. Not taking this fully into account yet.
+    right_multiply_mat4x4(vp_matrix, Transform_matrix(get_sibling_aspect(camera, Transform)));
 
     for_aspect(Body, body)
         Transform *transform = get_sibling_aspect(body, Transform);
 
-        Matrix4x4f mvp_matrix = vp_matrix;
-        right_multiply_matrix4x4f(mvp_matrix, Transform_matrix(transform));
+        mat4x4 mvp_matrix = vp_matrix;
+        right_multiply_mat4x4(mvp_matrix, Transform_matrix(transform));
 
         Artist *artist = resource_data(Artist, body->artist);
 

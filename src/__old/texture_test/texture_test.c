@@ -32,7 +32,7 @@ PROJECT_LIBS:
 #include "aspect_library/gameobjects.h"
 #include "data_dictionary.h"
 
-typedef Matrix4x4f mat4x4;
+typedef mat4x4 mat4x4;
 #include "shader_blocks/Standard3D.h"
 #include "shader_blocks/StandardLoopWindow.h"
 #include "shader_blocks/Lights.h"
@@ -41,7 +41,7 @@ typedef struct CameraControlData_s {
     float move_speed;
     float rotate_speed;
     bool frozen;
-    Matrix4x4f frozen_matrix;
+    mat4x4 frozen_matrix;
 } CameraControlData;
 static void camera_controls_update(Logic *logic)
 {
@@ -269,14 +269,14 @@ void loop(void)
         get_logic_data(data, get_sibling_aspect(camera, Logic), CameraControlData); // here, using this logic-data for application-specific attached functionality.
 
         Transform *camera_transform = get_sibling_aspect(camera, Transform);
-        Matrix4x4f view_matrix = Transform_matrix(camera_transform);
-        Matrix4x4f vp_matrix = camera->projection_matrix;
+        mat4x4 view_matrix = Transform_matrix(camera_transform);
+        mat4x4 vp_matrix = camera->projection_matrix;
         if (data->frozen) {
             // For viewing purposes, when the camera is frozen it keeps using this matrix. However, the other matrices aren't affected,
             // so you can view culling from the outside.
-            right_multiply_matrix4x4f(&vp_matrix, &data->frozen_matrix);
+            right_multiply_mat4x4(&vp_matrix, &data->frozen_matrix);
         } else {
-            right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+            right_multiply_mat4x4(&vp_matrix, &view_matrix);
         }
 
 #if 0
@@ -334,14 +334,14 @@ void loop(void)
 #if 1
             Material *material = resource_data(Material, body->material);
 
-            Matrix4x4f model_matrix = Transform_matrix(transform);
+            mat4x4 model_matrix = Transform_matrix(transform);
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
                     model_matrix.vals[4*i + j] *= body->scale;
                 }
             }
-            Matrix4x4f mvp_matrix = vp_matrix;
-            right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+            mat4x4 mvp_matrix = vp_matrix;
+            right_multiply_mat4x4(&mvp_matrix, &model_matrix);
 
             set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
             set_uniform_float(StandardLoopWindow, TEST_VALUE, camera_transform->theta_x);
@@ -384,10 +384,10 @@ void loop(void)
                 /* material_set_texture_path(mat, "diffuse_map", "Textures/minecraft/sponge"); */
                 /* vec4 color = new_vec4(0.5*(sin(i)+1), 0.5*(cos(j)+1), (sin(j) + cos(i) + 2) / 4, 1); */
                 /* memcpy(resource_data(Material, green)->properties, &color, sizeof(color)); */
-                Matrix4x4f mvp_matrix = vp_matrix;
-                Matrix4x4f model_matrix;
-                translate_rotate_3d_matrix4x4f(&model_matrix, 0,0,0, 0,M_PI/2,0);
-                right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+                mat4x4 mvp_matrix = vp_matrix;
+                mat4x4 model_matrix;
+                translate_rotate_3d_mat4x4(&model_matrix, 0,0,0, 0,M_PI/2,0);
+                right_multiply_mat4x4(&mvp_matrix, &model_matrix);
                 set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
                 gm_draw(g, mat);
                 //!!!!!!!!!!!!!!!!!!!!!!!!!1 destroy_resource_handle(res); or something 
@@ -440,7 +440,7 @@ void loop(void)
         gm_index(3); gm_index(1); gm_index(5); gm_index(7); gm_index(3); gm_index(5);
         gm_index(5); gm_index(6); gm_index(7); gm_index(5); gm_index(4); gm_index(6); gm_index(4); gm_index(0); gm_index(2); gm_index(4); gm_index(2); gm_index(6); gm_index(6); gm_index(2); gm_index(3); gm_index(6); gm_index(3); gm_index(7); gm_index(4); gm_index(5); gm_index(1); gm_index(4); gm_index(1); gm_index(0);
 
-        /* Matrix4x4f matrix; */
+        /* mat4x4 matrix; */
         /* identity_matrix4x4f(&matrix); */
         /* matrix.vals[3*4 + 0] = i * 500; */
         /* matrix.vals[3*4 + 1] = -i * 500; */

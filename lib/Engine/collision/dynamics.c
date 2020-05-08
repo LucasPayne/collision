@@ -18,9 +18,9 @@ static void resolve_rigid_body_collisions(void)
             vec3 vb = vec3_mul(B->linear_momentum, B->inverse_mass);
             // Transform the inverse inertia tensors to world space via the rotation matrix of this body.
             mat3x3 A_rotation_matrix = Transform_rotation_matrix(t);
-            mat3x3 A_worldspace_inverse_inertia_tensor = mat3x3_multiply3(A_rotation_matrix, A->inverse_inertia_tensor, transpose_mat3x3(A_rotation_matrix));
+            mat3x3 A_worldspace_inverse_inertia_tensor = mat3x3_multiply3(A_rotation_matrix, A->inverse_inertia_tensor, mat3x3_transpose(A_rotation_matrix));
             mat3x3 B_rotation_matrix = Transform_rotation_matrix(t2);
-            mat3x3 B_worldspace_inverse_inertia_tensor = mat3x3_multiply3(B_rotation_matrix, B->inverse_inertia_tensor, transpose_mat3x3(B_rotation_matrix));
+            mat3x3 B_worldspace_inverse_inertia_tensor = mat3x3_multiply3(B_rotation_matrix, B->inverse_inertia_tensor, mat3x3_transpose(B_rotation_matrix));
 
             // wa,wb: The angular velocities of the rigid bodies.
             vec3 wa = matrix_vec3(A_worldspace_inverse_inertia_tensor, A->angular_momentum);
@@ -59,9 +59,9 @@ static void resolve_rigid_body_collisions(void)
                 vec3 a_pos = vec3_sub(p, Transform_position(t));
                 vec3 b_pos = vec3_sub(p, Transform_position(t2));
                 //mat4x4 A_matrix = Transform_matrix(t);
-                //vec3 a_pos = mat4x4_vec3(&A_matrix, polytope_extreme_point(A->shape.polytope.points, A->shape.polytope.num_points, matrix_vec3(transpose_mat3x3(mat3x3_inverse(Transform_rotation_matrix(t))), n)));
+                //vec3 a_pos = mat4x4_vec3(A_matrix, polytope_extreme_point(A->shape.polytope.points, A->shape.polytope.num_points, matrix_vec3(mat3x3_transpose(mat3x3_inverse(Transform_rotation_matrix(t))), n)));
                 //mat4x4 B_matrix = Transform_matrix(t2);
-                //vec3 b_pos = mat4x4_vec3(&B_matrix, polytope_extreme_point(B->shape.polytope.points, B->shape.polytope.num_points, matrix_vec3(transpose_mat3x3(mat3x3_inverse(Transform_rotation_matrix(t2))), n)));
+                //vec3 b_pos = mat4x4_vec3(B_matrix, polytope_extreme_point(B->shape.polytope.points, B->shape.polytope.num_points, matrix_vec3(mat3x3_transpose(mat3x3_inverse(Transform_rotation_matrix(t2))), n)));
                 // dpa,dpb: The linear velocities at the points of contact.
                 vec3 dpa = vec3_add(va, vec3_cross(wa, a_pos));
                 vec3 dpb = vec3_add(vb, vec3_cross(wb, b_pos));
@@ -161,7 +161,7 @@ static void update_rigid_bodies(void)
 
         // Transform the inverse inertia tensor to world space via the rotation matrix of this body.
         mat3x3 rotation_matrix = Transform_rotation_matrix(t);
-        mat3x3 worldspace_inverse_inertia_tensor = mat3x3_multiply3(rotation_matrix, rb->inverse_inertia_tensor, transpose_mat3x3(rotation_matrix));
+        mat3x3 worldspace_inverse_inertia_tensor = mat3x3_multiply3(rotation_matrix, rb->inverse_inertia_tensor, mat3x3_transpose(rotation_matrix));
 
         vec3 angular_velocity = matrix_vec3(worldspace_inverse_inertia_tensor, rb->angular_momentum);
 
@@ -170,11 +170,12 @@ static void update_rigid_bodies(void)
         dwy = angular_velocity.vals[1] * dt;
         dwz = angular_velocity.vals[2] * dt;
         mat3x3 skew;
-        fill_mat3x3(skew, 0,   -dwz,  dwy,
+        fill_mat3x3_rmaj(skew, 0,   -dwz,  dwy,
                           dwz,    0, -dwx,
                           -dwy, dwx,    0);
-        skew = transpose_mat3x3(skew); // --- :D
-        t->rotation_matrix = mat3x3_add(t->rotation_matrix, multiply_mat3x3(skew, t->rotation_matrix));
+        // skew = mat3x3_transpose(skew); // --- :D
+            // --- D:
+        t->rotation_matrix = mat3x3_add(t->rotation_matrix, mat3x3_multiply(skew, t->rotation_matrix));
         // Orthonormalize to prevent matrix drift.
         mat3x3_orthonormalize(&t->rotation_matrix);
     end_for_aspect()
@@ -186,7 +187,7 @@ void rigid_body_dynamics(void)
     for_aspect(RigidBody, rb)
         Transform *t = other_aspect(rb, Transform);
         mat3x3 rotation_matrix = Transform_rotation_matrix(t);
-        mat3x3 worldspace_inverse_inertia_tensor = mat3x3_multiply3(rotation_matrix, rb->inverse_inertia_tensor, transpose_mat3x3(rotation_matrix));
+        mat3x3 worldspace_inverse_inertia_tensor = mat3x3_multiply3(rotation_matrix, rb->inverse_inertia_tensor, mat3x3_transpose(rotation_matrix));
         vec3 angular_velocity = matrix_vec3(worldspace_inverse_inertia_tensor, rb->angular_momentum);
         paint_line_cv(Canvas3D, Transform_position(t), vec3_add(Transform_position(t), angular_velocity), "k", 4);
         paint_line_cv(Canvas3D, Transform_position(t), vec3_add(Transform_position(t), rb->angular_momentum), "y", 4);

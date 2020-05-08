@@ -29,7 +29,7 @@ void bunny_update(Logic *logic)
 
     mat4x4 model_matrix = Transform_matrix(t);
     mat4x4 normal_matrix;
-    euler_rotation_matrix4x4f(&normal_matrix, t->theta_x, t->theta_y, t->theta_z);
+    euler_rotation_mat4x4(&normal_matrix, t->theta_x, t->theta_y, t->theta_z);
 
     vec3 *positions = (vec3 *) g->mesh_data->attribute_data[Position];
     vec3 *normals = (vec3 *) g->mesh_data->attribute_data[Normal];

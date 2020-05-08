@@ -52,9 +52,9 @@ typedef struct Transform_s {
     float y;
     float z;
 } Transform;
-void transform_to_matrix(Transform *transform, Matrix4x4f *matrix)
+void transform_to_matrix(Transform *transform, mat4x4 *matrix)
 {
-    euler_rotation_matrix4x4f(matrix, transform->theta_x, transform->theta_y, transform->theta_z);
+    euler_rotation_mat4x4(matrix, transform->theta_x, transform->theta_y, transform->theta_z);
     translate_matrix4x4f(matrix, transform->x, transform->y, transform->z);
 }
 
@@ -220,7 +220,7 @@ void init_program(void)
     memset(&camera_transform, 0, sizeof(Transform)); // ...
 }
 
-void draw_cube(Matrix4x4f *matrix)
+void draw_cube(mat4x4 *matrix)
 {
     glUniformMatrix4fv(uniform_location_rotation_matrix, 1, GL_TRUE, (const GLfloat *) &matrix->vals);
 #if 1
@@ -297,14 +297,14 @@ void loop(GLFWwindow *window)
 
     glUniform1f(uniform_location_time, time());
     glUniform1f(uniform_location_aspect_ratio, ASPECT_RATIO);
-    Matrix4x4f view_matrix;
+    mat4x4 view_matrix;
     transform_to_matrix(&camera_transform, &view_matrix);
     /* printf("view matrix:\n"); */
     /* print_matrix4x4f(&view_matrix); */
 
     glUniformMatrix4fv(uniform_location_view_matrix, 1, GL_TRUE, (const GLfloat *) &view_matrix.vals);
-    Matrix4x4f rotation_matrix;
-    euler_rotation_matrix4x4f(&rotation_matrix, theta_x, theta_y, theta_z);
+    mat4x4 rotation_matrix;
+    euler_rotation_mat4x4(&rotation_matrix, theta_x, theta_y, theta_z);
     /* printf("Rotation matrix:\n"); */
     /* print_matrix4x4f(&rotation_matrix); */
     translate_matrix4x4f(&rotation_matrix, cube_x, cube_y, cube_z);
@@ -314,12 +314,12 @@ void loop(GLFWwindow *window)
     /* glDepthFunc(GL_LESS); */
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
-            Matrix4x4f rot;
+            mat4x4 rot;
             copy_matrix4x4f(&rot, &rotation_matrix);
             translate_matrix4x4f(&rot, i, j, 0);
-            Matrix4x4f extra_rot;
-            euler_rotation_matrix4x4f(&extra_rot, i * 0.6, j * 0.6, (i + j) * 0.3);
-            right_multiply_matrix4x4f(&rot, &extra_rot);
+            mat4x4 extra_rot;
+            euler_rotation_mat4x4(&extra_rot, i * 0.6, j * 0.6, (i + j) * 0.3);
+            right_multiply_mat4x4(&rot, &extra_rot);
             draw_cube(&rot);
         }
     }

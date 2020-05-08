@@ -17,9 +17,9 @@ extern void init_program(void)
 {
     while (1) {
         mat3x3 m;
-        // fill_mat3x3(m, 8,1,2,3,4,5,6,7,8);
-        // fill_mat3x3(m, -1,3,-2.5, 8,9,-3.112, 3,3,11);
-        // fill_mat3x3(m, 2,1,2,-2,3,-1,8,6,7);
+        // fill_mat3x3_rmaj(m, 8,1,2,3,4,5,6,7,8);
+        // fill_mat3x3_rmaj(m, -1,3,-2.5, 8,9,-3.112, 3,3,11);
+        // fill_mat3x3_rmaj(m, 2,1,2,-2,3,-1,8,6,7);
         for (int i = 0; i < 9; i++) m.vals[i] = frand()*10-5;
         float det = mat3x3_determinant(m);
         printf("det: %.6f\n", det);

@@ -17,7 +17,7 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
     mat4x4 frustum_matrix = {0};
     //------
     // Actually derived formulation, assuming r = -l and t = -b.
-    fill_mat4x4(frustum_matrix, 1/r, 0,   0,    0,
+    fill_mat4x4_cmaj(frustum_matrix, 1/r, 0,   0,    0,
                                 0,   1/t, 0,    0,
                                 0,   0,   -1/n,  -1/n,
                                 0,   0,   -1,  0);
@@ -52,10 +52,27 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
 }
 mat4x4 Camera_vp_matrix(Camera *camera)
 {
-    mat4x4 vp_matrix = camera->projection_matrix;
-    mat4x4 view_matrix = invert_rigid_mat4x4(Transform_matrix(get_sibling_aspect(camera, Transform)));
-    right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+    Transform *camera_transform = get_sibling_aspect(camera, Transform);
+    // Account for the camera's target rectangle.
+    float x_scale = camera->trx - camera->blx;
+    float y_scale = camera->try - camera->bly;
+    float x_shift = 2*camera->blx - 1 + x_scale;
+    float y_shift = 2*camera->bly - 1 + y_scale;
+    mat4x4 vp_matrix = {{
+        x_scale, 0,       0, 0,
+        0,       y_scale, 0, 0,
+        0,       0,       1, 0,
+        x_shift, y_shift, 0, 1,
+    }};
+    mat4x4 view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
+    right_multiply_mat4x4(&vp_matrix, &camera->projection_matrix);
+    right_multiply_mat4x4(&vp_matrix, &view_matrix);
     return vp_matrix;
+
+    // mat4x4 vp_matrix = camera->projection_matrix;
+    // mat4x4 view_matrix = invert_rigid_mat4x4(Transform_matrix(get_sibling_aspect(camera, Transform)));
+    // right_multiply_mat4x4(&vp_matrix, &view_matrix);
+    // return vp_matrix;
 }
 
 // Bottom-left of camera rectangle is (0,0), top-right is (1,1).
@@ -71,7 +88,7 @@ void Camera_ray(Camera *camera, float x, float y, vec3 *origin, vec3 *direction)
                                    camera->plane_b + (camera->plane_t - camera->plane_b) * y,
                                    -camera->plane_n);
     // printf("camera_space_p: "); print_vec3(camera_space_p);
-    *origin = mat4x4_vec3(&matrix, camera_space_p);
+    *origin = mat4x4_vec3(matrix, camera_space_p);
     *direction = vec3_sub(*origin, position);
 }
 

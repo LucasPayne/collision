@@ -31,7 +31,7 @@ GLuint sphere_vao;
 
 GLuint shader_program;
 
-Matrix4x4f sphere_matrix;
+mat4x4 sphere_matrix;
 GLuint uniform_location_model_matrix;
 GLuint uniform_location_aspect_ratio;
 GLuint uniform_location_time;

@@ -161,14 +161,14 @@ void draw_polyhedron_winding_order(Polyhedron *poly, char *color_str, float line
         }
         for (int i = 0; i < 2; i++) {
             if (matrix != NULL) {
-                paint_line_cv(Canvas3D, mat4x4_vec3(matrix, ps[i]), mat4x4_vec3(matrix, ps[i+1]), color_str, line_width);
+                paint_line_cv(Canvas3D, mat4x4_vec3(*matrix, ps[i]), mat4x4_vec3(*matrix, ps[i+1]), color_str, line_width);
             } else {
                 paint_line_cv(Canvas3D, ps[i], ps[i+1], color_str, line_width);
             }
         }
         vec3 end = vec3_lerp(ps[2], ps[0], 0.8);
         if (matrix != NULL) {
-            paint_line_cv(Canvas3D, mat4x4_vec3(matrix, ps[2]), mat4x4_vec3(matrix, end), color_str, line_width);
+            paint_line_cv(Canvas3D, mat4x4_vec3(*matrix, ps[2]), mat4x4_vec3(*matrix, end), color_str, line_width);
         } else {
             paint_line_cv(Canvas3D, ps[2], end, color_str, line_width);
         }
@@ -181,7 +181,7 @@ void draw_polyhedron(Polyhedron *p, mat4x4 *matrix)
     PolyhedronPoint *point = p->points.first;
     while (point != NULL) {
         if (matrix != NULL) {
-            vec3 pp = mat4x4_vec3(matrix, point->position);
+            vec3 pp = mat4x4_vec3(*matrix, point->position);
             paint_points_c(Canvas3D, &pp, 1, "r", 10);
         } else {
             paint_points_c(Canvas3D, &point->position, 1, "r", 10);
@@ -191,7 +191,7 @@ void draw_polyhedron(Polyhedron *p, mat4x4 *matrix)
     PolyhedronEdge *edge = p->edges.first;
     while (edge != NULL) {
         if (matrix != NULL) {
-            paint_line_cv(Canvas3D, mat4x4_vec3(matrix, edge->a->position), mat4x4_vec3(matrix, edge->b->position), "r", 5);
+            paint_line_cv(Canvas3D, mat4x4_vec3(*matrix, edge->a->position), mat4x4_vec3(*matrix, edge->b->position), "r", 5);
         } else {
             paint_line_cv(Canvas3D, edge->a->position, edge->b->position, "r", 5);
         }
@@ -200,7 +200,7 @@ void draw_polyhedron(Polyhedron *p, mat4x4 *matrix)
     // PolyhedronTriangle *t = p->triangles.first;
     // while (t != NULL) {
     //     if (matrix != NULL) {
-    //         paint_triangle_v(Canvas3D, mat4x4_vec3(matrix, t->points[0]->position), mat4x4_vec3(matrix, t->points[1]->position), mat4x4_vec3(matrix, t->points[2]->position), new_vec4(0.2,0.2,0.6,0.354));
+    //         paint_triangle_v(Canvas3D, mat4x4_vec3(*matrix, t->points[0]->position), mat4x4_vec3(*matrix, t->points[1]->position), mat4x4_vec3(*matrix, t->points[2]->position), new_vec4(0.2,0.2,0.6,0.354));
     //     } else {
     //         paint_triangle_v(Canvas3D, t->points[0]->position, t->points[1]->position, t->points[2]->position, new_vec4(0.2,0.2,0.6,0.354));
     //     }
@@ -212,7 +212,7 @@ void draw_polyhedron2(Polyhedron *p, mat4x4 *matrix, char *color_str, float line
     PolyhedronEdge *edge = p->edges.first;
     while (edge != NULL) {
         if (matrix != NULL) {
-            paint_line_cv(Canvas3D, mat4x4_vec3(matrix, edge->a->position), mat4x4_vec3(matrix, edge->b->position), color_str, line_width);
+            paint_line_cv(Canvas3D, mat4x4_vec3(*matrix, edge->a->position), mat4x4_vec3(*matrix, edge->b->position), color_str, line_width);
         } else {
             paint_line_cv(Canvas3D, edge->a->position, edge->b->position, color_str, line_width);
         }
@@ -222,7 +222,7 @@ void draw_polyhedron2(Polyhedron *p, mat4x4 *matrix, char *color_str, float line
     PolyhedronPoint *point = p->points.first;
     while (point != NULL) {
         if (matrix != NULL) {
-            vec3 pp = mat4x4_vec3(matrix, point->position);
+            vec3 pp = mat4x4_vec3(*matrix, point->position);
             paint_points_c(Canvas3D, &pp, 1, color_str, line_width);
         } else {
             paint_points_c(Canvas3D, &point->position, 1, color_str, line_width);

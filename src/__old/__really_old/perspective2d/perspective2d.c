@@ -25,10 +25,10 @@
 DynamicShaderProgram dynamic_shader_program;
 static double ASPECT_RATIO;
 
-static Matrix3x3f model_matrix;
-static Matrix3x3f projection_matrix;
+static mat3x3 model_matrix;
+static mat3x3 projection_matrix;
 
-static Matrix4x4f camera_matrix;
+static mat4x4 camera_matrix;
 
 static GLuint uniform_location_model_matrix;
 static GLuint uniform_location_projection_matrix;
@@ -146,12 +146,12 @@ void loop(GLFWwindow *window)
     if (alt_arrow_key_down(Right))
         camera_matrix_x += 1.0 * dt();
 
-    euler_rotation_matrix3x3f(&projection_matrix, 0, 0, projection_theta_z);
+    euler_rotation_mat3x3(&projection_matrix, 0, 0, projection_theta_z);
 
-    translate_rotate_3d_matrix4x4f(&camera_matrix, camera_matrix_x, camera_matrix_y, camera_matrix_z, camera_matrix_theta_x, camera_matrix_theta_y, camera_matrix_theta_z);
+    translate_rotate_3d_mat4x4(&camera_matrix, camera_matrix_x, camera_matrix_y, camera_matrix_z, camera_matrix_theta_x, camera_matrix_theta_y, camera_matrix_theta_z);
 
     // Automatic upsize? 0 0 0 1 translating column, 0 0 0 1 bottom row
-    /* Matrix4x4f upsized_model_matrix; */
+    /* mat4x4 upsized_model_matrix; */
     /* for (int i = 0; i < 3; i++) { */
     /*     for (int j = 0; j < 3; j++) { */
     /*         upsized_model_matrix.vals[i + 4 * j] = model_matrix.vals[i + 3 * j]; */

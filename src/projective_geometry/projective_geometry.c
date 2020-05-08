@@ -44,6 +44,15 @@ void draw_projected_segment(vec3 a, vec3 b, vec4 color, vec4 projected_color, fl
 
 extern void loop_program(void)
 {
+    Camera *camera;
+    for_aspect(Camera, _camera)
+        camera = _camera;
+        break;
+    end_for_aspect()
+    mat4x4 vp_matrix = Camera_vp_matrix(camera);
+    vec4 vanishing_plane = matrix_vec4(mat4x4_transpose(vp_matrix), new_vec4(0,0,0,1));
+    print_vec4(vanishing_plane);
+
     int grid_tess_x = 18;
     int grid_tess_y = 18;
     vec3 base[4] = {

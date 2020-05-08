@@ -133,8 +133,8 @@ void do_shadows(Camera *camera)
             // Transform frustum segment to light space.
             vec3 light_frustum[8];
             for (int i = 0; i < 4; i++) {
-                light_frustum[i] = mat4x4_vec3(&light_matrix, near_quad[i]);
-                light_frustum[i + 4] = mat4x4_vec3(&light_matrix, far_quad[i]);
+                light_frustum[i] = mat4x4_vec3(light_matrix, near_quad[i]);
+                light_frustum[i + 4] = mat4x4_vec3(light_matrix, far_quad[i]);
             }
             //--------------------------------------------------------------------------------
             // Find the axis-aligned bounding box of the frustum segment in light coordinates.
@@ -148,7 +148,7 @@ void do_shadows(Camera *camera)
                 if (body->is_ground) continue; // The is_ground flag can be set on a body so that shadow maps can be made higher resolution,
                                                // since the ground is large but probably won't cast shadows.
                 float radius = Body_radius(body);
-                vec3 position = mat4x4_vec3(&light_matrix, Transform_position(get_sibling_aspect(body, Transform)));
+                vec3 position = mat4x4_vec3(light_matrix, Transform_position(get_sibling_aspect(body, Transform)));
                 for (int i = 0; i < 3; i++) {
 		    float min_val = position.vals[i] - radius;
 		    float max_val = position.vals[i] + radius;
@@ -198,8 +198,8 @@ void do_shadows(Camera *camera)
                 0,    0,    1,     0,
                 -x,   -y,   -z,    1,
             }};
-            right_multiply_matrix4x4f(&light_to_box, &light_to_box_2);
-            right_multiply_matrix4x4f(&light_to_box, &light_to_box_3);
+            right_multiply_mat4x4(&light_to_box, &light_to_box_2);
+            right_multiply_mat4x4(&light_to_box, &light_to_box_3);
 
             // box_to_quadrant:
             // This matrix transforms the box to the relevant quadrant.
@@ -215,10 +215,10 @@ void do_shadows(Camera *camera)
                 0,                0,                1, 0,
                 -1 + 2 * (segment % 2),                -1 + 2 * (segment / 2), 0, 1,
             }};
-            right_multiply_matrix4x4f(&box_to_quadrant, &box_to_quadrant_2);
+            right_multiply_mat4x4(&box_to_quadrant, &box_to_quadrant_2);
 
             mat4x4 shadow_matrix = box_to_quadrant;
-            right_multiply_matrix4x4f(&shadow_matrix, &light_to_box);
+            right_multiply_mat4x4(&shadow_matrix, &light_to_box);
 /*--------------------------------------------------------------------------------
 light to quadrant 0
 (0.000000, 0.000000, 0.000000)
@@ -253,18 +253,18 @@ light to uvd 3
 
 #if 0
 {
-            vec3 c1 = mat4x4_vec3(&shadow_matrix, box_corners[0]);
-            vec3 c2 = mat4x4_vec3(&shadow_matrix, box_corners[1]);
+            vec3 c1 = mat4x4_vec3(shadow_matrix, box_corners[0]);
+            vec3 c2 = mat4x4_vec3(shadow_matrix, box_corners[1]);
             printf("--------------------------------------------------------------------------------\n");
             printf("light to quadrant %d\n", segment);
             mat4x4 light_model_matrix = Transform_matrix(get_sibling_aspect(light, Transform));
-            vec3 box_corner1_worldspace = mat4x4_vec3(&light_model_matrix, box_corners[0]);
-            vec3 box_corner2_worldspace = mat4x4_vec3(&light_model_matrix, box_corners[1]);
+            vec3 box_corner1_worldspace = mat4x4_vec3(light_model_matrix, box_corners[0]);
+            vec3 box_corner2_worldspace = mat4x4_vec3(light_model_matrix, box_corners[1]);
             print_vec3(c1);
             print_vec3(c2);
 }
 #endif
-            right_multiply_matrix4x4f(&shadow_matrix, &light_matrix);
+            right_multiply_mat4x4(&shadow_matrix, &light_matrix);
             //--------------------------------------------------------------------------------
             // The shadow matrices uploaded transform to uvd (UV + depth coordinates) for the quadrant.
 
@@ -281,20 +281,20 @@ light to uvd 3
                 0,0,0.5,0,
                 0,0,0,1,
             }};
-            right_multiply_matrix4x4f(&light_to_uvd_quadrant, &light_to_uvd_quadrant_2);
+            right_multiply_mat4x4(&light_to_uvd_quadrant, &light_to_uvd_quadrant_2);
             mat4x4 uvd_shadow_matrix = light_to_uvd_quadrant;
             // these extra operations prepend the operations the shadow matrix is composed of
             // (they happen afterward, mapping the view-volume quadrant to its UV quadrant).
-            right_multiply_matrix4x4f(&uvd_shadow_matrix, &shadow_matrix);
+            right_multiply_mat4x4(&uvd_shadow_matrix, &shadow_matrix);
             set_uniform_mat4x4(Lights, directional_lights[index].shadow_matrices[segment].vals, uvd_shadow_matrix.vals);
 #if 0
 {
             printf("light to uvd %d\n", segment);
             mat4x4 light_model_matrix = Transform_matrix(get_sibling_aspect(light, Transform));
-            vec3 box_corner1_worldspace = mat4x4_vec3(&light_model_matrix, box_corners[0]);
-            vec3 box_corner2_worldspace = mat4x4_vec3(&light_model_matrix, box_corners[1]);
-            vec3 c1 = mat4x4_vec3(&uvd_shadow_matrix, box_corner1_worldspace);
-            vec3 c2 = mat4x4_vec3(&uvd_shadow_matrix, box_corner2_worldspace);
+            vec3 box_corner1_worldspace = mat4x4_vec3(light_model_matrix, box_corners[0]);
+            vec3 box_corner2_worldspace = mat4x4_vec3(light_model_matrix, box_corners[1]);
+            vec3 c1 = mat4x4_vec3(uvd_shadow_matrix, box_corner1_worldspace);
+            vec3 c2 = mat4x4_vec3(uvd_shadow_matrix, box_corner2_worldspace);
             print_vec3(c1);
             print_vec3(c2);
 }
@@ -336,7 +336,7 @@ light to uvd 3
             // Transform this box to world space.
 	    mat4x4 light_to_world = Transform_matrix(get_sibling_aspect(light, Transform));
             for (int i = 0; i < 8; i++) {
-                box_points[i] = mat4x4_vec3(&light_to_world, box_points[i]);
+                box_points[i] = mat4x4_vec3(light_to_world, box_points[i]);
             }
             // Draw the box.
             for (int i = 0; i < 4; i++) {

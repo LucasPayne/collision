@@ -38,9 +38,9 @@ extern void loop_program(void)
 {
     for_aspect(Camera, camera)
         Transform *camera_transform = get_sibling_aspect(camera, Transform);
-        Matrix4x4f view_matrix = Transform_matrix(camera_transform);
-        Matrix4x4f vp_matrix = camera->projection_matrix;
-        right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+        mat4x4 view_matrix = Transform_matrix(camera_transform);
+        mat4x4 vp_matrix = camera->projection_matrix;
+        right_multiply_mat4x4(&vp_matrix, &view_matrix);
         set_uniform_mat4x4(Standard3D, mvp_matrix.vals, vp_matrix.vals);
         paint_line(0,0,0,  5,0,0,  1,0,0,1);
         paint_line(5,0,0,  5,5,0,  1,0,0,1);

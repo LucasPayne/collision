@@ -27,7 +27,7 @@ PROJECT_LIBS:
 #include "matrix_mathematics.h"
 //--------------------------------------------------------------------------------
 static double ASPECT_RATIO;
-static Matrix4x4f g_mvp_matrix;
+static mat4x4 g_mvp_matrix;
 //--------------------------------------------------------------------------------
 
 // Aspects
@@ -52,10 +52,10 @@ static void Transform_set(Transform *transform, float x, float y, float z, float
     transform->theta_y = theta_y;
     transform->theta_z = theta_z;
 }
-static Matrix4x4f Transform_matrix(Transform *transform)
+static mat4x4 Transform_matrix(Transform *transform)
 {
-    Matrix4x4f mat;
-    translate_rotate_3d_matrix4x4f(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
+    mat4x4 mat;
+    translate_rotate_3d_mat4x4(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
     return mat;
 }
 
@@ -70,7 +70,7 @@ ASPECT_PROPERTIES()
 static AspectType Camera_TYPE_ID;
 typedef struct /* Aspect */ Camera_s {
 ASPECT_PROPERTIES()
-    Matrix4x4f projection_matrix; // the lens
+    mat4x4 projection_matrix; // the lens
 } Camera;
 void Camera_init(Camera *camera)
 {
@@ -84,7 +84,7 @@ GraphicsFloat get_uniform_aspect_ratio(void) { return (GraphicsFloat) ASPECT_RAT
 GraphicsMat4x4f get_uniform_mvp_matrix(void)
 {
     GraphicsMat4x4f mat;
-    memcpy(&mat, &g_mvp_matrix, sizeof(Matrix4x4f));
+    memcpy(&mat, &g_mvp_matrix, sizeof(mat4x4));
     /* print_matrix4x4f(&g_mvp_matrix); */
     /* for (int i = 0; i < 16; i++) { */
     /*     printf("%f/%f, ", mat.vals[i], g_mvp_matrix.vals[i]); */
@@ -156,16 +156,16 @@ void loop(void)
     end_for_aspect()
 
     for_aspect(Camera, camera)
-        Matrix4x4f vp_matrix = camera->projection_matrix;
-        Matrix4x4f view_matrix = Transform_matrix(get_sibling_aspect(camera, Transform));
-        right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
+        mat4x4 vp_matrix = camera->projection_matrix;
+        mat4x4 view_matrix = Transform_matrix(get_sibling_aspect(camera, Transform));
+        right_multiply_mat4x4(&vp_matrix, &view_matrix);
 
         for_aspect(Body, body)
             Mesh *mesh = resource_data(Mesh, body->mesh);
             GraphicsProgram *graphics_program = resource_data(GraphicsProgram, resource_data(Artist, body->artist)->graphics_program);
             g_mvp_matrix = vp_matrix;
-            Matrix4x4f model_matrix = Transform_matrix(get_sibling_aspect(body, Transform));
-            right_multiply_matrix4x4f(&g_mvp_matrix, &model_matrix);
+            mat4x4 model_matrix = Transform_matrix(get_sibling_aspect(body, Transform));
+            right_multiply_mat4x4(&g_mvp_matrix, &model_matrix);
             Artist_draw_mesh(resource_data(Artist, body->artist), mesh);
         end_for_aspect()
     end_for_aspect()

@@ -48,10 +48,10 @@ Polyhedron compute_minkowski_difference(Polyhedron A, Polyhedron B)
 static int support_index(vec3 *points, int num_points, mat4x4 *matrix, vec3 direction)
 {
     //---Basic rearrangement can allow the avoidance of most matrix-vector multiplies here.
-    float d = vec3_dot(mat4x4_vec3(matrix, points[0]), direction); // At least one point must be given.
+    float d = vec3_dot(mat4x4_vec3(*matrix, points[0]), direction); // At least one point must be given.
     int index = 0;
     for (int i = 1; i < num_points; i++) {
-        float new_d = vec3_dot(mat4x4_vec3(matrix, points[i]), direction);
+        float new_d = vec3_dot(mat4x4_vec3(*matrix, points[i]), direction);
         if (new_d > d) {
             d = new_d;
             index = i;
@@ -73,7 +73,7 @@ bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int
     {\
         ( INDEX_A ) = support_index(A, A_len, A_matrix, ( DIRECTION ));\
         ( INDEX_B ) = support_index(B, B_len, B_matrix, vec3_neg(( DIRECTION )));\
-        ( SUPPORT ) = vec3_sub(mat4x4_vec3(A_matrix, A[( INDEX_A )]), mat4x4_vec3(B_matrix, B[( INDEX_B )]));\
+        ( SUPPORT ) = vec3_sub(mat4x4_vec3(*A_matrix, A[( INDEX_A )]), mat4x4_vec3(*B_matrix, B[( INDEX_B )]));\
     }
     cso_support(new_vec3(1,1,1), simplex[0], indices_A[0], indices_B[0]);
     cso_support(vec3_neg(simplex[0]), simplex[1], indices_A[1], indices_B[1]);
@@ -198,9 +198,9 @@ bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int
                 for (int i = 0; i < triangles_len; i++) {
                     if (triangles[triangles_n*i] == -1) continue;
 
-                    vec3 a = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+0]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+0] + 1]]));
-                    vec3 b = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+1]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+1] + 1]]));
-                    vec3 c = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+2]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+2] + 1]]));
+                    vec3 a = vec3_sub(mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*i+0]]]), mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*i+0] + 1]]));
+                    vec3 b = vec3_sub(mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*i+1]]]), mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*i+1] + 1]]));
+                    vec3 c = vec3_sub(mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*i+2]]]), mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*i+2] + 1]]));
                     vec3 p = point_to_triangle_plane(a,b,c, origin);
                     float new_d = vec3_dot(p, p);
                     if (min_d == -1 || new_d < min_d) {
@@ -209,9 +209,9 @@ bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int
                         closest_point = p;
                     }
                 }
-                vec3 a = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+0]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+0] + 1]]));
-                vec3 b = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+1]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+1] + 1]]));
-                vec3 c = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+2]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+2] + 1]]));
+                vec3 a = vec3_sub(mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+0]]]), mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+0] + 1]]));
+                vec3 b = vec3_sub(mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+1]]]), mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+1] + 1]]));
+                vec3 c = vec3_sub(mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+2]]]), mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+2] + 1]]));
 
                 // Find an extreme point in the direction from the origin to the closest point on the polytope boundary.
                 // The convex hull of the points of the polytope adjoined with this new point will be computed.
@@ -240,12 +240,12 @@ bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int
                     // This triangle is the Minkowski difference between a triangle on A and a triangle on B. Use the same barycentric weights
                     // to calculate the corresponding points on the boundaries of A and B.
                     //---need a better way to get these points.
-                    vec3 Aa = mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+0]]]);
-                    vec3 Ab = mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+1]]]);
-                    vec3 Ac = mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+2]]]);
-                    vec3 Ba = mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+0]+1]]);
-                    vec3 Bb = mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+1]+1]]);
-                    vec3 Bc = mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+2]+1]]);
+                    vec3 Aa = mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+0]]]);
+                    vec3 Ab = mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+1]]]);
+                    vec3 Ac = mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*closest_triangle_index+2]]]);
+                    vec3 Ba = mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+0]+1]]);
+                    vec3 Bb = mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+1]+1]]);
+                    vec3 Bc = mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*closest_triangle_index+2]+1]]);
                     vec3 a = vec3_sub(Aa, Ba);
                     vec3 b = vec3_sub(Ab, Bb);
                     vec3 c = vec3_sub(Ac, Bc);
@@ -289,9 +289,9 @@ bool convex_hull_intersection(vec3 *A, int A_len, mat4x4 *A_matrix, vec3 *B, int
                 // Remove the visible triangles and their directed edges. Points do not need to be nullified.
                 for (int i = 0; i < triangles_len; i++) {
                     if (triangles[triangles_n*i] == -1) continue;
-                    vec3 ap = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+0]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+0] + 1]]));
-                    vec3 bp = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+1]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+1] + 1]]));
-                    vec3 cp = vec3_sub(mat4x4_vec3(A_matrix, A[points[points_n*triangles[triangles_n*i+2]]]), mat4x4_vec3(B_matrix, B[points[points_n*triangles[triangles_n*i+2] + 1]]));
+                    vec3 ap = vec3_sub(mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*i+0]]]), mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*i+0] + 1]]));
+                    vec3 bp = vec3_sub(mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*i+1]]]), mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*i+1] + 1]]));
+                    vec3 cp = vec3_sub(mat4x4_vec3(*A_matrix, A[points[points_n*triangles[triangles_n*i+2]]]), mat4x4_vec3(*B_matrix, B[points[points_n*triangles[triangles_n*i+2] + 1]]));
 
                     vec3 n = vec3_cross(vec3_sub(bp, ap), vec3_sub(cp, ap));
                     float v = tetrahedron_6_times_volume(ap,bp,cp, new_point);

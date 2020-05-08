@@ -287,8 +287,8 @@ void MeshData_draw_wireframe(MeshData *mesh, mat4x4 matrix, vec4 color, float li
 {
     for (int i = 0; i < mesh->num_triangles; i++) {
         for (int j = 0; j < 3; j++) {
-            paint_line_v(Canvas3D, mat4x4_vec3(&matrix, ((vec3 *) mesh->attribute_data[Position])[mesh->triangles[3*i+j]]),
-                                   mat4x4_vec3(&matrix, ((vec3 *) mesh->attribute_data[Position])[mesh->triangles[3*i+((j+1)%3)]]), color, line_width);
+            paint_line_v(Canvas3D, mat4x4_vec3(matrix, ((vec3 *) mesh->attribute_data[Position])[mesh->triangles[3*i+j]]),
+                                   mat4x4_vec3(matrix, ((vec3 *) mesh->attribute_data[Position])[mesh->triangles[3*i+((j+1)%3)]]), color, line_width);
         }
     }
 }

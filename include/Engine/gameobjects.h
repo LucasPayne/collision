@@ -204,7 +204,7 @@ ASPECT_PROPERTIES()
     float try; // screen subrectangle in screen coordinates, bottom-left (0,0) to top-right (1,1).
     bool override_bg_color;
     vec4 bg_color;
-    Matrix4x4f projection_matrix; // the lens
+    mat4x4 projection_matrix; // the lens
 } Camera;
 void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far);
 mat4x4 Camera_vp_matrix(Camera *camera);

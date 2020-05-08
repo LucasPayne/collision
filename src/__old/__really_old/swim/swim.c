@@ -50,10 +50,10 @@ static void set_transform(Transform *transform, float x, float y, float z, float
     transform->theta_y = theta_y;
     transform->theta_z = theta_z;
 }
-static Matrix4x4f transform_matrix(Transform *transform)
+static mat4x4 transform_matrix(Transform *transform)
 {
-    Matrix4x4f mat;
-    translate_rotate_3d_matrix4x4f(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
+    mat4x4 mat;
+    translate_rotate_3d_mat4x4(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
     return mat;
 }
 static AspectType Body_TYPE_ID;
@@ -111,7 +111,7 @@ static Renderer g_bunny_renderer;
 /* static MeshHandle g_bunny_mesh_handle; */
 /* static MeshHandle g_cube_mesh_handle; */
 
-static Matrix4x4f g_mvp_matrix;
+static mat4x4 g_mvp_matrix;
 static float g_model_x;
 static float g_model_y;
 static float g_model_z;
@@ -400,12 +400,12 @@ void loop()
     for_aspect(Body, body)
         if (body->visible) {
             Transform *transform = get_sibling_aspect(body, Transform);
-            Matrix4x4f model_matrix = transform_matrix(transform);
+            mat4x4 model_matrix = transform_matrix(transform);
             g_model_x = transform->x;
             g_model_y = transform->y;
             g_model_z = transform->z;
             identity_matrix4x4f(&g_mvp_matrix);
-            right_multiply_matrix4x4f(&g_mvp_matrix, &model_matrix);
+            right_multiply_mat4x4(&g_mvp_matrix, &model_matrix);
             render_mesh(body->renderer, resource_data(MeshHandle, body->mesh), GL_TRIANGLES);
         }
     end_for_aspect()

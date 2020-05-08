@@ -16,19 +16,19 @@ void render_body_with_material(mat4x4 vp_matrix, Body *body, Material *material)
     Transform *transform = get_sibling_aspect(body, Transform);
     Geometry *mesh = resource_data(Geometry, body->geometry);
     // Form the mvp matrix and upload it, along with other Standard3D information.
-    Matrix4x4f model_matrix = Transform_matrix(transform);
+    mat4x4 model_matrix = Transform_matrix(transform);
     // //---This body rescaling is a hack.
     // for (int i = 0; i < 3; i++) {
     //     for (int j = 0; j < 3; j++) {
     //         model_matrix.vals[4*i + j] *= body->scale;
     //     }
     // }
-    Matrix4x4f mvp_matrix = vp_matrix;
-    right_multiply_matrix4x4f(&mvp_matrix, &model_matrix);
+    mat4x4 mvp_matrix = vp_matrix;
+    right_multiply_mat4x4(&mvp_matrix, &model_matrix);
     set_uniform_vec3(Standard3D, model_position, new_vec3(transform->x, transform->y, transform->z));
     set_uniform_mat4x4(Standard3D, model_matrix.vals, model_matrix.vals);
-    Matrix4x4f normal_matrix;
-    euler_rotation_matrix4x4f(&normal_matrix, transform->theta_x, transform->theta_y, transform->theta_z);
+    mat4x4 normal_matrix;
+    euler_rotation_mat4x4(&normal_matrix, transform->theta_x, transform->theta_y, transform->theta_z);
     set_uniform_mat4x4(Standard3D, normal_matrix.vals, normal_matrix.vals); // assuming only rigid transformations.
     set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
     gm_draw(*mesh, material);
@@ -38,6 +38,7 @@ void render_body(mat4x4 vp_matrix, Body *body)
     Material *material = resource_data(Material, body->material);
     render_body_with_material(vp_matrix, body, material);
 }
+
 
 mat4x4 Camera_prepare(Camera *camera)
 {
@@ -55,21 +56,8 @@ mat4x4 Camera_prepare(Camera *camera)
         glClearColor(g_bg_color[0], g_bg_color[1], g_bg_color[2], g_bg_color[3]);
     }
     // Form the view-projection matrix.
+    mat4x4 vp_matrix = Camera_vp_matrix(camera);
     Transform *camera_transform = get_sibling_aspect(camera, Transform);
-    // Account for the camera's target rectangle.
-    float x_scale = camera->trx - camera->blx;
-    float y_scale = camera->try - camera->bly;
-    float x_shift = 2*camera->blx - 1 + x_scale;
-    float y_shift = 2*camera->bly - 1 + y_scale;
-    mat4x4 vp_matrix = {{
-        x_scale, 0,       0, 0,
-        0,       y_scale, 0, 0,
-        0,       0,       1, 0,
-        x_shift, y_shift, 0, 1,
-    }};
-    mat4x4 view_matrix = invert_rigid_mat4x4(Transform_matrix(camera_transform));
-    right_multiply_matrix4x4f(&vp_matrix, &camera->projection_matrix);
-    right_multiply_matrix4x4f(&vp_matrix, &view_matrix);
     
     // Upload the camera position and direction, and other information.
     set_uniform_vec3(Standard3D, camera_position, new_vec3(camera_transform->x, camera_transform->y, camera_transform->z));
@@ -134,7 +122,7 @@ void render(void)
             if (text->type == TextOriented || text->type == TextOrientedFixed) {
                 // Oriented text is rendered toward the camera, either of a fixed size or size up to the depth the text is at.
                 mat4x4 vp_matrix = Camera_prepare(camera);
-                vec4 transformed = matrix_vec4(&vp_matrix, vec3_to_vec4(position));
+                vec4 transformed = matrix_vec4(vp_matrix, vec3_to_vec4(position));
                 float screen_x = transformed.vals[0] / transformed.vals[3];
                 float screen_y = transformed.vals[1] / transformed.vals[3];
                 float depth = transformed.vals[2];

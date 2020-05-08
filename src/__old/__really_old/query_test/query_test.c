@@ -15,8 +15,8 @@ PROJECT_LIBS:
             
 bool query_val_mat4x4(char *string, void *data)
 {
-    Matrix4x4f matrix;
-    /* Matrix4x4f *matrix = (Matrix4x4f *) data; */
+    mat4x4 matrix;
+    /* mat4x4 *matrix = (mat4x4 *) data; */
 
     puts(string);
 
@@ -43,7 +43,7 @@ bool query_val_mat4x4(char *string, void *data)
             }
         }
     }
-    memcpy(data, &matrix, sizeof(Matrix4x4f));
+    memcpy(data, &matrix, sizeof(mat4x4));
     return true;
 }
 
@@ -73,7 +73,7 @@ int main(void)
     }
     dict_query_rules_matrix_mathematics(q);
     
-    Matrix4x4f matrix;
+    mat4x4 matrix;
     if (!dict_query_get(q, "mat4x4", "matrix", &matrix)) {
         printf("couldn't get the matrix\n");
         exit(EXIT_FAILURE);

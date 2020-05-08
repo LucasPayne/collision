@@ -10,7 +10,7 @@
 // Helper in definitions (since there will be many).
 #define COLOR_SCALARS float cr, float cg, float cb, float ca
 #define UNPACK_COLOR(color) color.vals[0],color.vals[1],color.vals[2],color.vals[3]
-#define UNPACK_VEC3(vector) vector.vals[0],vector.vals[1],vector.vals[2]
+// #define UNPACK_VEC3(vector) vector.vals[0],vector.vals[1],vector.vals[2]
 
 typedef uint8_t PaintType;
 

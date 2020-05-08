@@ -38,7 +38,7 @@ ASPECT_PROPERTIES()
     float theta_z;
 } Transform;
 void Transform_set(Transform *transform, float x, float y, float z, float theta_x, float theta_y, float theta_z);
-Matrix4x4f Transform_matrix(Transform *transform);
+mat4x4 Transform_matrix(Transform *transform);
 vec3 Transform_global_position(Transform *transform);
 
 /*--------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ ASPECT_PROPERTIES()
     float plane_b;
     float plane_n;
     float plane_f;
-    Matrix4x4f projection_matrix; // the lens
+    mat4x4 projection_matrix; // the lens
 } Camera;
 void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far);
 

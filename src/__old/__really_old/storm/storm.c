@@ -43,7 +43,7 @@ Works to a good extent, doesn't seem to make it faster.
 
 typedef struct Transform_s {
 ASPECT_PROPERTIES()
-    Matrix4x4f matrix;
+    mat4x4 matrix;
 } Transform;
 void Transform_serialize(FILE *file, void *self)
 {
@@ -146,7 +146,7 @@ static void falling_sphere_update(ObjectLogic *logic, EntityID entity);
 static void spawner_update(ObjectLogic *logic, EntityID entity);
 static void cube_rotate(ObjectLogic *logic, EntityID entity);
 static void arrow_keys_move(float speed, float *x, float *y);
-static EntityID make_falling_sphere(Matrix4x4f *matrix);
+static EntityID make_falling_sphere(mat4x4 *matrix);
 //--------------------------------------------------------------------------------
 
 // Globals -----------------------------------------------------------------------
@@ -155,11 +155,11 @@ static double ASPECT_RATIO;
 static Renderer g_color_renderer;
 static Renderer g_1920s_renderer;
 // global "camera" properties
-static Matrix4x4f g_view_matrix;
-static Matrix4x4f g_projection_matrix;
+static mat4x4 g_view_matrix;
+static mat4x4 g_projection_matrix;
 
 // uniform values (done like this so the uniform-value-gotten-from-function thing works)
-static Matrix4x4f g_mvp_matrix;
+static mat4x4 g_mvp_matrix;
 
 static bool g_printing_frames = false;
 static long long int g_frames = 0;
@@ -260,7 +260,7 @@ static void cube_rotate(ObjectLogic *logic, EntityID entity)
 #endif
 }
 
-static EntityID make_falling_sphere(Matrix4x4f *matrix)
+static EntityID make_falling_sphere(mat4x4 *matrix)
 {
     EntityID sphere = new_entity(1);
         Transform *transform = entity_add_aspect(sphere, Transform);
@@ -485,8 +485,8 @@ void loop(GLFWwindow *window)
             Transform *transform = get_aspect_type(seeing_mesh->entity_id, Transform);
             // Prepare mvp_matrix for this render (it is a uniform of the renderer)
             copy_matrix4x4f(&g_mvp_matrix, &transform->matrix);
-            right_multiply_matrix4x4f(&g_mvp_matrix, &g_view_matrix);
-            right_multiply_matrix4x4f(&g_mvp_matrix, &g_projection_matrix);
+            right_multiply_mat4x4(&g_mvp_matrix, &g_view_matrix);
+            right_multiply_mat4x4(&g_mvp_matrix, &g_projection_matrix);
             render_mesh(seeing_mesh->renderer, &seeing_mesh->mesh_handle, GL_TRIANGLES);
         }
     end_for_aspect()

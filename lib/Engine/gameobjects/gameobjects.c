@@ -27,4 +27,12 @@ void init_aspects_gameobjects(void)
     new_default_manager(RigidBody, NULL);
 }
 
-
+// Helper function for creating a typical base gameobject with a transform.
+EntityID new_gameobject(float x, float y, float z, float theta_x, float theta_y, float theta_z, bool euler_controlled)
+{
+    EntityID e = new_entity(4);
+    Transform *t = add_aspect(e, Transform);
+    Transform_set(t, x, y, z, theta_x, theta_y, theta_z);
+    t->euler_controlled = euler_controlled;
+    return e;
+}

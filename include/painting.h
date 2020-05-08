@@ -182,7 +182,8 @@ void paint_sphere_v(int canvas_id, vec3 center, float radius, vec4 color);
     paint_sphere_v(CANVAS_ID,CENTER,RADIUS,str_to_color_key(( COLOR_STR )));\
 }
 
-//--------------------------------------------------------------------------------
-
+// Painting matrix. Modify positions of incoming paint.
+void painting_matrix(mat4x4 matrix);
+void painting_matrix_reset(void);
 
 #endif // HEADER_DEFINED_PAINTING

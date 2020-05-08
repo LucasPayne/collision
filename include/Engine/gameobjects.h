@@ -56,6 +56,15 @@ vec3 Transform_backward(Transform *t);
 vec3 Transform_angles(Transform *t);
 void Transform_draw_axes(Transform *t, float length, float width);
 
+// Utility stuff, since Transforms are used a lot. Maybe it would actually be better to have a transform as an intrinsic
+// part of an entity, even if it might not be used.
+#define Transform_get(ENTITY_ID) get_aspect(ENTITY_ID, Transform)
+#define Transform_get_a(ASPECT) get_sibling_aspect(ASPECT, Transform)
+#define Transform_get_matrix(ENTITY_ID) Transform_matrix(get_aspect(ENTITY_ID, Transform))
+#define Transform_get_matrix_a(ASPECT) Transform_matrix(get_sibling_aspect(ASPECT, Transform))
+#define Transform_get_position(ENTITY_ID) Transform_position(get_aspect(ENTITY_ID, Transform))
+#define Transform_get_position_a(ASPECT) Transform_position(get_sibling_aspect(ASPECT, Transform))
+
 /*--------------------------------------------------------------------------------
 A Body is the seeable aspect of a gameobject. This gives information enough
 to render the gameobject.
@@ -127,6 +136,11 @@ ASPECT_PROPERTIES()
     void *data;
 } Logic;
 void Logic_init(Logic *logic, LogicUpdate update);
+
+Logic *___add_logic(EntityID entity, LogicUpdate update_function, size_t data_size);
+#define add_logic(ENTITY_ID,UPDATE_FUNCTION,LOGIC_DATA_STRUCT_NAME)\
+    ___add_logic(ENTITY_ID,UPDATE_FUNCTION, sizeof(LOGIC_DATA_STRUCT_NAME))
+Logic *add_empty_logic(EntityID entity, LogicUpdate update_function);
 
 /* #define init_logic(LOGIC,OBJ_TYPE_NAME,UPDATE)\ */
 /* {\ */
@@ -270,5 +284,10 @@ void Text_init(Text *text, TextType type, char *font_path, char *string, float s
 void Text_set(Text *text, char *string);
 void Text_render(mat4x4 matrix, Text *text);
 
+//--------------------------------------------------------------------------------
+// Utility functions.
+//--------------------------------------------------------------------------------
+// Helper function for creating a typical base gameobject with a transform.
+EntityID new_gameobject(float x, float y, float z, float theta_x, float theta_y, float theta_z, bool euler_controlled);
 
 #endif // HEADER_DEFINED_GAMEOBJECTS

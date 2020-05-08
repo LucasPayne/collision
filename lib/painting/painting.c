@@ -43,6 +43,9 @@ GLint sphere_material_uniform_location_tessellation_level;
 GLint sphere_material_uniform_location_radius;
 GLint sphere_material_uniform_location_flat_color;
 
+static mat4x4 g_painting_matrix; // The painting matrix multiplies acts on all generated positions.
+static bool g_using_painting_matrix = false; // If this is true, the painting matrix is used to modify positions.
+
 // Matrix used for 2d painting.
 // x: < 0-1 >
 // y: v 0-1 ^
@@ -252,7 +255,13 @@ static Paint *strokes_points(Canvas *canvas, vec3 *points, int num_points, float
 {
     Paint *paint = next_paint(canvas);
     size_t vals_size = sizeof(float) * 3 * num_points;
-    memcpy(index_buffer(canvas), points, vals_size);
+    if (g_using_painting_matrix) {
+        for (int i = 0; i < num_points; i++) {
+            ((vec3 *) index_buffer(canvas))[i] = mat4x4_vec3(g_painting_matrix, points[i]);
+        }
+    } else {
+        memcpy(index_buffer(canvas), points, vals_size);
+    }
     paint->index = canvas->current_index;
     canvas->current_index += num_points;
     paint->shape.point.size = size;
@@ -265,8 +274,13 @@ static Paint *strokes_line(Canvas *canvas, vec3 a, vec3 b, float width)
     // 3: line from a to b.
     Paint *paint = next_paint(canvas);
     vec3 *vp = (vec3 *) index_buffer(canvas);
-    vp[0] = a;
-    vp[1] = b;
+    if (g_using_painting_matrix) {
+        vp[0] = mat4x4_vec3(g_painting_matrix, a);
+        vp[1] = mat4x4_vec3(g_painting_matrix, b);
+    } else {
+        vp[0] = a;
+        vp[1] = b;
+    }
     paint->index = canvas->current_index;
     canvas->current_index += 2;
     paint->shape.line.width = width;
@@ -301,7 +315,14 @@ static Paint *strokes_chain(Canvas *canvas, float vals[], int num_points, float 
 {
     Paint *paint = next_paint(canvas);
     size_t vals_size = sizeof(float) * 3 * num_points;
-    memcpy(index_buffer(canvas), vals, vals_size);
+    if (g_using_painting_matrix) {
+        vec3 *points = (vec3 *) vals;
+        for (int i = 0; i < num_points; i++) {
+            ((vec3 *) index_buffer(canvas))[i] = mat4x4_vec3(g_painting_matrix, points[i]);
+        }
+    } else {
+        memcpy(index_buffer(canvas), vals, vals_size);
+    }
     paint->index = canvas->current_index;
     canvas->current_index += num_points;
     paint->shape.line.width = width;
@@ -313,8 +334,17 @@ static Paint *strokes_loop(Canvas *canvas, float vals[], int num_points, float w
     //-Can't create a loop of length 0.
     Paint *paint = next_paint(canvas);
     size_t vals_size = sizeof(float) * 3 * num_points;
-    memcpy(index_buffer(canvas), vals, vals_size);
-    memcpy(index_buffer(canvas) + vals_size, &vals[0], sizeof(float) * 3);
+
+    if (g_using_painting_matrix) {
+        vec3 *points = (vec3 *) vals;
+        for (int i = 0; i < num_points; i++) {
+            ((vec3 *) index_buffer(canvas))[i] = mat4x4_vec3(g_painting_matrix, points[i]);
+        }
+        ((vec3 *) index_buffer(canvas))[num_points] = mat4x4_vec3(g_painting_matrix, points[0]);
+    } else {
+        memcpy(index_buffer(canvas), vals, vals_size);
+        memcpy(index_buffer(canvas) + vals_size, &vals[0], sizeof(float) * 3);
+    }
     paint->index = canvas->current_index;
     canvas->current_index += num_points + 1;
     paint->shape.line.width = width;
@@ -325,12 +355,21 @@ static Paint *strokes_quad(Canvas *canvas, vec3 a, vec3 b, vec3 c, vec3 d)
 {
     Paint *paint = next_paint(canvas);
     vec3 *vp = (vec3 *) index_buffer(canvas);
-    vp[0] = a;
-    vp[1] = b;
-    vp[2] = c;
-    vp[3] = a;
-    vp[4] = c;
-    vp[5] = d;
+    if (g_using_painting_matrix) {
+        vp[0] = mat4x4_vec3(g_painting_matrix, a);
+        vp[1] = mat4x4_vec3(g_painting_matrix, b);
+        vp[2] = mat4x4_vec3(g_painting_matrix, c);
+        vp[3] = mat4x4_vec3(g_painting_matrix, a);
+        vp[4] = mat4x4_vec3(g_painting_matrix, c);
+        vp[5] = mat4x4_vec3(g_painting_matrix, d);
+    } else {
+        vp[0] = a;
+        vp[1] = b;
+        vp[2] = c;
+        vp[3] = a;
+        vp[4] = c;
+        vp[5] = d;
+    }
     paint->index = canvas->current_index;
     canvas->current_index += 6;
     paint->shape.triangle.num_triangles = 2;
@@ -340,9 +379,15 @@ static Paint *strokes_triangle(Canvas *canvas, vec3 a, vec3 b, vec3 c)
 {
     Paint *paint = next_paint(canvas);
     vec3 *vp = (vec3 *) index_buffer(canvas);
-    vp[0] = a;
-    vp[1] = b;
-    vp[2] = c;
+    if (g_using_painting_matrix) {
+        vp[0] = mat4x4_vec3(g_painting_matrix, a);
+        vp[1] = mat4x4_vec3(g_painting_matrix, b);
+        vp[2] = mat4x4_vec3(g_painting_matrix, c);
+    } else {
+        vp[0] = a;
+        vp[1] = b;
+        vp[2] = c;
+    }
     paint->index = canvas->current_index;
     canvas->current_index += 3;
     paint->shape.triangle.num_triangles = 1;
@@ -352,7 +397,11 @@ static Paint *strokes_sphere(Canvas *canvas, vec3 center, float radius)
 {
     Paint *paint = next_paint(canvas);
     vec3 *vp = (vec3 *) index_buffer(canvas);
-    vp[0] = center;
+    if (g_using_painting_matrix) {
+        vp[0] = mat4x4_vec3(g_painting_matrix, center);
+    } else {
+        vp[0] = center;
+    }
     paint->index = canvas->current_index;
     canvas->current_index += 1;
     paint->shape.sphere.radius = radius;
@@ -474,3 +523,15 @@ void paint2d_rect_bordered(int canvas_id, float x, float y, float width, float h
     paint2d_rect(canvas_id, x, y, width, height, color, layer);
 }
 
+// Painting matrix. This multiplies all incoming paint positions.
+void painting_matrix(mat4x4 matrix)
+{
+    g_using_painting_matrix = true;
+    g_painting_matrix = matrix;
+}
+void painting_matrix_reset(void)
+{
+    // Just set this flag to false. If a matrix isn't being used, just use the incoming positions, rather than multiplying them
+    // by the identity matrix.
+    g_using_painting_matrix = false;
+}

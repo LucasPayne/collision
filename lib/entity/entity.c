@@ -68,7 +68,6 @@ static void extend_entity_map(void)
     memset(entity_map + previous_size, 0, sizeof(EntityMapEntry) * (entity_map_size - previous_size));
 }
 
-
 EntityID new_entity(int start_num_aspects)
 {
     /* Returns a new entity ID for a new entity with the given number of aspects available. This need not be set exactly

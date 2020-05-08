@@ -136,21 +136,22 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
         mouse_x = x;
         mouse_y = y;
     }
+    float dx = x - mouse_x;
+    float dy = y - mouse_y;
 
     // Call the application's mouse movement event handler.
     // This is given relative motion of the cursor.
-    mouse_move_event(x - mouse_x, y - mouse_y);
+    mouse_move_event(dx, dy);
     // Call the application's mouse position event handler.
     mouse_position_event(x, y);
 
     // Send input events to Input aspects listening for mouse absolute or relative movements.
-    for_aspect(Input, inp)
-        if (inp->listening) {
-            if (inp->input_type == INPUT_MOUSE_POSITION) {
-                inp->callback.mouse_position(inp, x, y);
-            } else if (inp->input_type == INPUT_MOUSE_MOVE) {
-                inp->callback.mouse_move(inp, x - mouse_x, y - mouse_y);
-            }
+    for_aspect(Logic, logic)
+        if (logic->mouse_position_listening) {
+	    logic->mouse_position_listener(logic, x, y);
+        }
+        if (logic->mouse_move_listening) {
+	    logic->mouse_move_listener(logic, dx, dy);
         }
     end_for_aspect()
 
@@ -218,10 +219,10 @@ static void mouse_button_callback(GLFWwindow *window, int glfw_button, int glfw_
     // Call the application's mouse button event handler.
     mouse_button_event(button, click, mouse_x, mouse_y); // Give the event handler the current mouse position.
 
-    // Send input events to Input aspects listening for mouse button events.
-    for_aspect(Input, inp)
-        if (inp->listening && inp->input_type == INPUT_MOUSE_BUTTON) {
-	    inp->callback.mouse_button(inp, button, click, mouse_x, mouse_y);
+    // Send input events to Logic aspects listening for mouse button events.
+    for_aspect(Logic, logic)
+        if (logic->mouse_button_listening) {
+	    logic->mouse_button_listener(logic, button, click, mouse_x, mouse_y);
         }
     end_for_aspect()
 }
@@ -262,10 +263,10 @@ static void key_callback(GLFWwindow *window, int key,
         }
     }
 
-    // Send input events to Input aspects listening for keys.
-    for_aspect(Input, inp)
-        if (inp->listening && inp->input_type == INPUT_KEY) {
-	    inp->callback.key(inp, key, action, mods);
+    // Send input events to Logic aspects listening for keys.
+    for_aspect(Logic, logic)
+        if (logic->key_listening) {
+	    logic->key_listener(logic, key, action, mods);
         }
     end_for_aspect()
 

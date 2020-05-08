@@ -30,3 +30,28 @@ Logic *add_empty_logic(EntityID entity, LogicUpdate update_function)
     logic->update = update_function;
     return logic;
 }
+
+void Logic_add_input(Logic *logic, uint8_t input_type, void *callback)
+{
+    switch (input_type) {
+        case INPUT_KEY:
+            logic->key_listening = true;
+            logic->key_listener = callback;
+            break;
+        case INPUT_MOUSE_POSITION:
+            logic->mouse_position_listening = true;
+            logic->mouse_position_listener = callback;
+            break;
+        case INPUT_MOUSE_MOVE:
+            logic->mouse_move_listening = true;
+            logic->mouse_move_listener = callback;
+            break;
+        case INPUT_MOUSE_BUTTON:
+            logic->mouse_button_listening = true;
+            logic->mouse_button_listener = callback;
+            break;
+        default:
+            fprintf(stderr, ERROR_ALERT "Invalid input type given when adding an input listener to a Logic aspect.\n");
+            exit(EXIT_FAILURE);
+    }
+}

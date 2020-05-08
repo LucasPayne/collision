@@ -1,12 +1,12 @@
 /*================================================================================
 "Gameobject" aspects.
-Transform : 3D position, orientation, stored with Euler angles.
+Transform : 3D position, orientation. Optionally controlled by Euler angles.
 Body: Viewable mesh aspect.
 Camera:
 Logic:
-Input:
 DirectionalLight:
 PointLight:
+// Input --- Removed, this is now merged into the Logic aspect.
 ================================================================================*/
 #ifndef HEADER_DEFINED_GAMEOBJECTS
 #define HEADER_DEFINED_GAMEOBJECTS
@@ -122,42 +122,26 @@ ASPECT_PROPERTIES()
 } RigidBody;
 void RigidBody_init_polytope(RigidBody *rb, vec3 *points, int num_points, float mass);
 
-/*--------------------------------------------------------------------------------
-    An Input aspect allows the entity to listen for input events.
---------------------------------------------------------------------------------*/
 
-struct Input_s;
-typedef void (*KeyListener)(struct Input_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
-typedef void (*MousePositionListener)(struct Input_s *, double, double); // x, y position of mouse in GLFW screen units.
-typedef void (*MouseMoveListener)(struct Input_s *, double, double); // x, y position of mouse in GLFW screen units.
-typedef void (*MouseButtonListener)(struct Input_s *, MouseButton, bool, float, float); // Button, click=true: Pressed ; click=false: Released, mouse x, mouse y
-extern AspectType Input_TYPE_ID;
+/*--------------------------------------------------------------------------------
+Logic is the behavioural aspect of a gameobject. It holds an update routine
+and optional data. Macros are provided for simple use of this per-entity specific
+usage of the logic aspect.
+
+The Logic aspect also handles input listening.
+--- This was previously handled by a separate Input aspect.
+
+---Should put standard logic loops here.
+--------------------------------------------------------------------------------*/
+typedef void (*KeyListener)(struct Logic_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
+typedef void (*MousePositionListener)(struct Logic_s *, double, double); // x, y position of mouse in GLFW screen units.
+typedef void (*MouseMoveListener)(struct Logic_s *, double, double); // x, y position of mouse in GLFW screen units.
+typedef void (*MouseButtonListener)(struct Logic_s *, MouseButton, bool, float, float); // Button, click=true: Pressed ; click=false: Released, mouse x, mouse y
 #define INPUT_KEY 0                // Key press and release.
 #define INPUT_MOUSE_POSITION 1     // Mouse position change.
 #define INPUT_MOUSE_MOVE 2         // Mouse position change, but given position relative to last mouse position event.
 #define INPUT_MOUSE_BUTTON 3       // Mouse button press and release.
-typedef struct /* Aspect */ Input_s {
-ASPECT_PROPERTIES()
-    bool listening;
-    uint8_t input_type;
-    union {
-        KeyListener key;
-        MousePositionListener mouse_position;
-        MouseMoveListener mouse_move;
-        MouseButtonListener mouse_button;
-    } callback;
-} Input;
-void Input_init(Input *inp, uint8_t input_type, /* generic function, type unsafe */ void *callback, bool listening);
-Input *Input_add(EntityID e, uint8_t input_type, void *callback, bool listening);
 
-
-/*--------------------------------------------------------------------------------
-Logic is the behavioral aspect of a gameobject. It holds an update routine
-and optional data. Macros are provided for simple use of this per-entity specific
-usage of the logic aspect.
-
----Should put standard logic loops here.
---------------------------------------------------------------------------------*/
 extern AspectType Logic_TYPE_ID;
 struct Logic_s;
 typedef void (*LogicUpdate)(struct Logic_s *);
@@ -166,6 +150,15 @@ ASPECT_PROPERTIES()
     bool updating;
     LogicUpdate update;
     void *data;
+
+    bool key_listening;
+    bool mouse_position_listening;
+    bool mouse_move_listening;
+    bool mouse_button_listening;
+    KeyListener key_listener;
+    MousePositionListener mouse_position_listener;
+    MouseMoveListener mouse_move_listener;
+    MouseButtonListener mouse_button_listener;
 } Logic;
 void Logic_init(Logic *logic, LogicUpdate update);
 
@@ -174,34 +167,8 @@ Logic *___add_logic(EntityID entity, LogicUpdate update_function, size_t data_si
     ___add_logic(ENTITY_ID,UPDATE_FUNCTION, sizeof(LOGIC_DATA_STRUCT_NAME))
 Logic *add_empty_logic(EntityID entity, LogicUpdate update_function);
 
-/* #define init_logic(LOGIC,OBJ_TYPE_NAME,UPDATE)\ */
-/* {\ */
-/*     ( LOGIC )->update = ( UPDATE );\ */
-/*     ( LOGIC )->data = (struct OBJ_TYPE_NAME ## Data *) calloc(1, sizeof(struct OBJ_TYPE_NAME ## Data));\ */
-/*     mem_check(( LOGIC )->data);\ */
-/* } */
-/* #define object_data(LOGIC,OBJ_TYPE_NAME)\ */
-/*     ((struct OBJ_TYPE_NAME ## Data *) ( LOGIC )->data) */
+void Logic_add_input(Logic *logic, uint8_t input_type, void *callback);
 
-#define get_logic_data(DATA_LVALUE,LOGIC_ASPECT_POINTER,DATA_STRUCT)\
-    DATA_STRUCT *DATA_LVALUE = (DATA_STRUCT *) ( LOGIC_ASPECT_POINTER )->data
-
-#define init_logic(LOGIC_ASPECT_POINTER,DATA_STRUCT,UPDATE_FUNCTION)\
-{\
-    ( LOGIC_ASPECT_POINTER )->update = ( UPDATE_FUNCTION );\
-    ( LOGIC_ASPECT_POINTER )->data = calloc(1, sizeof(DATA_STRUCT));\
-}
-
-// remember each entry in a macro is evaluated for each appearance.
-// may be problems with scope, interaction with surrounding text?
-#define init_get_logic_data(DATA_LVALUE,LOGIC_ASPECT_POINTER,DATA_STRUCT,UPDATE_FUNCTION)\
-{\
-    ( LOGIC_ASPECT_POINTER )->update = ( UPDATE_FUNCTION );\
-    ( LOGIC_ASPECT_POINTER )->data = calloc(1, sizeof(DATA_STRUCT));\
-}\
-    DATA_STRUCT *DATA_LVALUE = (DATA_STRUCT *) ( LOGIC_ASPECT_POINTER )->data
-
-    /* mem_check(( LOGIC_ASPECT_POINTER )->data);\ */
 
 /*--------------------------------------------------------------------------------
     A camera aspect causes things to be rendered to the camera's rectangle,

@@ -27,4 +27,3 @@ Input *Input_add(EntityID e, uint8_t input_type, void *callback, bool listening)
     Input_init(input, input_type, callback, listening);
     return input;
 }
-

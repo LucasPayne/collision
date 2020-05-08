@@ -19,7 +19,6 @@ void init_aspects_gameobjects(void)
     new_default_manager(Transform, NULL);
     new_default_manager(Body, NULL);
     new_default_manager(Logic, NULL);
-    new_default_manager(Input, NULL);
     new_default_manager(Camera, NULL);
     new_default_manager(DirectionalLight, NULL);
     new_default_manager(PointLight, NULL);

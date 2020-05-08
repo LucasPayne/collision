@@ -17,7 +17,7 @@ vec3 perspective_point(Logic *g, vec3 p);
 void draw_projected_segment(Logic *g, vec3 a, vec3 b, vec4 color, vec4 projected_color, float width);
 StraightModel *StraightModel_add(EntityID e, float width, float height, float plane_height);
 
-void StraightModel_mouse_button_listener(Input *in, int button, int action, int mods)
+void StraightModel_mouse_button_listener(Logic *logic, int button, int action, int mods)
 {
     printf("Wow!\n");
 }
@@ -41,7 +41,7 @@ extern void init_program(void)
     {
     EntityID e = new_gameobject(0,0,0, 0,0,0, true);
     SM *sm = StraightModel_add(e, 100, 100, 20);
-    Input_add(e, INPUT_MOUSE_BUTTON, StraightModel_mouse_button_listener, true);
+    Logic_add_input(get_aspect_type(e, Logic), INPUT_MOUSE_BUTTON, StraightModel_mouse_button_listener);
     }
 
     {

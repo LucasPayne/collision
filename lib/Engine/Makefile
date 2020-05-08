@@ -9,8 +9,6 @@ Body.o: $(LIB)/gameobjects/Body.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
 Logic.o: $(LIB)/gameobjects/Logic.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
-Input.o: $(LIB)/gameobjects/Input.c
-	$(CC) -o $@ -c $^ $(CFLAGS)
 Lights.o: $(LIB)/gameobjects/Lights.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
 Camera.o: $(LIB)/gameobjects/Camera.c
@@ -21,7 +19,7 @@ RigidBody.o: $(LIB)/gameobjects/RigidBody.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
 _gameobjects.o: $(LIB)/gameobjects/gameobjects.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
-gameobjects.o: _gameobjects.o Transform.o Body.o Logic.o Input.o Lights.o Camera.o Text.o RigidBody.o
+gameobjects.o: _gameobjects.o Transform.o Body.o Logic.o Lights.o Camera.o Text.o RigidBody.o
 	ld -relocatable -o $@ $^
 
 shadows.o: $(LIB)/game_renderer/shadows.c

@@ -17,21 +17,22 @@ static void camera_controls(Logic *logic)
     if (alt_arrow_key_down(Down)) move_z += speed * dt;
     Transform_move_relative(t, new_vec3(move_x, move_y, move_z));
 }
-static void camera_key_input(Input *input, int key, int action, int mods)
+static void camera_key_input(Logic *logic, int key, int action, int mods)
 {
     int jump_height = 32;
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_SPACE) {
-            Transform *t = get_sibling_aspect(input, Transform);
+            Transform *t = Transform_get_a(logic);
             t->y += jump_height;
         }
         if (key == GLFW_KEY_LEFT_SHIFT) {
-            Transform *t = get_sibling_aspect(input, Transform);
+            Transform *t = Transform_get_a(logic);
             t->y -= jump_height;
         }
     }
 }
-static void camera_mouse_move(Input *input, double dx, double dy)
+/*
+static void camera_mouse_move(Logic *logic, double dx, double dy)
 {
     Transform *t = get_sibling_aspect(input, Transform);
     t->theta_y += dx * 0.002;
@@ -49,6 +50,7 @@ static void camera_mouse_move(Input *input, double dx, double dy)
     // if (t->theta_x > max_theta_x) t->theta_x = max_theta_x;
     // else if (t->theta_x < min_theta_x) t->theta_x = min_theta_x;
 }
+*/
 
 // Create a camera man with mouse controls.
 EntityID create_camera_man(float x, float y, float z, float lookat_x, float lookat_y, float lookat_z)
@@ -57,15 +59,14 @@ EntityID create_camera_man(float x, float y, float z, float lookat_x, float look
     Transform_set(entity_add_aspect(camera_man, Transform), x,y,z,  0,0,0);//--do lookat
     Camera *camera = entity_add_aspect(camera_man, Camera);
     Camera_init(camera, ASPECT_RATIO, 1, 0.9, 2500);
-    Logic_init(entity_add_aspect(camera_man, Logic), camera_controls);
-    Input_init(entity_add_aspect(camera_man, Input), INPUT_MOUSE_MOVE, camera_mouse_move, true);
-    Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
+    Logic *logic = add_empty_logic(camera_man, camera_controls);
+    Logic_add_input(logic, INPUT_KEY, camera_key_input);
     return camera_man;
 }
 
 static void camera_key_controls(Logic *logic)
 {
-    Transform *t = get_sibling_aspect(logic, Transform);
+    Transform *t = Transform_get_a(logic);
     float speed = 150;
     float move_x = 0, move_z = 0;
     if (alt_arrow_key_down(Right)) move_x += speed * dt;
@@ -87,10 +88,8 @@ EntityID create_key_camera_man(float x, float y, float z, float lookat_x, float 
     Transform_set(t, x,y,z,  0,0,0);//--do lookat
     t->euler_controlled = true;
     Camera *camera = entity_add_aspect(camera_man, Camera);
-// void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far)
-    //Camera_init(camera, ASPECT_RATIO, 1, 0.9, 1200);
     Camera_init(camera, ASPECT_RATIO, 50, 50, 1200);
-    Logic_init(entity_add_aspect(camera_man, Logic), camera_key_controls);
-    Input_init(entity_add_aspect(camera_man, Input), INPUT_KEY, camera_key_input, true);
+    Logic *logic = add_empty_logic(camera_man, camera_key_controls);
+    Logic_add_input(logic, INPUT_KEY, camera_key_input);
     return camera_man;
 }

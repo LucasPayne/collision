@@ -17,13 +17,21 @@ vec3 perspective_point(Logic *g, vec3 p);
 void draw_projected_segment(Logic *g, vec3 a, vec3 b, vec4 color, vec4 projected_color, float width);
 StraightModel *StraightModel_add(EntityID e, float width, float height, float plane_height);
 
+void StraightModel_mouse_button_listener(Input *in, int button, int action, int mods)
+{
+    printf("Wow!\n");
+}
+
 extern void input_event(int key, int action, int mods)
 {
 }
-extern void mouse_button_event(int button, int action, int mods)
+extern void mouse_button_event(MouseButton button, bool click, float x, float y)
 {
 }
-extern void cursor_move_event(double x, double y)
+extern void mouse_position_event(double x, double y)
+{
+}
+extern void mouse_move_event(double dx, double dy)
 {
 }
 extern void init_program(void)
@@ -33,6 +41,7 @@ extern void init_program(void)
     {
     EntityID e = new_gameobject(0,0,0, 0,0,0, true);
     SM *sm = StraightModel_add(e, 100, 100, 20);
+    Input_add(e, INPUT_MOUSE_BUTTON, StraightModel_mouse_button_listener, true);
     }
 
     {
@@ -113,28 +122,6 @@ extern void loop_program(void)
     // mat4x4 vp_matrix = Camera_vp_matrix(camera);
     // vec4 vanishing_plane = matrix_vec4(mat4x4_transpose(vp_matrix), new_vec4(0,0,0,1));
     // print_vec4(vanishing_plane);
-    
-/*
-    vec3 base[4] = {
-        {{-width/2,0,-height/2}},
-        {{width/2,0,-height/2}},
-        {{width/2,0,height/2}},
-        {{-width/2,0,height/2}},
-    };
-    vec3 plane[4];
-    for (int i = 0; i < 4; i++) plane[i] = base[i], plane[i].vals[1] += plane_height;
-    paint_sphere_v(Canvas3D, origin, 1, new_vec4(0,0,0,1));
-    paint_sphere_v(Canvas3D, plane_origin, 1, new_vec4(0,0.5,0,1));
-    paint_line_v(Canvas3D, origin, plane_origin, new_vec4(0,0,0,1), 0.8);
-    paint_grid_v(Canvas3D, base[0], base[1], base[2], base[3], new_vec4(0,0.3,0.9,0.3), grid_tess_x, grid_tess_y, 1);
-    paint_grid_v(Canvas3D, plane[0], plane[1], plane[2], plane[3], new_vec4(0,0.8,0.21,0.63), grid_tess_x, grid_tess_y, 2);
-    
-    for (int i = 0; i < 20; i++) {
-        float t = i*2*M_PI/20;
-        float tp = (i+1)*2*M_PI/20;
-        draw_projected_segment(new_vec3(30*cos(time+t), 40, 13*sin(2*t)), new_vec3(30*cos(time+tp), 40, 13*sin(2*tp)), new_vec4(0,0,0,0.8), new_vec4(1,0,0,0.8), 2);
-    }
-*/
 }
 extern void close_program(void)
 {

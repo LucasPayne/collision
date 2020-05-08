@@ -137,6 +137,16 @@ void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color);
     vec4 color = str_to_color_key(( COLOR_STR ));\
     paint_quad_v(CANVAS_ID,A,B,C,D,color);\
 }
+// Quads can be given by an array of four points by using the "vv" suffix.
+#define paint_quad_cvv(CANVAS_ID,QUAD,COLOR)\
+{\
+    paint_quad_v(CANVAS_ID,( QUAD )[0],( QUAD )[1],( QUAD )[2],( QUAD )[3],COLOR);\
+}
+#define paint_quad_cvv(CANVAS_ID,QUAD,COLOR_STR)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint_quad_v(CANVAS_ID,( QUAD )[0],( QUAD )[1],( QUAD )[2],( QUAD )[3],color);\
+}
 
 void paint_grid_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color, int w, int h, float line_width);
 #define paint_grid_cv(CANVAS_ID,A,B,C,D,COLOR_STR,WIDTH,HEIGHT,LINE_WIDTH)\

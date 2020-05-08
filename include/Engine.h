@@ -41,6 +41,12 @@ extern float ASPECT_RATIO;
 extern DataDictionary *g_data;
 extern DataDictionary *g_scenes;
 
+// Top-level input, after processing GLFW events.
+enum MouseButtons {
+    MouseLeft,
+    MouseRight
+};
+typedef uint8_t MouseButton;
 extern float mouse_x;
 extern float mouse_y;
 extern float mouse_screen_x;

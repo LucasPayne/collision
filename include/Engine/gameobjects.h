@@ -56,6 +56,9 @@ vec3 Transform_backward(Transform *t);
 vec3 Transform_angles(Transform *t);
 void Transform_draw_axes(Transform *t, float length, float width);
 
+// Utility macro for setting the painting matrix with this transform.
+#define Transform_painting_matrix(TRANSFORM) painting_matrix(Transform_matrix(TRANSFORM))
+
 // Utility stuff, since Transforms are used a lot. Maybe it would actually be better to have a transform as an intrinsic
 // part of an entity, even if it might not be used.
 #define Transform_get(ENTITY_ID) get_aspect(ENTITY_ID, Transform)
@@ -120,6 +123,35 @@ ASPECT_PROPERTIES()
 void RigidBody_init_polytope(RigidBody *rb, vec3 *points, int num_points, float mass);
 
 /*--------------------------------------------------------------------------------
+    An Input aspect allows the entity to listen for input events.
+--------------------------------------------------------------------------------*/
+
+struct Input_s;
+typedef void (*KeyListener)(struct Input_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
+typedef void (*MousePositionListener)(struct Input_s *, double, double); // x, y position of mouse in GLFW screen units.
+typedef void (*MouseMoveListener)(struct Input_s *, double, double); // x, y position of mouse in GLFW screen units.
+typedef void (*MouseButtonListener)(struct Input_s *, MouseButton, bool, float, float); // Button, click=true: Pressed ; click=false: Released, mouse x, mouse y
+extern AspectType Input_TYPE_ID;
+#define INPUT_KEY 0                // Key press and release.
+#define INPUT_MOUSE_POSITION 1     // Mouse position change.
+#define INPUT_MOUSE_MOVE 2         // Mouse position change, but given position relative to last mouse position event.
+#define INPUT_MOUSE_BUTTON 3       // Mouse button press and release.
+typedef struct /* Aspect */ Input_s {
+ASPECT_PROPERTIES()
+    bool listening;
+    uint8_t input_type;
+    union {
+        KeyListener key;
+        MousePositionListener mouse_position;
+        MouseMoveListener mouse_move;
+        MouseButtonListener mouse_button;
+    } callback;
+} Input;
+void Input_init(Input *inp, uint8_t input_type, /* generic function, type unsafe */ void *callback, bool listening);
+Input *Input_add(EntityID e, uint8_t input_type, void *callback, bool listening);
+
+
+/*--------------------------------------------------------------------------------
 Logic is the behavioral aspect of a gameobject. It holds an update routine
 and optional data. Macros are provided for simple use of this per-entity specific
 usage of the logic aspect.
@@ -170,29 +202,6 @@ Logic *add_empty_logic(EntityID entity, LogicUpdate update_function);
     DATA_STRUCT *DATA_LVALUE = (DATA_STRUCT *) ( LOGIC_ASPECT_POINTER )->data
 
     /* mem_check(( LOGIC_ASPECT_POINTER )->data);\ */
-
-/*--------------------------------------------------------------------------------
-    An Input aspect allows the entity to listen for input events.
---------------------------------------------------------------------------------*/
-struct Input_s;
-typedef void (*KeyListener)(struct Input_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
-typedef void (*MousePositionListener)(struct Input_s *, double, double); // x, y position of mouse in GLFW screen units.
-typedef void (*MouseMoveListener)(struct Input_s *, double, double); // x, y position of mouse in GLFW screen units.
-extern AspectType Input_TYPE_ID;
-#define INPUT_KEY 0                // Key press and release.
-#define INPUT_MOUSE_POSITION 1     // Mouse position change.
-#define INPUT_MOUSE_MOVE 2         // Mouse position change, but given position relative to last mouse position event.
-typedef struct /* Aspect */ Input_s {
-ASPECT_PROPERTIES()
-    bool listening;
-    uint8_t input_type;
-    union {
-        KeyListener key;
-        MousePositionListener mouse_position;
-        MouseMoveListener mouse_move;
-    } callback;
-} Input;
-void Input_init(Input *inp, uint8_t input_type, /* generic function, type unsafe */ void *callback, bool listening);
 
 /*--------------------------------------------------------------------------------
     A camera aspect causes things to be rendered to the camera's rectangle,

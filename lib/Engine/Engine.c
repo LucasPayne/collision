@@ -16,8 +16,9 @@ The application must provide:
     void loop_program(void);
     void close_program(void);
     void input_event(int key, int action, int mods);
-    void cursor_move_event(double x, double y);
-    void mouse_button_event(int button, int action, int mods);
+    void mouse_position_event(double x, double y);
+    void mouse_move_event(double dx, double dy);
+    void mouse_button_event(MouseButton button, bool click, float x, float y);
 
 project_libs:
     + glad
@@ -126,11 +127,6 @@ static void toggle_raw_mouse(void)
     g_raw_mouse = !g_raw_mouse;
 }
 
-static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
-{
-    // Call the application's mouse button event handler.
-    mouse_button_event(button, action, mods);
-}
 
 static void cursor_position_callback(GLFWwindow *window, double x, double y)
 {
@@ -140,6 +136,12 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
         mouse_x = x;
         mouse_y = y;
     }
+
+    // Call the application's mouse movement event handler.
+    // This is given relative motion of the cursor.
+    mouse_move_event(x - mouse_x, y - mouse_y);
+    // Call the application's mouse position event handler.
+    mouse_position_event(x, y);
 
     // Send input events to Input aspects listening for mouse absolute or relative movements.
     for_aspect(Input, inp)
@@ -151,9 +153,6 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
             }
         }
     end_for_aspect()
-
-    // Call the application's mouse movement event handler.
-    cursor_move_event(x, y);
 
     mouse_x = x;
     mouse_y = y;
@@ -176,8 +175,9 @@ extern void init_program(void);
 extern void loop_program(void);
 extern void close_program(void);
 extern void input_event(int key, int action, int mods);
-extern void cursor_move_event(double x, double y);
-extern void mouse_button_event(int button, int action, int mods);
+extern void mouse_button_event(MouseButton button, bool click, float x, float y);
+extern void mouse_position_event(double x, double y);
+extern void mouse_move_event(double dx, double dy);
 
 static void reshape(GLFWwindow *window, int width, int height)
 {
@@ -186,6 +186,45 @@ static void reshape(GLFWwindow *window, int width, int height)
     force_aspect_ratio(window, width, height, ASPECT_RATIO);
 }
 
+
+static void mouse_button_callback(GLFWwindow *window, int glfw_button, int glfw_action, int glfw_mods)
+{
+    // Convert GLFW button-codes to whatever format listeners understand.
+    MouseButton button;
+    switch (glfw_button) {
+        case GLFW_MOUSE_BUTTON_LEFT:
+            button = MouseLeft;
+            break;
+        case GLFW_MOUSE_BUTTON_RIGHT:
+            button = MouseRight;
+            break;
+        default:
+            fprintf(stderr, ERROR_ALERT "Unknown GLFW mouse button code given.\n");
+            exit(EXIT_FAILURE);
+    };
+    bool click;
+    switch (glfw_action) {
+        case GLFW_PRESS:
+            click = true;
+            break;
+        case GLFW_RELEASE:
+            click = false;
+            break;
+        default:
+            fprintf(stderr, ERROR_ALERT "Unknown GLFW mouse action code given.\n");
+            exit(EXIT_FAILURE);
+    };
+
+    // Call the application's mouse button event handler.
+    mouse_button_event(button, click, mouse_x, mouse_y); // Give the event handler the current mouse position.
+
+    // Send input events to Input aspects listening for mouse button events.
+    for_aspect(Input, inp)
+        if (inp->listening && inp->input_type == INPUT_MOUSE_BUTTON) {
+	    inp->callback.mouse_button(inp, button, click, mouse_x, mouse_y);
+        }
+    end_for_aspect()
+}
 
 static void key_callback(GLFWwindow *window, int key,
                 int scancode, int action,
@@ -225,10 +264,8 @@ static void key_callback(GLFWwindow *window, int key,
 
     // Send input events to Input aspects listening for keys.
     for_aspect(Input, inp)
-        if (inp->listening) {
-            if (inp->input_type == INPUT_KEY) {
-                inp->callback.key(inp, key, action, mods);
-            }
+        if (inp->listening && inp->input_type == INPUT_KEY) {
+	    inp->callback.key(inp, key, action, mods);
         }
     end_for_aspect()
 

@@ -1,0 +1,25 @@
+#version 420
+#block Standard3D
+
+layout (vertices = 2) out;
+
+in VERTEX_OUT {
+    vec4 vertex_position;
+} vertices[];
+
+out TCS_OUT {
+    vec4 vertex_position;
+} controlled_vertices[];
+
+void main(void)
+{
+    const int tess = 8;
+    gl_TessLevelOuter[0] = tess;
+    gl_TessLevelOuter[1] = tess;
+    gl_TessLevelOuter[2] = tess;
+    gl_TessLevelOuter[3] = tess;
+    gl_TessLevelInner[0] = tess;
+    gl_TessLevelInner[1] = tess;
+    
+    controlled_vertices[gl_InvocationID].vertex_position = vertices[gl_InvocationID].vertex_position;
+}

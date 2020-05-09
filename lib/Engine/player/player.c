@@ -80,7 +80,7 @@ void Player_create_default(float x, float y, float z, float azimuth, float altit
     Logic_add_input(logic, INPUT_MOUSE_MOVE, PlayerController_mouse_move_listener);
 
     Camera *camera = entity_add_aspect(e, Camera);
-    Camera_init(camera, ASPECT_RATIO, 50, 50, 1200);
+    Camera_init(camera, ASPECT_RATIO, 10, 10, 1200);
 
     PlayerController *player = logic->data;
     player->flying_mode = PlayerFlyWalk;

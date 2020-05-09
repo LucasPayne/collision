@@ -8,6 +8,6 @@ in vec2 uv;
 
 void main(void)
 {
-    // color = flat_color;
-    color = vec4(0.5*uv.x+1, 0.5*uv.y+1, 0, 1);
+    color = flat_color;
+    color = vec4(1,0,1,1);
 }

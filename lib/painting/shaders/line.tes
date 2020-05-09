@@ -1,0 +1,66 @@
+#version 420
+#block Standard3D
+
+layout (quads, equal_spacing, ccw) in;
+
+uniform float line_width;
+// uniform float antialiasing_radius;
+// const float antialiasing_radius = 0.01;
+
+out vec2 uv;
+
+in TCS_OUT {
+    vec4 vertex_position;
+} vertices[];
+
+void main(void)
+{
+    // The points have been perspective-divided already. The xy positions are then their screen positions.
+    vec2 A = gl_in[0].gl_Position.xy;
+    vec2 B = gl_in[1].gl_Position.xy;
+
+    // vec2 mid_point = (A + B) / 2;
+    // vec2 X_axis = B - A;
+    // float line_length = length(X_axis);
+    // float inv_line_length = 1.0 / line_length; //---- need to handle degenerate line segments.
+    // X_axis *= inv_line_length;
+    // vec2 Y_axis = vec2(-X_axis.y, X_axis.x);
+
+    float u = 2*gl_TessCoord[0] - 1;
+    float v = 2*gl_TessCoord[1] - 1;
+    uv = vec2(u, v);
+    gl_Position = vec4(0.8*u, 0.8*v, 0.5, 1);
+    //gl_Position = vec4(A.x + (B.x - A.x)*gl_TessCoord[0], A.y + (B.y - A.y)*gl_TessCoord[1], 0.5, 1);
+    
+    // float half_extended_line_length = 0.5 * (line_length + line_width);
+    // float half_extended_line_height = 0.5 * line_width;
+    // gl_Position = vec4(mid_point + u*X_axis*half_extended_line_length + v*Y_axis*half_extended_line_height, gl_in[0].gl_Position.zw); //--- need to interpolate depths so weird clipping doesn't happen.
+}
+/*
+
+layout (quads, equal_spacing, ccw) in;
+
+#define TWOPI ( radians(360) )
+
+// The single tPosition is the center of the sphere.
+in controlled_vertex {
+    vec3 tPosition;
+} vertex_inputs[];
+
+uniform float line_width;
+
+void main(void)
+{
+    float radius = line_width;
+
+    float x,y;
+    x = gl_TessCoord[0];
+    y = gl_TessCoord[1];
+
+    float a = 2*y-1;
+    float b = sqrt(1 - a*a);
+    vec3 pos = vertex_inputs[0].tPosition + radius*vec3(b*cos(TWOPI*x), a, b*sin(TWOPI*x));
+    
+    gl_Position = mvp_matrix * vec4(pos, 1);
+}
+*/

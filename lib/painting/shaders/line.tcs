@@ -1,0 +1,25 @@
+#version 420
+#block Standard3D
+
+layout (vertices = 2) out;
+
+in vertex {
+    vec3 fPosition;
+} vertices[];
+out controlled_vertex {
+    vec3 ndc_position;
+} vertex_outputs[];
+
+void main(void)
+{
+    float tess = 1;
+    gl_TessLevelOuter[0] = tess;
+    gl_TessLevelOuter[1] = tess;
+    gl_TessLevelOuter[2] = tess;
+    gl_TessLevelOuter[3] = tess;
+    gl_TessLevelInner[0] = tess;
+    gl_TessLevelInner[1] = tess;
+
+    vec4 pos = mvp_matrix * vec4(vertices[gl_InvocationID].fPosition, 1);
+    vertex_outputs[gl_InvocationID].ndc_position = pos.xyz / pos.w;
+}

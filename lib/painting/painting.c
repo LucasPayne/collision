@@ -43,6 +43,10 @@ GLint sphere_material_uniform_location_tessellation_level;
 GLint sphere_material_uniform_location_radius;
 GLint sphere_material_uniform_location_flat_color;
 
+Material *line_material;
+GLint line_material_uniform_location_line_width;
+GLint line_material_uniform_location_flat_color;
+
 static mat4x4 g_painting_matrix; // The painting matrix multiplies acts on all generated positions.
 static bool g_using_painting_matrix = false; // If this is true, the painting matrix is used to modify positions.
 
@@ -106,6 +110,7 @@ void painting_init(void)
     ResourceHandle sprite_material_handle = Material_create("Painting/Materials/sprite");
     ResourceHandle circle_material_handle = Material_create("Painting/Materials/circle");
     ResourceHandle sphere_material_handle = Material_create("Painting/Materials/sphere");
+    ResourceHandle line_material_handle = Material_create("Painting/Materials/line");
     // Currently, the material properties system has too much overhead for setting and uploading properties, so this is accessed more directly.
     flat_color_material = resource_data(Material, flat_color_material_handle);
     MaterialType *mt = resource_data(MaterialType, flat_color_material->material_type);
@@ -122,6 +127,12 @@ void painting_init(void)
     sphere_material_uniform_location_tessellation_level = glGetUniformLocation(mt->program_id, "tessellation_level");
     sphere_material_uniform_location_radius = glGetUniformLocation(mt->program_id, "radius");
     sphere_material_uniform_location_flat_color = glGetUniformLocation(mt->program_id, "flat_color");
+
+    // Line material.
+    line_material = resource_data(Material, line_material_handle);
+    mt = resource_data(MaterialType, line_material->material_type);
+    line_material_uniform_location_line_width = glGetUniformLocation(mt->program_id, "line_width");
+    line_material_uniform_location_flat_color = glGetUniformLocation(mt->program_id, "flat_color");
 }
 
 #define paint_buffer_check(CANVAS)\
@@ -151,10 +162,11 @@ void painting_draw(int canvas_id)
         Paint *paint = &canvas->paint_buffer[i];
         switch (paint->type) {
             case PAINT_FLAT_LINES:
-                material_prepare(flat_color_material);
-                glUniform4f(flat_color_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
-                glLineWidth(paint->shape.line.width);
-                glDrawArrays(GL_LINE_STRIP, paint->index, paint->shape.line.num_points);
+                material_prepare(line_material);
+                glUniform4f(line_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
+                glUniform1f(line_material_uniform_location_line_width, paint->shape.line.width);
+                glPatchParameteri(GL_PATCH_VERTICES, 2);
+                glDrawArrays(GL_PATCHES, paint->index, 2*(paint->shape.line.num_points - 1)); //----Does this need to be multiplied by the number of vertices in a patch?
                 break;
             case PAINT_FLAT_TRIANGLES:
                 material_prepare(flat_color_material);
@@ -271,7 +283,6 @@ static Paint *strokes_points(Canvas *canvas, vec3 *points, int num_points, float
 
 static Paint *strokes_line(Canvas *canvas, vec3 a, vec3 b, float width)
 {
-    // 3: line from a to b.
     Paint *paint = next_paint(canvas);
     vec3 *vp = (vec3 *) index_buffer(canvas);
     if (g_using_painting_matrix) {
@@ -283,7 +294,7 @@ static Paint *strokes_line(Canvas *canvas, vec3 a, vec3 b, float width)
     }
     paint->index = canvas->current_index;
     canvas->current_index += 2;
-    paint->shape.line.width = width;
+    paint->shape.line.width = 0.05 * width; //---
     paint->shape.line.num_points = 2;
     return paint;
 }

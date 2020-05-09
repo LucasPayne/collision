@@ -90,6 +90,7 @@ mat4x4 Camera_prepare(Camera *camera)
 void render(void)
 {
     set_uniform_float(StandardLoopWindow, time, time);
+    set_uniform_float(StandardLoopWindow, aspect_ratio, ASPECT_RATIO);
 
 // int index = 0; ////////testing
     for_aspect(Camera, camera)

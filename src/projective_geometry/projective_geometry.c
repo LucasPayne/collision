@@ -73,7 +73,7 @@ void draw_projected_segment(Logic *g, vec3 a, vec3 b, vec4 color, vec4 projected
     // paint_triangle_v(Canvas3D, new_vec3(0,0,0), ap, bp, projected_color);
     paint_line_v(Canvas3D, ap, bp, projected_color, width);
     // paint_quad_v(Canvas3D, ap, bp, b, a, color);
-    paint_line_cv(Canvas3D, vec3_zero(), a, "tk", 1);
+    paint_line_cv(Canvas3D, vec3_zero(), a, "k", 1);
     paint_line_v(Canvas3D, vec3_zero(), b, new_vec4(0,0.2,0.13,0.4), 1);
 }
 
@@ -97,10 +97,14 @@ void StraightModel_update(Logic *g)
     paint_grid_v(Canvas3D, base[0], base[1], base[2], base[3], new_vec4(0,0.3,0.9,0.3), sm->grid_tess_x, sm->grid_tess_y, 1);
     paint_grid_v(Canvas3D, plane[0], plane[1], plane[2], plane[3], new_vec4(0,0.8,0.21,0.63), sm->grid_tess_x, sm->grid_tess_y, 2);
     
-    for (int i = 0; i < 20; i++) {
-        float t = i*2*M_PI/20;
-        float tp = (i+1)*2*M_PI/20;
-        draw_projected_segment(g, new_vec3(30*cos(time+t), 40, 13*sin(2*t)), new_vec3(30*cos(time+tp), 40, 13*sin(2*tp)), new_vec4(0,0,0,0.8), new_vec4(1,0,0,0.8), 5);
+    int n = 100;
+    for (int i = 0; i < n; i++) {
+        float t = i*2*M_PI/n;
+        float tp = (i+1)*2*M_PI/n;
+        float transparency = 1;
+        float tt = time;
+        // float tt = 0;
+        draw_projected_segment(g, new_vec3(30*cos(tt+t), 40, 13*sin(2*t)), new_vec3(30*cos(tt+tp), 40, 13*sin(2*tp)), new_vec4(0,0,0,transparency), new_vec4(1,0,0,transparency), 2);
     }
     painting_matrix_reset();
 }
@@ -118,6 +122,8 @@ StraightModel *StraightModel_add(EntityID e, float width, float height, float pl
 
 extern void loop_program(void)
 {
+    paint_line_cv(Canvas2D, new_vec3(0.2, 0.2, 0), new_vec3(0.7,0.7,0), "k", 4);
+
     // Camera *camera;
     // for_aspect(Camera, _camera)
     //     camera = _camera;

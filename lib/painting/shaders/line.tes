@@ -1,13 +1,18 @@
 #version 420
 #block Standard3D
+#block StandardLoopWindow
 
 layout (quads, equal_spacing, ccw) in;
 
 uniform float line_width;
 // uniform float antialiasing_radius;
-// const float antialiasing_radius = 0.01;
+
 
 out vec2 uv;
+flat out float u_bounds;
+out vec2 fragment_position;
+flat out vec2 f_A;
+flat out vec2 f_B;
 
 in controlled_vertex {
     vec3 ndc_position;
@@ -15,8 +20,12 @@ in controlled_vertex {
 
 void main(void)
 {
+    float antialiasing_radius = line_width * 0.3;
+
     vec2 A = vertex_outputs[0].ndc_position.xy;
     vec2 B = vertex_outputs[1].ndc_position.xy;
+    f_A = A;
+    f_B = B;
 
     vec2 mid_point = (A + B) / 2;
     vec2 X_axis = B - A;
@@ -27,41 +36,14 @@ void main(void)
 
     float u = 2*gl_TessCoord[0] - 1;
     float v = 2*gl_TessCoord[1] - 1;
-    uv = vec2(u, v);
-    //gl_Position = vec4(0.8*u, 0.8*v, 0.5, 1);
-    //gl_Position = vec4(A.x + (B.x - A.x)*gl_TessCoord[0], A.y + (B.y - A.y)*gl_TessCoord[1], 0.5, 1);
-    // gl_Position = vec4(mid_point + u * X_axis * 0.03 + v * Y_axis * 0.03, 0.5, 1);
+    uv = vec2(u * (line_length + line_width + 2*antialiasing_radius) / (line_length + line_width), v * (line_width + 2*antialiasing_radius) / line_width);
+    u_bounds = line_length / (line_length + line_width); // Give the fragment shader the bounds for doing sdf tests. u < -u_bounds or u > ubounds means the sdf is to the end caps.
     
-    float lw = 0.03;
-    float half_extended_line_length = 0.5 * (line_length + lw);
-    float half_extended_line_height = 0.5 * lw;
-    gl_Position = vec4(mid_point + u*X_axis*half_extended_line_length + v*Y_axis*half_extended_line_height, vertex_outputs[0].ndc_position.z, 1); //--- need to interpolate depths so weird clipping doesn't happen.
+    float lw = line_width;
+    float half_extended_line_length = 0.5 * (line_length + lw) + antialiasing_radius;
+    float half_extended_line_height = 0.5 * lw + antialiasing_radius;
+    vec2 pos = mid_point + u*X_axis*half_extended_line_length + v*Y_axis*half_extended_line_height;
+    gl_Position = vec4(pos, mix(vertex_outputs[0].ndc_position.z, vertex_outputs[1].ndc_position.z, gl_TessCoord[0]), 1); //--- need to interpolate depths so weird clipping doesn't happen.
+    // gl_Position = vec4(pos, 0.5, 1); //--- need to interpolate depths so weird clipping doesn't happen.
+    fragment_position = pos;
 }
-/*
-
-layout (quads, equal_spacing, ccw) in;
-
-#define TWOPI ( radians(360) )
-
-// The single tPosition is the center of the sphere.
-in controlled_vertex {
-    vec3 tPosition;
-} vertex_inputs[];
-
-uniform float line_width;
-
-void main(void)
-{
-    float radius = line_width;
-
-    float x,y;
-    x = gl_TessCoord[0];
-    y = gl_TessCoord[1];
-
-    float a = 2*y-1;
-    float b = sqrt(1 - a*a);
-    vec3 pos = vertex_inputs[0].tPosition + radius*vec3(b*cos(TWOPI*x), a, b*sin(TWOPI*x));
-    
-    gl_Position = mvp_matrix * vec4(pos, 1);
-}
-*/

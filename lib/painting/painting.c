@@ -154,6 +154,7 @@ void painting_draw(int canvas_id)
     // printf("%d\n", canvas->current_index);
 
     glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Draw paint with Position-only vertex format.
@@ -162,11 +163,18 @@ void painting_draw(int canvas_id)
         Paint *paint = &canvas->paint_buffer[i];
         switch (paint->type) {
             case PAINT_FLAT_LINES:
+#if 0
+                material_prepare(flat_color_material);
+                glUniform4f(flat_color_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
+                glLineWidth(10);
+                glDrawArrays(GL_LINES, paint->index, 2*(paint->shape.line.num_points - 1));
+#else
                 material_prepare(line_material);
                 glUniform4f(line_material_uniform_location_flat_color, UNPACK_COLOR(paint->contents.flat.color));
                 glUniform1f(line_material_uniform_location_line_width, paint->shape.line.width);
                 glPatchParameteri(GL_PATCH_VERTICES, 2);
                 glDrawArrays(GL_PATCHES, paint->index, 2*(paint->shape.line.num_points - 1)); //----Does this need to be multiplied by the number of vertices in a patch?
+#endif
                 break;
             case PAINT_FLAT_TRIANGLES:
                 material_prepare(flat_color_material);
@@ -294,7 +302,7 @@ static Paint *strokes_line(Canvas *canvas, vec3 a, vec3 b, float width)
     }
     paint->index = canvas->current_index;
     canvas->current_index += 2;
-    paint->shape.line.width = 0.05 * width; //---
+    paint->shape.line.width = 0.005 * width; //---
     paint->shape.line.num_points = 2;
     return paint;
 }

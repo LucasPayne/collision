@@ -447,6 +447,9 @@ int main(void)
     else              glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
     char *name = "Window";
+    // Window hints.
+    // Create multisampling buffers.
+    glfwWindowHint(GLFW_SAMPLES, 4);
     window = glfwCreateWindow(1, 1, name, NULL, NULL);
     if (window == NULL) {
         fprintf(stderr, ERROR_ALERT "GLFW error: failed to create a window properly.\n");
@@ -517,6 +520,11 @@ int main(void)
     } else {
         g_raw_mouse = false;
     } 
+
+    // Multi-sample antialiasing. GLFW must have been hinted to create multisampling buffers before the window was created.
+    glEnable(GL_MULTISAMPLE);
+    glEnable(GL_SAMPLE_COVERAGE);
+    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
     init_base();
     init_program();

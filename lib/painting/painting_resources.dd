@@ -6,8 +6,9 @@ Materials < (
         tessellation_control_shader: Painting/shaders/line.tcs;
         tessellation_evaluation_shader: Painting/shaders/line.tes;
         fragment_shader: Painting/shaders/line.frag;
-        num_blocks: 1;
+        num_blocks: 2;
         string block0: Standard3D;
+        string block1: StandardLoopWindow;
         patch_vertices: 2;
     );
     flat_color < MaterialType (

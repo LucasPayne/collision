@@ -154,10 +154,10 @@ void StraightModel_update(Logic *g)
     get_regular_polygon(plane, 4, sm->plane_point, sm->plane_normal, right, sm->plane_size*enlarge);
     //paint_grid_vv(Canvas3D, plane, new_vec4(0,0.8,0.21,0.63), enlarge*sm->grid_tess_x, enlarge*sm->grid_tess_y, 2);
     if (sm->enlarge_plane) {
-        paint_grid_vv(Canvas3D, plane, new_vec4(0,0.8,0.21,0.63), enlarge*sm->grid_tess_x/3, enlarge*sm->grid_tess_y/3, 2);
+        paint_grid_vv(Canvas3D, plane, new_vec4(0,0.8,0.21,0.63), enlarge*sm->grid_tess_x/3, enlarge*sm->grid_tess_y/3, 1.44);
         //paint_quad_vv(Canvas3D, plane, new_vec4(0,0.8,0.21,0.63));
     } else {
-        paint_grid_vv(Canvas3D, plane, new_vec4(0,0.8,0.21,0.63), sm->grid_tess_x, sm->grid_tess_y, 2);
+        paint_grid_vv(Canvas3D, plane, new_vec4(0,0.8,0.21,0.63), sm->grid_tess_x, sm->grid_tess_y, 1.44);
     }
     // for (int i = 0; i < 4; i++) plane[i] = base[i], plane[i].vals[1] += sm->plane_height;
     paint_sphere_v(Canvas3D, new_vec3(0,0,0), 1, new_vec4(0,0,0,1));
@@ -287,29 +287,49 @@ vec3 evaluate_quadratic_bezier(vec3 points[], float t)
     vec3 p12 = vec3_lerp(points[1], points[2], t);
     return vec3_lerp(p01, p12, t);
 }
-void SplineDemo2_update(Logic *g)
+vec3 evaluate_cubic_bezier(vec3 points[], float t)
 {
-    // Quadratic spline.
-    SplineDemo *sd = g->data;
-    painting_matrix(Transform_get_matrix_a(g));
+    vec3 p01 = vec3_lerp(points[0], points[1], t);
+    vec3 p12 = vec3_lerp(points[1], points[2], t);
+    vec3 p23 = vec3_lerp(points[2], points[3], t);
+    vec3 p0112 = vec3_lerp(p01, p12, t);
+    vec3 p1223 = vec3_lerp(p12, p23, t);
+    return vec3_lerp(p0112, p1223, t);
+}
 
-    int tess = 7;
-    float inv_tess_plus_one = 1.0 / (tess + 1);
-
+void SplineDemo_draw_control_polyline(SplineDemo *sd)
+{
     for (int i = 0; i < sd->num_points-1; i++) {
         vec3 a = SD_pos(sd, i);
         vec3 b = SD_pos(sd, i+1);
         paint_line_cv(Canvas3D, a,b, "tk", 0.8);
-        vec3 ap = perspective_point(sd->sm, ap);
-        vec3 bp = perspective_point(sd->sm, bp);
+        vec3 ap = perspective_point(sd->sm, a);
+        vec3 bp = perspective_point(sd->sm, b);
         paint_line_cv(Canvas3D, ap,bp, "tk", 0.8);
     }
     for (int i = 0; i < sd->num_points; i++) {
         vec3 pos = SD_pos(sd, i);
         vec3 p = perspective_point(sd->sm, pos);
         paint_line_cv(Canvas3D, vec3_zero(), pos, "tk", 0.8);
-        paint_points(Canvas3D, &p, 1, 0.2,0.2,0.2,1, 15);
+        paint_line_cv(Canvas3D, vec3_zero(), p, "tk", 0.8);
+        
+        float point_size = 23*(1 - exp(-0.014*Y(pos)));
+        
+        paint_points(Canvas3D, &p, 1, 0.2,0.2,0.2,1, point_size);
     }
+}
+
+void SplineDemo2_update(Logic *g)
+{
+    // Quadratic spline.
+    SplineDemo *sd = g->data;
+    painting_matrix(Transform_get_matrix_a(g));
+
+    SplineDemo_draw_control_polyline(sd);
+
+    int tess = 7;
+    float inv_tess_plus_one = 1.0 / (tess + 1);
+
 
     for (int i = 0; i < sd->num_points-2; i++) {
         vec3 window[3];
@@ -328,10 +348,46 @@ void SplineDemo2_update(Logic *g)
             draw_projected_segment(sd->sm, a, b, new_vec4(1,0,1,1), new_vec4(0,0,0,1), 2.3);
         }
     }
-
     painting_matrix_reset();
 }
 
+void SplineDemo3_update(Logic *g)
+{
+    // Cubic spline.
+    const mat4x4 cubic_bspline_to_cubic_bernstein = {{
+        0, 0, 0, 1.0/6.0,
+        1.0/6.0, 1.0/3.0, 2.0/3.0, 2.0/3.0,
+        2.0/3.0, 2.0/3.0, 1.0/3.0, 1.0/6.0,
+        1.0/6.0, 0,0,0,
+    }};
+    SplineDemo *sd = g->data;
+
+    painting_matrix(Transform_get_matrix_a(g));
+
+    SplineDemo_draw_control_polyline(sd);
+
+    int tess = 7;
+    float inv_tess_plus_one = 1.0 / (tess + 1);
+
+    for (int i = 0; i < sd->num_points-3; i++) {
+        vec3 window[4];
+        for (int j = 0; j < 4; j++) window[j] = SD_pos(sd, i+j);
+        vec3 points[4] = {0};
+        for (int j = 0; j < 4; j++) {
+            for (int k = 0; k < 4; k++) {
+                points[j] = vec3_add(points[j], vec3_mul(window[k], cubic_bspline_to_cubic_bernstein.vals[4*k + j]));
+            }
+        }
+        for (int j = 0; j < tess+1; j++) {
+            float t1 = j * inv_tess_plus_one;
+            float t2 = (j+1) * inv_tess_plus_one;
+            vec3 a = evaluate_cubic_bezier(points, t1);
+            vec3 b = evaluate_cubic_bezier(points, t2);
+            draw_projected_segment(sd->sm, a, b, new_vec4(1,0,1,1), new_vec4(0,0,0,1), 2.3);
+        }
+    }
+    painting_matrix_reset();
+}
 
 extern void init_program(void)
 {
@@ -389,11 +445,19 @@ extern void init_program(void)
 #endif
     //---for some reason if this is the first entity created, nothing can be seen.
     Player_create_default(0,70,200, 0,0);
+#if 0
     {
     vec3 points[5];
     get_regular_polygon(points, 4, new_vec3(0,50,0), new_vec3(0,1,0), new_vec3(1,0,0), 40);
     //SplineDemo_create(400,0,220, points, 5, SplineDemo2_update);
     SplineDemo_create(0,0,0, points, 5, SplineDemo2_update);
+    }
+#endif
+    {
+    vec3 points[6];
+    get_regular_polygon(points, 6, new_vec3(0,50,0), new_vec3(0,1,0), new_vec3(1,0,0), 40);
+    //SplineDemo_create(400,0,220, points, 5, SplineDemo2_update);
+    SplineDemo_create(0,0,0, points, 6, SplineDemo3_update);
     }
 
 }

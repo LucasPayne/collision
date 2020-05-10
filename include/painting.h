@@ -154,6 +154,15 @@ void paint_grid_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color, int
     vec4 color = str_to_color_key(( COLOR_STR ));\
     paint_grid_v(CANVAS_ID,A,B,C,D,color,WIDTH,HEIGHT,LINE_WIDTH);\
 }
+#define paint_grid_cvv(CANVAS_ID,GRID_CORNERS,COLOR_STR,WIDTH,HEIGHT,LINE_WIDTH)\
+{\
+    vec4 color = str_to_color_key(( COLOR_STR ));\
+    paint_grid_v(CANVAS_ID,GRID_CORNERS[0],GRID_CORNERS[1],GRID_CORNERS[2],GRID_CORNERS[3],color,WIDTH,HEIGHT,LINE_WIDTH);\
+}
+#define paint_grid_vv(CANVAS_ID,GRID_CORNERS,COLOR,WIDTH,HEIGHT,LINE_WIDTH)\
+{\
+    paint_grid_v(CANVAS_ID,GRID_CORNERS[0],GRID_CORNERS[1],GRID_CORNERS[2],GRID_CORNERS[3],COLOR,WIDTH,HEIGHT,LINE_WIDTH);\
+}
 
 void paint_arrow_v(int canvas_id, vec3 a, vec3 b, vec4 color, float width, float head_size);
 

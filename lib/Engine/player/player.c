@@ -10,7 +10,7 @@ static void lock_altitude(PlayerController *player)
     if (player->altitude > altitude_up_cap) player->altitude = altitude_up_cap;
     if (player->altitude < altitude_down_cap) player->altitude = altitude_down_cap;
 }
-void PlayerController_mouse_move_listener(Logic *g, float dx, float dy)
+void PlayerController_mouse_move_listener(Logic *g, float x, float y, float dx, float dy)
 {
     PlayerController *player = g->data;
     float mouse_sensitivity = 2;

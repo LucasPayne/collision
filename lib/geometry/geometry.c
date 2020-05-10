@@ -1,4 +1,5 @@
 #include "geometry.h"
+#include <math.h>
 
 #define ABS(X) ((X) < 0 ? -(X) : (X))
 
@@ -395,5 +396,20 @@ bool ray_sphere_intersection(vec3 origin, vec3 direction, vec3 center, float rad
         return true;
     }
     return false;
+}
+
+//--------------------------------------------------------------------------------
+// Utility for getting the points of a regular polygon.
+void get_regular_polygon(vec3 polygon[], int n, vec3 origin, vec3 normal, vec3 up, float radius)
+{
+    // get_regular_polygon(xz_square, 4, vec3_zero(), new_vec3(0,1,0), new_vec3(1,0,0), radius);
+    normal = vec3_normalize(normal);
+    up = vec3_normalize(vec3_sub(up, vec3_mul(normal, vec3_dot(up, normal))));
+    vec3 right = vec3_cross(up, normal);
+
+    for (int i = 0; i < n; i++) {
+        float theta = 2*M_PI * i * 1.0/n;
+        polygon[i] = vec3_add(origin, vec3_add(vec3_mul(right, cos(theta + M_PI/4)*radius), vec3_mul(up, sin(theta+M_PI/4)*radius)));
+    }
 }
 

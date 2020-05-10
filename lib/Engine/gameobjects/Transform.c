@@ -2,6 +2,9 @@
     Transform aspect
 ================================================================================*/
 #include "Engine.h"
+//bugs notes:
+// If something goes wrong, check if anything tries to access the parent of a transform that doesn't have one.
+
 
 AspectType Transform_TYPE_ID;
 //---This transform initialization does not have scale as a parameter.
@@ -16,6 +19,8 @@ void Transform_set(Transform *transform, float x, float y, float z, float theta_
     transform->theta_y = theta_y;
     transform->theta_z = theta_z;
 
+    transform->parent = NULL; //---Nullify here?
+
     transform->scale = 1;
 }
 void Transform_set_position(Transform *transform, vec3 position)
@@ -27,7 +32,11 @@ void Transform_set_position(Transform *transform, vec3 position)
 
 vec3 Transform_position(Transform *t)
 {
+    //------
     return new_vec3(t->x, t->y, t->z);
+
+    // if (!t->has_parent) return new_vec3(t->x, t->y, t->z);
+    // return vec3_add(Transform_position(t->parent), new_vec3(t->x, t->y, t->z));
 }
 vec3 Transform_angles(Transform *t)
 {
@@ -39,7 +48,8 @@ mat4x4 Transform_matrix(Transform *transform)
     if (transform->euler_controlled) {
         //----Does not take into account the center.
         translate_rotate_3d_mat4x4(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
-        return mat;
+        if (!transform->has_parent) return mat;
+        return mat4x4_multiply(Transform_matrix(transform->parent), mat);
     }
     // Copy over the orientation matrix to the upper-left block.
     // print_matrix3x3f(&transform->rotation_matrix);
@@ -73,10 +83,13 @@ mat4x4 Transform_matrix(Transform *transform)
     right_multiply_mat4x4(&mat, &off_center_matrix);
 
     // print_matrix4x4f(&mat);
-    return mat;
+    if (!transform->has_parent) return mat;
+    return mat4x4_multiply(Transform_matrix(transform->parent), mat);
 }
+    //-----------TRANSFORM PARENTS
 vec3 Transform_relative_direction(Transform *t, vec3 direction)
 {
+    //------------------------------------Does not take into account transform parents!!!!
     // Transform a direction vector.
     return matrix_vec3(rotation_part_rigid_mat4x4(Transform_matrix(t)), direction);
 }

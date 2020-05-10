@@ -173,5 +173,6 @@ void draw_triangle_winding_order(vec3 a, vec3 b, vec3 c, char *color_str, float 
     Geometric object creation.
 ================================================================================*/
 Polyhedron make_icosahedron(float radius);
+void get_regular_polygon(vec3 polygon[], int n, vec3 origin, vec3 normal, vec3 up, float radius);
 
 #endif // HEADER_DEFINED_GEOMETRY

@@ -13,7 +13,7 @@ extern void mouse_button_event(MouseButton button, bool click, float x, float y)
 extern void mouse_position_event(double x, double y)
 {
 }
-extern void mouse_move_event(double dx, double dy)
+extern void mouse_move_event(float x, float y, double dx, double dy)
 {
 }
 extern void init_program(void)

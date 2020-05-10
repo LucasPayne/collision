@@ -9,16 +9,17 @@ void ControlWidget_update(Logic *g)
     Transform_painting_matrix(t);
 
     for (int i = 0; i < 3; i++) {
-        paint_line_v(Canvas3D, vec3_zero(), vec3_mul(widget_axes[i], widget->size), widget_axis_colors[i], 4);
+        paint_line_v(Canvas3D, vec3_zero(), vec3_mul(widget_axes[i], widget->size), new_vec4(UNPACK_VEC3(widget_axis_colors[i]), widget->alpha), 4);
     }
     
     for (int i = 0; i < 3; i++) {
         vec3 e1 = vec3_mul(widget_axes[i], widget->size);
         vec3 e2 = vec3_mul(widget_axes[(i+1)%3], widget->size);
         vec4 color = vec4_lerp(widget_axis_colors[i], widget_axis_colors[(i+1)%3], 0.5);
+        W(color) = widget->alpha;
         vec3 points[4];
         points[0] = vec3_zero();
-        float multiplier = widget->dragging && widget->dragging_plane == i ? 1 : 0.78;
+        float multiplier = widget->dragging && widget->dragging_plane == i ? 0.73 : 0.55;
         points[1] = vec3_mul(e1, multiplier);
         points[3] = vec3_mul(e2, multiplier);
         points[2] = vec3_add(points[1], points[3]);
@@ -48,8 +49,8 @@ void ControlWidget_mouse_button_listener(Logic *g, MouseButton button, bool clic
             for (int i = 0; i < 3; i++) {
                 vec3 points[4];
                 points[0] = vec3_zero();
-                points[1] = vec3_mul(widget_axes[i], 0.78 * widget->size);
-                points[3] = vec3_mul(widget_axes[(i+1)%3], 0.78 * widget->size);
+                points[1] = vec3_mul(widget_axes[i], 0.55 * widget->size);
+                points[3] = vec3_mul(widget_axes[(i+1)%3], 0.55 * widget->size);
                 points[2] = vec3_add(points[1], points[3]);
                 for (int i = 0; i < 4; i++) points[i] = mat4x4_vec3(matrix, points[i]);
 	        vec3 intersection;
@@ -72,14 +73,14 @@ void ControlWidget_mouse_button_listener(Logic *g, MouseButton button, bool clic
         }
     }
 }
-void ControlWidget_mouse_move_listener(Logic *g, float dx, float dy)
+void ControlWidget_mouse_move_listener(Logic *g, float x, float y, float dx, float dy)
 {
     ControlWidget *widget = g->data;
     Transform *t = Transform_get_a(g);
     mat4x4 matrix = Transform_matrix(t);
     if (widget->dragging) {
         vec3 ray_origin, ray_direction;
-        Camera_ray(g_main_camera, mouse_x, mouse_y, &ray_origin, &ray_direction);
+        Camera_ray(g_main_camera, x, y, &ray_origin, &ray_direction);
         vec3 a = mat4x4_vec3(matrix, vec3_zero());
         vec3 b = mat4x4_vec3(matrix, widget_axes[widget->dragging_plane]);
         vec3 c = mat4x4_vec3(matrix, widget_axes[(widget->dragging_plane+1)%3]);
@@ -97,5 +98,6 @@ ControlWidget *ControlWidget_add(EntityID entity, float size)
     Logic_add_input(g, INPUT_MOUSE_MOVE, ControlWidget_mouse_move_listener);
     ControlWidget *cw = g->data;
     cw->size = size;
+    cw->alpha = 1.0;
     return cw;
 }

@@ -22,10 +22,19 @@ void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, floa
     mat4x4 frustum_matrix = {0};
     //------
     // Actually derived formulation, assuming r = -l and t = -b.
-    fill_mat4x4_cmaj(frustum_matrix, 1/r, 0,   0,    0,
-                                0,   1/t, 0,    0,
-                                0,   0,   -1/n,  -1/n,
-                                0,   0,   -1,  0);
+    // fill_mat4x4_cmaj(frustum_matrix, 1/r, 0,   0,    0,
+    //                             0,   1/t, 0,    0,
+    //                             0,   0,   -1/n,  -1/n,
+    //                             0,   0,   -1,  0);
+
+    fill_mat4x4_rmaj(frustum_matrix, (f - n)/(f*r), 0, 0, 0,
+                                     0, (f - n)/(f*t), 0, 0,
+                                     0, 0, -1/n, -1,
+                                     0, 0, (-f + n)/(f*n), 0);
+
+                                     
+                                     
+                                     
 
     //---Incorrect formulation copied incorrectly.
     // frustum_matrix.vals[4*0 + 0] = (2*n*n)/(r-l);

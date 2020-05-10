@@ -38,6 +38,9 @@ ASPECT_PROPERTIES()
     float theta_z;
     vec3 center;
     float scale;
+
+    bool has_parent;
+    struct Transform_s *parent; // Optional parent. Matrices and world positions are concatenated.
 } Transform;
 void Transform_set(Transform *transform, float x, float y, float z, float theta_x, float theta_y, float theta_z);
 void Transform_set_position(Transform *transform, vec3 position);
@@ -62,11 +65,11 @@ void Transform_draw_axes(Transform *t, float length, float width);
 
 // Utility stuff, since Transforms are used a lot. Maybe it would actually be better to have a transform as an intrinsic
 // part of an entity, even if it might not be used.
-#define Transform_get(ENTITY_ID) get_aspect(ENTITY_ID, Transform)
+#define Transform_get(ENTITY_ID) get_aspect_type(ENTITY_ID, Transform)
 #define Transform_get_a(ASPECT) get_sibling_aspect(ASPECT, Transform)
-#define Transform_get_matrix(ENTITY_ID) Transform_matrix(get_aspect(ENTITY_ID, Transform))
+#define Transform_get_matrix(ENTITY_ID) Transform_matrix(get_aspect_type(ENTITY_ID, Transform))
 #define Transform_get_matrix_a(ASPECT) Transform_matrix(get_sibling_aspect(ASPECT, Transform))
-#define Transform_get_position(ENTITY_ID) Transform_position(get_aspect(ENTITY_ID, Transform))
+#define Transform_get_position(ENTITY_ID) Transform_position(get_aspect_type(ENTITY_ID, Transform))
 #define Transform_get_position_a(ASPECT) Transform_position(get_sibling_aspect(ASPECT, Transform))
 
 /*--------------------------------------------------------------------------------
@@ -136,8 +139,8 @@ The Logic aspect also handles input listening.
 --------------------------------------------------------------------------------*/
 struct Logic_s;
 typedef void (*KeyListener)(struct Logic_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
-typedef void (*MousePositionListener)(struct Logic_s *, float, float); // x, y position of mouse in GLFW screen units.
-typedef void (*MouseMoveListener)(struct Logic_s *, float, float); // x, y position of mouse in GLFW screen units.
+typedef void (*MousePositionListener)(struct Logic_s *, float, float); // x, y position of mouse.
+typedef void (*MouseMoveListener)(struct Logic_s *, float, float, float, float); // x, y position of mouse, dx, dy relative change in position of mouse.
 typedef void (*MouseButtonListener)(struct Logic_s *, MouseButton, bool, float, float); // Button, click=true: Pressed ; click=false: Released, mouse x, mouse y
 typedef void (*ScrollListener)(struct Logic_s *, float); // Y offset movement from the scroll wheel.
 

@@ -157,7 +157,7 @@ static void cursor_position_callback(GLFWwindow *window, double pixel_x, double 
 
     // Call the application's mouse movement event handler.
     // This is given relative motion of the cursor.
-    mouse_move_event(dx, dy);
+    mouse_move_event(x, y, dx, dy);
     // Call the application's mouse position event handler.
     mouse_position_event(x, y);
 
@@ -167,7 +167,7 @@ static void cursor_position_callback(GLFWwindow *window, double pixel_x, double 
 	    logic->mouse_position_listener(logic, x, y);
         }
         if (logic->mouse_move_listening) {
-	    logic->mouse_move_listener(logic, dx, dy);
+	    logic->mouse_move_listener(logic, x, y, dx, dy);
         }
     end_for_aspect()
 
@@ -196,7 +196,7 @@ extern void close_program(void);
 extern void input_event(int key, int action, int mods);
 extern void mouse_button_event(MouseButton button, bool click, float x, float y);
 extern void mouse_position_event(double x, double y);
-extern void mouse_move_event(double dx, double dy);
+extern void mouse_move_event(double x, double y, double dx, double dy);
 
 static void reshape(GLFWwindow *window, int width, int height)
 {

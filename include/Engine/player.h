@@ -31,8 +31,10 @@ typedef struct PlayerController_s {
     float max_speed;
 } PlayerController;
 
+void PlayerController_mouse_move_listener(Logic *g, float x, float y, float dx, float dy);
 void PlayerController_key_listener(Logic *g, int key, int action, int mods);
+void PlayerController_scroll_listener(Logic *g, float dy);
 void PlayerController_update(Logic *g);
-// void Player_create(vec3 position, float azimuth, float altitude, float camera_near_plane, float camera_far_plane, float camera_near_half_width);
+void Player_create_default(float x, float y, float z, float azimuth, float altitude);
 
 #endif // HEADER_DEFINED_PLAYER

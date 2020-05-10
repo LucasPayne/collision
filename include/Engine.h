@@ -44,7 +44,8 @@ extern DataDictionary *g_scenes;
 // Top-level input, after processing GLFW events.
 enum MouseButtons {
     MouseLeft,
-    MouseRight
+    MouseRight,
+    MouseMiddle,
 };
 typedef uint8_t MouseButton;
 extern float mouse_x;
@@ -65,5 +66,8 @@ vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, fl
 #include "Engine/scenes.h"
 #include "Engine/collision.h"
 #include "Engine/player.h"
+#include "Engine/widgets.h"
+
+extern Camera *g_main_camera;
 
 #endif // HEADER_DEFINED_ENGINE

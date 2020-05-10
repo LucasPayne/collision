@@ -52,6 +52,7 @@ vec4 vec4_add(vec4 a, vec4 b);
 vec4 vec4_mul(vec4 a, float x);
 vec4 vec4_sub(vec4 a, vec4 b);
 vec4 vec4_neg(vec4 a);
+vec4 vec4_lerp(vec4 u, vec4 v, float t);
 
 // 3x3 matrices.
 //================================================================================

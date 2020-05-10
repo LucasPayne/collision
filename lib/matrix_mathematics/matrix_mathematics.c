@@ -137,6 +137,10 @@ vec4 vec4_zero(void)
     static const vec4 zero = {{0,0,0,0}};
     return zero;
 }
+vec4 vec4_lerp(vec4 u, vec4 v, float t)
+{
+    return vec4_add(u, vec4_mul(vec4_sub(v, u), t));
+}
 
 
 // 3x3 matrix routines.

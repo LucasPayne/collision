@@ -1,4 +1,4 @@
-Engine.o: _Engine.o helper.o gameobjects.o testing.o game_renderer.o scenes.o collision.o player.o
+Engine.o: _Engine.o helper.o gameobjects.o testing.o game_renderer.o scenes.o collision.o player.o widgets.o
 	ld -relocatable -o $@ $^
 _Engine.o: $(LIB)/Engine.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
@@ -34,6 +34,11 @@ _collision.o: $(LIB)/collision/collision.c
 dynamics.o: $(LIB)/collision/dynamics.c
 	$(CC) -o $@ -c $^ $(CFLAGS)
 collision.o: _collision.o dynamics.o
+	ld -relocatable -o $@ $^
+
+control_widget.o: $(LIB)/widgets/control_widget.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
+widgets.o: control_widget.o
 	ld -relocatable -o $@ $^
 
 testing.o: $(LIB)/utils/testing.c

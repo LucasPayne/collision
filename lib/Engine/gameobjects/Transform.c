@@ -18,6 +18,13 @@ void Transform_set(Transform *transform, float x, float y, float z, float theta_
 
     transform->scale = 1;
 }
+void Transform_set_position(Transform *transform, vec3 position)
+{
+    transform->x = X(position);
+    transform->y = Y(position);
+    transform->z = Z(position);
+}
+
 vec3 Transform_position(Transform *t)
 {
     return new_vec3(t->x, t->y, t->z);

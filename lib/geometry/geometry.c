@@ -191,6 +191,91 @@ int simplex_extreme_index(int n, vec3 points[], vec3 dir)
 }
 
 
+// /*--------------------------------------------------------------------------------
+//     Intersection methods.
+// --------------------------------------------------------------------------------*/
+// // Ray intersection methods.
+// //--------------------------------------------------------------------------------
+// // Test whether the weights are a convex combination of the triangle points.
+// #define barycentric_triangle_convex(WA,WB,WC)\
+//     (0 <= ( WA ) && ( WA ) <= 1 && 0 <= ( WB ) && ( WB ) <= 1 && 0 <= ( WC ) && ( WC ) <= 1)
+// #define barycentric_triangle_convex_v(W)\
+//     barycentric_triangle_convex(( W ).vals[0], ( W ).vals[1], ( W ).vals[2])
+//     
+// // Get the intersection of the ray with the plane the triangle defines, in barycentric coordinates.
+// bool ray_triangle_plane_intersection_barycentric(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection)
+// {
+//     float wa = vec3_dot(direction, vec3_cross(vec3_sub(b, origin), vec3_sub(c, origin)));
+//     float wb = vec3_dot(direction, vec3_cross(vec3_sub(c, origin), vec3_sub(a, origin)));
+//     float wc = vec3_dot(direction, vec3_cross(vec3_sub(a, origin), vec3_sub(b, origin)));
+//     const float epsilon = 0.001;
+//     float w = wa + wb + wc;
+//     if (ABS(w) < epsilon || vec3_dot(vec3_sub(barycentric_triangle(a,b,c, wa,wb,wc), origin), direction) < 0) return false;
+//     float winv = 1.0 / w;
+//     wa *= winv;
+//     wb *= winv;
+//     wc *= winv;
+//     *intersection = new_vec3(wa,wb,wc);
+//     return true;
+// }
+// // Give the intersection as cartesian coordinates.
+// bool ray_triangle_plane_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection)
+// {
+//     vec3 inter;
+//     if (!ray_triangle_plane_intersection_barycentric(origin, direction, a, b, c, &inter)) return false;
+//     *intersection = barycentric_triangle_v(a,b,c, inter);
+//     return true;
+// }
+// // Get the intersection of the ray with the triangle, in barycentric coordinates,
+// bool ray_triangle_intersection_barycentric(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection)
+// {
+//     vec3 weights;
+//     if (!ray_triangle_plane_intersection_barycentric(origin, direction, a, b, c, &weights)) return false;
+//     if (!barycentric_triangle_convex_v(weights)) return false;
+//     *intersection = weights;
+//     return true;
+// }
+// // Give the intersection as cartesian coordinates.
+// bool ray_triangle_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3 c, vec3 *intersection)
+// {
+//     vec3 weights;
+//     if (!ray_triangle_plane_intersection_barycentric(origin, direction, a, b, c, &weights)) return false;
+//     if (!barycentric_triangle_convex_v(weights)) return false;
+//     *intersection = barycentric_triangle_v(a,b,c, weights);
+//     return true;
+// }
+// 
+// // Ray-rectangle.
+// // --------------------------------------------------------------------------------
+// // Give the intersection of the ray with the plane spanned by a rectangle, given in terms of rectangular coordinates where tl (top-left)
+// // is (0,0), and br (bottom-right) is (1,1).
+// // tl----------tr
+// // |            | => (3/13, 2/3)
+// // |  x         |
+// // bl----------br
+// bool ray_rectangle_plane_coordinates(vec3 origin, vec3 direction, vec3 tl, vec3 bl, vec3 br, vec3 tr, float *x, float *y)
+// {
+//     vec3 p;
+//     if (!ray_triangle_plane_intersection(origin, direction, tl, bl, br, &p)) return false;
+//     vec3 top_vector = vec3_sub(tr, tl);
+//     vec3 side_vector = vec3_sub(bl, tl);
+//     // Get the x-coordinate by projecting onto the line tl->tr.
+//     *x = vec3_dot(vec3_sub(p, tl), top_vector) / vec3_dot(top_vector, top_vector);
+//     // Get the y-coordinate by projecting onto the line tl->bl.
+//     *y = vec3_dot(vec3_sub(p, tl), side_vector) / vec3_dot(side_vector, side_vector);
+//     return true;
+// }
+// // Only detect intersection and give coordinates when the ray actually intersects with the rectangle, not just the plane it spans.
+// bool ray_rectangle_coordinates(vec3 origin, vec3 direction, vec3 tl, vec3 bl, vec3 br, vec3 tr, float *x, float *y)
+// {
+//     float xx,yy;
+//     if (!ray_rectangle_plane_coordinates(origin, direction, tl, bl, br, tr, &xx, &yy)) return false;
+//     if (xx < 0 || xx > 1 || yy < 0 || yy > 1) return false;
+//     *x = xx;
+//     *y = yy;
+//     return true;
+// }
+
 /*--------------------------------------------------------------------------------
     Intersection methods.
 --------------------------------------------------------------------------------*/
@@ -253,6 +338,7 @@ bool ray_triangle_intersection(vec3 origin, vec3 direction, vec3 a, vec3 b, vec3
 // |            | => (3/13, 2/3)
 // |  x         |
 // bl----------br
+//-------Coordinates corrected.
 bool ray_rectangle_plane_coordinates(vec3 origin, vec3 direction, vec3 tl, vec3 bl, vec3 br, vec3 tr, float *x, float *y)
 {
     vec3 p;
@@ -262,7 +348,7 @@ bool ray_rectangle_plane_coordinates(vec3 origin, vec3 direction, vec3 tl, vec3 
     // Get the x-coordinate by projecting onto the line tl->tr.
     *x = vec3_dot(vec3_sub(p, tl), top_vector) / vec3_dot(top_vector, top_vector);
     // Get the y-coordinate by projecting onto the line tl->bl.
-    *y = vec3_dot(vec3_sub(p, tl), side_vector) / vec3_dot(side_vector, side_vector);
+    *y = 1 - vec3_dot(vec3_sub(p, tl), side_vector) / vec3_dot(side_vector, side_vector);
     return true;
 }
 // Only detect intersection and give coordinates when the ray actually intersects with the rectangle, not just the plane it spans.
@@ -275,3 +361,39 @@ bool ray_rectangle_coordinates(vec3 origin, vec3 direction, vec3 tl, vec3 bl, ve
     *y = yy;
     return true;
 }
+// Give the point of intersection instead of coordinates.
+bool ray_rectangle_intersection(vec3 origin, vec3 direction, vec3 tl, vec3 bl, vec3 br, vec3 tr, vec3 *intersection)
+{
+    float xx,yy;
+    if (!ray_rectangle_plane_coordinates(origin, direction, tl, bl, br, tr, &xx, &yy)) return false;
+    if (xx < 0 || xx > 1 || yy < 0 || yy > 1) return false;
+    *intersection = vec3_lerp(vec3_lerp(tl, tr, xx), vec3_lerp(bl, br, xx), yy);
+    return true;
+}
+
+bool ray_sphere_intersection(vec3 origin, vec3 direction, vec3 center, float radius, vec3 *intersection)
+{
+    // The sphere origin defines a plane orthogonal to the ray direction which the origin lies on. Compute
+    // the intersection of the line with this plane, and do a circle test to check whether the line intersects the sphere.
+    vec3 n = vec3_normalize(direction);
+    vec3 p = vec3_add(origin, vec3_mul(n, vec3_dot(vec3_sub(center, origin), n)));
+    vec3 pp = vec3_sub(p, center);
+    float r_squared = vec3_dot(pp, pp);
+    float radius_squared = radius*radius;
+    if (r_squared > radius_squared) return false;
+    // The intersection points are lifted off of the intersected plane.
+    float h = sqrt(radius_squared - r_squared);
+    // Return the closest intersection point to the ray origin, if it intersects.
+    vec3 inter1 = vec3_sub(p, vec3_mul(n, h));
+    if (vec3_dot(n, vec3_sub(inter1, origin)) >= 0) {
+        *intersection = inter1;
+        return true;
+    }
+    vec3 inter2 = vec3_add(p, vec3_mul(n, h));
+    if (vec3_dot(n, vec3_sub(inter2, origin)) >= 0) {
+        *intersection = inter2;
+        return true;
+    }
+    return false;
+}
+

@@ -19,8 +19,10 @@ void main(void)
     float d;
     if (uv.x < -u_bounds) {
         d = length(fragment_position - f_A) - 0.5*line_width;
+        if (d > 0) discard; //---hack
     } else if (uv.x > u_bounds) {
         d = length(fragment_position - f_B) - 0.5*line_width;
+        if (d > 0) discard; //---hack
     } else if (uv.y > 0) {
         d = (uv.y - 1) * 0.5 * line_width;
     } else {
@@ -30,7 +32,7 @@ void main(void)
         color = flat_color;
     } else {
         // discard;
-        float decay = 10 * d / line_width;
+        float decay = 20 * d / line_width;
         color = vec4(flat_color.rgb, flat_color.a * exp(-decay*decay));
         // color = vec4(1,0,1,1);
         // color = vec4(0,0,0,0);

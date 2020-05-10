@@ -40,6 +40,7 @@ ASPECT_PROPERTIES()
     float scale;
 } Transform;
 void Transform_set(Transform *transform, float x, float y, float z, float theta_x, float theta_y, float theta_z);
+void Transform_set_position(Transform *transform, vec3 position);
 vec3 Transform_position(Transform *t);
 mat4x4 Transform_matrix(Transform *transform);
 mat3x3 Transform_rotation_matrix(Transform *t);
@@ -133,17 +134,22 @@ The Logic aspect also handles input listening.
 
 ---Should put standard logic loops here.
 --------------------------------------------------------------------------------*/
+struct Logic_s;
 typedef void (*KeyListener)(struct Logic_s *, int, int, int); // No abstraction, just straight GLFW action, key, and mods.
 typedef void (*MousePositionListener)(struct Logic_s *, float, float); // x, y position of mouse in GLFW screen units.
 typedef void (*MouseMoveListener)(struct Logic_s *, float, float); // x, y position of mouse in GLFW screen units.
 typedef void (*MouseButtonListener)(struct Logic_s *, MouseButton, bool, float, float); // Button, click=true: Pressed ; click=false: Released, mouse x, mouse y
-#define INPUT_KEY 0                // Key press and release.
-#define INPUT_MOUSE_POSITION 1     // Mouse position change.
-#define INPUT_MOUSE_MOVE 2         // Mouse position change, but given position relative to last mouse position event.
-#define INPUT_MOUSE_BUTTON 3       // Mouse button press and release.
+typedef void (*ScrollListener)(struct Logic_s *, float); // Y offset movement from the scroll wheel.
+
+enum InputTypes {
+    INPUT_KEY,                // Key press and release.
+    INPUT_MOUSE_POSITION,     // Mouse position change.
+    INPUT_MOUSE_MOVE,         // Mouse position change, but given position relative to last mouse position event.
+    INPUT_MOUSE_BUTTON,       // Mouse button press and release.
+    INPUT_SCROLL_WHEEL,       // Scroll wheel movement.
+};
 
 extern AspectType Logic_TYPE_ID;
-struct Logic_s;
 typedef void (*LogicUpdate)(struct Logic_s *);
 typedef struct Logic_s {
 ASPECT_PROPERTIES()
@@ -155,10 +161,12 @@ ASPECT_PROPERTIES()
     bool mouse_position_listening;
     bool mouse_move_listening;
     bool mouse_button_listening;
+    bool scroll_listening;
     KeyListener key_listener;
     MousePositionListener mouse_position_listener;
     MouseMoveListener mouse_move_listener;
     MouseButtonListener mouse_button_listener;
+    ScrollListener scroll_listener;
 } Logic;
 void Logic_init(Logic *logic, LogicUpdate update);
 

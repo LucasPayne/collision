@@ -50,6 +50,10 @@ void Logic_add_input(Logic *logic, uint8_t input_type, void *callback)
             logic->mouse_button_listening = true;
             logic->mouse_button_listener = callback;
             break;
+        case INPUT_SCROLL_WHEEL:
+            logic->scroll_listening = true;
+            logic->scroll_listener = callback;
+            break;
         default:
             fprintf(stderr, ERROR_ALERT "Invalid input type given when adding an input listener to a Logic aspect.\n");
             exit(EXIT_FAILURE);

@@ -23,6 +23,12 @@ typedef struct PlayerController_s {
 
     bool flying;
     float toggle_flying_timer;
+
+    float scrollable_speed; // Option to use the scroll wheel for changing walking and flying speed.
+
+    float speed;
+    float min_speed;
+    float max_speed;
 } PlayerController;
 
 void PlayerController_key_listener(Logic *g, int key, int action, int mods);

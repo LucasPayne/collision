@@ -6,6 +6,11 @@
 AspectType Camera_TYPE_ID;
 void Camera_init(Camera *camera, float aspect_ratio, float near_half_width, float near, float far)
 {
+    //---- Hacky kind of thing.
+    // Object picking should probably be done to work with multiple cameras. Right now it just
+    // uses the "main camera", which is by default the latest camera created.
+    g_main_camera = camera;
+
     float l,r,b,t,n,f;
     r = near_half_width;
     l = -r;
@@ -78,6 +83,7 @@ mat4x4 Camera_vp_matrix(Camera *camera)
 // Bottom-left of camera rectangle is (0,0), top-right is (1,1).
 // This method gives the origin and direction of a ray cast outward from the position of the camera,
 // starting on the near plane.
+//------- This assumes that the camera is taking up the full used subrectangle.
 void Camera_ray(Camera *camera, float x, float y, vec3 *origin, vec3 *direction)
 {
     Transform *t = other_aspect(camera, Transform);
@@ -92,3 +98,4 @@ void Camera_ray(Camera *camera, float x, float y, vec3 *origin, vec3 *direction)
     *direction = vec3_sub(*origin, position);
 }
 
+// vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, float try)

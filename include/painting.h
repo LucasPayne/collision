@@ -138,7 +138,7 @@ void paint_quad_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec3 d, vec4 color);
     paint_quad_v(CANVAS_ID,A,B,C,D,color);\
 }
 // Quads can be given by an array of four points by using the "vv" suffix.
-#define paint_quad_cvv(CANVAS_ID,QUAD,COLOR)\
+#define paint_quad_vv(CANVAS_ID,QUAD,COLOR)\
 {\
     paint_quad_v(CANVAS_ID,( QUAD )[0],( QUAD )[1],( QUAD )[2],( QUAD )[3],COLOR);\
 }

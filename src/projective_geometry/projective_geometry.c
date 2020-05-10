@@ -19,7 +19,6 @@ StraightModel *StraightModel_add(EntityID e, float width, float height, float pl
 
 void StraightModel_mouse_button_listener(Logic *logic, int button, int action, int mods)
 {
-    printf("Wow!\n");
 }
 
 extern void input_event(int key, int action, int mods)
@@ -44,6 +43,7 @@ extern void init_program(void)
     EntityID e = new_gameobject(0,0,0, 0,0,0, true);
     SM *sm = StraightModel_add(e, 100, 100, 20);
     Logic_add_input(get_aspect_type(e, Logic), INPUT_MOUSE_BUTTON, StraightModel_mouse_button_listener);
+    ControlWidget_add(e, 10);
     }
 
     {
@@ -97,14 +97,14 @@ void StraightModel_update(Logic *g)
     paint_grid_v(Canvas3D, base[0], base[1], base[2], base[3], new_vec4(0,0.3,0.9,0.3), sm->grid_tess_x, sm->grid_tess_y, 1);
     paint_grid_v(Canvas3D, plane[0], plane[1], plane[2], plane[3], new_vec4(0,0.8,0.21,0.63), sm->grid_tess_x, sm->grid_tess_y, 2);
     
-    int n = 100;
+    int n = 80;
     for (int i = 0; i < n; i++) {
         float t = i*2*M_PI/n;
         float tp = (i+1)*2*M_PI/n;
         float transparency = 1;
         float tt = time;
         // float tt = 0;
-        draw_projected_segment(g, new_vec3(30*cos(tt+t), 40, 13*sin(2*t)), new_vec3(30*cos(tt+tp), 40, 13*sin(2*tp)), new_vec4(0,0,0,transparency), new_vec4(1,0,0,transparency), 2);
+        draw_projected_segment(g, new_vec3(30*cos(tt+t), 40, 13*sin(2*t)), new_vec3(30*cos(tt+tp), 40, 13*sin(2*tp)), new_vec4(0,0,0,transparency), new_vec4(1,0,0,transparency), 5);
     }
     painting_matrix_reset();
 }
@@ -122,7 +122,7 @@ StraightModel *StraightModel_add(EntityID e, float width, float height, float pl
 
 extern void loop_program(void)
 {
-    paint_line_cv(Canvas2D, new_vec3(0.2, 0.2, 0), new_vec3(0.7,0.7,0), "k", 4);
+    // paint_line_cv(Canvas2D, new_vec3(0.2, 0.2, 0), new_vec3(0.7,0.7,0), "k", 4);
 
     // Camera *camera;
     // for_aspect(Camera, _camera)

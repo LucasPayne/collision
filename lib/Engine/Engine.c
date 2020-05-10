@@ -43,6 +43,8 @@ project_libs:
 
 static GLFWwindow *window;
 
+// A "main camera" is used to simplify some things. This is by default the last camera created.
+Camera *g_main_camera = NULL;
 
 int TEST_SWITCH = 0;
 DataDictionary *g_scenes;
@@ -127,9 +129,21 @@ static void toggle_raw_mouse(void)
     g_raw_mouse = !g_raw_mouse;
 }
 
-
-static void cursor_position_callback(GLFWwindow *window, double x, double y)
+static void scroll_callback(GLFWwindow *window, double x_offset, double y_offset)
 {
+    for_aspect(Logic, logic)
+        if (logic->scroll_listening) {
+	    logic->scroll_listener(logic, y_offset); // Only giving the Y axis, as that is the only axis relevant to a typical scroll wheel.
+        }
+    end_for_aspect()
+}
+
+static void cursor_position_callback(GLFWwindow *window, double pixel_x, double pixel_y)
+{
+    vec2 xy = pixel_to_rect(pixel_x, pixel_y, 0, 0, 1, 1);
+    float x = X(xy);
+    float y = Y(xy);
+
     static bool set_last = false;
     if (!set_last) { // so that the first relative position is 0,0.
         set_last = true;
@@ -159,6 +173,8 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y)
 
     mouse_x = x;
     mouse_y = y;
+
+    //------
     vec2 screen_coordinates = pixel_to_rect(x,y, 0,0, 1,1);
     mouse_screen_x = screen_coordinates.vals[0];
     mouse_screen_y = screen_coordinates.vals[1];
@@ -201,9 +217,13 @@ static void mouse_button_callback(GLFWwindow *window, int glfw_button, int glfw_
         case GLFW_MOUSE_BUTTON_RIGHT:
             button = MouseRight;
             break;
+        case GLFW_MOUSE_BUTTON_MIDDLE:
+            button = MouseMiddle;
+            break;
         default:
-            fprintf(stderr, ERROR_ALERT "Unknown GLFW mouse button code given.\n");
-            exit(EXIT_FAILURE);
+            // The mouse button code is not known. Do not pass on to any listeners,
+            // as they only understand the converted codes.
+            return;
     };
     bool click;
     switch (glfw_action) {
@@ -464,6 +484,7 @@ int main(void)
     glfwSetKeyCallback(window, key_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     GLbitfield clear_mask = GL_COLOR_BUFFER_BIT; // To be |='d if another buffer is being used.
     float fg_color[4]; // Clear color in the rectangle being rendered onto.

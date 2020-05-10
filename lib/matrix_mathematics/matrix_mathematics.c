@@ -111,25 +111,25 @@ vec4 new_vec4(float x, float y, float z, float w)
 vec4 vec4_add(vec4 a, vec4 b)
 {
     vec4 v;
-    for (int i = 0; i < 3; i++) v.vals[i] = a.vals[i] + b.vals[i];
+    for (int i = 0; i < 4; i++) v.vals[i] = a.vals[i] + b.vals[i];
     return v;
 }
 vec4 vec4_mul(vec4 a, float x)
 {
     vec4 v;
-    for (int i = 0; i < 3; i++) v.vals[i] = a.vals[i]*x;
+    for (int i = 0; i < 4; i++) v.vals[i] = a.vals[i]*x;
     return v;
 }
 vec4 vec4_sub(vec4 a, vec4 b)
 {
     vec4 v;
-    for (int i = 0; i < 3; i++) v.vals[i] = a.vals[i]-b.vals[i];
+    for (int i = 0; i < 4; i++) v.vals[i] = a.vals[i]-b.vals[i];
     return v;
 }
 vec4 vec4_neg(vec4 a)
 {
     vec4 v;
-    for (int i = 0; i < 3; i++) v.vals[i] = -a.vals[i];
+    for (int i = 0; i < 4; i++) v.vals[i] = -a.vals[i];
     return v;
 }
 vec4 vec4_zero(void)

@@ -60,6 +60,8 @@ void ControlWidget_mouse_button_listener(Logic *g, MouseButton button, bool clic
                     clicked = i;
                     min_distance = distance;
                     drag_start_point = intersection;
+                    // paint_points_c(Canvas3D, &drag_start_point, 1, "r", 20);
+                    // pause();
                 }
             }
             if (clicked != -1) {
@@ -77,7 +79,7 @@ void ControlWidget_mouse_move_listener(Logic *g, float dx, float dy)
     mat4x4 matrix = Transform_matrix(t);
     if (widget->dragging) {
         vec3 ray_origin, ray_direction;
-        Camera_ray(g_main_camera, dx, dy, &ray_origin, &ray_direction);
+        Camera_ray(g_main_camera, mouse_x, mouse_y, &ray_origin, &ray_direction);
         vec3 a = mat4x4_vec3(matrix, vec3_zero());
         vec3 b = mat4x4_vec3(matrix, widget_axes[widget->dragging_plane]);
         vec3 c = mat4x4_vec3(matrix, widget_axes[(widget->dragging_plane+1)%3]);

@@ -295,11 +295,11 @@ bool ray_triangle_plane_intersection_barycentric(vec3 origin, vec3 direction, ve
     float wc = vec3_dot(direction, vec3_cross(vec3_sub(a, origin), vec3_sub(b, origin)));
     const float epsilon = 0.001;
     float w = wa + wb + wc;
-    if (ABS(w) < epsilon || vec3_dot(vec3_sub(barycentric_triangle(a,b,c, wa,wb,wc), origin), direction) < 0) return false;
     float winv = 1.0 / w;
     wa *= winv;
     wb *= winv;
     wc *= winv;
+    if (ABS(w) < epsilon || vec3_dot(vec3_sub(barycentric_triangle(a,b,c, wa,wb,wc), origin), direction) < 0) return false;
     *intersection = new_vec3(wa,wb,wc);
     return true;
 }
@@ -367,7 +367,7 @@ bool ray_rectangle_intersection(vec3 origin, vec3 direction, vec3 tl, vec3 bl, v
     float xx,yy;
     if (!ray_rectangle_plane_coordinates(origin, direction, tl, bl, br, tr, &xx, &yy)) return false;
     if (xx < 0 || xx > 1 || yy < 0 || yy > 1) return false;
-    *intersection = vec3_lerp(vec3_lerp(tl, tr, xx), vec3_lerp(bl, br, xx), yy);
+    *intersection = vec3_lerp(vec3_lerp(tl, tr, 1 - xx), vec3_lerp(bl, br, 1 - xx), yy); //---Why 1-xx?
     return true;
 }
 

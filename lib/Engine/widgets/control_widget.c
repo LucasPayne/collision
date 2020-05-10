@@ -1,7 +1,11 @@
 #include "Engine.h"
 
-static const vec4 widget_axis_colors[] = {{{1,0,0,1}},{{0,1,0,1}},{{0,0,1,1}}};
 static const vec3 widget_axes[] = {{{1,0,0}}, {{0,1,0}}, {{0,0,1}}};
+// Bright colors
+// static const vec4 widget_axis_colors[] = {{{1,0,0,1}},{{0,1,0,1}},{{0,0,1,1}}};
+// Darker colors.
+static const vec4 widget_axis_colors[] = {{{0.4,0.4,0.4,1}},{{0.5, 0.5, 0.5,1}},{{0.6, 0.6, 0.6,1}}};
+
 void ControlWidget_update(Logic *g)
 {
     ControlWidget *widget = g->data;
@@ -9,7 +13,8 @@ void ControlWidget_update(Logic *g)
     Transform_painting_matrix(t);
 
     for (int i = 0; i < 3; i++) {
-        paint_line_v(Canvas3D, vec3_zero(), vec3_mul(widget_axes[i], widget->size), new_vec4(UNPACK_VEC3(widget_axis_colors[i]), widget->alpha), 4);
+        //paint_line_v(Canvas3D, vec3_zero(), vec3_mul(widget_axes[i], widget->size), new_vec4(UNPACK_VEC3(widget_axis_colors[i]), widget->alpha), 2);
+        paint_line_v(Canvas3D, vec3_zero(), vec3_mul(widget_axes[i], widget->size), new_vec4(0.1,0.1,0.1, widget->alpha * 0.5), 2);
     }
     
     for (int i = 0; i < 3; i++) {

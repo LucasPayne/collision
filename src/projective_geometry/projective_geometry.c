@@ -127,9 +127,9 @@ void draw_projected_segment(StraightModel *sm, vec3 a, vec3 b, vec4 color, vec4 
     // paint_triangle_v(Canvas3D, new_vec3(0,0,0), ap, bp, projected_color);
     paint_line_v(Canvas3D, ap, bp, projected_color, width);
     // paint_quad_v(Canvas3D, ap, bp, b, a, color);
-    paint_line_v(Canvas3D, vec3_zero(), a, new_vec4(0,0,0,0.3), 0.7);
+    // paint_line_v(Canvas3D, vec3_zero(), a, new_vec4(0.01,0.3,0.9,0.3), 0.4);
     // paint_line_v(Canvas3D, vec3_zero(), b, new_vec4(0,0.2,0.13,0.4), 1);
-    paint_line_v(Canvas3D, a, ap, new_vec4(0,0.2,0.13,0.4), 1);
+    // paint_line_v(Canvas3D, a, ap, new_vec4(0,0.2,0.13,0.4), 1);
     // paint_line_v(Canvas3D, b, bp, new_vec4(0,0.2,0.13,0.4), 1);
 }
 
@@ -178,8 +178,8 @@ Logic *StraightModel_add(float x, float y, float z, float width, float height, f
     sm->height = height;
     sm->plane_point = new_vec3(0,plane_height,0);
     sm->plane_normal = new_vec3(0,1,0);
-    sm->grid_tess_x = 18;
-    sm->grid_tess_y = 18;
+    sm->grid_tess_x = 10;
+    sm->grid_tess_y = 10;
     sm->plane_size = 120;
 
     Logic_add_input(g, INPUT_MOUSE_BUTTON, StraightModel_mouse_button_listener);
@@ -188,6 +188,7 @@ Logic *StraightModel_add(float x, float y, float z, float width, float height, f
     Transform_get(eppc)->has_parent = true;
     Transform_get(eppc)->parent = Transform_get_a(g);
     ControlWidget *ppc = ControlWidget_add(eppc, 10);
+    ppc->alpha = 0.6;
     sm->plane_point_controller = eppc;
 
     return g;
@@ -235,24 +236,106 @@ void StraightModelDemo_update(Logic *g)
     painting_matrix_reset();
 }
 
+struct SplineDemo_s;
 typedef struct SplineDemo_s {
     int num_points;
-    EntityID *point_controllers;
+    Transform **point_transforms;
     StraightModel *sm;
 } SplineDemo;
-void SplineDemo_update(Logic *g)
+vec3 SD_pos(SplineDemo *sd, int index)
 {
+    return Transform_position(sd->point_transforms[index]);
+}
+SplineDemo *SplineDemo_create(float x, float y, float z, vec3 points[], int num_points, void (*demo_function)(Logic *))
+{
+    Logic *smg = StraightModel_add(x, y, z, 100, 100, 20);
+    StraightModel *sm = smg->data;
+
+    Transform *t = Transform_get_a(smg);
+    Logic *g = add_logic(smg->entity_id, demo_function, SplineDemo);
+    SplineDemo *sd = g->data;
+    sd->sm = sm;
+    sd->num_points = num_points;
+    sd->point_transforms = malloc(sizeof(Transform *) * sd->num_points);
+    mem_check(sd->point_transforms);
+    for (int i = 0; i < sd->num_points; i++) {
+        EntityID cwe = new_gameobject(UNPACK_VEC3(points[i]),0,0,0, true);
+        Transform *cwt = Transform_get(cwe);
+        cwt->has_parent = true;
+        cwt->parent = t;
+        ControlWidget_add(cwe, 8);
+        // float theta = 2*M_PI*i*1.0/sd->num_points;
+        // Transform_set_position(cwt, new_vec3(30*cos(theta), 50, 30*sin(theta)));
+        //Transform_set_position(cwt, new_vec3(40*frand(),40*frand(),40*frand()));
+        sd->point_transforms[i] = cwt;
+    }
+}
+void SplineDemo1_update(Logic *g)
+{
+    // Polyline.
     SplineDemo *sd = g->data;
     painting_matrix(Transform_get_matrix_a(g));
     for (int i = 0; i < sd->num_points-1; i++) {
-        draw_projected_segment(sd->sm, Transform_get_position(sd->point_controllers[i]), Transform_get_position(sd->point_controllers[i+1]), new_vec4(1,0,1,1), new_vec4(1,0,1,1), 2);
+        draw_projected_segment(sd->sm, SD_pos(sd, i), SD_pos(sd, i), new_vec4(1,0,1,1), new_vec4(0,0,0,1), 4);
     }
     painting_matrix_reset();
 }
 
+vec3 evaluate_quadratic_bezier(vec3 points[], float t)
+{
+    vec3 p01 = vec3_lerp(points[0], points[1], t);
+    vec3 p12 = vec3_lerp(points[1], points[2], t);
+    return vec3_lerp(p01, p12, t);
+}
+void SplineDemo2_update(Logic *g)
+{
+    // Quadratic spline.
+    SplineDemo *sd = g->data;
+    painting_matrix(Transform_get_matrix_a(g));
+
+    int tess = 7;
+    float inv_tess_plus_one = 1.0 / (tess + 1);
+
+    for (int i = 0; i < sd->num_points-1; i++) {
+        vec3 a = SD_pos(sd, i);
+        vec3 b = SD_pos(sd, i+1);
+        paint_line_cv(Canvas3D, a,b, "tk", 0.8);
+        vec3 ap = perspective_point(sd->sm, ap);
+        vec3 bp = perspective_point(sd->sm, bp);
+        paint_line_cv(Canvas3D, ap,bp, "tk", 0.8);
+    }
+    for (int i = 0; i < sd->num_points; i++) {
+        vec3 pos = SD_pos(sd, i);
+        vec3 p = perspective_point(sd->sm, pos);
+        paint_line_cv(Canvas3D, vec3_zero(), pos, "tk", 0.8);
+        paint_points(Canvas3D, &p, 1, 0.2,0.2,0.2,1, 15);
+    }
+
+    for (int i = 0; i < sd->num_points-2; i++) {
+        vec3 window[3];
+        for (int j = 0; j < 3; j++) window[j] = SD_pos(sd, i+j);
+        vec3 points[3];
+        points[0] = vec3_lerp(window[0], window[1], 0.5);
+        points[1] = window[1];
+        points[2] = vec3_lerp(window[1], window[2], 0.5);
+
+        
+        for (int j = 0; j < tess+1; j++) {
+            float t1 = j * inv_tess_plus_one;
+            float t2 = (j+1) * inv_tess_plus_one;
+            vec3 a = evaluate_quadratic_bezier(points, t1);
+            vec3 b = evaluate_quadratic_bezier(points, t2);
+            draw_projected_segment(sd->sm, a, b, new_vec4(1,0,1,1), new_vec4(0,0,0,1), 2.3);
+        }
+    }
+
+    painting_matrix_reset();
+}
+
+
 extern void init_program(void)
 {
-    // create_key_camera_man(0,0,0,  0,0,0);
+#if 0
 {
     EntityID light = new_entity(4);
     Transform *t = entity_add_aspect(light, Transform);
@@ -260,7 +343,6 @@ extern void init_program(void)
     t->euler_controlled = true;
     DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,0.7,0.7,1,  400,400,500);
 }
-
     int bunny_square_root = 1;
     for (int i = 0; i < bunny_square_root; i++) {
         for (int j = 0; j < bunny_square_root; j++) {
@@ -274,16 +356,20 @@ extern void init_program(void)
             //body->scale = 400;
             body->visible = true;
             body->geometry = new_resource_handle(Geometry, "Models/stanford_bunny -a");
+#if 0
             body->material = Material_create("Materials/textured_phong");
             material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/brick_wall");
-            // body->material = Material_create("Materials/textured_phong_shadows_normal_mapped");
-            // material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/brick_wall");
-            // material_set_texture_path(resource_data(Material, body->material), "normal_map", "Textures/brick_wall_normal");
+#else
+            body->material = Material_create("Materials/textured_phong_shadows_normal_mapped");
+            material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/brick_wall");
+            material_set_texture_path(resource_data(Material, body->material), "normal_map", "Textures/brick_wall_normal");
+#endif
         }
     }
+#endif
 
 
-
+#if 0
     FrustumDemo_create(0,0,0);
     {
     Logic *smg = StraightModel_add(180,0,0, 100, 100, 20);
@@ -292,29 +378,22 @@ extern void init_program(void)
     StraightModelDemo *sd = add_logic(smg->entity_id, StraightModelDemo_update, StraightModelDemo)->data;
     sd->sm = sm;
     }
+#endif
 
+#if 0
     {
-    Logic *smg = StraightModel_add(400,0,0, 100, 100, 20);
-    StraightModel *sm = smg->data;
-    Transform *t = Transform_get_a(smg);
-    Logic *g = add_logic(smg->entity_id, SplineDemo_update, SplineDemo);
-    SplineDemo *sd = g->data;
-    sd->sm = sm;
-    sd->num_points = 8;
-    sd->point_controllers = malloc(sizeof(EntityID) * sd->num_points);
-    mem_check(sd->point_controllers);
-    for (int i = 0; i < sd->num_points; i++) {
-        EntityID cwe = new_gameobject(0,0,0,0,0,0, true);
-        Transform *cwt = Transform_get(cwe);
-        cwt->has_parent = true;
-        cwt->parent = t;
-        ControlWidget_add(cwe, 8);
-        float theta = 2*M_PI*i*1.0/sd->num_points;
-        Transform_set_position(cwt, new_vec3(30*cos(theta), 50, 30*sin(theta)));
-        //Transform_set_position(cwt, new_vec3(40*frand(),40*frand(),40*frand()));
-        sd->point_controllers[i] = cwe;
+    vec3 points[5];
+    get_regular_polygon(points, 5, new_vec3(0,50,0), new_vec3(0,1,0), new_vec3(1,0,0), 40);
+    SplineDemo_create(400,0,0, points, 5, SplineDemo1_update);
     }
-    }
+#endif
     //---for some reason if this is the first entity created, nothing can be seen.
-    Player_create_default(0,0,0, 0,0);
+    Player_create_default(0,70,200, 0,0);
+    {
+    vec3 points[5];
+    get_regular_polygon(points, 4, new_vec3(0,50,0), new_vec3(0,1,0), new_vec3(1,0,0), 40);
+    //SplineDemo_create(400,0,220, points, 5, SplineDemo2_update);
+    SplineDemo_create(0,0,0, points, 5, SplineDemo2_update);
+    }
+
 }

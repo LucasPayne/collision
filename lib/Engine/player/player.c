@@ -5,8 +5,8 @@
 
 static void lock_altitude(PlayerController *player)
 {
-    float altitude_up_cap = M_PI / 2 - 0.3;
-    float altitude_down_cap = -altitude_up_cap;
+    float altitude_up_cap = M_PI / 2 - 0.05;
+    float altitude_down_cap = -(M_PI / 2 - 0.3);
     if (player->altitude > altitude_up_cap) player->altitude = altitude_up_cap;
     if (player->altitude < altitude_down_cap) player->altitude = altitude_down_cap;
 }

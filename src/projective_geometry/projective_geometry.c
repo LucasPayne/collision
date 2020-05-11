@@ -56,6 +56,27 @@ void FrustumDemo_key_listener(Logic *g, int key, int action, int mods)
     }
 }
 
+mat4x4 compute_homography(vec3 points[/* 5 */], vec3 images[/* 5 */])
+{
+    vec4 q = vec3_to_vec4(points[4]);
+    vec4 qp = vec3_to_vec4(images[4]);
+    mat4x4 A, B;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 3; j++) {
+            A.vals[4*i + j] = images[i].vals[j];
+            B.vals[4*i + j] = points[i].vals[j];
+        }
+        A.vals[4*i + 3] = 1;
+        B.vals[4*i + 3] = 1;
+    }
+    vec4 beta = mat4x4_solve(B, q);
+    vec4 alpha = mat4x4_solve(A, qp);
+    vec4 lambdas = new_vec4(X(alpha) / X(beta), Y(alpha) / Y(beta), Z(alpha) / Z(beta), W(alpha) / W(beta));
+    mat4x4 lambda_diag;
+    for (int i = 0; i < 4; i++) lambda_diag.vals[4*i + i] = lambdas.vals[i];
+    return mat4x4_multiply3(A, lambda_diag, mat4x4_inverse(B));
+}
+
 void FrustumDemo_update(Logic *g)
 {
     FrustumDemo *fd = g->data;
@@ -118,6 +139,115 @@ void FrustumDemo_update(Logic *g)
     paint_line_v(Canvas3D, new_vec3(-radius, 0,0), new_vec3(radius,0,0), new_vec4(0,0,0,0.6), 1);
     paint_line_v(Canvas3D, new_vec3(0, -radius, 0), new_vec3(0,radius,0), new_vec4(0,0,0,0.6), 1);
     paint_line_v(Canvas3D, new_vec3(0,0,-radius), new_vec3(0,0,radius), new_vec4(0,0,0,0.6), 1);
+
+    // Construct the homography.
+    // B: 4x4 matrix of the first four mapped points.
+    //mat4x4 B;
+    //for (int i = 0; i < 4; i++) {
+    //    vec4 p = new_vec4(UNPACK_VEC3(fd->mapped_points[i]), 1);
+    //    for (int j = 0; j < 4; j++) {
+    //        B.vals[4*i + j] = p.vals[j];
+    //    }
+    //}
+    // // q: The fifth point that determines the unique homography.
+    // vec4 q = new_vec4(UNPACK_VEC3(fd->fifth_mapped_point), 1);
+    // // q': The image of q under the homography.
+    // vec4 qp = new_vec4(UNPACK_VEC3(fd->box_fifth_point), 1);
+    // // A: 4x4 matrix of the images of the first four points.
+    // mat4x4 A;
+    // for (int i = 0; i < 4; i++) {
+    //     vec4 p = new_vec4(UNPACK_VEC3(fd->box_points[mapped_indices[i]]), 1);
+    //     for (int j = 0; j < 4; j++) {
+    //         A.vals[4*i + j] = p.vals[j];
+    //     }
+    // }
+    // // Solve for intermediate vector.
+    // vec4 v = mat4x4_solve(B, q);
+    // // Form diag(v).
+    // mat4x4 diag_v = {0};
+    // for (int i = 0; i < 4; i++) diag_v.vals[4*i + i] = v.vals[i];
+    // // Solve for lambda values to scale the columns of the homography.
+    // vec4 lambdas = mat4x4_solve(mat4x4_multiply(A, diag_v), qp);
+    // // Form sigma = diag(lambas).
+    // mat4x4 sigma = {0};
+    // for (int i = 0; i < 4; i++) sigma.vals[4*i + i] = lambdas.vals[i];
+    // // Construct the homography.
+    // mat4x4 homography = mat4x4_multiply3(A, sigma, mat4x4_inverse(B));
+
+    // q: The fifth point that determines the unique homography.
+    // vec4 q = new_vec4(UNPACK_VEC3(fd->fifth_mapped_point), 1);
+    // // q': The image of q under the homography.
+    // vec4 qp = new_vec4(UNPACK_VEC3(fd->box_fifth_point), 1);
+    // // A: 4x4 matrix of the images of the first four points.
+    // mat4x4 A;
+    // for (int i = 0; i < 4; i++) {
+    //     vec4 p = new_vec4(UNPACK_VEC3(fd->box_points[mapped_indices[i]]), 1);
+    //     for (int j = 0; j < 4; j++) {
+    //         A.vals[4*i + j] = p.vals[j];
+    //     }
+    // }
+    // // Solve for intermediate vector.
+    // vec4 v = mat4x4_solve(B, q);
+    // // Form diag(v).
+    // mat4x4 diag_v = {0};
+    // for (int i = 0; i < 4; i++) diag_v.vals[4*i + i] = v.vals[i];
+    // // Solve for lambda values to scale the columns of the homography.
+    // vec4 lambdas = mat4x4_solve(mat4x4_multiply(A, diag_v), qp);
+    // // Form sigma = diag(lambas).
+    // mat4x4 sigma = {0};
+    // for (int i = 0; i < 4; i++) sigma.vals[4*i + i] = lambdas.vals[i];
+    // // Construct the homography.
+    // vec4 beta = mat4x4_solve(B, q);
+
+    vec3 preimage_points[5];
+    vec3 image_points[5];
+    for (int i = 0; i < 4; i++) {
+        preimage_points[i] = fd->mapped_points[i];
+        image_points[i] = fd->box_points[mapped_indices[i]];
+    }
+    preimage_points[4] = fd->fifth_mapped_point;
+    image_points[4] = fd->box_fifth_point;
+
+    paint_points_c(Canvas3D, preimage_points, 5, "g", 30);
+    paint_points_c(Canvas3D, image_points, 5, "y", 30);
+
+    mat4x4 homography = compute_homography(preimage_points, image_points);
+
+    print_mat4x4(homography);
+
+    mat4x4 homography_inverse = mat4x4_inverse(homography);
+    vec3 homography_points[8];
+    for (int i = 0; i < 8; i++) {
+        vec4 hp = matrix_vec4(homography_inverse, vec3_to_vec4(homography_points[i]));
+        hp = vec4_mul(hp, 1.0 / W(hp));
+        homography_points[i] = vec4_to_vec3(hp);
+    }
+    paint_wireframe_box_v(Canvas3D, homography_points, new_vec4(0.5,0,0.5,1), 1.3);
+
+    // q'': q' scaled by intermediate vector components.
+    // vec4 qpp;
+    // for (int i = 0; i < 4; i++) qpp.vals[i] = qp.vals[i] * v.vals[i];
+    // vec4 lambdas = mat4x4_solve(A, qpp);
+
+    // // sigma = diag(lambdas).
+    // mat4x4 sigma = {0};
+    // for (int i = 0; i < 4; i++) sigma.vals[4*i + i] = lambdas.vals[i];
+    // // Construct the homography.
+    // mat4x4 homography = mat4x4_multiply3(A, sigma, mat4x4_inverse(B));
+    // print_mat4x4(homography);
+
+    vec4 test_triangles[3] = {
+        {{50, -10,  0,  1}},
+        {{60, -15,  20, 1}},
+        {{55,  10, -15, 1}},
+    };
+    for (int i = 0; i < 3; i++) {
+        test_triangles[i] = matrix_vec4(homography, test_triangles[i]);
+        test_triangles[i] = vec4_mul(test_triangles[i], 1.0 / W(test_triangles[i]));
+    }
+    for (int i = 0; i < 3; i++) {
+        paint_line_cv(Canvas3D, vec4_to_vec3(test_triangles[i]), vec4_to_vec3(test_triangles[(i+1)%3]), "k", 1);
+    }
 }
 EntityID FrustumDemo_create(float x, float y, float z)
 {
@@ -592,6 +722,28 @@ extern void init_program(void)
     //SplineDemo_create(400,0,220, points, 5, SplineDemo2_update);
     SplineDemo_create(0,0,0, points, N, SplineDemo3_update);
     }
+
+#if 0
+    // Test 4x4 matrix routines.
+    while (1) {
+        mat4x4 test;
+        vec4 v = new_vec4(1,2,3,4);
+        // fill_mat4x4_rmaj(test, 1,2,3,4,
+        //                        3,4,5,3,
+        //                        -3,2,9,-3,
+        //                        2,-6.5,3,-2);
+        for (int i = 0; i < 16; i++) test.vals[i] = 5*frand() - 2.5;
+        mat4x4_determinant(test);
+        vec4 solution = mat4x4_solve(test, v);
+        print_vec4(solution);
+        print_vec4(matrix_vec4(test, solution));
+        mat4x4 inverse = mat4x4_inverse(test);
+        printf("Inverse\n");
+        print_mat4x4(inverse);
+        print_mat4x4(mat4x4_multiply(test, inverse));
+        getchar();
+    }
+#endif
 }
 
 extern void loop_program(void)

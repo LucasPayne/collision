@@ -158,6 +158,10 @@ vec3 translation_vector_rigid_mat4x4(mat4x4 m);
 mat3x3 rotation_part_rigid_mat4x4(mat4x4 m);
 mat4x4 mat4x4_lookat(vec3 origin, vec3 look_at, vec3 approx_up);
 
+float mat4x4_determinant(mat4x4 m);
+vec4 mat4x4_solve(mat4x4 m, vec4 p);
+mat4x4 mat4x4_inverse(mat4x4 m);
+
 // Printing functions.
 //================================================================================
 void print_vec3(vec3 v);

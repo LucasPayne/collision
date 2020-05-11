@@ -169,6 +169,8 @@ float mat3x3_determinant(mat3x3 m)
            - m.vals[1]*(m.vals[3]*m.vals[8]-m.vals[5]*m.vals[6])
            + m.vals[2]*(m.vals[3]*m.vals[7]-m.vals[4]*m.vals[6]);
 }
+
+
 mat3x3 mat3x3_inverse(mat3x3 m)
 {
     // Cramer's rule.
@@ -409,6 +411,67 @@ vec4 matrix_vec4(mat4x4 matrix, vec4 v)
     }
     return vp;
 }
+
+float mat4x4_determinant(mat4x4 m)
+{
+    // - Computationally inefficient, since this repacks entries into 3x3 matrices.
+    // printf("Taking determinant of\n");
+    // print_mat4x4(m);
+    
+    float det = 0;
+    for (int i = 0; i < 4; i++) {
+        float coefficient = m.vals[i];
+        // printf("Coefficient: %.2f\n", coefficient);
+        mat3x3 submatrix;
+        for (int j = 1; j < 4; j++) {
+            for (int k = 0; k < 4; k++) {
+                if (k == i) continue;
+                int kk = k > i ? k - 1 : k;
+                submatrix.vals[3*(j - 1) + kk] = m.vals[4*j + k];
+            }
+        }
+        // print_mat3x3(submatrix);
+        det += (i % 2 == 0 ? 1 : -1) * coefficient * mat3x3_determinant(submatrix);
+    }
+    return det;
+}
+vec4 mat4x4_solve(mat4x4 m, vec4 p)
+{
+    // Solve for v in equation Mv = p.
+    // Uses Cramer's rule.
+    vec4 solution;
+    mat4x4 new_matrix = m;
+    float det = mat4x4_determinant(m);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            new_matrix.vals[4*i + j] = p.vals[j];
+        }
+        // Put back the original column that the previous iteration replaced.
+        if (i > 0) {
+            for (int j = 0; j < 4; j++) {
+                new_matrix.vals[4*(i-1) + j] = m.vals[4*(i-1) + j];
+            }
+        }
+        float x = mat4x4_determinant(new_matrix);
+        solution.vals[i] = x / det;
+    }
+    return solution;
+}
+mat4x4 mat4x4_inverse(mat4x4 m, vec4 p)
+{
+    mat4x4 inverse;
+    //--- Very inefficient.
+    for (int i = 0; i < 4; i++) {
+        vec4 basis_vector = {0};
+        basis_vector.vals[i] = 1;
+        vec4 solution = mat4x4_solve(m, basis_vector);
+        for (int j = 0; j < 4; j++) {
+            inverse.vals[4*i + j] = solution.vals[j];
+        }
+    }
+    return inverse;
+}
+
 
 mat4x4 mat4x4_lookat(vec3 origin, vec3 look_at, vec3 approx_up)
 {

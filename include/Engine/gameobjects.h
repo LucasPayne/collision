@@ -214,6 +214,7 @@ mat4x4 Camera_prepare(Camera *camera);
 // Get the origin and direction of a ray from the camera, where (x,y) are camera screen coordinates,
 // with (0,0) the bottom-left, and (1,1) the top-right. The ray starts on the near plane.
 void Camera_ray(Camera *camera, float x, float y, vec3 *origin, vec3 *direction);
+vec2 Camera_world_point_to_screen(Camera *camera, vec3 point);
 
 /*--------------------------------------------------------------------------------
     Lights

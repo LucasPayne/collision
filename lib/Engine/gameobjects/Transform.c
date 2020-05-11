@@ -49,7 +49,7 @@ mat4x4 Transform_matrix(Transform *transform)
         //----Does not take into account the center.
         translate_rotate_3d_mat4x4(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
         if (!transform->has_parent) return mat;
-        return mat4x4_multiply(Transform_matrix(transform->parent), mat);
+        return mat4x4_multiply(mat, Transform_matrix(transform->parent));
     }
     // Copy over the orientation matrix to the upper-left block.
     // print_matrix3x3f(&transform->rotation_matrix);
@@ -84,7 +84,7 @@ mat4x4 Transform_matrix(Transform *transform)
 
     // print_matrix4x4f(&mat);
     if (!transform->has_parent) return mat;
-    return mat4x4_multiply(Transform_matrix(transform->parent), mat);
+    return mat4x4_multiply(mat, Transform_matrix(transform->parent));
 }
     //-----------TRANSFORM PARENTS
 vec3 Transform_relative_direction(Transform *t, vec3 direction)

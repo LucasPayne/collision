@@ -92,7 +92,7 @@ void PlayerController_update(Logic *g)
     }
 }
 
-void Player_create_default(float x, float y, float z, float azimuth, float altitude)
+PlayerController *Player_create_default(float x, float y, float z, float azimuth, float altitude)
 {
     EntityID e = new_entity(4);
     Transform *t = add_aspect(e, Transform);
@@ -114,6 +114,7 @@ void Player_create_default(float x, float y, float z, float azimuth, float altit
     player->min_speed = player->speed * 0.1;
     player->max_speed = player->speed * 10;
     player->scrollable_speed = true;
+    return player;
 
     // The player collider is a capsule. This means that the player can walk up things like stairs.
     // Model player_capsule = make_capsule(0.6, 1.9);

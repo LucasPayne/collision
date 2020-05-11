@@ -107,4 +107,16 @@ void Camera_ray(Camera *camera, float x, float y, vec3 *origin, vec3 *direction)
     *direction = vec3_sub(*origin, position);
 }
 
+vec2 Camera_world_point_to_screen(Camera *camera, vec3 point)
+{
+    mat4x4 view_matrix = invert_rigid_mat4x4(Transform_get_matrix_a(camera));
+    vec3 camera_point = mat4x4_vec3(view_matrix, point);
+    float t = camera->plane_n;
+    float t_denom = -Z(camera_point);
+    if (t_denom < 0.0008) t_denom = 0.0008;
+    t /= t_denom;
+    vec3 intersect = vec3_mul(camera_point, t);
+    return new_vec2(0.5*(X(intersect)/camera->plane_r + 1), 0.5*(Y(intersect)/camera->plane_t + 1));
+}
+
 // vec2 pixel_to_rect(int pixel_x, int pixel_y, float blx, float bly, float trx, float try)

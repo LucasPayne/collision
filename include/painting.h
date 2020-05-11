@@ -173,6 +173,8 @@ void paint_triangle_v(int canvas_id, vec3 a, vec3 b, vec3 c, vec4 color);
     paint_triangle_v(CANVAS_ID,A,B,C,color);\
 }
 
+void paint_wireframe_box_v(int canvas_id, vec3 corners[], vec4 color, float line_width);
+
 void paint_box_v(int canvas_id, vec3 corners[], vec4 color);
 #define paint_box_c(CANVAS_ID,CORNERS,COLOR_STR)\
 {\

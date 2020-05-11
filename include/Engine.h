@@ -53,6 +53,8 @@ extern float mouse_y;
 extern float mouse_screen_x;
 extern float mouse_screen_y;
 
+extern float g_y_scroll;
+
 extern GLenum g_cull_mode;
 
 extern int TEST_SWITCH;

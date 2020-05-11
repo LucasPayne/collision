@@ -526,6 +526,16 @@ void paint_box_v(int canvas_id, vec3 corners[], vec4 color)
     paint_quad_v(canvas_id, corners[0], corners[3], corners[7], corners[4], color);
 }
 
+void paint_wireframe_box_v(int canvas_id, vec3 corners[], vec4 color, float line_width)
+{
+    // Box should be given as two opposite quads, with joined points having the same relative index.
+    for (int i = 0; i < 4; i++) {
+        paint_line_v(canvas_id, corners[i], corners[(i+1)%4], color, line_width);
+        paint_line_v(canvas_id, corners[4+i], corners[4+(i+1)%4], color, line_width);
+        paint_line_v(canvas_id, corners[i], corners[4+i], color, line_width);
+    }
+}
+
 #define num_layers 256
 #define layer2d(LAYER) ( -( LAYER ) * 1.0 / num_layers)
 

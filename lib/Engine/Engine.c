@@ -51,14 +51,12 @@ DataDictionary *g_scenes;
 DataDictionary *g_data; // Global data dictionary for the application.
 float ASPECT_RATIO;
 
-// mouse_x and mouse_y are given in pixel coordinates. They are not really directly useful as they are in terms of the window
-// (0,0) top-left, (1,1) bottom-right.
 float mouse_x;
 float mouse_y;
-// mouse_screen_x and mouse_screen_y are updated to range from (0,0) at the bottom-left of the actually used subrectangle of the window,
-// to the top-right.
 float mouse_screen_x;
 float mouse_screen_y;
+
+float g_y_scroll;
 
 GLenum g_cull_mode;
 
@@ -131,6 +129,8 @@ static void toggle_raw_mouse(void)
 
 static void scroll_callback(GLFWwindow *window, double x_offset, double y_offset)
 {
+    // Make it globally available for convenience. The scroll is reset at the end of each frame.
+    g_y_scroll = y_offset;
     for_aspect(Logic, logic)
         if (logic->scroll_listening) {
 	    logic->scroll_listener(logic, y_offset); // Only giving the Y axis, as that is the only axis relevant to a typical scroll wheel.
@@ -150,10 +150,8 @@ static void cursor_position_callback(GLFWwindow *window, double pixel_x, double 
         mouse_x = x;
         mouse_y = y;
     }
-    printf("mouse: %.6f %.6f\n", mouse_x, mouse_y);
     float dx = x - mouse_x;
     float dy = y - mouse_y;
-    printf("dx dy: %.6f %.6f\n", dx, dy);
 
     // Call the application's mouse movement event handler.
     // This is given relative motion of the cursor.
@@ -176,8 +174,8 @@ static void cursor_position_callback(GLFWwindow *window, double pixel_x, double 
 
     //------
     vec2 screen_coordinates = pixel_to_rect(x,y, 0,0, 1,1);
-    mouse_screen_x = screen_coordinates.vals[0];
-    mouse_screen_y = screen_coordinates.vals[1];
+    mouse_screen_x = x;
+    mouse_screen_y = y;
 }
 
 float time = 0;
@@ -587,6 +585,7 @@ int main(void)
             g_paused = true;
             g_pause_after_rendering = false;
         }
+        g_y_scroll = 0; // Make sure global-access-to-scroll-wheel doesn't think the scroll wheel keeps going.
     }
     // Cleanup
     close_program();

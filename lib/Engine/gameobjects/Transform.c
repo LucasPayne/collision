@@ -48,6 +48,11 @@ mat4x4 Transform_matrix(Transform *transform)
     if (transform->euler_controlled) {
         //----Does not take into account the center.
         translate_rotate_3d_mat4x4(&mat, transform->x, transform->y, transform->z, transform->theta_x, transform->theta_y, transform->theta_z);
+        if (transform->has_freeform_matrix) {
+            mat = mat4x4_multiply(*transform->freeform_matrix, mat);
+
+            // for (int i = 0; i < 16; i++) mat.vals[i] /= mat.vals[15];
+        }
         if (!transform->has_parent) return mat;
         return mat4x4_multiply(mat, Transform_matrix(transform->parent));
     }
@@ -83,6 +88,10 @@ mat4x4 Transform_matrix(Transform *transform)
     right_multiply_mat4x4(&mat, &off_center_matrix);
 
     // print_matrix4x4f(&mat);
+    if (transform->has_freeform_matrix) {
+        // Left-concatenate with optional freeform matrix. (this was primarily added as a hack to allow models to be projectively transformed.)
+        mat = mat4x4_multiply(*transform->freeform_matrix, mat);
+    }
     if (!transform->has_parent) return mat;
     return mat4x4_multiply(mat, Transform_matrix(transform->parent));
 }

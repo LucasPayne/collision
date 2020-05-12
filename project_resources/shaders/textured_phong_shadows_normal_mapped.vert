@@ -18,9 +18,12 @@ out vOut {
 
 void main(void)
 {
+    // fPosition = model_matrix * vPosition;
+    // fPosition *= 1.0 / fPosition.w;
+    // gl_Position = vp_matrix * fPosition;
     gl_Position = mvp_matrix * vPosition;
 
-    fPosition = model_matrix * vPosition;
+    // fPosition = model_matrix * vPosition;
     fTexCoord = vTexCoord;
     fNormal = (normal_matrix * vec4(vNormal, 1)).xyz;
 

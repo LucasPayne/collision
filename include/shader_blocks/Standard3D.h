@@ -20,13 +20,14 @@ typedef struct ShaderBlock_Standard3D_s {
     char ___std140_pad3[4];
     mat4x4 mvp_matrix;    //offset: 16, alignment: 16, C_type_size: 64
     mat4x4 model_matrix;    //offset: 80, alignment: 16, C_type_size: 64
-    vec3 model_position;    //offset: 144, alignment: 16, C_type_size: 12
-    char ___std140_pad6[4];
-    vec3 camera_direction;    //offset: 160, alignment: 16, C_type_size: 12
+    mat4x4 vp_matrix;    //offset: 144, alignment: 16, C_type_size: 64
+    vec3 model_position;    //offset: 208, alignment: 16, C_type_size: 12
     char ___std140_pad7[4];
-    vec3 camera_position;    //offset: 176, alignment: 16, C_type_size: 12
+    vec3 camera_direction;    //offset: 224, alignment: 16, C_type_size: 12
     char ___std140_pad8[4];
-    mat4x4 normal_matrix;    //offset: 192, alignment: 16, C_type_size: 64
+    vec3 camera_position;    //offset: 240, alignment: 16, C_type_size: 12
+    char ___std140_pad9[4];
+    mat4x4 normal_matrix;    //offset: 256, alignment: 16, C_type_size: 64
 } ShaderBlock_Standard3D;
 
 #endif // SHADER_BLOCK_HEADER_DEFINED_STANDARD3D

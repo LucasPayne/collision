@@ -457,7 +457,7 @@ vec4 mat4x4_solve(mat4x4 m, vec4 p)
     }
     return solution;
 }
-mat4x4 mat4x4_inverse(mat4x4 m, vec4 p)
+mat4x4 mat4x4_inverse(mat4x4 m)
 {
     mat4x4 inverse;
     //--- Very inefficient.

@@ -31,6 +31,7 @@ void render_body_with_material(mat4x4 vp_matrix, Body *body, Material *material)
     euler_rotation_mat4x4(&normal_matrix, transform->theta_x, transform->theta_y, transform->theta_z);
     set_uniform_mat4x4(Standard3D, normal_matrix.vals, normal_matrix.vals); // assuming only rigid transformations.
     set_uniform_mat4x4(Standard3D, mvp_matrix.vals, mvp_matrix.vals);
+    set_uniform_mat4x4(Standard3D, vp_matrix.vals, vp_matrix.vals);
     gm_draw(*mesh, material);
 }
 void render_body(mat4x4 vp_matrix, Body *body)

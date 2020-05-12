@@ -4,11 +4,14 @@ project_libs:
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
 
+PlayerController *g_player;
+
 // Just put it really far away.
 vec3 point_at_infinity(vec3 direction)
 {
-    return vec3_mul(direction, 10000);
+    return vec3_mul(direction, 1500);
 }
+
 
 const int mapped_indices[4] = {
     0,1,2,7
@@ -24,20 +27,40 @@ typedef struct FrustumDemo_s {
     vec3 lerp_to_points[4];
     vec3 lerp_to_fifth_point;
 
+    mat4x4 computed_homography;
+    mat4x4 inverse_computed_homography;
+
     // vec3 mapped_points[8]; // near quad, far quad
 
     bool lerping;
+    int lerp_index;
     float lerp_distances[4];
     float lerp_distance_fifth_point;
+
+    vec3 last_mapped_point_transform_positions[5]; // to check if they have moved.
+    Transform *mapped_point_transforms[5];
+
+    bool show_triangles;
+    vec3 last_position;
 } FrustumDemo;
+FrustumDemo *g_focused_frustum_demo = NULL;
 
 void FrustumDemo_key_listener(Logic *g, int key, int action, int mods)
 {
     FrustumDemo *fd = g->data;
     Transform *t = Transform_get_a(g);
+    for (int i = 0; i < 3; i++) {
+        if (Transform_position(t).vals[i] != fd->last_position.vals[i]) {
+            g_focused_frustum_demo = fd;
+        }
+    }
+    fd->last_position = Transform_position(t);
+
+    if (fd != g_focused_frustum_demo) return;
 
     if (action == GLFW_PRESS && key == GLFW_KEY_B) {
         fd->lerping = true;
+        fd->lerp_index = 0;
         for (int i = 0; i < 4; i++) {
             fd->lerp_to_points[i] = fd->box_points[mapped_indices[i]];
             fd->lerp_distances[i] = vec3_length(vec3_sub(fd->mapped_points[i], fd->lerp_to_points[i]));
@@ -47,6 +70,7 @@ void FrustumDemo_key_listener(Logic *g, int key, int action, int mods)
     }
     if (action == GLFW_PRESS && key == GLFW_KEY_F) {
         fd->lerping = true;
+        fd->lerp_index = 0;
         for (int i = 0; i < 4; i++) {
             fd->lerp_to_points[i] = fd->frustum_points[mapped_indices[i]];
             fd->lerp_distances[i] = vec3_length(vec3_sub(fd->mapped_points[i], fd->lerp_to_points[i]));
@@ -69,12 +93,43 @@ mat4x4 compute_homography(vec3 points[/* 5 */], vec3 images[/* 5 */])
         A.vals[4*i + 3] = 1;
         B.vals[4*i + 3] = 1;
     }
-    vec4 beta = mat4x4_solve(B, q);
-    vec4 alpha = mat4x4_solve(A, qp);
-    vec4 lambdas = new_vec4(X(alpha) / X(beta), Y(alpha) / Y(beta), Z(alpha) / Z(beta), W(alpha) / W(beta));
-    mat4x4 lambda_diag;
-    for (int i = 0; i < 4; i++) lambda_diag.vals[4*i + i] = lambdas.vals[i];
-    return mat4x4_multiply3(A, lambda_diag, mat4x4_inverse(B));
+    vec4 beta = matrix_vec4(mat4x4_inverse(B), q);
+    vec4 alpha = matrix_vec4(mat4x4_inverse(A), qp);
+    mat4x4 A_weighted;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            A_weighted.vals[4*i + j] = (alpha.vals[i]/beta.vals[i]) * A.vals[4*i + j];
+        }
+    }
+    mat4x4 homography = mat4x4_multiply(A_weighted, mat4x4_inverse(B));
+    return homography;
+
+    //mat4x4 M = mat4x4_multiply(A, mat4x4_inverse(B));
+    //vec4 v = matrix_vec4(mat4x4_inverse(M), qp);
+    //vec4 lambdas;
+    //for (int i = 0; i < 4; i++) lambdas.vals[i] = v.vals[i] / q.vals[i];
+    //mat4x4 homography;
+    //for (int i = 0; i < 4; i++) {
+    //    for (int j = 0; j < 4; j++) {
+    //        homography.vals[4*i + j] = lambdas.vals[j] * M.vals[4*i + j];
+    //    }
+    //}
+    //return homography;
+
+
+    // vec4 beta = mat4x4_solve(B, q);
+    // vec4 alpha = mat4x4_solve(A, qp);
+    // mat4x4 beta_diag;
+    // for (int i = 0; i < 4; i++) beta_diag.vals[4*i + i] = beta.vals[i];
+    // vec4 lambdas = mat4x4_solve(beta_diag, alpha);
+    // // vec4 lambdas = new_vec4(X(alpha) / X(beta), Y(alpha) / Y(beta), Z(alpha) / Z(beta), W(alpha) / W(beta));
+    // mat4x4 lambda_diag;
+    // for (int i = 0; i < 4; i++) lambda_diag.vals[4*i + i] = lambdas.vals[i];
+    // mat4x4 homography = mat4x4_multiply3(A, lambda_diag, mat4x4_inverse(B));
+    // for (int i = 0; i < 16; i++) {
+    //     homography.vals[i] /= homography.vals[15];
+    // }
+    // return homography;
 }
 
 void FrustumDemo_update(Logic *g)
@@ -84,35 +139,58 @@ void FrustumDemo_update(Logic *g)
     mat4x4 matrix = Transform_matrix(t);
     painting_matrix(matrix);
 
+    // if (fd->lerping) {
+    //     for (int i = 0; i < 
+    // }
+
+
+    // if (!fd->lerping) {
+    //     for (int i = 0; i < 5; i++) {
+    //         Transform *tp = fd->mapped_point_transforms[i];
+    //         vec3 p = vec3_sub(Transform_position(tp), Transform_position(t));
+    //         if (fd->last_mapped_point_transform_positions[i] != 
+    //     }
+    // }
+
     float lerp_seconds = 0.6;
     if (fd->lerping) {
-        for (int i = 0; i < 4; i++) {
-            vec3 m = fd->mapped_points[i];
-            vec3 t = fd->lerp_to_points[i];
+        int index = fd->lerp_index;
+        if (index >= 1) {
+            index --;
+            vec3 m = fd->mapped_points[index];
+	    vec3 t = fd->lerp_to_points[index];
+	    float d = vec3_square_length(vec3_sub(t, m));
+	    if (d < (fd->lerp_distances[index] / 50)*(fd->lerp_distances[index] / 50)) {
+	        fd->mapped_points[index] = t;
+                if (index == 4) {
+                    fd->lerping = false;
+                    fd->lerp_index = 0;
+                } else {
+                    fd->lerp_index ++;
+                }
+	    } else {
+	        fd->mapped_points[index] = vec3_add(m, vec3_mul(vec3_normalize(vec3_sub(t, m)), fd->lerp_distances[index]*dt / lerp_seconds));
+	    }
+        } else {
+            vec3 m = fd->fifth_mapped_point;
+            vec3 t = fd->lerp_to_fifth_point;
             float d = vec3_square_length(vec3_sub(t, m));
-            if (d < (fd->lerp_distances[i] / 50)*(fd->lerp_distances[i] / 50)) {
-                fd->mapped_points[i] = t;
+            if (d < (fd->lerp_distance_fifth_point / 50)*(fd->lerp_distance_fifth_point / 50)) {
+                fd->fifth_mapped_point = t;
+                fd->lerp_index ++;
             } else {
-                fd->mapped_points[i] = vec3_add(m, vec3_mul(vec3_normalize(vec3_sub(t, m)), fd->lerp_distances[i]*dt / lerp_seconds));
+                fd->fifth_mapped_point = vec3_add(m, vec3_mul(vec3_normalize(vec3_sub(t, m)), 0.5*fd->lerp_distance_fifth_point*dt / lerp_seconds));
             }
         }
-        vec3 m = fd->fifth_mapped_point;
-        vec3 t = fd->lerp_to_fifth_point;
-        float d = vec3_square_length(vec3_sub(t, m));
-        if (d < (fd->lerp_distance_fifth_point / 50)*(fd->lerp_distance_fifth_point / 50)) {
-            fd->fifth_mapped_point = t;
-        } else {
-            fd->fifth_mapped_point = vec3_add(m, vec3_mul(vec3_normalize(vec3_sub(t, m)), fd->lerp_distance_fifth_point*dt / lerp_seconds));
-        }
     }
 
-    paint_wireframe_box_v(Canvas3D, fd->box_points, new_vec4(0.5,0.5,0.5,1), 1.3);
-    paint_wireframe_box_v(Canvas3D, fd->frustum_points, new_vec4(0.4,0.4,0.4,1), 1.3);
+    paint_wireframe_box_v(Canvas3D, fd->box_points, new_vec4(0.5,0.5,0.5,0.8), 0.7);
+    paint_wireframe_box_v(Canvas3D, fd->frustum_points, new_vec4(0.4,0.4,0.4,0.8), 0.7);
 
-    for (int i = 0; i < 4; i++) {
-        paint_line_v(Canvas3D, fd->box_points[mapped_indices[i]], fd->mapped_points[i], new_vec4(0.9,0,0.7,0.9), 0.8);
-        paint_points(Canvas3D, &fd->mapped_points[i], 1, 0.8,0.2,0.8,1, 18);
-    }
+    // for (int i = 0; i < 4; i++) {
+    //     paint_line_v(Canvas3D, fd->box_points[mapped_indices[i]], fd->mapped_points[i], new_vec4(0.9,0,0.7,0.9), 0.8);
+    //     paint_points(Canvas3D, &fd->mapped_points[i], 1, 0.8,0.2,0.8,1, 18);
+    // }
     paint_line_v(Canvas3D, fd->box_fifth_point, fd->fifth_mapped_point, new_vec4(0.9,0,0.7,0.9), 0.8);
     paint_points(Canvas3D, &fd->fifth_mapped_point, 1, 0.9,0.1,0.9,1, 20);
 
@@ -127,77 +205,19 @@ void FrustumDemo_update(Logic *g)
     vec4 color1 = new_vec4(0,0.3,0.9,0.3);
     vec4 color2 = new_vec4(0.3,0.9,0.3,0.5);
     vec4 color3 = new_vec4(0.9,0,0.3,0.3);
-    int tess = 10;
-    paint_grid_vv(Canvas3D, xz_square, color1, tess, tess, 0.8);
-    paint_grid_vv(Canvas3D, xy_square, color2, tess, tess, 0.8);
-    paint_grid_vv(Canvas3D, yz_square, color3, tess, tess, 0.8);
+    int tess = 2;
+    // paint_grid_vv(Canvas3D, xz_square, color1, tess, tess, 0.8);
+    // paint_grid_vv(Canvas3D, xy_square, color2, tess, tess, 0.8);
+    // paint_grid_vv(Canvas3D, yz_square, color3, tess, tess, 0.8);
     for (int i = 0; i < 4; i++) {
-        paint_line_v(Canvas3D, xz_square[i], xz_square[(i+1)%4], color1, 2);
-        paint_line_v(Canvas3D, xy_square[i], xy_square[(i+1)%4], color2, 2);
-        paint_line_v(Canvas3D, yz_square[i], yz_square[(i+1)%4], color3, 2);
+        // paint_line_v(Canvas3D, xz_square[i], xz_square[(i+1)%4], color1, 2);
+        // paint_line_v(Canvas3D, xy_square[i], xy_square[(i+1)%4], color2, 2);
+        // paint_line_v(Canvas3D, yz_square[i], yz_square[(i+1)%4], color3, 2);
     }
     paint_line_v(Canvas3D, new_vec3(-radius, 0,0), new_vec3(radius,0,0), new_vec4(0,0,0,0.6), 1);
     paint_line_v(Canvas3D, new_vec3(0, -radius, 0), new_vec3(0,radius,0), new_vec4(0,0,0,0.6), 1);
     paint_line_v(Canvas3D, new_vec3(0,0,-radius), new_vec3(0,0,radius), new_vec4(0,0,0,0.6), 1);
 
-    // Construct the homography.
-    // B: 4x4 matrix of the first four mapped points.
-    //mat4x4 B;
-    //for (int i = 0; i < 4; i++) {
-    //    vec4 p = new_vec4(UNPACK_VEC3(fd->mapped_points[i]), 1);
-    //    for (int j = 0; j < 4; j++) {
-    //        B.vals[4*i + j] = p.vals[j];
-    //    }
-    //}
-    // // q: The fifth point that determines the unique homography.
-    // vec4 q = new_vec4(UNPACK_VEC3(fd->fifth_mapped_point), 1);
-    // // q': The image of q under the homography.
-    // vec4 qp = new_vec4(UNPACK_VEC3(fd->box_fifth_point), 1);
-    // // A: 4x4 matrix of the images of the first four points.
-    // mat4x4 A;
-    // for (int i = 0; i < 4; i++) {
-    //     vec4 p = new_vec4(UNPACK_VEC3(fd->box_points[mapped_indices[i]]), 1);
-    //     for (int j = 0; j < 4; j++) {
-    //         A.vals[4*i + j] = p.vals[j];
-    //     }
-    // }
-    // // Solve for intermediate vector.
-    // vec4 v = mat4x4_solve(B, q);
-    // // Form diag(v).
-    // mat4x4 diag_v = {0};
-    // for (int i = 0; i < 4; i++) diag_v.vals[4*i + i] = v.vals[i];
-    // // Solve for lambda values to scale the columns of the homography.
-    // vec4 lambdas = mat4x4_solve(mat4x4_multiply(A, diag_v), qp);
-    // // Form sigma = diag(lambas).
-    // mat4x4 sigma = {0};
-    // for (int i = 0; i < 4; i++) sigma.vals[4*i + i] = lambdas.vals[i];
-    // // Construct the homography.
-    // mat4x4 homography = mat4x4_multiply3(A, sigma, mat4x4_inverse(B));
-
-    // q: The fifth point that determines the unique homography.
-    // vec4 q = new_vec4(UNPACK_VEC3(fd->fifth_mapped_point), 1);
-    // // q': The image of q under the homography.
-    // vec4 qp = new_vec4(UNPACK_VEC3(fd->box_fifth_point), 1);
-    // // A: 4x4 matrix of the images of the first four points.
-    // mat4x4 A;
-    // for (int i = 0; i < 4; i++) {
-    //     vec4 p = new_vec4(UNPACK_VEC3(fd->box_points[mapped_indices[i]]), 1);
-    //     for (int j = 0; j < 4; j++) {
-    //         A.vals[4*i + j] = p.vals[j];
-    //     }
-    // }
-    // // Solve for intermediate vector.
-    // vec4 v = mat4x4_solve(B, q);
-    // // Form diag(v).
-    // mat4x4 diag_v = {0};
-    // for (int i = 0; i < 4; i++) diag_v.vals[4*i + i] = v.vals[i];
-    // // Solve for lambda values to scale the columns of the homography.
-    // vec4 lambdas = mat4x4_solve(mat4x4_multiply(A, diag_v), qp);
-    // // Form sigma = diag(lambas).
-    // mat4x4 sigma = {0};
-    // for (int i = 0; i < 4; i++) sigma.vals[4*i + i] = lambdas.vals[i];
-    // // Construct the homography.
-    // vec4 beta = mat4x4_solve(B, q);
 
     vec3 preimage_points[5];
     vec3 image_points[5];
@@ -208,21 +228,24 @@ void FrustumDemo_update(Logic *g)
     preimage_points[4] = fd->fifth_mapped_point;
     image_points[4] = fd->box_fifth_point;
 
-    paint_points_c(Canvas3D, preimage_points, 5, "g", 30);
-    paint_points_c(Canvas3D, image_points, 5, "y", 30);
+    paint_points(Canvas3D, preimage_points, 5, 0.8,0,0.9,1, 12);
+    paint_points_c(Canvas3D, image_points, 5, "k", 10);
 
     mat4x4 homography = compute_homography(preimage_points, image_points);
+    // Conjugate the homography. This is the one visible to objects being projected.
+    fd->computed_homography = mat4x4_multiply3(matrix, homography, mat4x4_inverse(matrix));
+    fd->inverse_computed_homography = mat4x4_multiply3(matrix, mat4x4_inverse(homography), mat4x4_inverse(matrix));
 
-    print_mat4x4(homography);
+    // print_mat4x4(homography);
 
     mat4x4 homography_inverse = mat4x4_inverse(homography);
     vec3 homography_points[8];
     for (int i = 0; i < 8; i++) {
-        vec4 hp = matrix_vec4(homography_inverse, vec3_to_vec4(homography_points[i]));
-        hp = vec4_mul(hp, 1.0 / W(hp));
-        homography_points[i] = vec4_to_vec3(hp);
+        //vec4 hp = matrix_vec4(homography_inverse, vec3_to_vec4(fd->box_points[i]));
+        vec4 hp = matrix_vec4(homography, vec3_to_vec4(fd->frustum_points[i]));
+        homography_points[i] = new_vec3(X(hp)/W(hp), Y(hp)/W(hp), Z(hp)/W(hp));
     }
-    paint_wireframe_box_v(Canvas3D, homography_points, new_vec4(0.5,0,0.5,1), 1.3);
+    paint_wireframe_box_v(Canvas3D, homography_points, new_vec4(0,0,0,0.5), 0.4);
 
     // q'': q' scaled by intermediate vector components.
     // vec4 qpp;
@@ -236,20 +259,39 @@ void FrustumDemo_update(Logic *g)
     // mat4x4 homography = mat4x4_multiply3(A, sigma, mat4x4_inverse(B));
     // print_mat4x4(homography);
 
-    vec4 test_triangles[3] = {
-        {{50, -10,  0,  1}},
-        {{60, -15,  20, 1}},
-        {{55,  10, -15, 1}},
-    };
-    for (int i = 0; i < 3; i++) {
-        test_triangles[i] = matrix_vec4(homography, test_triangles[i]);
-        test_triangles[i] = vec4_mul(test_triangles[i], 1.0 / W(test_triangles[i]));
-    }
-    for (int i = 0; i < 3; i++) {
-        paint_line_cv(Canvas3D, vec4_to_vec3(test_triangles[i]), vec4_to_vec3(test_triangles[(i+1)%3]), "k", 1);
+    if (fd->show_triangles) {
+        #define num_tri 3
+        vec4 test_triangles[3*num_tri] = {
+            {{50, -10,  0,  1}},
+            {{60, -15,  20, 1}},
+            {{55,  10, -15, 1}},
+
+            {{50, -15,  0,  1}},
+            {{55, -15,  40, 1}},
+            {{30,  -30, -15, 1}},
+
+            {{70, 20,  0,  1}},
+            {{76, 30,  20, 1}},
+            {{93, -30, -15, 1}},
+        };
+        vec4 tri_colors[num_tri] = {
+            {{1,0.3,0.3,1}},
+            {{0.2,1,0.3,1}},
+            {{0.13,0.233,0.93,1}},
+        };
+        for (int i = 0; i < 3*num_tri; i++) {
+            test_triangles[i] = matrix_vec4(homography, test_triangles[i]);
+            test_triangles[i] = vec4_mul(test_triangles[i], 1.0 / W(test_triangles[i]));
+        }
+        for (int TRI = 0; TRI < num_tri; TRI++) {
+            paint_triangle_v(Canvas3D, vec4_to_vec3(test_triangles[3*TRI+0]), vec4_to_vec3(test_triangles[3*TRI+1]), vec4_to_vec3(test_triangles[3*TRI+2]), tri_colors[TRI]);
+            for (int i = 0; i < 3; i++) {
+                paint_line_cv(Canvas3D, vec4_to_vec3(test_triangles[3*TRI+i]), vec4_to_vec3(test_triangles[3*TRI+(i+1)%3]), "k", 1);
+            }
+        }
     }
 }
-EntityID FrustumDemo_create(float x, float y, float z)
+FrustumDemo *FrustumDemo_create(float x, float y, float z)
 {
     EntityID e = new_gameobject(x,y,z, 0,0,0, true);
     Logic *g = add_logic(e, FrustumDemo_update, FrustumDemo);
@@ -288,9 +330,29 @@ EntityID FrustumDemo_create(float x, float y, float z)
     }
     fd->box_fifth_point = point_at_infinity(new_vec3(-1,0,0));
     for (int i = 0; i < 4; i++) {
-        fd->mapped_points[i] = fd->frustum_points[mapped_indices[i]];
+        fd->mapped_points[i] = fd->box_points[mapped_indices[i]];
     }
-    fd->fifth_mapped_point = vec3_zero();
+    fd->fifth_mapped_point = fd->box_fifth_point;
+
+#if 0
+    for (int i = 0; i < 5; i++) {
+        EntityID ecw = new_gameobject(0,0,0, 0,0,0, true);
+        Transform *tcw = Transform_get(ecw);
+        // tcw->has_parent = true;
+        // tcw->parent = Transform_get_a(g);
+        ControlWidget *cw = ControlWidget_add(ecw, 10);
+        cw->alpha = 0.6;
+        if (i < 5) {
+            vec3 v = vec3_add(fd->frustum_points[i], Transform_get_position_a(g));
+            Transform_set(tcw, UNPACK_VEC3(v), 0,0,0);
+        } else {
+            vec3 v = vec3_add(fd->frustum_fifth_point, Transform_get_position_a(g));
+            Transform_set(tcw, UNPACK_VEC3(v), 0,0,0);
+        }
+        fd->mapped_point_transforms[i] = tcw;
+    }
+#endif
+    return fd;
 }
 
 typedef struct StraightModel_s {
@@ -338,6 +400,12 @@ void StraightModel_mouse_button_listener(Logic *g, MouseButton button, bool clic
 
 extern void input_event(int key, int action, int mods)
 {
+    if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_R) {
+            g_player->altitude = 0;
+            g_player->azimuth = 0;
+        }
+    }
 }
 extern void mouse_button_event(MouseButton button, bool click, float x, float y)
 {
@@ -467,7 +535,11 @@ void StraightModelDemo_update(Logic *g)
         float transparency = 1;
         float tt = time;
         // float tt = 0;
-        draw_projected_segment(sm, new_vec3(30*cos(tt+t), 40, 13*sin(2*t)), new_vec3(30*cos(tt+tp), 40, 13*sin(2*tp)), new_vec4(0,0,0,transparency), new_vec4(1,0,0,transparency), 2.8);
+        vec3 p = new_vec3(30*cos(tt+t), 40, 13*sin(2*t));
+        draw_projected_segment(sm, p, new_vec3(30*cos(tt+tp), 40, 13*sin(2*tp)), new_vec4(0,0,0,transparency), new_vec4(1,0,0,transparency), 2.8);
+        paint_line_v(Canvas3D, vec3_zero(), p, new_vec4(0.3,0,0,0.5), 0.9);
+        vec3 pp = perspective_point(sm, p);
+        paint_line_v(Canvas3D, vec3_zero(), pp, new_vec4(0.3,0,0,0.5), 0.9);
     }
 
     painting_matrix_reset();
@@ -515,7 +587,7 @@ void SplineDemo1_update(Logic *g)
     SplineDemo *sd = g->data;
     painting_matrix(Transform_get_matrix_a(g));
     for (int i = 0; i < sd->num_points-1; i++) {
-        draw_projected_segment(sd->sm, SD_pos(sd, i), SD_pos(sd, i), new_vec4(1,0,1,1), new_vec4(0,0,0,1), 4);
+        draw_projected_segment(sd->sm, SD_pos(sd, i), SD_pos(sd, i+1), new_vec4(1,0,1,1), new_vec4(0,0,0,1), 4);
     }
     painting_matrix_reset();
 }
@@ -534,6 +606,23 @@ vec3 evaluate_cubic_bezier(vec3 points[], float t)
     vec3 p0112 = vec3_lerp(p01, p12, t);
     vec3 p1223 = vec3_lerp(p12, p23, t);
     return vec3_lerp(p0112, p1223, t);
+}
+vec3 evaluate_rational_cubic_bezier(vec4 homogeneous_points[], float t)
+{
+    // vec4 homogeneous_points[4];
+    // for (int i = 0; i < 4; i++) {
+    //     X(homogeneous_points[i]) = X(points[i]) * weights[i];
+    //     Y(homogeneous_points[i]) = Y(points[i]) * weights[i];
+    //     Z(homogeneous_points[i]) = Z(points[i]) * weights[i];
+    //     W(homogeneous_points[i]) = weights[i];
+    // }
+    vec4 p01 = vec4_lerp(homogeneous_points[0], homogeneous_points[1], t);
+    vec4 p12 = vec4_lerp(homogeneous_points[1], homogeneous_points[2], t);
+    vec4 p23 = vec4_lerp(homogeneous_points[2], homogeneous_points[3], t);
+    vec4 p0112 = vec4_lerp(p01, p12, t);
+    vec4 p1223 = vec4_lerp(p12, p23, t);
+    vec4 p = vec4_lerp(p0112, p1223, t);
+    return new_vec3(X(p) / W(p), Y(p) / W(p), Z(p) / W(p));
 }
 
 void SplineDemo_draw_control_polyline(SplineDemo *sd)
@@ -610,15 +699,15 @@ void SplineDemo2_update(Logic *g)
     painting_matrix_reset();
 }
 
+const mat4x4 cubic_bspline_to_cubic_bernstein = {{
+    0, 0, 0, 1.0/6.0,
+    1.0/6.0, 1.0/3.0, 2.0/3.0, 2.0/3.0,
+    2.0/3.0, 2.0/3.0, 1.0/3.0, 1.0/6.0,
+    1.0/6.0, 0,0,0,
+}};
 void SplineDemo3_update(Logic *g)
 {
     // Cubic spline.
-    const mat4x4 cubic_bspline_to_cubic_bernstein = {{
-        0, 0, 0, 1.0/6.0,
-        1.0/6.0, 1.0/3.0, 2.0/3.0, 2.0/3.0,
-        2.0/3.0, 2.0/3.0, 1.0/3.0, 1.0/6.0,
-        1.0/6.0, 0,0,0,
-    }};
     SplineDemo *sd = g->data;
 
     painting_matrix(Transform_get_matrix_a(g));
@@ -648,9 +737,124 @@ void SplineDemo3_update(Logic *g)
     painting_matrix_reset();
 }
 
+void bunny_update(Logic *logic)
+{
+    Transform *t = Transform_get_a(logic);
+    fill_mat3x3_cmaj(t->rotation_matrix, cos(time), 0, sin(time),
+                                         0, 1, 0,
+                                         -sin(time), 0, cos(time));
+
+    // Body *body = get_sibling_aspect(logic, Body);
+    // MeshData *mesh = resource_data(Geometry, body->geometry)->mesh_data;
+    // MeshData_draw_wireframe(mesh, Transform_get_matrix_a(logic), new_vec4(0,0,0,1), 2);
+}
+
+
+typedef struct SplineDemo3D_s {
+    int num_points;
+    Transform **point_transforms;
+    Transform *transform;
+    float *weights;
+} SplineDemo3D;
+vec3 SD_pos3D(SplineDemo3D *sd, int index)
+{
+    return Transform_position(sd->point_transforms[index]);
+    // vec3 p = Transform_position(sd->point_transforms[index]);
+    // return new_vec4(X(p), Y(p), Z(p), sd->weights[index]);
+}
+void SplineDemo3D_update(Logic *g)
+{
+    SplineDemo3D *sd = g->data;
+    painting_matrix(Transform_get_matrix_a(g));
+    for (int i = 0; i < sd->num_points - 1; i++) {
+        paint_line_v(Canvas3D, SD_pos3D(sd, i), SD_pos3D(sd, i+1), new_vec4(0.4,0.4,0.4,0.7), 0.8);
+    }
+    for (int i = 0; i < sd->num_points; i++) {
+        // Scroll wheel to increase the "weight" of this point.
+        vec3 p = SD_pos3D(sd, i);
+        vec3 world_p = mat4x4_vec3(Transform_matrix(sd->transform), p);
+        vec2 screen_pos = Camera_world_point_to_screen(g_main_camera, world_p);
+        float screen_x = X(screen_pos);
+        float screen_y = Y(screen_pos);
+        const float click_radius = 0.02;
+        const float weight_speed = 5;
+        float point_size = 40*(1 - exp(-0.014*sd->weights[i]));
+        if ((screen_x - mouse_screen_x)*(screen_x - mouse_screen_x) + (screen_y - mouse_screen_y)*(screen_y - mouse_screen_y) < click_radius * click_radius) {
+            point_size *= 1.3;
+            if (g_y_scroll != 0) {
+                sd->weights[i] += sd->weights[i] * g_y_scroll * weight_speed * dt;
+            }
+        }
+        paint_points(Canvas3D, &p, 1, 0.2,0.2,0.2,1, point_size);
+    }
+
+    int tess = 7;
+    float inv_tess_plus_one = 1.0 / (tess + 1);
+    for (int i = 0; i < sd->num_points-3; i++) {
+
+        vec4 homogeneous_window[4];
+        for (int j = 0; j < 4; j++) {
+            vec3 p = SD_pos(sd, i+j);
+            float w = sd->weights[i+j];
+            X(homogeneous_window[j]) = X(p) * w;
+            Y(homogeneous_window[j]) = Y(p) * w;
+            Z(homogeneous_window[j]) = Z(p) * w;
+            W(homogeneous_window[j]) = w;
+        }
+        vec4 homogeneous_points[4] = {0};
+        for (int j = 0; j < 4; j++) {
+            for (int k = 0; k < 4; k++) {
+                homogeneous_points[j] = vec4_add(homogeneous_points[j],
+                                        vec4_mul(homogeneous_window[k], cubic_bspline_to_cubic_bernstein.vals[4*k + j]));
+            }
+        }
+        for (int j = 0; j < tess+1; j++) {
+            float t1 = j * inv_tess_plus_one;
+            float t2 = (j+1) * inv_tess_plus_one;
+            vec3 a = evaluate_rational_cubic_bezier(homogeneous_points, t1);
+            vec3 b = evaluate_rational_cubic_bezier(homogeneous_points, t2);
+            paint_line_v(Canvas3D, a, b, new_vec4(1,0,1,1), 1.9);
+        }
+    }
+    painting_matrix_reset();
+
+}
+SplineDemo3D *SplineDemo3D_create(float x, float y, float z, vec3 points[], int num_points)
+{
+    EntityID e = new_gameobject(x,y,z, 0,0,0, true);
+    
+    Transform *t = Transform_get(e);
+    Logic *g = add_logic(e, SplineDemo3D_update, SplineDemo3D);
+    SplineDemo3D *sd = g->data;
+    sd->transform = t;
+    sd->num_points = num_points;
+    sd->point_transforms = malloc(sizeof(Transform *) * sd->num_points);
+    mem_check(sd->point_transforms);
+    sd->weights = malloc(sizeof(float) * sd->num_points);
+    mem_check(sd->weights);
+    for (int i = 0; i < sd->num_points; i++) {
+        EntityID cwe = new_gameobject(UNPACK_VEC3(points[i]),0,0,0, true);
+        Transform *cwt = Transform_get(cwe);
+        cwt->has_parent = true;
+        cwt->parent = t;
+        ControlWidget *cw = ControlWidget_add(cwe, 5);
+        cw->alpha = 0.6;
+        sd->point_transforms[i] = cwt;
+        sd->weights[i] = 50;
+    }
+}
+
+
 extern void init_program(void)
 {
-#if 0
+    {
+    FrustumDemo *fd = FrustumDemo_create(-600,40,0);
+    fd->show_triangles = true;
+    }
+
+{
+    FrustumDemo *fd = FrustumDemo_create(-300,40,0);
+#if 1
 {
     EntityID light = new_entity(4);
     Transform *t = entity_add_aspect(light, Transform);
@@ -658,14 +862,16 @@ extern void init_program(void)
     t->euler_controlled = true;
     DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,0.7,0.7,1,  400,400,500);
 }
-    int bunny_square_root = 1;
+    int bunny_square_root = 3;
     for (int i = 0; i < bunny_square_root; i++) {
         for (int j = 0; j < bunny_square_root; j++) {
             EntityID e = new_entity(4);
-            float apart = 400;
+            float apart = 60;
             Transform *t = add_aspect(e, Transform);
-            Transform_set(t, 200+i*apart,-10,200+j*apart, 0,0,0);
-            t->scale = 400;
+            Transform_set(t, -234 + i*apart,30,(j - bunny_square_root/2.0)*apart, 0,0,0);
+            t->scale = 200;
+            t->has_freeform_matrix = true;
+            t->freeform_matrix = &fd->computed_homography;
             
             Body *body = add_aspect(e, Body);
             //body->scale = 400;
@@ -674,22 +880,23 @@ extern void init_program(void)
 #if 0
             body->material = Material_create("Materials/textured_phong");
             material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/brick_wall");
-#else
+#endif
             body->material = Material_create("Materials/textured_phong_shadows_normal_mapped");
             material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/brick_wall");
             material_set_texture_path(resource_data(Material, body->material), "normal_map", "Textures/brick_wall_normal");
+
+            add_empty_logic(e, bunny_update);
 #endif
         }
     }
-#endif
+    }
 
 
 #if 1
-    FrustumDemo_create(-300,40,0);
 #endif
-#if 0
+#if 1
     {
-    Logic *smg = StraightModel_add(180,0,0, 100, 100, 20);
+    Logic *smg = StraightModel_add(0,0,0, 100, 100, 20);
     StraightModel *sm = smg->data;
     sm->plane_normal = vec3_normalize(new_vec3(0.5,1,0));
     StraightModelDemo *sd = add_logic(smg->entity_id, StraightModelDemo_update, StraightModelDemo)->data;
@@ -697,22 +904,23 @@ extern void init_program(void)
     }
 #endif
 
-#if 0
+#if 1
     {
     vec3 points[5];
     get_regular_polygon(points, 5, new_vec3(0,50,0), new_vec3(0,1,0), new_vec3(1,0,0), 40);
-    SplineDemo_create(400,0,0, points, 5, SplineDemo1_update);
+    SplineDemo_create(200,0,0, points, 5, SplineDemo1_update);
     }
 #endif
     //---for some reason if this is the first entity created, nothing can be seen.
-    PlayerController *player = Player_create_default(0,70,200, 0,0);
+    PlayerController *player = Player_create_default(-600,70,200, 0,0);
+    g_player = player;
     player->scrollable_speed = false;
-#if 0
+#if 1
     {
     vec3 points[5];
     get_regular_polygon(points, 4, new_vec3(0,50,0), new_vec3(0,1,0), new_vec3(1,0,0), 40);
     //SplineDemo_create(400,0,220, points, 5, SplineDemo2_update);
-    SplineDemo_create(0,0,0, points, 5, SplineDemo2_update);
+    SplineDemo_create(400,0,0, points, 5, SplineDemo2_update);
     }
 #endif
     {
@@ -720,8 +928,16 @@ extern void init_program(void)
     vec3 points[N];
     get_regular_polygon(points, N, new_vec3(0,75,0), new_vec3(0,1,0), new_vec3(1,0,0), 55);
     //SplineDemo_create(400,0,220, points, 5, SplineDemo2_update);
-    SplineDemo_create(0,0,0, points, N, SplineDemo3_update);
+    SplineDemo_create(600,0,0, points, N, SplineDemo3_update);
     }
+{
+    vec3 points[12];
+    float radius = 40;
+    for (int i = 0; i < 12; i++) {
+        points[i] = vec3_mul(vec3_normalize(new_vec3(frand()-0.5,frand()-0.5,frand()-0.5)), radius);
+    }
+    SplineDemo3D_create(0, 0, 300, points, 12);
+}
 
 #if 0
     // Test 4x4 matrix routines.
@@ -745,6 +961,10 @@ extern void init_program(void)
     }
 #endif
 }
+
+
+
+
 
 extern void loop_program(void)
 {

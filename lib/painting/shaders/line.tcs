@@ -21,5 +21,6 @@ void main(void)
     gl_TessLevelInner[1] = tess;
 
     vec4 pos = mvp_matrix * vec4(vertices[gl_InvocationID].fPosition, 1);
+    if (pos.w < 0) pos.w = -pos.w;
     vertex_outputs[gl_InvocationID].ndc_position = pos.xyz / pos.w;
 }

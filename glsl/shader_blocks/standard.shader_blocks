@@ -6,6 +6,7 @@ block Standard3D {
     float far_plane;
     mat4x4 mvp_matrix;
     mat4x4 model_matrix;
+    mat4x4 vp_matrix;
     vec3 model_position;
     vec3 camera_direction;
     vec3 camera_position;

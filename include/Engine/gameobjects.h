@@ -39,6 +39,11 @@ ASPECT_PROPERTIES()
     vec3 center;
     float scale;
 
+    //---It has become apparent that non-parameterized model matrices are useful. So, this is optionally here, concatenating with the regular model matrix.
+    // model_matrix = this * regular_model_matrix.
+    bool has_freeform_matrix;
+    mat4x4 *freeform_matrix;
+
     bool has_parent;
     struct Transform_s *parent; // Optional parent. Matrices and world positions are concatenated.
 } Transform;

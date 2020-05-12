@@ -759,7 +759,7 @@ vec3 NURBS_pos(NURBSDemo *nurbs, int i, int j)
     return Transform_position(nurbs->point_transforms[nurbs->m * i + j]);
 }
 
-void draw_rational_cubic_bezier_patch(vec4 points[], vec4 color, int tess)
+void draw_quadratic_bezier_patch(vec3 points[], vec4 color, int tess)
 {
     float u,v, up,vp;
     float inv_tess_plus_one = 1.0 / (tess + 1);
@@ -770,11 +770,33 @@ void draw_rational_cubic_bezier_patch(vec4 points[], vec4 color, int tess)
             v = j * inv_tess_plus_one;
             vp = (j+1) * inv_tess_plus_one;
 
+            vec3 A = evaluate_quadratic_bezier_patch(points, u, v);
+            vec3 B = evaluate_quadratic_bezier_patch(points, up, v);
+            vec3 C = evaluate_quadratic_bezier_patch(points, up, vp);
+            vec3 D = evaluate_quadratic_bezier_patch(points, u, vp);
+            // print_vec3(A);
+            paint_triangle_v(Canvas3D, A, B, C, color);
+            paint_triangle_v(Canvas3D, A, C, D, color);
+        }
+    }
+}
+
+void draw_rational_cubic_bezier_patch(vec4 points[], vec4 color, int tess)
+{
+    float u,v, up,vp;
+    float inv_tess_plus_one = 1.0 / (tess + 1);
+    for (int i = 0; i < tess+1; i++) {
+        u = i * inv_tess_plus_one;
+        up = (i+1) * inv_tess_plus_one;
+        for (int j = 0; j < tess+1; j++) {
+            v = j * inv_tess_plus_one;
+            vp = (j+1) * inv_tess_plus_one;
+
             vec3 A = evaluate_rational_cubic_bezier_patch(points, u, v);
             vec3 B = evaluate_rational_cubic_bezier_patch(points, up, v);
             vec3 C = evaluate_rational_cubic_bezier_patch(points, up, vp);
             vec3 D = evaluate_rational_cubic_bezier_patch(points, u, vp);
-            print_vec3(A);
+            // print_vec3(A);
             paint_triangle_v(Canvas3D, A, B, C, color);
             paint_triangle_v(Canvas3D, A, C, D, color);
         }
@@ -796,14 +818,14 @@ void NURBSDemo_update(Logic *g)
             float screen_y = Y(screen_pos);
             const float click_radius = 0.02;
             const float weight_speed = 5;
-            float point_size = 40*(1 - exp(-0.014*nurbs->weights[nurbs->m * i + j]));
+            float point_size = 26*(1 - exp(-0.014*nurbs->weights[nurbs->m * i + j]));
             if ((screen_x - mouse_screen_x)*(screen_x - mouse_screen_x) + (screen_y - mouse_screen_y)*(screen_y - mouse_screen_y) < click_radius * click_radius) {
                 point_size *= 1.3;
                 if (g_y_scroll != 0) {
                     nurbs->weights[nurbs->m * i + j] += nurbs->weights[nurbs->m * i + j] * g_y_scroll * weight_speed * dt;
                 }
             }
-            paint_points(Canvas3D, &p, 1, 0.2,0.2,0.2,1, point_size);
+            paint_points(Canvas3D, &p, 1, 0.2,0.2,0.2,0.5, point_size);
         }
     }
 
@@ -813,25 +835,26 @@ void NURBSDemo_update(Logic *g)
             vec3 a = NURBS_pos(nurbs,i,j);
             vec3 b = NURBS_pos(nurbs,i+1,j);
             vec3 c = NURBS_pos(nurbs,i,j+1);
-            paint_line_v(Canvas3D, a, b, color, 1);
-            paint_line_v(Canvas3D, a, c, color, 1);
+            paint_line_v(Canvas3D, a, b, color, 0.6);
+            paint_line_v(Canvas3D, a, c, color, 0.6);
         }
     }
     for (int i = 0; i < nurbs->n - 1; i++) {
         vec3 a = NURBS_pos(nurbs,i,nurbs->m-1);
         vec3 b = NURBS_pos(nurbs,i+1,nurbs->m-1);
-        paint_line_v(Canvas3D, a, b, color, 1);
+        paint_line_v(Canvas3D, a, b, color, 0.6);
     }
     for (int i = 0; i < nurbs->m - 1; i++) {
         vec3 a = NURBS_pos(nurbs,nurbs->n-1,i);
         vec3 b = NURBS_pos(nurbs,nurbs->n-1,i+1);
-        paint_line_v(Canvas3D, a, b, color, 1);
+        paint_line_v(Canvas3D, a, b, color, 0.6);
     }
 
     //vec4 patch_color = new_vec4(0.6,0.6,0.9,1);
     vec4 patch_color = new_vec4(0.3,0.3,0.9,0.7);
     vec4 window[16];
     vec4 bernstein_points[16];
+    vec4 bernstein_pre[16];
     for (int i = 0; i < nurbs->n - 3; i++) {
         for (int j = 0; j < nurbs->m - 3; j++) {
             for (int ii = 0; ii < 4; ii++) {
@@ -840,17 +863,54 @@ void NURBSDemo_update(Logic *g)
                     //print_vec3(p);
                     float w = nurbs->weights[nurbs->m*(i+ii) + j+jj];
                     window[4*ii + jj] = new_vec4(w*X(p), w*Y(p), w*Z(p), w);
-                    print_vec4(window[4*ii+jj]);
+                    // print_vec4(window[4*ii+jj]);
                 }
             }
-            for (int ii = 0; ii < 4; ii++) {
-                
+
+/*
+const mat4x4 cubic_bspline_to_cubic_bernstein = {{
+    0, 0, 0, 1.0/6.0,
+    1.0/6.0, 1.0/3.0, 2.0/3.0, 2.0/3.0,
+    2.0/3.0, 2.0/3.0, 1.0/3.0, 1.0/6.0,
+    1.0/6.0, 0,0,0,
+}};
+*/
+            for (int k = 0; k < 4; k++) {
+                for (int h = 0; h < 4; h++) {
+                    bernstein_pre[4*k + h] = vec4_zero();
+                    for (int g = 0; g < 4; g++) {
+                        //bernstein_pre[4*k + h] = vec4_add(bernstein_pre[4*k + h], vec4_mul(window[4*g + h], cubic_bspline_to_cubic_bernstein.vals[4*g + h]));
+                        bernstein_pre[4*k + h] = vec4_add(bernstein_pre[4*k + h], vec4_mul(window[4*g + h], cubic_bspline_to_cubic_bernstein.vals[4*g + k]));
+                    }
+                }
             }
-            for (int jj = 0; jj < 4; jj++) {
+            for (int k = 0; k < 4; k++) {
+                for (int h = 0; h < 4; h++) {
+                    bernstein_points[4*k + h] = vec4_zero();
+                    for (int g = 0; g < 4; g++) {
+                        bernstein_points[4*k + h] = vec4_add(bernstein_points[4*k + h], vec4_mul(bernstein_pre[4*k + g], cubic_bspline_to_cubic_bernstein.vals[4*g + h]));
+                    }
+                }
             }
 
-	    draw_rational_cubic_bezier_patch(window, patch_color, 5);
+	    // draw_rational_cubic_bezier_patch(window, patch_color, 5);
+	    // draw_rational_cubic_bezier_patch(bernstein_pre, patch_color, 5);
+	    draw_rational_cubic_bezier_patch(bernstein_points, patch_color, 5);
         }
+/*
+        for (int j = 0; j < 4; j++) {
+            for (int k = 0; k < 4; k++) {
+                points[j] = vec3_add(points[j], vec3_mul(window[k], cubic_bspline_to_cubic_bernstein.vals[4*k + j]));
+            }
+        }
+        for (int j = 0; j < tess+1; j++) {
+            float t1 = j * inv_tess_plus_one;
+            float t2 = (j+1) * inv_tess_plus_one;
+            vec3 a = evaluate_cubic_bezier(points, t1);
+            vec3 b = evaluate_cubic_bezier(points, t2);
+            draw_projected_segment(sd->sm, a, b, new_vec4(1,0,1,1), new_vec4(0,0,0,1), 2.3);
+        }
+*/
     }
 
     painting_matrix_reset();
@@ -1094,6 +1154,10 @@ void BezierDemo_update(Logic *g)
     vec3 b = points[1];
     vec3 c = points[2];
     vec3 d = points[3];
+    for (int i = 0; i < 4; i++) {
+        paint_line_cv(Canvas3D, vec3_zero(), points[i], "tk", 0.8);
+        paint_line_cv(Canvas3D, vec3_zero(), perspective_points[i], "tk", 0.8);
+    }
     paint_points(Canvas3D, &a, 1, 0,0,0,1, 22);
     paint_points(Canvas3D, &b, 1, 0,0,0,1, 22);
     paint_points(Canvas3D, &c, 1, 0,0,0,1, 22);
@@ -1110,6 +1174,12 @@ void BezierDemo_update(Logic *g)
     paint_points_c(Canvas3D, &p01p, 1, "k", 12);
     paint_points_c(Canvas3D, &p12p, 1, "k", 12);
     paint_points_c(Canvas3D, &p23p, 1, "k", 12);
+    paint_line_cv(Canvas3D, vec3_zero(), p01, "tk", 0.8);
+    paint_line_cv(Canvas3D, vec3_zero(), p12, "tk", 0.8);
+    paint_line_cv(Canvas3D, vec3_zero(), p23, "tk", 0.8);
+    paint_line_cv(Canvas3D, vec3_zero(), p01p, "tk", 0.8);
+    paint_line_cv(Canvas3D, vec3_zero(), p12p, "tk", 0.8);
+    paint_line_cv(Canvas3D, vec3_zero(), p23p, "tk", 0.8);
     paint_line_cv(Canvas3D, p01, p12, "r", 1.5);
     paint_line_cv(Canvas3D, p12, p23, "r", 1.5);
     paint_line_cv(Canvas3D, p01p, p12p, "k", 1.5);
@@ -1124,8 +1194,14 @@ void BezierDemo_update(Logic *g)
     paint_points_c(Canvas3D, &p1223p, 1, "k", 15);
     paint_line_cv(Canvas3D, p0112, p1223, "g", 1.5);
     paint_line_cv(Canvas3D, p0112p, p1223p, "k", 1.5);
+    paint_line_cv(Canvas3D, vec3_zero(), p0112, "tk", 0.8);
+    paint_line_cv(Canvas3D, vec3_zero(), p1223, "tk", 0.8);
+    paint_line_cv(Canvas3D, vec3_zero(), p0112p, "tk", 0.8);
+    paint_line_cv(Canvas3D, vec3_zero(), p1223p, "tk", 0.8);
     vec3 p = vec3_lerp(p0112, p1223, t);
     vec3 pp = perspective_point(bd->sm, p);
+    paint_line_cv(Canvas3D, vec3_zero(), pp, "tk", 0.8);
+    paint_line_cv(Canvas3D, vec3_zero(), p, "tk", 0.8);
     paint_points_c(Canvas3D, &p, 1, "b", 15);
     paint_points_c(Canvas3D, &pp, 1, "k", 15);
 
@@ -1171,6 +1247,114 @@ BezierDemo *BezierDemo_create(float x, float y, float z, vec3 a, vec3 b, vec3 c,
 
     return bd;
 }
+
+typedef struct PatchDemo_s {
+    Transform *point_transforms[9];
+    float theta;
+    float radius;
+    float speed;
+} PatchDemo;
+vec3 Patch_pos(PatchDemo *patch, int i, int j)
+{
+    return Transform_position(patch->point_transforms[3 * i + j]);
+}
+void PatchDemo_update(Logic *g)
+{
+    PatchDemo *patch = g->data;
+    patch->theta += patch->speed * dt;
+
+    painting_matrix(Transform_get_matrix_a(g));
+    
+    float u = 0.5 + 0.5*patch->radius*cos(patch->theta);
+    float v = 0.5 + 0.5*patch->radius*sin(patch->theta);
+
+    vec3 scratch[9];
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            scratch[3*i + j] = Patch_pos(patch, i, j);
+        }
+    }
+    // draw before using the scratch space.
+    draw_quadratic_bezier_patch(scratch, new_vec4(0.7,0,0.97,0.7), 10);
+    
+    for (int k = 2; k > 0; --k) {
+        for (int i = 0; i < k; i++) {
+            for (int j = 0; j < k; j++) {
+                scratch[j*3 + i] = vec3_bilerp(scratch[j*3 + i], scratch[j*3 + i+1], scratch[(j+1)*3 + i], scratch[(j+1)*3 + i+1], u, v);
+            }
+        }
+        if (k == 2) {
+	    paint_line_cv(Canvas3D, scratch[3*0 + 0], scratch[3*0 + 1], "r", 1);
+	    paint_line_cv(Canvas3D, scratch[3*0 + 0], scratch[3*1 + 0], "r", 1);
+	    paint_line_cv(Canvas3D, scratch[3*1 + 0], scratch[3*1 + 1], "r", 1);
+	    paint_line_cv(Canvas3D, scratch[3*0 + 1], scratch[3*1 + 1], "r", 1);
+            paint_quad_cv(Canvas3D, scratch[3*0 + 0], scratch[3*1 + 0], scratch[3*1 + 1], scratch[3*0 + 1], "tg");
+            
+            // for (int i = 0; i < 2; i++) {
+            //     for (int j = 0; j < 2; j++) {
+            //         paint_line_cv(Canvas3D, scratch[3*j + i], scratch[3*(j+1) + i], "r", 1);
+            //         paint_line_cv(Canvas3D, scratch[3*j + i], scratch[3*j + i+1], "r", 1);
+            //     }
+            // }
+            for (int i = 0; i < 9; i++) {
+                paint_points(Canvas3D, &scratch[i], 1, 0,0,0,0.7+0.3*(i*1.0/9.0),20-i);
+            }
+        }
+    }
+
+    vec4 color = {{0.4,0.4,0.4,0.9}};
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            vec3 a = Patch_pos(patch,i,j);
+            vec3 b = Patch_pos(patch,i+1,j);
+            vec3 c = Patch_pos(patch,i,j+1);
+            vec3 d = Patch_pos(patch,i+1,j+1);
+            paint_line_v(Canvas3D, a, b, color, 1);
+            paint_line_v(Canvas3D, a, c, color, 1);
+            paint_quad_cv(Canvas3D, a,b,d,c, "tr");
+        }
+    }
+    for (int i = 0; i < 2; i++) {
+        vec3 a = Patch_pos(patch,i,2);
+        vec3 b = Patch_pos(patch,i+1,2);
+        paint_line_v(Canvas3D, a, b, color, 1);
+    }
+    for (int i = 0; i < 2; i++) {
+        vec3 a = Patch_pos(patch,2,i);
+        vec3 b = Patch_pos(patch,2,i+1);
+        paint_line_v(Canvas3D, a, b, color, 1);
+    }
+
+    // for (int i = 0; i < 9; i++) {
+    //     paint_points(Canvas3D, &scratch[i], 1, 0,0,0,0.7+0.3*(i*1.0/9.0),20-i);
+    // }
+    vec3 p = scratch[0];
+    paint_points_c(Canvas3D, &p, 1, "k", 20);
+
+    painting_matrix_reset();
+}
+
+PatchDemo *PatchDemo_create(float x, float y, float z, vec3 points[], float radius, float speed)
+{
+    EntityID e = new_gameobject(x,y,z, 0,0,0, true);
+    Logic *g = add_logic(e, PatchDemo_update, PatchDemo);
+    Transform *t = Transform_get_a(g);
+    PatchDemo *patch = g->data;
+    patch->theta = 0;
+    patch->radius = radius;
+    patch->speed = speed;
+
+    for (int i = 0; i < 9; i++) {
+        EntityID cwe = new_gameobject(UNPACK_VEC3(points[i]),0,0,0, true);
+        Transform *cwt = Transform_get(cwe);
+        cwt->has_parent = true;
+        cwt->parent = t;
+        ControlWidget_add(cwe, 8);
+        patch->point_transforms[i] = cwt;
+    }
+    return patch;
+}
+
 
 extern void init_program(void)
 {
@@ -1218,10 +1402,15 @@ extern void init_program(void)
 #endif
     }
 
+    // Bezier demo.
+    if (1) {
+        BezierDemo *bd = BezierDemo_create(200,0,0, new_vec3(-100,60,-40), new_vec3(-30,100,30), new_vec3(30, 105, 6), new_vec3(50,95, 40), 0.2);
+    }
+
 
 #if 1
 #endif
-#if 0
+#if 1
     {
     Logic *smg = StraightModel_add(0,0,0, 100, 100, 20);
     StraightModel *sm = smg->data;
@@ -1235,11 +1424,12 @@ extern void init_program(void)
     {
     vec3 points[5];
     get_regular_polygon(points, 5, new_vec3(0,50,0), new_vec3(0,1,0), new_vec3(1,0,0), 40);
-    SplineDemo_create(200,0,0, points, 5, SplineDemo1_update);
+    SplineDemo_create(400,0,0, points, 5, SplineDemo1_update);
     }
 #endif
     //---for some reason if this is the first entity created, nothing can be seen.
-    PlayerController *player = Player_create_default(-600,70,200, 0,0);
+    //PlayerController *player = Player_create_default(-600,70,200, 0,0);
+    PlayerController *player = Player_create_default(390,120,1100, 0,0);
     g_player = player;
     player->scrollable_speed = false;
 #if 1
@@ -1247,7 +1437,7 @@ extern void init_program(void)
     vec3 points[5];
     get_regular_polygon(points, 4, new_vec3(0,50,0), new_vec3(0,1,0), new_vec3(1,0,0), 40);
     //SplineDemo_create(400,0,220, points, 5, SplineDemo2_update);
-    SplineDemo_create(400,0,0, points, 5, SplineDemo2_update);
+    SplineDemo_create(600,0,0, points, 5, SplineDemo2_update);
     }
 #endif
     {
@@ -1255,7 +1445,7 @@ extern void init_program(void)
     vec3 points[N];
     get_regular_polygon(points, N, new_vec3(0,75,0), new_vec3(0,1,0), new_vec3(1,0,0), 55);
     //SplineDemo_create(400,0,220, points, 5, SplineDemo2_update);
-    SplineDemo_create(600,0,0, points, N, SplineDemo3_update);
+    SplineDemo_create(800,0,0, points, N, SplineDemo3_update);
     }
 
 
@@ -1268,7 +1458,7 @@ extern void init_program(void)
     for (int i = 0; i < spline_N; i++) {
         points[i] = vec3_mul(vec3_normalize(new_vec3(frand()-0.5,frand()-0.5,frand()-0.5)), radius);
     }
-    Logic *sdg = SplineDemo3D_create(0, 0, 300, points, spline_N);
+    Logic *sdg = SplineDemo3D_create(1050, 0, 0, points, spline_N);
     SplineDemo *sd = sdg->data;
 
     for (int i = 0; i < 4; i++) {
@@ -1315,15 +1505,20 @@ extern void init_program(void)
     }
 #endif
 
-
-    // Bezier demo.
+    // Patch demo.
     if (1) {
-        BezierDemo *bd = BezierDemo_create(200,0,200, new_vec3(-100,60,-40), new_vec3(-30,100,30), new_vec3(30, 105, 6), new_vec3(50,95, 40), 0.2);
+        vec3 points[9];
+        float r = 30;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                points[3 * i + j] = new_vec3(50 * sin((1.0 / 27.0) * r * j), r * i, r * j);
+            }
+        }
+        PatchDemo_create(1320, 0, 0, points, 0.54, 1);
     }
-
     // NURBS demo.
     if (1) {
-        #define nurbs_m 5
+        #define nurbs_m 10
         #define nurbs_n 5
         vec3 points[nurbs_m * nurbs_m];
 	float r = 28;
@@ -1333,12 +1528,10 @@ extern void init_program(void)
                 // points[i] = vec3_mul(vec3_normalize(new_vec3(frand()-0.5,frand()-0.5,frand()-0.5)), radius);
             }
         }
-        Logic *g = NURBSDemo_create(0, 0, 500, points, nurbs_n, nurbs_m);
+        Logic *g = NURBSDemo_create(1520, 0, 0, points, nurbs_n, nurbs_m);
         NURBSDemo *nurbs = g->data;
     }
 }
-
-
 
 
 

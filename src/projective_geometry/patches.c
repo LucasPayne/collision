@@ -89,3 +89,11 @@ vec3 evaluate_rational_cubic_bezier_patch(vec4 points[], float u, float v)
 {
     return evaluate_rational_bezier_patch_de_casteljau(4, 4, points, u, v);
 }
+vec3 evaluate_cubic_bezier_patch(vec3 points[], float u, float v)
+{
+    return evaluate_bezier_patch_de_casteljau(4, 4, points, u, v);
+}
+vec3 evaluate_quadratic_bezier_patch(vec3 points[], float u, float v)
+{
+    return evaluate_bezier_patch_de_casteljau(3, 3, points, u, v);
+}

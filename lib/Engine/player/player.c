@@ -28,6 +28,9 @@ void PlayerController_key_listener(Logic *g, int key, int action, int mods)
         if (key == GLFW_KEY_E) {
             player->look_with_mouse = !player->look_with_mouse;
         }
+        if (key == GLFW_KEY_X) {
+            player->scrollable_speed = !player->scrollable_speed;
+        }
     }
 }
 void PlayerController_scroll_listener(Logic *g, float dy)

@@ -4,6 +4,9 @@ project_libs:
 --------------------------------------------------------------------------------*/
 #include "Engine.h"
 
+#include "patches.c"
+
+
 PlayerController *g_player;
 
 // Just put it really far away.
@@ -609,13 +612,6 @@ vec3 evaluate_cubic_bezier(vec3 points[], float t)
 }
 vec3 evaluate_rational_cubic_bezier(vec4 homogeneous_points[], float t)
 {
-    // vec4 homogeneous_points[4];
-    // for (int i = 0; i < 4; i++) {
-    //     X(homogeneous_points[i]) = X(points[i]) * weights[i];
-    //     Y(homogeneous_points[i]) = Y(points[i]) * weights[i];
-    //     Z(homogeneous_points[i]) = Z(points[i]) * weights[i];
-    //     W(homogeneous_points[i]) = weights[i];
-    // }
     vec4 p01 = vec4_lerp(homogeneous_points[0], homogeneous_points[1], t);
     vec4 p12 = vec4_lerp(homogeneous_points[1], homogeneous_points[2], t);
     vec4 p23 = vec4_lerp(homogeneous_points[2], homogeneous_points[3], t);
@@ -624,6 +620,7 @@ vec3 evaluate_rational_cubic_bezier(vec4 homogeneous_points[], float t)
     vec4 p = vec4_lerp(p0112, p1223, t);
     return new_vec3(X(p) / W(p), Y(p) / W(p), Z(p) / W(p));
 }
+
 
 void SplineDemo_draw_control_polyline(SplineDemo *sd)
 {
@@ -749,6 +746,146 @@ void bunny_update(Logic *logic)
     // MeshData_draw_wireframe(mesh, Transform_get_matrix_a(logic), new_vec4(0,0,0,1), 2);
 }
 
+typedef struct NURBSDemo_s {
+    int n;
+    int m;
+    Transform **point_transforms;
+    Transform *transform;
+    float *weights;
+} NURBSDemo;
+
+vec3 NURBS_pos(NURBSDemo *nurbs, int i, int j)
+{
+    return Transform_position(nurbs->point_transforms[nurbs->m * i + j]);
+}
+
+void draw_rational_cubic_bezier_patch(vec4 points[], vec4 color, int tess)
+{
+    float u,v, up,vp;
+    float inv_tess_plus_one = 1.0 / (tess + 1);
+    for (int i = 0; i < tess; i++) {
+        u = i * inv_tess_plus_one;
+        up = (i+1) * inv_tess_plus_one;
+        for (int j = 0; j < tess; j++) {
+            v = j * inv_tess_plus_one;
+            vp = (j+1) * inv_tess_plus_one;
+
+            vec3 A = evaluate_rational_cubic_bezier_patch(points, u, v);
+            vec3 B = evaluate_rational_cubic_bezier_patch(points, up, v);
+            vec3 C = evaluate_rational_cubic_bezier_patch(points, up, vp);
+            vec3 D = evaluate_rational_cubic_bezier_patch(points, u, vp);
+            print_vec3(A);
+            paint_triangle_v(Canvas3D, A, B, C, color);
+            paint_triangle_v(Canvas3D, A, C, D, color);
+        }
+    }
+}
+
+void NURBSDemo_update(Logic *g)
+{
+    NURBSDemo *nurbs = g->data;
+
+    painting_matrix(Transform_get_matrix_a(g));
+    for (int i = 0; i < nurbs->n; i++) {
+        for (int j = 0; j < nurbs->m; j++) {
+            // Scroll wheel to increase the "weight" of this point.
+            vec3 p = NURBS_pos(nurbs, i, j);
+            vec3 world_p = mat4x4_vec3(Transform_matrix(nurbs->transform), p);
+            vec2 screen_pos = Camera_world_point_to_screen(g_main_camera, world_p);
+            float screen_x = X(screen_pos);
+            float screen_y = Y(screen_pos);
+            const float click_radius = 0.02;
+            const float weight_speed = 5;
+            float point_size = 40*(1 - exp(-0.014*nurbs->weights[nurbs->m * i + j]));
+            if ((screen_x - mouse_screen_x)*(screen_x - mouse_screen_x) + (screen_y - mouse_screen_y)*(screen_y - mouse_screen_y) < click_radius * click_radius) {
+                point_size *= 1.3;
+                if (g_y_scroll != 0) {
+                    nurbs->weights[nurbs->m * i + j] += nurbs->weights[nurbs->m * i + j] * g_y_scroll * weight_speed * dt;
+                }
+            }
+            paint_points(Canvas3D, &p, 1, 0.2,0.2,0.2,1, point_size);
+        }
+    }
+
+    vec4 color = {{0.4,0.4,0.4,0.9}};
+    for (int i = 0; i < nurbs->n - 1; i++) {
+        for (int j = 0; j < nurbs->m - 1; j++) {
+            vec3 a = NURBS_pos(nurbs,i,j);
+            vec3 b = NURBS_pos(nurbs,i+1,j);
+            vec3 c = NURBS_pos(nurbs,i,j+1);
+            paint_line_v(Canvas3D, a, b, color, 1);
+            paint_line_v(Canvas3D, a, c, color, 1);
+        }
+    }
+    for (int i = 0; i < nurbs->n - 1; i++) {
+        vec3 a = NURBS_pos(nurbs,i,nurbs->m-1);
+        vec3 b = NURBS_pos(nurbs,i+1,nurbs->m-1);
+        paint_line_v(Canvas3D, a, b, color, 1);
+    }
+    for (int i = 0; i < nurbs->m - 1; i++) {
+        vec3 a = NURBS_pos(nurbs,nurbs->n-1,i);
+        vec3 b = NURBS_pos(nurbs,nurbs->n-1,i+1);
+        paint_line_v(Canvas3D, a, b, color, 1);
+    }
+
+    //vec4 patch_color = new_vec4(0.6,0.6,0.9,1);
+    vec4 patch_color = new_vec4(0.3,0.3,0.9,0.7);
+    vec4 window[16];
+    vec4 bernstein_points[16];
+    for (int i = 0; i < nurbs->n - 3; i++) {
+        for (int j = 0; j < nurbs->m - 3; j++) {
+            for (int ii = 0; ii < 4; ii++) {
+                for (int jj = 0; jj < 4; jj++) {
+                    vec3 p = NURBS_pos(nurbs, i+ii,j+jj);
+                    //print_vec3(p);
+                    float w = nurbs->weights[nurbs->m*(i+ii) + j+jj];
+                    window[4*ii + jj] = new_vec4(w*X(p), w*Y(p), w*Z(p), w);
+                    print_vec4(window[4*ii+jj]);
+                }
+            }
+            for (int ii = 0; ii < 4; ii++) {
+                
+            }
+            for (int jj = 0; jj < 4; jj++) {
+            }
+
+	    draw_rational_cubic_bezier_patch(window, patch_color, 5);
+        }
+    }
+
+    painting_matrix_reset();
+
+}
+
+Logic *NURBSDemo_create(float x, float y, float z, vec3 points[], int n, int m)
+{
+    EntityID e = new_gameobject(x,y,z, 0,0,0, true);
+    
+    Transform *t = Transform_get(e);
+    Logic *g = add_logic(e, NURBSDemo_update, NURBSDemo);
+    NURBSDemo *nurbs = g->data;
+    nurbs->transform = t;
+    nurbs->n = n;
+    nurbs->m = m;
+    nurbs->point_transforms = malloc(sizeof(Transform *) * n * m);
+    mem_check(nurbs->point_transforms);
+    nurbs->weights = malloc(sizeof(float) * n * m);
+    mem_check(nurbs->weights);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            EntityID cwe = new_gameobject(UNPACK_VEC3(points[m*i + j]),0,0,0, true);
+            Transform *cwt = Transform_get(cwe);
+            cwt->has_parent = true;
+            cwt->parent = t;
+            ControlWidget *cw = ControlWidget_add(cwe, 5);
+            cw->alpha = 0.6;
+            nurbs->point_transforms[m*i + j] = cwt;
+            nurbs->weights[m*i + j] = 50;
+        }
+    }
+    return g;
+}
+
 
 typedef struct SplineDemo3D_s {
     int num_points;
@@ -756,6 +893,36 @@ typedef struct SplineDemo3D_s {
     Transform *transform;
     float *weights;
 } SplineDemo3D;
+
+vec3 SD_position_along(SplineDemo3D *sd, float t)
+{
+    int num_windows = sd->num_points - 3;
+    int index = (int) (num_windows * t);
+    if (index == num_windows) index --; // The last domain segment includes the end.
+    float start = index * 1.0 / num_windows;
+    float end = (index + 1) * 1.0 / num_windows;
+    float local_t = (t - start) / (end - start);
+
+    vec4 homogeneous_window[4];
+    for (int j = 0; j < 4; j++) {
+        vec3 p = SD_pos(sd, index+j);
+        float w = sd->weights[index+j];
+        X(homogeneous_window[j]) = X(p) * w;
+        Y(homogeneous_window[j]) = Y(p) * w;
+        Z(homogeneous_window[j]) = Z(p) * w;
+        W(homogeneous_window[j]) = w;
+    }
+    vec4 homogeneous_points[4] = {0};
+    for (int j = 0; j < 4; j++) {
+        for (int k = 0; k < 4; k++) {
+            homogeneous_points[j] = vec4_add(homogeneous_points[j],
+                                    vec4_mul(homogeneous_window[k], cubic_bspline_to_cubic_bernstein.vals[4*k + j]));
+        }
+    }
+    vec3 a = evaluate_rational_cubic_bezier(homogeneous_points, 1-local_t);
+    return a;
+}
+
 vec3 SD_pos3D(SplineDemo3D *sd, int index)
 {
     return Transform_position(sd->point_transforms[index]);
@@ -788,13 +955,13 @@ void SplineDemo3D_update(Logic *g)
         paint_points(Canvas3D, &p, 1, 0.2,0.2,0.2,1, point_size);
     }
 
-    int tess = 7;
+    int tess = 15;
     float inv_tess_plus_one = 1.0 / (tess + 1);
     for (int i = 0; i < sd->num_points-3; i++) {
 
         vec4 homogeneous_window[4];
         for (int j = 0; j < 4; j++) {
-            vec3 p = SD_pos(sd, i+j);
+            vec3 p = SD_pos3D(sd, i+j);
             float w = sd->weights[i+j];
             X(homogeneous_window[j]) = X(p) * w;
             Y(homogeneous_window[j]) = Y(p) * w;
@@ -819,7 +986,7 @@ void SplineDemo3D_update(Logic *g)
     painting_matrix_reset();
 
 }
-SplineDemo3D *SplineDemo3D_create(float x, float y, float z, vec3 points[], int num_points)
+Logic *SplineDemo3D_create(float x, float y, float z, vec3 points[], int num_points)
 {
     EntityID e = new_gameobject(x,y,z, 0,0,0, true);
     
@@ -842,8 +1009,168 @@ SplineDemo3D *SplineDemo3D_create(float x, float y, float z, vec3 points[], int 
         sd->point_transforms[i] = cwt;
         sd->weights[i] = 50;
     }
+    return g;
 }
 
+typedef struct SplineFollower_s {
+    SplineDemo3D *sd;    
+    Transform *sd_transform;
+    float speed;
+    float t;
+    bool forward;
+} SplineFollower; 
+void SplineFollower_update(Logic *g)
+{
+    SplineFollower *f = g->data;
+    Transform *t = Transform_get_a(g);
+
+    if (f->forward) {
+        f->t += f->speed * dt;
+        if (f->t > 1) {
+            f->t = 1;
+            f->forward = false;
+        }
+    } else {
+        f->t -= f->speed * dt;
+        if (f->t < 0) {
+            f->t = 0;
+            f->forward = true;
+        }
+    }
+    vec3 pos = mat4x4_vec3(Transform_matrix(f->sd_transform), SD_position_along(f->sd, f->t));
+    // print_vec3(pos);
+    Transform_set_position(t, pos);
+
+    fill_mat3x3_cmaj(t->rotation_matrix, cos(time), 0, sin(time),
+                                         0, 1, 0,
+                                         -sin(time), 0, cos(time));
+}
+
+typedef struct BezierDemo_s {
+    //vec3 points[4];
+    Transform *point_transforms[4];
+    float t;
+    float speed;
+    bool forward;
+    StraightModel *sm;
+} BezierDemo;
+vec3 BD_point(BezierDemo *bd, int index)
+{
+    return Transform_position(bd->point_transforms[index]);
+}
+
+void BezierDemo_update(Logic *g)
+{
+    BezierDemo *bd = g->data;
+    painting_matrix(Transform_get_matrix_a(g));
+    if (bd->forward) {
+        bd->t += bd->speed * dt;
+        if (bd->t > 1) {
+            bd->t = 1;
+            bd->forward = false;
+        }
+    } else {
+        bd->t -= bd->speed * dt;
+        if (bd->t < 0) {
+            bd->t = 0;
+            bd->forward = true;
+        }
+    }
+    vec3 perspective_points[4];
+    vec3 points[4];
+    for (int i = 0; i < 4; i++) {
+        points[i] = BD_point(bd, i);
+        perspective_points[i] = perspective_point(bd->sm, points[i]);
+    }
+    vec4 line_color = new_vec4(0.4,0.4,0.4,1);
+    for (int i = 0; i < 3; i++) {
+        paint_line_v(Canvas3D, points[i], points[i+1], line_color, 1.5);
+        paint_line_cv(Canvas3D, perspective_points[i], perspective_points[i+1], "k", 1.5);
+    }
+    paint_points(Canvas3D, perspective_points, 4, 0,0,0,1, 22);
+
+    float t = bd->t;
+    vec3 a = points[0];
+    vec3 b = points[1];
+    vec3 c = points[2];
+    vec3 d = points[3];
+    paint_points(Canvas3D, &a, 1, 0,0,0,1, 22);
+    paint_points(Canvas3D, &b, 1, 0,0,0,1, 22);
+    paint_points(Canvas3D, &c, 1, 0,0,0,1, 22);
+    paint_points(Canvas3D, &d, 1, 0,0,0,1, 22);
+    vec3 p01 = vec3_lerp(a, b, t);
+    vec3 p01p = perspective_point(bd->sm, p01);
+    vec3 p12 = vec3_lerp(b, c, t);
+    vec3 p12p = perspective_point(bd->sm, p12);
+    vec3 p23 = vec3_lerp(c, d, t);
+    vec3 p23p = perspective_point(bd->sm, p23);
+    paint_points_c(Canvas3D, &p01, 1, "r", 12);
+    paint_points_c(Canvas3D, &p12, 1, "r", 12);
+    paint_points_c(Canvas3D, &p23, 1, "r", 12);
+    paint_points_c(Canvas3D, &p01p, 1, "k", 12);
+    paint_points_c(Canvas3D, &p12p, 1, "k", 12);
+    paint_points_c(Canvas3D, &p23p, 1, "k", 12);
+    paint_line_cv(Canvas3D, p01, p12, "r", 1.5);
+    paint_line_cv(Canvas3D, p12, p23, "r", 1.5);
+    paint_line_cv(Canvas3D, p01p, p12p, "k", 1.5);
+    paint_line_cv(Canvas3D, p12p, p23p, "k", 1.5);
+    vec3 p0112 = vec3_lerp(p01, p12, t);
+    vec3 p1223 = vec3_lerp(p12, p23, t);
+    vec3 p0112p = perspective_point(bd->sm, p0112);
+    vec3 p1223p = perspective_point(bd->sm, p1223);
+    paint_points_c(Canvas3D, &p0112, 1, "g", 15);
+    paint_points_c(Canvas3D, &p1223, 1, "g", 15);
+    paint_points_c(Canvas3D, &p0112p, 1, "k", 15);
+    paint_points_c(Canvas3D, &p1223p, 1, "k", 15);
+    paint_line_cv(Canvas3D, p0112, p1223, "g", 1.5);
+    paint_line_cv(Canvas3D, p0112p, p1223p, "k", 1.5);
+    vec3 p = vec3_lerp(p0112, p1223, t);
+    vec3 pp = perspective_point(bd->sm, p);
+    paint_points_c(Canvas3D, &p, 1, "b", 15);
+    paint_points_c(Canvas3D, &pp, 1, "k", 15);
+
+    int tess = 12;
+    float inv_tess_plus_one = 1.0 / (tess + 1);
+    for (int j = 0; j < tess+1; j++) {
+        float t1 = j * inv_tess_plus_one;
+        float t2 = (j+1) * inv_tess_plus_one;
+        vec3 a = evaluate_cubic_bezier(points, t1);
+        vec3 b = evaluate_cubic_bezier(points, t2);
+        draw_projected_segment(bd->sm, a, b, new_vec4(1,0,1,1), new_vec4(0,0,0,1), 2.3);
+    }
+    painting_matrix_reset();
+}
+BezierDemo *BezierDemo_create(float x, float y, float z, vec3 a, vec3 b, vec3 c, vec3 d, float speed)
+{
+    Logic *smg = StraightModel_add(x, y, z, 100, 100, 20);
+    StraightModel *sm = smg->data;
+    
+    //EntityID e = new_gameobject(x,y,z, 0,0,0, true);
+    EntityID e = smg->entity_id;
+    Logic *g = add_logic(e, BezierDemo_update, BezierDemo);
+    Transform *t = Transform_get_a(g);
+    BezierDemo *bd = g->data;
+    bd->sm = sm;
+    bd->t = 0;
+    bd->speed = speed;
+    bd->forward = true;
+
+    vec3 points[4];
+    points[0] = a;
+    points[1] = b;
+    points[2] = c;
+    points[3] = d;
+    for (int i = 0; i < 4; i++) {
+        EntityID cwe = new_gameobject(UNPACK_VEC3(points[i]),0,0,0, true);
+        Transform *cwt = Transform_get(cwe);
+        cwt->has_parent = true;
+        cwt->parent = t;
+        ControlWidget_add(cwe, 8);
+        bd->point_transforms[i] = cwt;
+    }
+
+    return bd;
+}
 
 extern void init_program(void)
 {
@@ -854,7 +1181,6 @@ extern void init_program(void)
 
 {
     FrustumDemo *fd = FrustumDemo_create(-300,40,0);
-#if 1
 {
     EntityID light = new_entity(4);
     Transform *t = entity_add_aspect(light, Transform);
@@ -862,6 +1188,7 @@ extern void init_program(void)
     t->euler_controlled = true;
     DirectionalLight_init(entity_add_aspect(light, DirectionalLight), 1,0.7,0.7,1,  400,400,500);
 }
+#if 1
     int bunny_square_root = 3;
     for (int i = 0; i < bunny_square_root; i++) {
         for (int j = 0; j < bunny_square_root; j++) {
@@ -886,15 +1213,15 @@ extern void init_program(void)
             material_set_texture_path(resource_data(Material, body->material), "normal_map", "Textures/brick_wall_normal");
 
             add_empty_logic(e, bunny_update);
-#endif
         }
     }
+#endif
     }
 
 
 #if 1
 #endif
-#if 1
+#if 0
     {
     Logic *smg = StraightModel_add(0,0,0, 100, 100, 20);
     StraightModel *sm = smg->data;
@@ -930,13 +1257,40 @@ extern void init_program(void)
     //SplineDemo_create(400,0,220, points, 5, SplineDemo2_update);
     SplineDemo_create(600,0,0, points, N, SplineDemo3_update);
     }
+
+
+
+
 {
-    vec3 points[12];
-    float radius = 40;
-    for (int i = 0; i < 12; i++) {
+    #define spline_N 7
+    vec3 points[spline_N];
+    float radius = 100;
+    for (int i = 0; i < spline_N; i++) {
         points[i] = vec3_mul(vec3_normalize(new_vec3(frand()-0.5,frand()-0.5,frand()-0.5)), radius);
     }
-    SplineDemo3D_create(0, 0, 300, points, 12);
+    Logic *sdg = SplineDemo3D_create(0, 0, 300, points, spline_N);
+    SplineDemo *sd = sdg->data;
+
+    for (int i = 0; i < 4; i++) {
+        EntityID e = new_entity(4);
+        Transform *t = add_aspect(e, Transform);
+        Transform_set(t, 0,0,0, 0,0,0);
+        t->scale = 120;
+        Body *body = add_aspect(e, Body);
+        body->visible = true;
+        body->geometry = new_resource_handle(Geometry, "Models/stanford_bunny -a");
+        body->material = Material_create("Materials/textured_phong_shadows_normal_mapped");
+        material_set_texture_path(resource_data(Material, body->material), "diffuse_map", "Textures/brick_wall");
+        material_set_texture_path(resource_data(Material, body->material), "normal_map", "Textures/brick_wall_normal");
+
+        Logic *g = add_logic(e, SplineFollower_update, SplineFollower);
+        SplineFollower *f = g->data;
+        f->sd = sd;
+        f->sd_transform = Transform_get_a(sdg);
+        f->speed = frand() * 0.2 + 0.05;
+        f->forward = frand() > 0.5 ? true : false;
+        f->t = frand();
+    }
 }
 
 #if 0
@@ -960,6 +1314,28 @@ extern void init_program(void)
         getchar();
     }
 #endif
+
+
+    // Bezier demo.
+    if (1) {
+        BezierDemo *bd = BezierDemo_create(200,0,200, new_vec3(-100,60,-40), new_vec3(-30,100,30), new_vec3(30, 105, 6), new_vec3(50,95, 40), 0.2);
+    }
+
+    // NURBS demo.
+    if (1) {
+        #define nurbs_m 5
+        #define nurbs_n 5
+        vec3 points[nurbs_m * nurbs_m];
+	float r = 28;
+        for (int i = 0; i < nurbs_n; i++) {
+            for (int j = 0; j < nurbs_m; j++) {
+                points[nurbs_m * i + j] = new_vec3(50 * sin((1.0 / 27.0) * r * j), r * i, r * j);
+                // points[i] = vec3_mul(vec3_normalize(new_vec3(frand()-0.5,frand()-0.5,frand()-0.5)), radius);
+            }
+        }
+        Logic *g = NURBSDemo_create(0, 0, 500, points, nurbs_n, nurbs_m);
+        NURBSDemo *nurbs = g->data;
+    }
 }
 
 

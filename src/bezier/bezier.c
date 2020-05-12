@@ -35,12 +35,14 @@ void draw_bezier_curve(void)
     if (n >= 2) {
         const int num_points = 100;
 
-        float curve[num_points * 2];
+        vec3 curve[num_points * 2];
         for (int i = 0; i < num_points; i++) {
             vec2 p = bezier_point(i * 1.0 / num_points);
-            ((vec2 *) curve)[i] = p;
+            curve[i] = new_vec3(X(p), Y(p), 0);
         }
-        paint_chain_c(Canvas2D, curve, num_points, "g", 3);
+        for (int i = 0; i < num_points - 1; i++) {
+            paint_line_cv(Canvas2D, curve[i], curve[i + 1], "g", 1);
+        }
     }
 
     float quad_size = 0.02;
@@ -55,13 +57,19 @@ extern void input_event(int key, int action, int mods)
         n = 0;
     }
 }
-extern void cursor_move_event(double x, double y)
+
+
+extern void mouse_position_event(double x, double y)
+{
+
+}
+extern void mouse_move_event(double x, double y, double dx, double dy)
 {
 }
-extern void mouse_button_event(int button, int action, int mods)
+extern void mouse_button_event(MouseButton button, bool click, float x, float y)
 {
-    if (action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_LEFT) {
-        vec2 pos = pixel_to_rect(mouse_x,mouse_y,  0,0,  1,1);
+    if (click && button == MouseLeft) {
+        vec2 pos = new_vec2(x, y);
         add_point(pos.vals[0], pos.vals[1]);
     }
 }
@@ -71,6 +79,7 @@ extern void init_program(void)
 }
 extern void loop_program(void)
 {
+    // paint_points_c(Canvas2D, points, n, "k", 30);
     draw_bezier_curve();
 }
 extern void close_program(void)

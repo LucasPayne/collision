@@ -86,6 +86,12 @@ vec3 vec3_lerp(vec3 u, vec3 v, float t)
 {
     return vec3_add(vec3_mul(u, t), vec3_mul(v, 1 - t));
 }
+// Interpolate a->b by u to get A, ap->bp by u to get B, then interpolate A->B by v.
+vec3 vec3_bilerp(vec3 a, vec3 b, vec3 ap, vec3 bp, float u, float v)
+{
+    return vec3_lerp(vec3_lerp(a, b, u), vec3_lerp(ap, bp, u), v);
+}
+
 // Barycentric combination. Assumes r+s+t = 1.
 vec3 triangle_blend(vec3 a, vec3 b, vec3 c, float r, float s, float t)
 {
@@ -140,6 +146,11 @@ vec4 vec4_zero(void)
 vec4 vec4_lerp(vec4 u, vec4 v, float t)
 {
     return vec4_add(u, vec4_mul(vec4_sub(v, u), t));
+}
+// Interpolate a->b by u to get A, ap->bp by u to get B, then interpolate A->B by v.
+vec4 vec4_bilerp(vec4 a, vec4 b, vec4 ap, vec4 bp, float u, float v)
+{
+    return vec4_lerp(vec4_lerp(a, b, u), vec4_lerp(ap, bp, u), v);
 }
 
 

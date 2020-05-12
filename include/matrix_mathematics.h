@@ -37,6 +37,7 @@ float vec3_square_length(vec3 v);
 float vec3_length(vec3 v);
 vec3 vec3_normalize(vec3 v);
 vec3 vec3_lerp(vec3 u, vec3 v, float t);
+vec3 vec3_bilerp(vec3 a, vec3 b, vec3 ap, vec3 bp, float u, float v);
 vec3 triangle_blend(vec3 a, vec3 b, vec3 c, float r, float s, float t);
 vec3 rand_vec3(float size);
 
@@ -53,6 +54,7 @@ vec4 vec4_mul(vec4 a, float x);
 vec4 vec4_sub(vec4 a, vec4 b);
 vec4 vec4_neg(vec4 a);
 vec4 vec4_lerp(vec4 u, vec4 v, float t);
+vec4 vec4_bilerp(vec4 a, vec4 b, vec4 ap, vec4 bp, float u, float v);
 
 // 3x3 matrices.
 //================================================================================

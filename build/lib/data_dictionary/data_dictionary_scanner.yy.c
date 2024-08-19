@@ -725,8 +725,8 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
-#line 5 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 1 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 5 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 #include "data_dictionary_implementation.h"
 #include "tokens.yy.h"
 #include <stdbool.h>
@@ -983,7 +983,7 @@ YY_DECL
 		}
 
 	{
-#line 47 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 47 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 
 
 #line 990 "data_dictionary_scanner.yy.c"
@@ -1045,23 +1045,23 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 49 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 49 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { BEGIN CommentOneLine; }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 50 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 50 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { /* */ }
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 51 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 51 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { BEGIN INITIAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 53 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 53 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     if (trace_lex) printf("Reading #-directive...\n");
     BEGIN Directive;
@@ -1069,7 +1069,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 57 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 57 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     char *start = strchr(yytext, '(') + 1;
     char *end = strchr(yytext, ')');
@@ -1094,26 +1094,26 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 79 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 79 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     if (trace_lex) printf("IDENTIFIER: %s\n", yytext);
     yylval.symbol = new_symbol(yytext); RETURN(IDENTIFIER);
 }
 	YY_BREAK
 case 7:
-#line 84 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 84 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 case 8:
-#line 85 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 85 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 case 9:
-#line 86 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 86 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 case 10:
 YY_RULE_SETUP
-#line 86 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 86 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { if (trace_lex) printf("symbol: %c\n", yytext[0]); RETURN(yytext[0]); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 88 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 88 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     if (trace_lex) printf("symbol: :\n");
     if (trace_lex) printf("getting value text\n");
@@ -1124,14 +1124,14 @@ YY_RULE_SETUP
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
-#line 94 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 94 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 { /* eat whitespace */ }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(ValueText):
 case YY_STATE_EOF(CommentOneLine):
 case YY_STATE_EOF(Directive):
-#line 96 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 96 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     // Complete lexing if at the bottom of the file stack, or pop a file and continue lexing where the previous open file was left of.
     dd_pop_file();
@@ -1144,7 +1144,7 @@ case YY_STATE_EOF(Directive):
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 105 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 105 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 {
     if (trace_lex) printf("VALUE_TEXT: \"%s\":\n", yytext);
     yylval.symbol = new_symbol(yytext + 1);
@@ -1154,7 +1154,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 112 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 112 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
 #line 1161 "data_dictionary_scanner.yy.c"
@@ -2160,7 +2160,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 112 "/home/lucas/collision/lib/data_dictionary/data_dictionary_scanner.l"
+#line 112 "/home/lucas/code/collision/lib/data_dictionary/data_dictionary_scanner.l"
 
 #include "helper_definitions.h"
 

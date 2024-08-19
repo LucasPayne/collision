@@ -731,11 +731,11 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 1 "/home/lucas/code/collision/lib/ply/ply_query.l"
 /*================================================================================
     flex+C module for interpreting PLY queries.
 ================================================================================*/
-#line 5 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 5 "/home/lucas/code/collision/lib/ply/ply_query.l"
     /*================================================================================
         Upper C declarations and global variable definitions.
     ================================================================================*/
@@ -980,9 +980,9 @@ YY_DECL
 		}
 
 	{
-#line 33 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 33 "/home/lucas/code/collision/lib/ply/ply_query.l"
 
-#line 35 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 35 "/home/lucas/code/collision/lib/ply/ply_query.l"
     /*================================================================================
         Patterns and actions
     ================================================================================*/
@@ -1045,7 +1045,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 38 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 38 "/home/lucas/code/collision/lib/ply/ply_query.l"
 {
     int c;
     // Must be followed by ": "
@@ -1064,48 +1064,48 @@ YY_RULE_SETUP
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 52 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 52 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { /* eat newlines */ }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 53 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 53 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { lex_error("bad element pattern"); return ERROR; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 54 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 54 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { g_ply_query_property.is_list = true; g_ply_query_property.pack_type = PLY_FLOAT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 55 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 55 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { g_ply_query_property.is_list = true; g_ply_query_property.pack_type = PLY_INT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 56 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 56 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { g_ply_query_property.is_list = false; g_ply_query_property.pack_type = PLY_FLOAT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 57 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 57 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { g_ply_query_property.is_list = false; g_ply_query_property.pack_type = PLY_INT; BEGIN PropertyPattern; debug("property declaration started, property type given"); }
 	YY_BREAK
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 58 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 58 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { /* eat newlines */ }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 59 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 59 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { lex_error("bad property"); return ERROR; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 60 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 60 "/home/lucas/code/collision/lib/ply/ply_query.l"
 {
     int c;
     // query string must finish or this pattern must be followed by ", "
@@ -1133,21 +1133,21 @@ YY_RULE_SETUP
 case 11:
 /* rule 11 can match eol */
 YY_RULE_SETUP
-#line 83 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 83 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { /* eat newlines */ }
 	YY_BREAK
 case YY_STATE_EOF(PropertyPattern):
-#line 84 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 84 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { return DONE; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 85 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 85 "/home/lucas/code/collision/lib/ply/ply_query.l"
 { lex_error("bad property pattern"); return ERROR; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 87 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 87 "/home/lucas/code/collision/lib/ply/ply_query.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
 #line 1154 "ply_query.c"
@@ -2157,7 +2157,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 87 "/home/lucas/collision/lib/ply/ply_query.l"
+#line 87 "/home/lucas/code/collision/lib/ply/ply_query.l"
 
     /*================================================================================
         Main C code.

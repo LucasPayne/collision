@@ -840,7 +840,7 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 1 "/home/lucas/code/collision/lib/ply/ply_header.l"
 /*================================================================================
     flex+C module for creating an internal PLY handle from a file.
 
@@ -860,7 +860,7 @@ notes:
 
 
 
-#line 24 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 24 "/home/lucas/code/collision/lib/ply/ply_header.l"
 #include <stdbool.h>
 #include "helper_definitions.h"
 #include "ply.h"
@@ -1116,7 +1116,7 @@ YY_DECL
 		}
 
 	{
-#line 51 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 51 "/home/lucas/code/collision/lib/ply/ply_header.l"
 
 
 #line 1123 "ply_header.c"
@@ -1182,7 +1182,7 @@ case 1:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 53 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 53 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { /* pass over */ }
 	YY_BREAK
 /* should have <Magic>, --- how to make this the start state? */
@@ -1191,7 +1191,7 @@ case 2:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 55 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 55 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN Versioning; debug("read magic number"); }
 	YY_BREAK
 case 3:
@@ -1199,7 +1199,7 @@ case 3:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 56 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 56 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN Elements; g_ply.format = PLY_FORMAT_ASCII_1; debug("version read"); }
 	YY_BREAK
 case 4:
@@ -1207,7 +1207,7 @@ case 4:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 57 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 57 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN Elements; g_ply.format = PLY_FORMAT_BINARY_LITTLE_ENDIAN_1; debug("version read"); }
 	YY_BREAK
 case 5:
@@ -1215,12 +1215,12 @@ case 5:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 58 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 58 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN Elements; g_ply.format = PLY_FORMAT_BINARY_BIG_ENDIAN_1; debug("version read"); }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 59 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 59 "/home/lucas/code/collision/lib/ply/ply_header.l"
 {
     // A new element has started declaration.
     g_at_least_one_element = true;
@@ -1229,7 +1229,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 64 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 64 "/home/lucas/code/collision/lib/ply/ply_header.l"
 {
     // Allocate memory for element name.
     BEGIN ElementCount;
@@ -1244,7 +1244,7 @@ case 8:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 72 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 72 "/home/lucas/code/collision/lib/ply/ply_header.l"
 {
     // The new element has completed declaration, add this.
     BEGIN Properties;
@@ -1255,7 +1255,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 79 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 79 "/home/lucas/code/collision/lib/ply/ply_header.l"
 {
     // A new list-type property has started declaration.
     BEGIN PropertyListCountType;
@@ -1266,22 +1266,22 @@ YY_RULE_SETUP
 /* Read the unsigned integer type of the list count. */
 case 10:
 YY_RULE_SETUP
-#line 86 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 86 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyType; g_ply_property.list_count_type = PLY_UINT; debug("property list count type read"); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 87 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 87 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyType; g_ply_property.list_count_type = PLY_UCHAR; debug("property list count type read"); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 88 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 88 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyType; g_ply_property.list_count_type = PLY_USHORT; debug("property list count type read"); }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 89 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 89 "/home/lucas/code/collision/lib/ply/ply_header.l"
 {
     // A new regular property has started declaration.
     BEGIN PropertyType;
@@ -1293,47 +1293,47 @@ YY_RULE_SETUP
 /* Read the type of the property. */
 case 14:
 YY_RULE_SETUP
-#line 97 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 97 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyName; g_ply_property.type = PLY_CHAR; debug("property type read"); }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 98 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 98 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyName; g_ply_property.type = PLY_UCHAR; debug("property type read"); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 99 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 99 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyName; g_ply_property.type = PLY_SHORT; debug("property type read"); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 100 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 100 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyName; g_ply_property.type = PLY_USHORT; debug("property type read"); }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 101 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 101 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyName; g_ply_property.type = PLY_INT; debug("property type read"); }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 102 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 102 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyName; g_ply_property.type = PLY_UINT; debug("property type read"); }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 103 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 103 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyName; g_ply_property.type = PLY_FLOAT; debug("property type read"); }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 104 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 104 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { BEGIN PropertyName; g_ply_property.type = PLY_DOUBLE; debug("property type read"); }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 105 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 105 "/home/lucas/code/collision/lib/ply/ply_header.l"
 {
     // The new property has completed declaration, add this.
     BEGIN Properties;
@@ -1349,7 +1349,7 @@ case 23:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 114 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 114 "/home/lucas/code/collision/lib/ply/ply_header.l"
 {
     // The header is complete. Make sure at least one element has been declared.
     if (!g_at_least_one_element) _lex_error("no elements defined");
@@ -1360,17 +1360,17 @@ YY_RULE_SETUP
 case 24:
 /* rule 24 can match eol */
 YY_RULE_SETUP
-#line 120 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 120 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { /* */ }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 121 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 121 "/home/lucas/code/collision/lib/ply/ply_header.l"
 { return ERROR; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 123 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 123 "/home/lucas/code/collision/lib/ply/ply_header.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
 #line 1377 "ply_header.c"
@@ -2390,7 +2390,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 123 "/home/lucas/collision/lib/ply/ply_header.l"
+#line 123 "/home/lucas/code/collision/lib/ply/ply_header.l"
 
 #include <stdbool.h>
 #include <stdio.h>

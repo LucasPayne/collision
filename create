@@ -2,7 +2,7 @@
 
 projdir=$(pwd)
 cc="gcc -rdynamic -I$projdir/include -Wall"
-cflags="-lglfw3 -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng"
+cflags="-lglfw -lm -lrt -lm -ldl -lX11 -lpthread -lGL -lpng"
 
 # Everything that should happen before any compilation should be put here.
 preparebuild() {
